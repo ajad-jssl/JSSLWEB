@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<urlrewrite default-match-type="regex">
+
+     <rule>
+        <from>^/([a-zA-Z0-9_/-]+)\.jsp$</from>
+        <to type="redirect">/$1</to>
+    </rule>
+    <rule>
+        <condition type="request-uri" operator="notequal">\.jsp$</condition>
+        <condition type="request-uri" operator="notequal">\.(css|js|png|jpg|gif|ico|woff|ttf|svg|map)$</condition>
+        <from>^/([a-zA-Z0-9_/-]+)$</from>
+        <to last="true" type="forward">/$1.jsp</to>
+    </rule>
+
+</urlrewrite>

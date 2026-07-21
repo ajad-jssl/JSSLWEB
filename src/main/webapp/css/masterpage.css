@@ -1,0 +1,142 @@
+
+ .card {
+    position: relative; 
+    transition: transform 0.1s ease, box-shadow 0.3s ease;
+}
+
+.card:hover {
+    box-shadow: 0 6px 8px rgba(0, 0, 0, 0.1);
+    transform: scale(1.005);
+    cursor:pointer;
+}
+
+.card-body {
+    padding: 20px;
+}
+
+.text-uppercase {
+    color: #6c757d;
+    font-size: 12px;
+}
+
+.h5 {
+    color: #1a1a1a;
+    font-size: 24px;
+}
+
+.fa-shopping-bag {
+    color: #975454;
+}
+
+.card:hover .fa-shopping-bag {
+    color: #7d3737;
+}
+
+   
+
+.card-container {
+  position: relative;
+  width:100%;
+}
+
+.dropdown-item {
+  margin-bottom: 10px;
+}
+
+.dropdown-items {
+  display: none;
+  margin-top: 10px;
+  top: 100%;
+  left:100%;
+  width: 100%; 
+  z-index: 10; 
+  overflow-y: hidden; 
+  overflow-x: hidden;	
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); 
+  background-color: #fff;
+  border:1px solid white;
+}
+
+.dropdown-items .card {
+  margin: 8px; /* Gap between cards */
+  border-radius: 6px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+   height: 80px !important;
+   width:280px !important;
+}
+
+.dropdown-items .card:hover {
+  transform: scale(1.03); 
+  box-shadow: 0 8px 8px rgba(0, 0, 0, 0.15);
+}
+
+.card {
+  background-color: #fff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);  
+}
+
+.card-body {
+  padding: 20px;
+}
+
+.card-body i {
+  font-size: 30px;
+}
+
+.card-container.open .dropdown-items {
+  display: flex;
+  flex-wrap: wrap; 
+  padding-left:15px;
+}
+
+
+.card-container.open .card {
+  background-color: #fff;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+
+
+.radio-inputs {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  border-radius: 0.5rem;
+  background-color: #37499A;
+  box-sizing: border-box;
+  box-shadow: 0 0 0px 1px rgba(0, 0, 0, 0.06);
+  padding: 0.25rem;
+  width: 150px;
+  font-size: 12px;
+}
+
+.radio-inputs .radio {
+  flex: 1 1 auto;
+  text-align: center;
+}
+
+.radio-inputs .radio input {
+  display: none;
+}
+
+.radio-inputs .radio .name {
+  display: flex;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.5rem;
+  border: none;
+  padding: .25rem 0;
+  color: white;
+  transition: all .15s ease-in-out;
+}
+
+.radio-inputs .radio input:checked + .name {
+  background-color: rgba(255, 255, 255, 0.1); 
+  color: #fff;
+  font-weight: 600;
+}
+
+
