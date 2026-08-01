@@ -390,6 +390,7 @@ $(document).ready(function() {
 
 
     $("#confirmdrawingentry").click(function() {
+		$("#confimationDrawingEntry").modal("hide");
 
         const result = trackShiftTableData();
 

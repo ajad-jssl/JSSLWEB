@@ -134,8 +134,24 @@ function fetchVisitorDetails(visitor_id) {
         setText("visitorCompany",    details.Company_name || '');
         setText("visitorContactNo",  details.Contact_no || '');
         setText("visitorDateTime",   details.Created_date || '');
-        setText("whomToMeet",        userMap[details.wtm] || details.wtm || '');
-		setText("wtmSignatureName", (userMap[details.wtm] || details.wtm || '') + ' (Signature)');
+       /* setText("whomToMeet",        userMap[details.wtm] || details.wtm || '');
+		setText("wtmSignatureName", (userMap[details.wtm] || details.wtm || '') + ' (Signature)');*/
+		/* setText("whomToMeet",        userMap[ details.wtm] || details.wtm || '');*/
+					setText(
+					    "whomToMeet",
+					    (userMap[details.wtm] || details.wtm || '')
+					        .replace(/^\d+\s*-\s*/, '')  
+					        .replace(/\s*\([^)]*\)\s*$/, '') 
+					        .trim()
+					);
+			/*		setText("wtmSignatureName", (userMap[details.wtm] || details.wtm || '') + ' (Signature)');*/
+			setText(
+			    "wtmSignatureName",
+			    (userMap[details.wtm] || details.wtm || '')
+			        .replace(/^[^-]+-\s*/, '')
+			        .replace(/\s*\([^)]*\)\s*$/, '')
+			        .trim() + ' (Signature)'
+			); 
         setText("visitorDepartment", departmentMap[details.department] || details.department || '');
         setText("vehicleNO",         details.vehicle_No || '');
 
