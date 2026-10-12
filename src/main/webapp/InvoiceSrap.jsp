@@ -7,9 +7,7 @@
   response.setDateHeader("Expires", 0); // Proxies
 %>
 
-<%
-long ts = System.currentTimeMillis();
-%>
+
 <!DOCTYPE html>
 <html>
 
@@ -25,12 +23,13 @@ long ts = System.currentTimeMillis();
       <link href="vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css" />
       <link href="css/ruang-admin.min.css" rel="stylesheet" />
       <link href="vendor/datatables/dataTables.bootstrap4.min.css" rel="stylesheet">
-      <!-- <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css" /> -->
-      <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css" />
-      <link rel="stylesheet" href="css/main.css">
-       <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    
+    
+    
+      <link rel="stylesheet" href="externalLibrary/cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css" />
+
       
-       <script src="js/sidebar.js"></script>
+
   <style>
            .error-message {
         color: red;
@@ -226,24 +225,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
     	window.location.href = "newlogin.jsp";
     }
     </script>
-  <!-- <script type="text/javascript">
-    window.history.forward();
 
-    // Auth Guard
-    const loginStatus = sessionStorage.getItem('loginStatus');
-    if (loginStatus !== 'Success') {
-      logout();
-    }
-
-    function noBack() {
-      window.history.forward();
-    }
-
-    function logout() {
-      sessionStorage.removeItem('loginStatus');
-      window.location = "newlogin.jsp";
-    }
-  </script> -->
   <script type="text/javascript">
  function noBack() {
      window.history.forward();
@@ -254,7 +236,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 <body onload="fetchUserList();">
   <div id="wrapper">
     <!-- Sidebar -->
-    <%@ include file="sidebar.jsp" %>
+    <%@ include file="InVoiceSideBar.jsp" %>
     <!-- Sidebar -->
     <div id="content-wrapper" class="d-flex flex-column">
       <div id="content">
@@ -293,7 +275,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
           <div class="d-sm-flex align-items-center justify-content-between mb-4">
             <h1 class="h3 mb-0 text-gray-800">Scrap Invoice List</h1>
             <ol class="breadcrumb">
-              <li class="breadcrumb-item"><a href="Dashboard.jsp">Home</a></li>
+              <li class="breadcrumb-item"><a href="InvoiceDashBoard.jsp">Home</a></li>
               <li class="breadcrumb-item"><a href="SidemenuScrap.jsp">Scrap Page</a></li>
               <li class="breadcrumb-item active" aria-current="page">Invoice</li>
               
@@ -547,6 +529,31 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 							data-dismiss="modal">NO</button>
 						<button type="button" class="btn btn-info btn-sm"
 							onclick="cancelRecord()">YES</button>
+					</div>
+				</div>
+			</div>
+		</div>
+		
+		<div class="modal fade" id="exampleModalCenter1" tabindex="-1"
+			role="dialog" aria-labelledby="exampleModalCenterTitle"
+			aria-hidden="true">
+			<div class="modal-dialog modal-dialog-centered" role="document">
+				<div class="modal-content"
+					style="width: 54%; right: -22%; border-width: thick; border-color: #eaecf4;">
+					<div class="modal-header1">
+						<!-- <h5 class="modal-title" id="exampleModalCenterTitle">Modal Vertically Centered</h5> -->
+						<!-- <button type="button" class="close" data-dismiss="modal" aria-label="Close" >
+                    <span aria-hidden="true">&times;</span>
+                  </button>  -->
+					</div>
+					<div class="modal-body">
+						<b>Are you sure you want to Release Scrap Invoice?</b>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-secondary btn-sm"
+							data-dismiss="modal">NO</button>
+						<button type="button" class="btn btn-info btn-sm"
+							onclick="addeventrelease()">YES</button>
 					</div>
 				</div>
 			</div>
@@ -1293,36 +1300,36 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
     <i class="fas fa-angle-up"></i>
   </a>
  
-<script src="js/config.js"></script>
+
   <script src="vendor/jquery/jquery.min.js"></script>
       <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
       <script src="vendor/jquery-easing/jquery.easing.min.js"></script>
-      <script src="js/ruang-admin.min.js"></script>
-      <!-- Page level plugins -->
+
       <script src="vendor/datatables/jquery.dataTables.min.js"></script>
       <script src="vendor/datatables/dataTables.bootstrap4.min.js"></script>
-    <!-- <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script> -->
-    <script src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
-    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
-    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
-    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<script src="js/config.js?v=<%=jsVersion%>"></script>
+
+  <script src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
+    <script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
+    <script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
+    <script src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
+    <script src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
+ 
   
   
-  <script src="js/InvoiceSrap.js?v=<%=ts%>"></script>
+  <script src="js/InvoiceSrap.js?v=<%=jsVersion%>"></script>
    
   
-    <script src="js/logout.js"></script>
-  <script src="js/username.js"></script>
+    <script src="js/logout.js?v=<%=jsVersion%>"></script>
+  <script src="js/username.js?v=<%=jsVersion%>"></script>
   
-   <script src="js/createdby.js"></script>
- 	   <script src="js/modifiedby.js"></script>
- 	  <script src="js/factoryid.js"></script>
- 	   <script src="js/Sessionfilter.js"></script>
- 	       <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+   <script src="js/createdby.js?v=<%=jsVersion%>"></script>
+ 	   <script src="js/modifiedby.js?v=<%=jsVersion%>"></script>
+ 	  <script src="js/factoryid.js?v=<%=jsVersion%>"></script>
+ 	   <script src="js/Sessionfilter.js?v=<%=jsVersion%>"></script>
+ 	      
  	   	   	  <script>
 /* const moduleId = localStorage.getItem("selectedModuleId"); */
   // This maps action names from the API to button IDs on this page

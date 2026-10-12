@@ -49,7 +49,7 @@ document.getElementById("modalScroll1").addEventListener("click", function () {
 	$('#exampleModalScrollable123').modal('show');
 })
 
-const selectedFactoryId = localStorage.getItem('selectedFactoryId');
+const selectedFactoryId = sessionStorage.getItem('selectedFactoryId');
 console.log('selectedFactoryId:', selectedFactoryId);
 
 // Tracks rows submitted in current session (no refresh)
@@ -194,7 +194,7 @@ function onInspectionChange() {
     const contractId = document.getElementById("Contract").value;
     const phase = document.getElementById("Phase").value;
     const loadId = document.getElementById("Load").value;
-    const selectedFactoryId = localStorage.getItem("selectedFactoryId");
+    const selectedFactoryId = sessionStorage.getItem("selectedFactoryId");
 
     if (!contractId || !phase || !loadId) {
         showModalPopup("Please select Contract, Phase and Load");

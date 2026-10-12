@@ -6,7 +6,7 @@ document.addEventListener("DOMContentLoaded", function () {
   fetch(new URL('/api/websmartuser/getAll', baseUrl1), { credentials: "include" })
     .then(res => res.json())
     .then(response => {
-      console.log("User API Response:", response);
+     
       if (response && Array.isArray(response.Data)) {
         response.Data.forEach(u => {
           userMap[String(u.id)] = u.username;
@@ -54,7 +54,7 @@ document.addEventListener("DOMContentLoaded", function () {
         data.forEach(dept => {
           departmentMap[dept.dept_id] = dept.department_name;
         });
-        console.log("Departments loaded:", departmentMap);
+      
       }
     })
     .catch(err => console.error("Failed to load departments", err));
@@ -62,7 +62,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 // ✅ fetchvisitorgatepassData — unchanged
 function fetchvisitorgatepassData() {
-  let selectedFactoryId = localStorage.getItem("selectedFactoryId");
+  let selectedFactoryId = sessionStorage.getItem("selectedFactoryId");
   const apiUrl = new URL(`/api/visitor/jims/visitorgatepass?factoryId=${selectedFactoryId}`, baseUrl1);
 
   fetch(apiUrl, { credentials: "include" })
@@ -71,7 +71,7 @@ function fetchvisitorgatepassData() {
       return response.json();
     })
     .then(data => {
-      console.log('Fetched data:', data);
+    
       const selectElement = document.getElementById('pass');
       if (!selectElement) {
         console.error('Select element with id "pass" not found.');
@@ -106,7 +106,7 @@ function fetchVisitorDetails(visitor_id) {
     .then(data => {
       if (Array.isArray(data) && data.length > 0) {
         const details = data[0];
-        console.log("Visitor Details:", details);
+      
 
         // Ensure containers exist and are visible
         const container12 = document.getElementById("container12");
@@ -121,7 +121,7 @@ function fetchVisitorDetails(visitor_id) {
           if (el) {
             el.innerText = value || '';
             el.textContent = value || ''; // Fallback
-            console.log(`✅ Set ${id} = ${value}`);
+           
           } else {
             console.warn(`⚠️ Element not found: ${id}`);
           }
@@ -156,15 +156,7 @@ function fetchVisitorDetails(visitor_id) {
         setText("vehicleNO",         details.vehicle_No || '');
 
         // Photo
-        const photoEl = document.getElementById("visitorPhoto");
-        if (photoEl) {
-          photoEl.src = details.photo_filename
-            ? baseUrl1 + "/api/visitor/viewImage?fileName=" + details.photo_filename
-            : '';
-          console.log("✅ Photo set:", photoEl.src);
-        } else {
-          console.warn("⚠️ Photo element not found");
-        }
+     setPhoto(details);
 
       } else {
         console.error('No data found for Visitor ID:', visitor_id);
@@ -183,10 +175,10 @@ function fetchVisitorDetails(visitor_id) {
     });
 }
 
-// ✅ Gate pass dropdown change — FIXED to ensure data loads after tab switch
+// Gate pass dropdown change — FIXED to ensure data loads after tab switch
 $('#pass').on('change', function () {
   const selectedGpNo = $(this).val();
-  console.log("Pass selected:", selectedGpNo);
+ 
   
   if (selectedGpNo && selectedGpNo.trim() !== '') {
     // Small delay to ensure DOM is ready after toggleTables cleared it
@@ -200,6 +192,34 @@ $('#pass').on('change', function () {
     if (container12) container12.style.display = "none";
   }
 });
+
+
+function setPhoto(details) {
+  const photoEl = document.getElementById("visitorPhoto");
+  if (!photoEl) return;
+  if (!details.photo_filename) { photoEl.src = ''; return; }
+
+  authFetch(baseUrl1 + "/api/visitor/viewImage?fileName=" + details.photo_filename)
+    .then(response => {
+      if (!response.ok) throw new Error("Photo fetch failed: " + response.status);
+      return response.blob();
+    })
+    .then(blob => { photoEl.src = URL.createObjectURL(blob); })
+    .catch(error => {
+      console.error("Error loading visitor photo:", error);
+      photoEl.src = '';
+    });
+}
+function authFetch(url, options = {}) {
+  return fetch(url, {
+    ...options,
+    credentials: "include",
+    headers: {
+      ...(options.headers || {}),
+      "X-Session-Id": sessionStorage.getItem("session_id") || ""
+    }
+  });
+}
 
 // ✅ Set default dates — unchanged
 document.addEventListener("DOMContentLoaded", function () {
@@ -312,6 +332,8 @@ function fetchCompanyNames() {
     })
     .catch(error => console.error("Error fetching company names:", error));
 }
+
+
 
 function fetchDepartmentNames() {
   fetch(new URL('/api/websmartuser/getAllDepartment', baseUrl1), { method: 'GET', credentials: 'include' })

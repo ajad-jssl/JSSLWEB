@@ -3,7 +3,7 @@
     response.setHeader("Pragma","no-cache");
     response.setDateHeader("Expires",0);
 %>
-<%  long ts = System.currentTimeMillis(); %>
+
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <!DOCTYPE html>
 <html>
@@ -18,7 +18,7 @@
 <link href="css/ruang-admin.min.css" rel="stylesheet">
 <link href="vendor/datatables/dataTables.bootstrap4.min.css" rel="stylesheet">
 <link rel="stylesheet" href="css/main.css">
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
 
 <style>
 .page-heading { font-size:15px; font-weight:600; color:#37499A; margin-bottom:2px; }
@@ -557,16 +557,19 @@ body.has-active-timer #content-wrapper {
 
 <a class="scroll-to-top rounded" href="#page-top"><i class="fas fa-angle-up"></i></a>
 
-<script src="js/config.js"></script>
+
 <script src="vendor/jquery/jquery.min.js"></script>
 <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
 <script src="vendor/jquery-easing/jquery.easing.min.js"></script>
-<script src="js/ruang-admin.min.js"></script>
-<script src="js/logout.js"></script>
-<script src="js/username.js"></script>
-<script src="js/factoryid.js"></script>
-<script src="js/Sessionfilter.js"></script>
-<script src="js/Maintenanceworker.js?v=<%=ts%>"></script>
+<script src="js/config.js?v=<%=jsVersion%>"></script>
+
+<script src="js/logout.js?v=<%=jsVersion%>"></script>
+<script src="js/username.js?v=<%=jsVersion%>"></script>
+<script src="js/factoryid.js?v=<%=jsVersion%>"></script>
+<script src="js/Sessionfilter.js?v=<%=jsVersion%>"></script>
+<script src="js/Maintenanceworker.js?v=<%=jsVersion%>"></script>
+
+<script src="externalLibrary/cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
 <script>
 function toggleNotifDropdown() {
     $('#notifDropdown').toggleClass('open');

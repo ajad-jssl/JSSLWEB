@@ -1,3 +1,35 @@
+
+const MainPage = 'GPMSUserRequest.jsp';
+const UserId = sessionStorage.getItem('username');
+
+let allowedActions = [];
+
+async function loadActions() {
+    try {
+        const response = await fetch(
+            `${baseUrl}/api/page/actions?userId=${encodeURIComponent(UserId)}&pageName=${encodeURIComponent(MainPage)}`,
+            {
+                method: "GET",
+                credentials: "include", // 🔐 send cookies/session
+                headers: {
+                    "Content-Type": "application/json"
+                }
+            }
+        );
+
+        if (!response.ok) {
+            throw new Error("Failed to fetch actions");
+        }
+
+        allowedActions = await response.json();
+		
+		
+
+    } catch (error) {
+        console.error("Error:", error);
+    }
+}
+
 /* =====================================================================
    NGPB REQUEST — ngpbrequest.js
    Non-Returnable Gate Pass
@@ -22,17 +54,36 @@ function ngpbInitSelect2(selector, modalId, placeholder) {
 // ── Open create modal ─────────────────────────────────────────────────
 $("#ngpbcreate").click(function () {
     console.log("ngpb create clicked");
+	
+	  const allowed =allowedActions || [];
+
+	if (!allowed.includes("Insert")) {
+	  alert(" You do not have permission to Insert.");
+	 $("#ngpbCreateModal").modal("hide");
+	  return;
+	}
+	//$('#exampleModalScrollable123').modal('show');
+	
     $("#ngpbCreateModal").modal("show");
 });
 
 // ── Single document.ready ─────────────────────────────────────────────
 $(document).ready(async function () {
+	await loadActions();
+	// Date defaults
+	    const today = new Date().toISOString().split('T')[0];
+	    /*$("#ngpbreturndatee").attr("min", today).val(today);
+	    $("#ngpbreturndateup").attr("min", today).val(today);*/
+	
+	$("#ngpbSubmitVerifyButton").on("click", function () {
+	    $("#ngpbVerifyConfirm").modal("show");
+	});
 
-    // Date defaults
-    const today = new Date().toISOString().split('T')[0];
-    /*$("#ngpbreturndatee").attr("min", today).val(today);
-    $("#ngpbreturndateup").attr("min", today).val(today);*/
-
+	$("#ngpbConfirmVerifyYes").on("click", function () {
+	    $("#ngpbVerifyConfirm").modal("hide");
+	    ngpbSubmitVerification();
+	});
+	
     // Contract locked by default — only unlocked when location = "Site"
     $("#ngpbcontractno").prop("disabled", true).val("");
     $("#ngpbcontractnoup").prop("disabled", true).val("");
@@ -222,6 +273,9 @@ $(document).ready(async function () {
 
     // Confirmed YES → POST
     $("#ngpbConfirmYes").on("click", function () {
+		$("#ngpbConfirmCreate").modal("hide");
+		  $("#ngpbCreateModal").modal("hide");
+		
         const lineItems = ngpbCollectLineItems();
         if (!lineItems) return;
 
@@ -237,7 +291,7 @@ $(document).ready(async function () {
             createdBy        : sessionStorage.getItem("id"),
             requestBy        : sessionStorage.getItem("Empcode"),
             reasondisptach   : $("#ngpbreasondispatch").val().trim() || null,
-            selectfactoryId  : localStorage.getItem("selectedFactoryId"),
+            selectfactoryId  : sessionStorage.getItem("selectedFactoryId"),
             lineItems        : lineItems   // [{ itemid, quantity, price, remarks }]
         };
 
@@ -284,7 +338,7 @@ function loadNgpbUomMaster() {
 
 // ── PR Sequence ───────────────────────────────────────────────────────
 function loadNgpbPRSequence() {
-    const factoryId = localStorage.getItem("selectedFactoryId");
+    const factoryId = sessionStorage.getItem("selectedFactoryId");
     const prefix    = factoryId == "1" ? "NRGPB-PR"
                      : factoryId == "2" ? "NRGPG-PR" : "";
     $.ajax({
@@ -299,14 +353,14 @@ function loadNgpbPRSequence() {
 }
 
 let currentFactoryIdNGPB;
-
+const userId = sessionStorage.getItem("username");
 function ngpbList() {
 
-    currentFactoryIdNGPB = parseInt(localStorage.getItem("selectedFactoryId"), 10);
+    currentFactoryIdNGPB = parseInt(sessionStorage.getItem("selectedFactoryId"), 10);
     const EmpCode = sessionStorage.getItem("Empcode");
 
     if (!currentFactoryIdNGPB || isNaN(currentFactoryIdNGPB)) {
-        console.warn("No valid factory ID in localStorage");
+        console.warn("No valid factory ID in sessionStorage");
         return;
     }
 
@@ -334,6 +388,7 @@ function ngpbList() {
                     const EmpCode = sessionStorage.getItem("Empcode");
                     const url = new URL(`/api/ngpb/pagging/${currentFactoryIdNGPB}`, baseUrl);
                     url.searchParams.append('empCode', EmpCode);
+					url.searchParams.append('userId',userId);
                     url.searchParams.append('page', 0);
                     url.searchParams.append('size', 99999);
 
@@ -390,13 +445,14 @@ function ngpbList() {
             }
         ],
 
-        columns: [
-            { title: "Sl No", orderable: false },
-            { title: "PR No" },
-            { title: "Sent To" },
-            { title: "Edit", orderable: false },
-            { title: "Cancel", orderable: false }
-        ],
+		columns: [
+		    { title: "Sl No", orderable: false },
+		    { title: "PR No" },
+		    { title: "Sent To" },
+		    { title: "Edit", orderable: false },
+		    { title: "Verify", orderable: false },   // NEW
+		    { title: "Cancel", orderable: false }
+		],
 
         ajax: function (data, callback, settings) {
 
@@ -406,6 +462,7 @@ function ngpbList() {
 
             const url = new URL(`/api/ngpb/pagging/${currentFactoryIdNGPB}`, baseUrl);
             url.searchParams.append('empCode', EmpCode);
+			url.searchParams.append('userId',userId);
             url.searchParams.append('page',    page);
             url.searchParams.append('size',    size);
             url.searchParams.append('search',  searchValue);
@@ -426,36 +483,49 @@ function ngpbList() {
 
                     let slNo = data.start + 1;
 
-                    const rows = json.data.map(item => {
+					const rows = json.data.map(item => {
 
-                        let sentTo = "";
-                        if (item.vendor_Name && item.vendor_Name !== "NULL") {
-                            sentTo = ngpbVendorMap[String(item.vendor_Name)] || "";
-                        } else if (item.employee_Name && item.employee_Name !== "NULL") {
-                            sentTo = ngpbEmployeeMap[String(item.employee_Name)]
-                                     || "Employee #" + item.employee_Name;
-                        }
+					    let sentTo = "";
+					    if (item.vendor_Name && item.vendor_Name !== "NULL") {
+					        sentTo = ngpbVendorMap[String(item.vendor_Name)] || "";
+					    } else if (item.employee_Name && item.employee_Name !== "NULL") {
+					        sentTo = ngpbEmployeeMap[String(item.employee_Name)]
+					                 || "Employee #" + item.employee_Name;
+					    }
 
-                        const editIcon =
-                            `<i class="fa fa-pen"
-                                style="color:blue;cursor:pointer;"
-                                onclick="ngpbEdit(${item.request_Id})"
-                                title="Edit"></i>`;
+					    const editIcon =
+					        `<i class="fa fa-pen"
+					            style="color:blue;cursor:pointer;"
+					            onclick="ngpbEdit(${item.request_Id})"
+					            title="Edit"></i>`;
 
-                        const cancelIcon =
-                            `<i class="fa fa-times-circle"
-                                style="color:red;cursor:pointer;"
-                                onclick="cancelNgpb(${item.request_Id})"
-                                title="Cancel"></i>`;
+					    // Verify only meaningful for vendor-type requests — same rule as RGP
+					    const isVendorType = item.vendor_Name && item.vendor_Name !== "NULL";
 
-                        return [
-                            slNo++,
-                            item.pr_No || "",
-                            sentTo,
-                            editIcon,
-                            cancelIcon
-                        ];
-                    });
+					    const verifyIcon = isVendorType
+					        ? `<i class="fa fa-check-circle"
+					              style="color:green;cursor:pointer;"
+					              onclick="ngpbVerifyRgp(${item.request_Id})"
+					              title="Verify"></i>`
+					        : `<i class="fa fa-check-circle"
+					              style="color:#ccc;cursor:not-allowed;"
+					              title="Verify not applicable for employee requests"></i>`;
+
+					    const cancelIcon =
+					        `<i class="fa fa-times-circle"
+					            style="color:red;cursor:pointer;"
+					            onclick="cancelNgpb(${item.request_Id})"
+					            title="Cancel"></i>`;
+
+					    return [
+					        slNo++,
+					        item.pr_No || "",
+					        sentTo,
+					        editIcon,
+					        verifyIcon,
+					        cancelIcon
+					    ];
+					});
 
                     callback({
                         draw:            data.draw,
@@ -481,6 +551,16 @@ function ngpbList() {
 let pendingCancelNgpbId = null;
 
 function cancelNgpb(requestId) {
+	
+	  const allowed =allowedActions || [];
+
+	if (!allowed.includes("Cancel")) {
+	  alert(" You do not have permission to Cancel.");
+	   $("#cancelNgpbModal").modal("hide");
+	  return;
+	}
+	
+	
     pendingCancelNgpbId = requestId;
     $("#cancelNgpbModal").modal("show");
 }
@@ -508,7 +588,8 @@ $("#confirmCancelNgpb").on("click", function () {
                 return;
             }
             console.error("Cancel NGPB failed:", xhr);
-            alert("Failed to cancel NGPB. Please try again.");
+            $("#modalMessage").text("Cancellation is not allowed because one or more line items have already been verified.");
+            $("#messageModal").modal("show");
         }
     });
 
@@ -526,16 +607,21 @@ function loadNgpbVendors() {
             type      : "GET",
             xhrFields : { withCredentials: true },
             success: function (response) {
-                const $v  = $("#ngpbtovendor").empty().append('<option value="1">Select Vendor</option>');
-                const $vu = $("#ngpbtovendorup").empty().append('<option value="1">Select Vendor</option>');
+                const $v   = $("#ngpbtovendor").empty().append('<option value="1">Select Vendor</option>');
+                const $vu  = $("#ngpbtovendorup").empty().append('<option value="1">Select Vendor</option>');
+                const $vuv = $("#ngpbtovendorverify").empty().append('<option value="1">Select Vendor</option>'); // NEW
+
                 response.forEach(function (c) {
                     ngpbVendorMap[String(c.cid)] = c.client_number + " - " + c.name;
                     const opt = $("<option>", { value: c.cid, text: c.client_number + " - " + c.name });
                     $v.append(opt.clone());
                     $vu.append(opt.clone());
+                    $vuv.append(opt.clone());   // NEW
                 });
+
                 $v.trigger("change");
                 $vu.trigger("change");
+                $vuv.trigger("change");        // NEW
                 resolve();
             },
             error: function (err) { console.error(err); resolve(); }
@@ -567,10 +653,327 @@ function loadNgpbEmployees() {
     });
 }
 
+// ── Verify modal state (NGPB) ──────────────────────────────────────
+let ngpbVerifyLineItemsData    = [];
+let ngpbVendorOptionsHtmlCache = "";
+let ngpbVerifyHeaderVendorId   = null;
+
+function ngpbVerifyRgp(requestId) {
+	  const allowed =allowedActions || [];
+
+	if (!allowed.includes("Verify")) {
+	  alert(" You do not have permission to Verify.");
+	
+	  return;
+	}
+
+	
+    $.ajax({
+        url       : new URL("/api/rgp/verify-details/" + requestId, baseUrl),
+        type      : "GET",
+        xhrFields : { withCredentials: true },
+        success: function (response) {
+            if (!response || response.length === 0) return;
+
+            const header = response[0];
+
+            $("#ngpbVerify_RequestId").val(header.Request_Id);
+            $("#ngpbcodeverify").val(header.PR_No || "");
+
+            $("#ngpbtovendorverifyError").hide();
+
+            const isVendorType = header.Vendor_Name && String(header.Vendor_Name) !== "null";
+
+            if (isVendorType) {
+                ngpbVerifyHeaderVendorId = String(header.Vendor_Name);
+
+                $("#ngpbselectvendorver").prop("disabled", true).val("1");
+
+                $("#ngpbtovendorverify")
+                    .prop("disabled", true)
+                    .val(ngpbVerifyHeaderVendorId);
+
+                $("#ngpbemployeeverify")
+                    .empty()
+                    .append('<option value="">-</option>')
+                    .prop("disabled", true);
+
+            } else if (header.Employee_Name && String(header.Employee_Name) !== "null") {
+                ngpbVerifyHeaderVendorId = null;
+
+                $("#ngpbtovendorverify")
+                    .prop("disabled", true)
+                    .val("1");
+
+                $("#ngpbemployeeverify")
+                    .empty()
+                    .append(
+                        `<option value="${header.Employee_Name}" selected>` +
+                        (ngpbEmployeeMap[String(header.Employee_Name)] || header.Employee_Name) +
+                        `</option>`
+                    )
+                    .prop("disabled", true);
+
+            } else {
+                ngpbVerifyHeaderVendorId = null;
+                $("#ngpbtovendorverify").prop("disabled", true).val("1");
+                $("#ngpbemployeeverify").empty().append('<option value="">-</option>').prop("disabled", true);
+            }
+
+            $("#ngpbempaddressverify").empty();
+            if (header.Employee_Sender_Location) {
+                $("#ngpbempaddressverify").append(
+                    `<option value="${header.Employee_Sender_Location}" selected>` +
+                    header.Employee_Sender_Location + `</option>`
+                );
+            } else {
+                $("#ngpbempaddressverify").append('<option value="">-</option>');
+            }
+            $("#ngpbemployeeaddressverify").val(header.Employee_Address || "");
+
+            $("#ngpbcontractnoverify").empty();
+            if (header.Contract_No) {
+                $("#ngpbcontractnoverify").append(
+                    `<option value="${header.Contract_No}" selected>${header.Contract_No}</option>`
+                );
+            } else {
+                $("#ngpbcontractnoverify").append('<option value="">-</option>');
+            }
+
+            $("#ngpbreasondispatchverify").val(header.reasondisptach || "");
+            $("#ngpbremarks5verify").val(header.Remarks || "");
+
+            ngpbVerifyLineItemsData = [];
+            response.forEach(function (row) {
+                if (!row.Item_Id) return;
+                const itemMeta = ngpbItemMasterList.find(
+                    it => String(it.itemid) === String(row.Item_Id)
+                );
+
+                ngpbVerifyLineItemsData.push({
+                    itemRequestId : row.ItemRequest_Id || null,
+                    itemId        : row.Item_Id,
+                    itemLabel     : itemMeta
+                        ? (itemMeta.itemNo + " - " + (itemMeta.itmDescription1 || ""))
+                        : row.Item_Id,
+                    uom           : itemMeta ? (ngpbUomMap[itemMeta.um] || "") : "",
+                    description   : itemMeta ? (itemMeta.itmDescription1 || "") : "",
+                    quantity      : row.Quantity || "",
+                    price         : row.Price || "",
+                    remarks       : row.Item_Remarks || "",
+                    isVerified    : row.Is_Verified === 1 || row.Is_Verified === true,
+                    isLocked      : (row.is_gatepass === true || row.is_gatepass === 1)
+                                        && (row.Is_Verified === 1 || row.Is_Verified === true),
+                    vendorId      : row.Vendor_Id || null
+                });
+            });
+
+            ngpbRenderVerifyLineItems();
+
+            $("#ngpbVerifyModal").modal("show");
+        },
+        error: function (xhr) {
+            console.error("Failed to load NGPB for verify", xhr);
+            alert("Failed to load record. Please try again.");
+        }
+    });
+}
+
+// Header vendor changed → push down to unverified line items
+$(document).on("change", "#ngpbtovendorverify", function () {
+    const newVendorId = $(this).val();
+    ngpbVerifyHeaderVendorId = (newVendorId && newVendorId !== "1") ? newVendorId : null;
+
+    $("#ngpbVerifyTableID tbody tr").each(function () {
+        const $tr        = $(this);
+        const idx        = $tr.attr("id").replace("ngpbverifyrow", "");
+        const $chk       = $("#ngpbverify_check_" + idx);
+        const $vendorSel = $("#ngpbverify_vendor_" + idx);
+
+        if (!$chk.is(":checked")) {
+            $vendorSel.val(ngpbVerifyHeaderVendorId || "1");
+        }
+    });
+
+    $("#ngpbtovendorverifyError").hide();
+});
+
+function ngpbBuildVendorOptionsHtmlCache() {
+    ngpbVendorOptionsHtmlCache = "";
+    Object.keys(ngpbVendorMap).forEach(function (cid) {
+        ngpbVendorOptionsHtmlCache += `<option value="${cid}">${ngpbVendorMap[cid]}</option>`;
+    });
+}
+
+function ngpbRenderVerifyLineItems() {
+    const $tbody = $("#ngpbVerifyTableID tbody").empty();
+
+    if (!ngpbVendorOptionsHtmlCache) {
+        ngpbBuildVendorOptionsHtmlCache();
+    }
+
+    ngpbVerifyLineItemsData.forEach(function (item, i) {
+        const n = i + 1;
+
+        const selectedVendor = item.isVerified
+            ? item.vendorId
+            : (item.vendorId || ngpbVerifyHeaderVendorId);
+
+        let optsHtml = ngpbVendorOptionsHtmlCache;
+        if (selectedVendor) {
+            optsHtml = optsHtml.replace(
+                `value="${selectedVendor}"`,
+                `value="${selectedVendor}" selected`
+            );
+        }
+
+        const vendorDisabledAttr = item.isVerified ? "disabled" : "";
+        const priceReadonlyAttr  = item.isLocked ? "readonly" : "";
+
+        $tbody.append(`
+            <tr id="ngpbverifyrow${n}" data-item-request-id="${item.itemRequestId || ''}">
+                <td>${n}</td>
+                <td><input type="text" class="form-control form-control-sm" value="${item.itemLabel}" readonly></td>
+                <td><input type="text" class="form-control form-control-sm" value="${item.uom}" readonly></td>
+                <td><input type="text" class="form-control form-control-sm" value="${item.description}" readonly></td>
+                <td><input type="text" class="form-control form-control-sm" value="${item.quantity}" readonly></td>
+                <td><input type="text" class="form-control form-control-sm" id="ngpbverify_price_${n}"
+                           value="${item.price}" ${priceReadonlyAttr}></td>
+                <td><input type="text" class="form-control form-control-sm" value="${item.remarks}" readonly></td>
+                <td>
+                    <select class="form-control form-control-sm" id="ngpbverify_vendor_${n}" ${vendorDisabledAttr}>
+                        <option value="">Select Vendor</option>
+                        ${optsHtml}
+                    </select>
+                    <div id="ngpbverify_vendor_${n}_error" class="error-message">Vendor is required</div>
+                </td>
+                <td class="text-center">
+                    <input type="checkbox" id="ngpbverify_check_${n}" class="ngpb-verify-check-item"
+                           style="width:16px;height:16px;"
+                           ${item.isVerified ? "checked" : ""} ${item.isLocked ? "disabled" : ""}>
+                </td>
+            </tr>`);
+    });
+}
+
+$(document).on("change", "[id^='ngpbverify_check_']", function () {
+    const idx        = $(this).attr("id").replace("ngpbverify_check_", "");
+    const $vendorSel = $("#ngpbverify_vendor_" + idx);
+    const $vendorErr = $("#ngpbverify_vendor_" + idx + "_error");
+
+    if ($(this).is(":checked")) {
+        const vendorVal = $vendorSel.val();
+
+        if (!vendorVal || vendorVal === "1") {
+            $(this).prop("checked", false);
+            $vendorErr.show();
+            $vendorSel.addClass("is-invalid");
+            return;
+        }
+
+        $vendorErr.hide();
+        $vendorSel.removeClass("is-invalid");
+        $vendorSel.prop("disabled", true);
+
+    } else {
+        $vendorSel.prop("disabled", false);
+    }
+});
+
+function ngpbSubmitVerification() {
+    const requestId      = $("#ngpbVerify_RequestId").val();
+    const items          = [];
+    let   hasVendorError = false;
+
+    $("#ngpbVerifyTableID tbody tr").each(function () {
+        const $tr           = $(this);
+        const idx           = $tr.attr("id").replace("ngpbverifyrow", "");
+        const itemRequestId = $tr.data("item-request-id")
+                                ? parseInt($tr.data("item-request-id")) : null;
+        const price     = parseFloat($("#ngpbverify_price_" + idx).val());
+        const verified  = $("#ngpbverify_check_" + idx).is(":checked");
+        const vendorVal = $("#ngpbverify_vendor_" + idx).val();
+
+        if (verified && (!vendorVal || vendorVal === "1")) {
+            $("#ngpbverify_vendor_" + idx + "_error").show();
+            $("#ngpbverify_vendor_" + idx).addClass("is-invalid");
+            hasVendorError = true;
+        }
+
+        items.push({
+            itemRequestId,
+            price    : isNaN(price) ? 0 : price,
+            verified,
+            vendor   : (vendorVal && vendorVal !== "1") ? parseInt(vendorVal) : null
+        });
+    });
+
+    if (hasVendorError) {
+        alert("Vendor is mandatory. Please select the vendor before verify.");
+        return;
+    }
+
+    let headerVendor = null;
+    if ($("#ngpbtovendorverify").is(":enabled")) {
+        headerVendor = $("#ngpbtovendorverify").val();
+        if (!headerVendor || headerVendor === "1") {
+            $("#ngpbtovendorverifyError").show();
+            alert("Please select the vendor at header level before verify.");
+            return;
+        }
+    }
+
+    const payload = {
+        verifiedBy   : sessionStorage.getItem("id"),
+        headerVendor : headerVendor,
+        items        : items
+    };
+
+    $.ajax({
+        url         : new URL("/api/rgp/verify/" + requestId, baseUrl),
+        type        : "PUT",
+        contentType : "application/json",
+        data        : JSON.stringify(payload),
+        xhrFields   : { withCredentials: true },
+        success: function (response) {
+            $("#ngpbVerifyModal").modal("hide");
+            if (response === "NO_ITEMS_VERIFIED") {
+                showPopup("Please verify at least one line item.", "NRGPRequest.jsp");
+                return;
+            }
+            showPopup("NGPB verified successfully!", "NRGPRequest.jsp");
+        },
+        error: function (xhr) {
+            $("#ngpbVerifyModal").modal("hide");
+            if (xhr.status === 409 && xhr.responseText === "GATE_PASS_ALREADY_ISSUED") {
+                $("#modalMessage").text("This NRGPB already has a gate pass issued and can no longer be verified.");
+                $("#messageModal").modal("show");
+                return;
+            }
+            if (xhr.status === 400) {
+                $("#modalMessage").text("No item has been verified.");
+                $("#messageModal").modal("show");
+                return;
+            }
+            console.error("Verify NGPB failed:", xhr);
+            alert("Failed to verify NGPB. Please try again.");
+        }
+    });
+}
+
 // ── Edit NGPB → prefill Update modal ──────────────────────────────────
 let ngpbOriginalSnapshot = {};
 
 function ngpbEdit(requestId) {
+	  const allowed =allowedActions || [];
+
+	if (!allowed.includes("Edit")) {
+	  alert(" You do not have permission to Edit.");
+	 
+	  return;
+	}
+	
+	
     $.ajax({
         url       : new URL("/api/rgp/edit/" + requestId, baseUrl),
         type      : "GET",
@@ -579,33 +982,40 @@ function ngpbEdit(requestId) {
             if (!response || response.length === 0) return;
 
             const header = response[0];
+            const hasVerifiedItem = response.some(row => row.Is_Verified === true || row.Is_Verified === 1);
 
             $("#ngpbUpdateId").val(header.Request_Id);
             $("#ngpbcodeup").val(header.PR_No || "");
 
-            // ── Vendor / Employee ─────────────────────────────────
-            // Both fields now use select2, so .val() alone won't repaint the
-            // widget — it needs a "change" event. BUT plain "change" would
-            // also re-fire the business-logic handlers bound to these fields
-            // (in particular #ngpbemployeeup's handler calls
-            // loadNgpbFactoryLocationsUp() with NO args, which would wipe out
-            // the saved location/address we set explicitly below).
-            //
-            // Fix: trigger "change.select2" — select2 listens on this
-            // namespaced event internally to redraw itself, but our own
-            // .on("change", ...) handlers (bound without a namespace) do
-            // NOT fire for a namespaced trigger. This updates the visible
-            // select2 box without touching the custom handlers.
+            // ── Reset any previous lock state before applying fresh state ──
+            $("#ngpbselectvendorup").prop("disabled", false);
+            $("#ngpbtovendorup").prop("disabled", false);
+            $("#ngpbemployeeup").prop("disabled", false);
+            $("#ngpbempaddressup").prop("disabled", false);
+            $("#ngpbemployeeaddressup").prop("readonly", false);
+            $("#ngpbreturndateup").prop("readonly", false);
+            $("#ngpbcontractnoup").prop("disabled", false);
+            $("#ngpbremarks5up").prop("readonly", false);
+            $("#ngpbreasondispatchup").prop("readonly", false);
+           /* $("#ngpbUpdateButton").prop("disabled", true);*/
+            $("#ngpbTableUpdate .bi-trash").show();
+            $("[id^='ngpbaddNewUpdateRowBtn']").show();
+
+            const isVendorType = header.Vendor_Name && String(header.Vendor_Name) !== "null";
+
+            if (isVendorType) {
+                $("#ngpbUpVendorColHeader").show();
+            } else {
+                $("#ngpbUpVendorColHeader").hide();
+            }
+
             if (header.Vendor_Name && String(header.Vendor_Name) !== "null") {
                 $("#ngpbselectvendorup").val("1");
                 $("#ngpbtovendorup")
                     .prop("disabled", false)
                     .val(String(header.Vendor_Name))
                     .trigger("change.select2");
-                $("#ngpbemployeeup")
-                    .prop("disabled", true)
-                    .val("")
-                    .trigger("change.select2");
+                $("#ngpbemployeeup").prop("disabled", true).val("").trigger("change.select2");
                 $("#ngpbempaddressup").prop("disabled", true).val("");
                 $("#ngpbemployeeaddressup").val("").prop("readonly", true);
 
@@ -614,15 +1024,8 @@ function ngpbEdit(requestId) {
                 $("#ngpbemployeeup")
                     .prop("disabled", false)
                     .val(String(header.Employee_Name))
-                    .trigger("change.select2");   // repaint only — does NOT
-                                                   // fire the plain "change"
-                                                   // handler that would call
-                                                   // loadNgpbFactoryLocationsUp()
-                                                   // with no args
-                $("#ngpbtovendorup")
-                    .prop("disabled", true)
-                    .val("")
                     .trigger("change.select2");
+                $("#ngpbtovendorup").prop("disabled", true).val("").trigger("change.select2");
                 $("#ngpbempaddressup").prop("disabled", false);
                 loadNgpbFactoryLocationsUp(
                     header.Employee_Sender_Location || null,
@@ -636,17 +1039,28 @@ function ngpbEdit(requestId) {
                 $("#ngpbemployeeaddressup").val("").prop("readonly", true);
             }
 
-            // ── Return Date ───────────────────────────────────────
             const rd = header.Expected_Return_Date
                 ? header.Expected_Return_Date.toString().split("T")[0] : "";
             $("#ngpbreturndateup").val(rd);
 
-            // ── Contract + Remarks ────────────────────────────────
             loadNgpbContractsUp(header.Contract_No);
             $("#ngpbremarks5up").val(header.Remarks || "");
             $("#ngpbreasondispatchup").val(header.reasondisptach || "");
 
-            // ── Line Items ────────────────────────────────────────
+            // ── Lock the whole header + footer once ANY item is verified ──
+            if (hasVerifiedItem) {
+                $("#ngpbselectvendorup").prop("disabled", true);
+                $("#ngpbtovendorup").prop("disabled", true);
+                $("#ngpbemployeeup").prop("disabled", true);
+                $("#ngpbempaddressup").prop("disabled", true);
+                $("#ngpbemployeeaddressup").prop("readonly", true);
+                $("#ngpbreturndateup").prop("readonly", true);
+                $("#ngpbcontractnoup").prop("disabled", true);
+                $("#ngpbremarks5up").prop("readonly", true);
+                $("#ngpbreasondispatchup").prop("readonly", true);
+               /* $("#ngpbUpdateButton").prop("disabled", true);*/
+            }
+
             $("#ngpbTableUpdate tbody").empty();
             ngpbUpRowCount = 0;
 
@@ -654,6 +1068,22 @@ function ngpbEdit(requestId) {
                 if (!row.Item_Id) return;
                 ngpbUpRowCount++;
                 const n = ngpbUpRowCount;
+
+                // ── Per-row vendor: item_vendor takes priority, fallback to header vendor ──
+                let vendorCellHtml = '';
+                if (isVendorType) {
+                    const rowVendorId = (row.item_vendor !== null && row.item_vendor !== undefined && row.item_vendor !== '')
+                        ? row.item_vendor
+                        : header.Vendor_Name;
+
+                    const rowVendorName = ngpbVendorMap[String(rowVendorId)] || rowVendorId || '';
+
+                    vendorCellHtml = `<td><input type="text" class="form-control form-control-sm"
+                                         id="ngpbupvendor${n}" value="${rowVendorName}" readonly></td>`;
+                } else {
+                    vendorCellHtml = `<td style="display:none;"><input type="text" class="form-control form-control-sm"
+                                         id="ngpbupvendor${n}" value="" readonly></td>`;
+                }
 
                 $("#ngpbTableUpdate tbody").append(`
                     <tr id="ngpbuprow${n}" data-item-request-id="${row.ItemRequest_Id || ''}">
@@ -670,6 +1100,7 @@ function ngpbEdit(requestId) {
                         <td><input type="text" class="form-control form-control-sm" id="ngpbupprice${n}"
                                    onkeydown="return allowOnlyPositive(event)"></td>
                         <td><input type="text" class="form-control form-control-sm" id="ngpbupremarks${n}"></td>
+                        ${vendorCellHtml}
                         <td class="text-center">
                             <i class="bi bi-trash text-danger" style="cursor:pointer;font-size:16px;"
                                onclick="ngpbDeleteUpdateRow(this)" title="Delete"></i>
@@ -681,13 +1112,27 @@ function ngpbEdit(requestId) {
                 $("#ngpbupitemno" + n).val(String(row.Item_Id)).trigger("change");
                 ngpbGetUpdateItemDetails(n);
 
-                $("#ngpbupqty"    + n).val(row.Quantity     || "");
-                $("#ngpbupprice"  + n).val(row.Price        || "");
+                $("#ngpbupqty"     + n).val(row.Quantity     || "");
+                $("#ngpbupprice"   + n).val(row.Price        || "");
                 $("#ngpbupremarks" + n).val(row.Item_Remarks || "");
+
+                const isThisRowVerified = row.Is_Verified === true || row.Is_Verified === 1;
+
+                if (isThisRowVerified) {
+                    $("#ngpbupitemno"   + n).prop("disabled", true);
+                    $("#ngpbupqty"      + n).prop("readonly", true);
+                    $("#ngpbupprice"    + n).prop("readonly", true);
+                    $("#ngpbupremarks"  + n).prop("readonly", true);
+                    $("#ngpbuprow"      + n).find(".bi-trash").hide();
+                }
             });
 
             if (ngpbUpRowCount === 0) {
                 ngpbUpRowCount = 1;
+                const emptyVendorCellHtml = isVendorType
+                    ? `<td><input type="text" class="form-control form-control-sm" id="ngpbupvendor1" value="" readonly></td>`
+                    : `<td style="display:none;"><input type="text" class="form-control form-control-sm" id="ngpbupvendor1" value="" readonly></td>`;
+
                 $("#ngpbTableUpdate tbody").append(`
                     <tr id="ngpbuprow1" data-item-request-id="">
                         <td>1</td>
@@ -700,6 +1145,7 @@ function ngpbEdit(requestId) {
                         <td><input type="text" class="form-control form-control-sm" id="ngpbupprice1"
                                    onkeydown="return allowOnlyPositive(event)"></td>
                         <td><input type="text" class="form-control form-control-sm" id="ngpbupremarks1"></td>
+                        ${emptyVendorCellHtml}
                         <td class="text-center">
                             <i class="bi bi-trash text-danger" style="cursor:pointer;font-size:16px;"
                                onclick="ngpbDeleteUpdateRow(this)" title="Delete"></i>
@@ -709,11 +1155,12 @@ function ngpbEdit(requestId) {
                 ngpbInitSelect2("#ngpbupitemno1", "#ngpbUpdateModal", "-- Select Item --");
             }
 
-            // ── Snapshot AFTER all fields are filled ──────────────
-            // Small delay so async dropdowns (contracts/locations) settle
             setTimeout(function () {
                 ngpbOriginalSnapshot = ngpbCaptureUpdateSnapshot();
             }, 600);
+
+            $("#ngpbtovendorup").trigger("change.select2");
+            $("#ngpbemployeeup").trigger("change.select2");
 
             $("#ngpbUpdateModal").modal("show");
         },
@@ -879,7 +1326,7 @@ $("#ngpbUpdateButton").on("click", function () {
 });
 // FIX: cast contract_id to String so .val() matches "15" == "15"
 function loadNgpbContractsUp(selectedContractId) {
-    const factoryId = localStorage.getItem("selectedFactoryId");
+    const factoryId = sessionStorage.getItem("selectedFactoryId");
     $.ajax({
         url       : new URL("/jssl/contracts/allContracts", baseUrl),
         type      : "GET",
@@ -901,7 +1348,7 @@ function loadNgpbContractsUp(selectedContractId) {
 
 // FIX: accepts saved location + address to pre-fill after options load
 function loadNgpbFactoryLocationsUp(selectedLocationId, savedAddress) {
-    const currentFactoryId = localStorage.getItem("selectedFactoryId");
+    const currentFactoryId = sessionStorage.getItem("selectedFactoryId");
     $.ajax({
         url       : new URL("/api/allfactory", baseUrl),
         type      : "GET",
@@ -952,7 +1399,7 @@ function loadNgpbFactoryLocationsUp(selectedLocationId, savedAddress) {
 
 // ── Contracts ─────────────────────────────────────────────────────────
 function loadNgpbContracts() {
-    const factoryId = localStorage.getItem("selectedFactoryId");
+    const factoryId = sessionStorage.getItem("selectedFactoryId");
     $.ajax({
         url       : new URL("/jssl/contracts/allContracts", baseUrl),
         type      : "GET",
@@ -1261,7 +1708,7 @@ function ngpbValidateHeaderUp() {
 
 // ── Load Factory Locations (exclude current selected factory) ─────────
 function loadNgpbFactoryLocations() {
-    const currentFactoryId = localStorage.getItem("selectedFactoryId");
+    const currentFactoryId = sessionStorage.getItem("selectedFactoryId");
 
     $.ajax({
         url       : new URL("/api/allfactory", baseUrl),

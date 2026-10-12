@@ -41,8 +41,8 @@ document.getElementById("#modalScroll").addEventListener("click", function () {
 	$('#exampleModalScrollable').modal('show');
 });
  
-// Fetch selectedFactoryId from localStorage
-const selectedFactoryId = localStorage.getItem('selectedFactoryId');
+// Fetch selectedFactoryId from sessionStorage
+const selectedFactoryId = sessionStorage.getItem('selectedFactoryId');
 console.log('selectedFactoryId:', selectedFactoryId);
  
 document.addEventListener("DOMContentLoaded", function () {
@@ -52,7 +52,7 @@ document.addEventListener("DOMContentLoaded", function () {
 if (selectedFactoryId) {
 	fetchUserList();
 } else {
-	console.error('No factory ID found in localStorage.');
+	console.error('No factory ID found in sessionStorage.');
 }
  
 // Function to fetch the list of users/vendors based on the selected factory ID
@@ -89,8 +89,8 @@ async function fetchUserList() {
 			tableContent += `
                 <tr>
                     <td>${item.gst_number}</td>
-                    <td>${item.bu_code}</td>
-                    <td>${item.business_unit_name}</td>location
+                    <td>${item.buCode}</td>
+                    <td>${item.businessunit_name}</td>location
                     <td>${item.location}</td>
                     <td><i class="fa fa-pen" onclick="editRecord('${item.business_unit_id}')"></i></td>
                 </tr>
@@ -124,11 +124,11 @@ async function fetchUserList() {
 }
  
 document.addEventListener("DOMContentLoaded", function() {
-	const selectedFactoryId = localStorage.getItem("selectedFactoryId"); // Get factory_id from localStorage
+	const selectedFactoryId = sessionStorage.getItem("selectedFactoryId"); // Get factory_id from sessionStorage
 	if (selectedFactoryId) {
 		fetchSaleOrderTypes(selectedFactoryId);
 	} else {
-		console.error("No factory ID found in localStorage.");
+		console.error("No factory ID found in sessionStorage.");
 	}
 });
  
@@ -164,7 +164,7 @@ async function fetchSaleOrderTypes(factoryId) {
 		json.StateDetailsNew.forEach((type) => {
 			if (type.id && type.state_name) { // Ensure both values exist
 				const option = document.createElement("option");
-				option.value = type.id; // Backend keeps saleorder_id
+				option.value = type.state_id; // Backend keeps saleorder_id
 				option.textContent = type.state_name + '-' + type.state_id;
 				//option.dataset.stateId = String(type.state_id); // Display saleorder_typename
 				option.dataset.stateId = String(type.state_id).padStart(2, '0');
@@ -177,11 +177,11 @@ async function fetchSaleOrderTypes(factoryId) {
 }
  
 document.addEventListener("DOMContentLoaded", function() {
-	const selectedFactoryId = localStorage.getItem("selectedFactoryId"); // Get factory_id from localStorage
+	const selectedFactoryId = sessionStorage.getItem("selectedFactoryId"); // Get factory_id from sessionStorage
 	if (selectedFactoryId) {
 		fetchSaleOrderTypesedit(selectedFactoryId);
 	} else {
-		console.error("No factory ID found in localStorage.");
+		console.error("No factory ID found in sessionStorage.");
 	}
 });
  
@@ -239,11 +239,11 @@ async function fetchSaleOrderTypesedit(factoryId) {
 }
  
 document.addEventListener("DOMContentLoaded", function() {
-	const selectedFactoryId = localStorage.getItem("selectedFactoryId"); // Get factory_id from localStorage
+	const selectedFactoryId = sessionStorage.getItem("selectedFactoryId"); // Get factory_id from sessionStorage
 	if (selectedFactoryId) {
 		fetchSaleOrganization(selectedFactoryId);
 	} else {
-		console.error("No factory ID found in localStorage.");
+		console.error("No factory ID found in sessionStorage.");
 	}
 });
  
@@ -290,11 +290,11 @@ async function fetchSaleOrganization(factoryId) {
 }
  
 document.addEventListener("DOMContentLoaded", function() {
-	const selectedFactoryId = localStorage.getItem("selectedFactoryId"); // Get factory_id from localStorage
+	const selectedFactoryId = sessionStorage.getItem("selectedFactoryId"); // Get factory_id from sessionStorage
 	if (selectedFactoryId) {
 		fetchSaleOrganizationedit(selectedFactoryId);
 	} else {
-		console.error("No factory ID found in localStorage.");
+		console.error("No factory ID found in sessionStorage.");
 	}
 });
  
@@ -347,6 +347,10 @@ function openModalAdd() {
 	var code = document.getElementById('inputNamebar').value.trim();
 	var org = document.getElementById('orgDropdown').value.trim();
 	var pannumber = document.getElementById('panNumber').value.trim();
+	var city = document.getElementById('city').value.trim();
+	var district = document.getElementById('District').value.trim();
+	var country = document.getElementById('Country').value.trim();
+	var pinno = document.getElementById('PinNo').value.trim();
  
 	// STATE SELECT + data-state-id
 	const stateSelect = document.getElementById('stateDropdown');
@@ -424,6 +428,42 @@ function openModalAdd() {
 	} else {
 	    document.getElementById('productCodeErrorcreditsspan').style.display = "none";
 	}
+	
+	if (city === '') {
+		showError = true;
+		document.getElementById('productCodeErrorcreditsscity').innerText =
+			"Please enter city.";
+		document.getElementById('productCodeErrorcreditsscity').style.display = "inline-block";
+		} else {
+		document.getElementById('productCodeErrorcreditsscity').style.display = "none";
+		}
+		
+	if (district === '') {
+		showError = true;
+		document.getElementById('productCodeErrorcreditssDistrict').innerText =
+			"Please enter district.";
+		document.getElementById('productCodeErrorcreditssDistrict').style.display = "inline-block";
+		} else {
+		document.getElementById('productCodeErrorcreditssDistrict').style.display = "none";
+		}
+			
+	if (country === '') {
+		showError = true;
+		document.getElementById('productCodeErrorcreditssCountry').innerText =
+			"Please enter Country.";
+		document.getElementById('productCodeErrorcreditssCountry').style.display = "inline-block";
+		} else {
+		document.getElementById('productCodeErrorcreditssCountry').style.display = "none";
+		}
+		
+		if (pinno === '') {
+		showError = true;
+		document.getElementById('productCodeErrorcreditssPinNo').innerText =
+			 "Please enter Pin No.";
+		document.getElementById('productCodeErrorcreditssPinNo').style.display = "inline-block";
+		} else {
+		document.getElementById('productCodeErrorcreditssPinNo').style.display = "none";
+		}
  
 	/* ================= FINAL ================= */
 	if (!showError) {
@@ -443,7 +483,8 @@ function addevent() {
 		xhrFields: {
 			withCredentials: true
 		},
-		data: jQuery.param({ business_unit_name: categoryPrefix.value, gst_number: inputName.value, location: inputNamebar.value, state_id: stateDropdown.value, org_id: orgDropdown.value, created_by: createdById ,panNumber:panNumber}),
+		data: jQuery.param({ business_unit_name: categoryPrefix.value, gst_number: inputName.value, location: inputNamebar.value, 
+			state_id: stateDropdown.value, org_id: orgDropdown.value, created_by: createdById, panNumber:panNumber.value, city:city.value, District:District.value, Country:Country.value, PinNo:PinNo.value}),
 		success: function(data) {
 			var result = data.message; // No need to stringify
  
@@ -488,6 +529,10 @@ function openModaledit() {
 	const code = document.getElementById('inputNamebar11').value.trim();
 	const org = document.getElementById('orgDropdown11').value.trim();
 	const pannumber = document.getElementById('panNumberUp').value.trim();
+	const city = document.getElementById('cityup').value.trim();
+	const district = document.getElementById('Districtup').value.trim();
+	const country = document.getElementById('Countryup').value.trim();
+	const pinNo = document.getElementById('PinNoup').value.trim();
 	const stateSelect = document.getElementById('stateDropdown11');
 	const state = stateSelect ? stateSelect.value.trim() : '';
 	const selectedOption = stateSelect ? stateSelect.options[stateSelect.selectedIndex] : null;
@@ -550,6 +595,26 @@ function openModaledit() {
 	    document.getElementById('productCodeErrorcreditsspanUp').style.display = "none";
 	}
 	
+	if (city === '') {
+		showEditError('productCodeErrorcreditsscityup', "Please enter city.");
+		showError = true;
+	} else hideEditError('productCodeErrorcreditsscityup');
+		
+	if (district === '') {
+		showEditError('productCodeErrorcreditssDistrictup', "Please enter district.");
+		showError = true;
+	} else hideEditError('productCodeErrorcreditssDistrictup');
+			
+	if (country === '') {
+		showEditError('productCodeErrorcreditssCountryup', "Please enter country.");
+		showError = true;
+	} else hideEditError('productCodeErrorcreditssCountryup');
+	
+	if (pinNo === '') {
+		showEditError('productCodeErrorcreditssPinNoup', "Please enter pin No.");
+		showError = true;
+	} else hideEditError('productCodeErrorcreditssPinNoup');
+	
 	if (!showError) {
 		$('#exampleModalCenterupdate').modal('show');
 	}
@@ -569,56 +634,68 @@ function hideEditError(id) {
 	el.style.display = "none";
 }
  
- 
 let originalBusinessUnitData = {};
 function editRecord(business_unit_id) {
-	// alert("ID: " + id);
-	// Make an AJAX request to the API
-		  const allowed = allowedActions || [];
- 
-	if (!allowed.includes("Edit")) {
-	  alert(" You do not have permission to edit.");
-	  return;
-	}
-	const url = new URL(`/jssl/businessunits/searchbusinessunits`, baseUrl);
-	var params = [['business_unit_id', business_unit_id]];
-	url.search = new URLSearchParams(params).toString();
- 
-	fetch(url, { credentials: "include" })
-		.then(response => response.json())
-		.then(response => {
-			if (response.status === 'yes' && response.Data) {
-				// Populate form fields with the data from the response
-				$('#categoryPrefix11').val(response.Data.business_unit_name);
-				$('#inputName11').val(response.Data.gst_number);
-				$('#inputNamebar11').val(response.Data.location);
-				$('#stateDropdown11').val(response.Data.state_id);
-				$('#orgDropdown11').val(response.Data.org_id);
-				$('#id11').val(response.Data.business_unit_id);
-				$("#panNumberUp").val(response.Data.pan_number ?? '');
-				
-				
-				originalBusinessUnitData = {
-				                    business_unit_name: response.Data.business_unit_name,
-				                    gst_number:response.Data.gst_number,
-				                    location: response.Data.location,
-				                    state_id: response.Data.state_id,
-				                    org_id: response.Data.org_id,
-				                    business_unit_id: response.Data.business_unit_id,
-									 pan_number: response.Data.pan_number ?? ''
-									
-				                };
-				
-				// Open the modal
-				$('#exampleModalScrollableedit').modal('show');
-			} else {
-				console.error('Error: No valid data found.');
-			}
-		})
-		.catch(error => {
-			// Handle error
-			console.error('Error:', error);
-		});
+    const allowed = allowedActions || [];
+
+    if (!allowed.includes("Edit")) {
+        alert(" You do not have permission to edit.");
+        return;
+    }
+    const url = new URL(`/jssl/businessunits/searchbusinessunits`, baseUrl);
+    var params = [['business_unit_id', business_unit_id]];
+    url.search = new URLSearchParams(params).toString();
+
+    // Fetch business unit data and country list in parallel
+    Promise.all([
+        fetch(url, { credentials: "include" }).then(res => res.json()),
+        getCountryList()
+    ])
+    .then(([response, countryList]) => {
+        if (response.status === 'yes' && response.Data) {
+            // Populate form fields with the data from the response
+            $('#categoryPrefix11').val(response.Data.business_unit_name);
+            $('#inputName11').val(response.Data.gst_number);
+            $('#inputNamebar11').val(response.Data.location);
+            $('#stateDropdown11').val(response.Data.state_id);
+            $('#orgDropdown11').val(response.Data.org_id);
+            $('#id11').val(response.Data.business_unit_id);
+            $("#panNumberUp").val(response.Data.pan_number ?? '');
+            $("#cityup").val(response.Data.city ?? '');
+            $("#Districtup").val(response.Data.district ?? '');
+            $("#PinNoup").val(response.Data.pinNo ?? '');
+
+            // Map country id -> country name
+			const countryMatch = countryList.find(
+			    c => String(c.id) === String(response.Data.country) ||
+			         c.country_name.toUpperCase() === String(response.Data.country).toUpperCase()
+			);
+			const countryName = countryMatch ? countryMatch.country_name : (response.Data.country ?? '');
+			$("#Countryup").val(countryName);
+
+            originalBusinessUnitData = {
+                business_unit_name: response.Data.business_unit_name,
+                gst_number: response.Data.gst_number,
+                location: response.Data.location,
+                state_id: response.Data.state_id,
+                org_id: response.Data.org_id,
+                business_unit_id: response.Data.business_unit_id,
+                pan_number: response.Data.pan_number ?? '',
+                city: response.Data.city ?? '',
+                district: response.Data.district ?? '',
+                country: response.Data.country ?? '',   // still keep original id if needed for saving later
+                pinNo: response.Data.pinNo ?? ''
+            };
+
+            // Open the modal
+            $('#exampleModalScrollableedit').modal('show');
+        } else {
+            console.error('Error: No valid data found.');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+    });
 }
  
  
@@ -631,7 +708,11 @@ function getCurrentBusinessUnitData() {
         state_id: $('#stateDropdown11').val(),
         org_id: $('#orgDropdown11').val(),
         business_unit_id: $('#id11').val(),
-		pan_number: $('#panNumberUp').val().trim()
+		pan_number: $('#panNumberUp').val().trim(),
+		city: $('#cityup').val().trim(),
+		district: $('#Districtup').val().trim(),
+		country: $('#Countryup').val().trim(),
+		pinNo: $('#PinNoup').val().trim()
     };
 }
  
@@ -672,41 +753,81 @@ function editevent(){
 }
  
 function editeventUpdated() {
-	
-	const gstChanged = isGstChanged();
-	// Validate role code and role description
-	$.ajax({
-		url: new URL('/jssl/businessunits/updateBusinessUnit', baseUrl), // Move 'const' to the correct place
-		type: 'POST',
-		dataType: 'json',
-		xhrFields: {
-			withCredentials: true
-		},
-		data: jQuery.param({ business_unit_name: categoryPrefix11.value, gst_number: inputName11.value.trim(), location: inputNamebar11.value, state_id: stateDropdown11.value, org_id: orgDropdown11.value, modified_by: createdById, business_unit_id: id11.value,gstChanged: gstChanged,panNumberUp:panNumberUp.value }),
-		success: function(data) {
-			var result = data.message; // No need to stringify
- 
-			if (result === "Success") {
-				// Store permissions in sessionStorage
-				const popup = $('<div class="popup">Busniess unit Details updated Successfully!</div>')
-					.appendTo('body').hide().fadeIn(400);
- 
-				setTimeout(function() {
-					popup.fadeOut(400, function() {
-						$(this).remove();
-						window.location = 'businessunit.jsp'; // Redirect to role list page
-					});
-				}, 800);
-			} else {
-				const errorMessage = data.message || 'Failed to create country.';
-				$('#errorMessageup').text(errorMessage); // Set the error message dynamically
-				$('#exampleModalCenterDupUP').modal('show'); // Show the modal with the error message
-				$('#exampleModalCenterupdate').modal('hide');
-			}
-		},
-		error: function() {
-			// Handle AJAX error
-			console.error('Request failed.');
-		}
-	});
+    const gstChanged = isGstChanged();
+
+    $.ajax({
+        url: new URL('/jssl/businessunits/updateBusinessUnit', baseUrl),
+        type: 'POST',
+        dataType: 'json',
+        xhrFields: {
+            withCredentials: true
+        },
+        data: jQuery.param({
+            business_unit_name: $('#categoryPrefix11').val().trim(),
+            gst_number: $('#inputName11').val().trim(),
+            location: $('#inputNamebar11').val().trim(),
+            state_id: $('#stateDropdown11').val(),
+            org_id: $('#orgDropdown11').val(),
+            modified_by: createdById,
+            business_unit_id: $('#id11').val(),
+            gstChanged: gstChanged,
+            panNumberUp: $('#panNumberUp').val().trim(),
+            cityup: $('#cityup').val().trim(),
+            Districtup: $('#Districtup').val().trim(),
+            Countryup: $('#Countryup').val().trim(),
+            PinNoup: $('#PinNoup').val().trim()
+        }),
+        success: function(data) {
+            var result = data.message;
+
+            if (result === "Success") {
+                const popup = $('<div class="popup">Busniess unit Details updated Successfully!</div>')
+                    .appendTo('body').hide().fadeIn(400);
+
+                setTimeout(function() {
+                    popup.fadeOut(400, function() {
+                        $(this).remove();
+                        window.location = 'businessunit.jsp';
+                    });
+                }, 800);
+            } else {
+                const errorMessage = data.message || 'Failed to create country.';
+                $('#errorMessageup').text(errorMessage);
+                $('#exampleModalCenterDupUP').modal('show');
+                $('#exampleModalCenterupdate').modal('hide');
+            }
+        },
+        error: function(xhr, status, err) {
+            console.error('Request failed.', status, err, xhr.responseText);
+        }
+    });
+}
+
+let countryListCache = null;
+
+async function getCountryList() {
+    if (countryListCache) {
+        return countryListCache;
+    }
+    try {
+        const url = new URL(`/jssl/country/getAllCountryListNew`, baseUrl);
+        const response = await fetch(url, { credentials: "include" });
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status} - ${response.statusText}`);
+        }
+
+        const data = await response.json();
+
+        if (data.status === 'yes' && data.AllCountryDetailsNew) {
+            countryListCache = data.AllCountryDetailsNew;
+            return countryListCache;
+        }
+
+        console.warn('Unexpected country list response:', data);
+        return [];
+    } catch (error) {
+        console.error('Error fetching country list:', error);
+        return [];
+    }
 }

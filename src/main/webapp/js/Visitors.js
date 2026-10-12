@@ -26,7 +26,7 @@ async function loadActions() {
 
         allowedActions = await response.json();
 
-        console.log("Allowed Actions:", allowedActions);
+      
 
     } catch (error) {
         console.error("Error:", error);
@@ -57,13 +57,13 @@ document.getElementById("modalScroll1").addEventListener("click", function () {
 let rowCount = 0; // Counter to keep track of dynamic row IDs
 let initialVisitorData = null;
 document.addEventListener("DOMContentLoaded", function() {
-	/*loadActions1();*/
-    // First, check if there's already an initial row
-    addRow(); // Initially add a row
-    // Populate the dropdowns for the first row
-    fetchuom(1);
-    fetctype(1);
-    fetchUserList(selectedFactoryId);
+	
+ 
+  
+
+    //fetchuom(1);
+   // fetctype(1);
+   // fetchUserList(selectedFactoryId);
 });
 
 let departmentMap = {}; // dept_id → department_name
@@ -80,7 +80,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 data.forEach(dept => {
                     departmentMap[dept.dept_id] = dept.department_name;
                 });
-                console.log("Departments loaded:", departmentMap);
+                
             }
         })
         .catch(err => console.error("Failed to load departments", err));
@@ -137,7 +137,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 if (userResponse && userResponse.Data && userResponse.Data.dept1) {
                     departmentInput.value = userResponse.Data.dept1 || '';
                     departmentIdInput.value = userResponse.Data.department || '';
-                    console.log(departmentIdInput.value); // Optional debug
+                   
                 } else {
                     departmentInput.value = '';
                     departmentIdInput.value = '';
@@ -165,60 +165,7 @@ $("#exampleModalScrollable123").on('shown.bs.modal', function() {
 });
 
 
-document.addEventListener("DOMContentLoaded", function() {
-    const requestedSelect = document.getElementById('requestednon1');
-    const departmentInput = document.getElementById('department6');
 
-    // 1️⃣ Fetch all users for the dropdown
-    fetch(new URL('/jssl/user/listuser', baseUrl1), { credentials: "include" })
-        .then(response => response.json())
-        .then(data => {
-            if (data && Array.isArray(data.Data)) {
-                requestedSelect.innerHTML = '<option value="">Select employee</option>';
-                data.Data.forEach(user => {
-                    const option = document.createElement('option');
-                    option.value = user.id;
-                    option.textContent = user.username;
-                    requestedSelect.appendChild(option);
-                });
-
-                // Optional: initialize Select2 if you use it
-                if (window.jQuery && $.fn.select2) {
-                    $('#requestednon1').select2({
-                        placeholder: 'Select an employee',
-                        allowClear: true
-                    });
-                }
-            } else {
-                console.error("No users found or invalid response format.");
-            }
-        })
-        .catch(error => console.error('Error fetching users:', error));
-
-    // 2️⃣ On user selection, fetch the department name
-    requestedSelect.addEventListener('change', function() {
-        const selectedUserId = this.value;
-
-        if (!selectedUserId) {
-            departmentInput.value = '';
-            return;
-        }
-
-        fetch(new URL(`/jssl/user/search?id=${selectedUserId}`, baseUrl1), { credentials: "include" })
-            .then(response => response.json())
-            .then(userResponse => {
-                if (userResponse && userResponse.Data && userResponse.Data.dept1) {
-                    departmentInput.value = userResponse.Data.dept1; // Set department text
-                } else {
-                    departmentInput.value = '';
-                }
-            })
-            .catch(error => {
-                console.error('Error fetching user info:', error);
-                departmentInput.value = '';
-            });
-    });
-});
 
 document.addEventListener("DOMContentLoaded", function() {
     const requestedSelect = $("#meet1"); // Use jQuery for Select2
@@ -282,15 +229,15 @@ document.addEventListener("DOMContentLoaded", function() {
 });
 
 
-document.addEventListener("DOMContentLoaded", function() {
+/*document.addEventListener("DOMContentLoaded", function() {
     // Fetch contract data from the backend (replace with your actual API endpoint)
     fetch(new URL('/jssl/user/listuser', baseUrl1), {
         credentials: "include"
     })
-        /*  fetch('http://localhost:8004/api/vtscontract/all')  // This is your Spring Boot API endpoint*/
+          fetch('http://localhost:8004/api/vtscontract/all')  // This is your Spring Boot API endpoint
         .then(response => response.json())  // Parse the JSON response
         .then(data => {
-            console.log(data);  // Log the data to the console for debugging
+           
             // Get the select element for contract5
             const contractSelect = document.getElementById('employee');
 
@@ -321,7 +268,7 @@ document.addEventListener("DOMContentLoaded", function() {
             const contractSelect = document.getElementById('employee');
             contractSelect.innerHTML = '<option value="">Error loading data</option>';
         });
-});
+});*/
 
 let selectedvisitorId = null;
 
@@ -330,41 +277,37 @@ document.addEventListener("DOMContentLoaded", function() {
     document.getElementById("createvisitorentry").addEventListener("click", function() {
 
         if (validatevisitorentryFields()) {
-            console.log("Create clicked - Modal will show");
+           
             $("#exampleModalCenter200").modal("show");
         } else {
-            console.log("Validation failed - Modal will not show");
+            
         }
     });
 
     document.querySelector(".btn-secondary[data-dismiss='modal']").addEventListener("click", function() {
-        console.log("No clicked - Modal will hide");
+        
         $("#exampleModalCenter200").modal("hide");
     });
 
     document.getElementById("confirmvisitorentryyes").addEventListener("click", function() {
-        console.log("Yes clicked - Proceeding with creation");
+     
         $("#exampleModalCenter200").modal("hide");
         visitorentry(); // Ensure this function is defined elsewhere
     });
 
-    // Update - "Submit" button click
-    //	$("#updatevisitors").click(function () {
-    //	    console.log("Update clicked - Modal will show");
-    //	    $("#exampleModalCenter201").modal("show");
-    //	});
+
     $("#updatevisitors").on("click", function() {
 
         if (!validationbeforeUpdate()) {
             return; // stop update if validation fails
         }
 
-        console.log("Validation passed - Modal will show");
+      
         $("#exampleModalCenter201").modal("show");
     });
 
     $("#cancelvisitormodal").click(function() {
-        console.log("No clicked - Modal will hide");
+        
         $("#exampleModalCenter201").modal("hide");
     });
 
@@ -493,7 +436,7 @@ function loadPassTypes() {
 }
 
 document.addEventListener("DOMContentLoaded", function() {
-    const selectedFactoryId = localStorage.getItem('selectedFactoryId');
+    const selectedFactoryId = sessionStorage.getItem('selectedFactoryId');
     const vehicleSelect = $("#contact"); // jQuery Select2
 
     // Fetch vehicle list
@@ -666,7 +609,7 @@ document.addEventListener('DOMContentLoaded', function() {
 document.addEventListener("DOMContentLoaded", function() {
 	
 	    let userMap = {};
-	    let selectedFactoryId = localStorage.getItem("selectedFactoryId");
+	    let selectedFactoryId = sessionStorage.getItem("selectedFactoryId");
 
 	    fetch(new URL('/api/websmartuser/getAll', baseUrl1), {
 	        credentials: "include"
@@ -674,7 +617,7 @@ document.addEventListener("DOMContentLoaded", function() {
 	    .then(res => res.json())
 	    .then(response => {
 
-	        console.log("User API Response:", response);
+	       
 
 	        if (response && Array.isArray(response.Data)) {
 
@@ -682,7 +625,7 @@ document.addEventListener("DOMContentLoaded", function() {
 	                userMap[String(u.id)] = u.username;
 	            });
 
-	          /*  console.log("User Map Ready:", userMap);*/
+	         
 	        } else {
 	            console.error("Invalid response format");
 	        }
@@ -791,7 +734,7 @@ document.addEventListener("DOMContentLoaded", function() {
         }
 
         // If everything is valid, show the confirmation modal
-        console.log("Create clicked - Modal will show");
+     
         $("#exampleModalCenter205").modal("show");
     });
 
@@ -855,7 +798,7 @@ document.addEventListener("DOMContentLoaded", function() {
             vehicleSelect.html('<option value=" ">Select vehicle Type</option>');
             vehicleSelect1.html('<option value=" ">Select vehicle Type</option>');
 
-            console.log("API Response for vehicle types:", data);
+            
 
             // Populate both dropdowns
             data.forEach(vehicle => {
@@ -1018,8 +961,8 @@ $(document).on('click', '#modal_okk', function() {
     $('#exampleModalCenterDupUPcon').modal('hide');
 });
 
-const selectedFactoryId = localStorage.getItem('selectedFactoryId');
-console.log('selectedFactoryId:', selectedFactoryId);
+const selectedFactoryId = sessionStorage.getItem('selectedFactoryId');
+
 
 function visitorentry() {
     const selecttype = document.getElementById("selecttype").value;
@@ -1110,8 +1053,8 @@ document.getElementById("capture").addEventListener("click", function() {
 
 
 
-const factoryId = localStorage.getItem('selectedFactoryId'); // Use the correct variable name
-console.log('Factory ID being sent:', selectedFactoryId);
+const factoryId = sessionStorage.getItem('selectedFactoryId'); // Use the correct variable name
+
 
 function visitorout(selectedId) {
     const outremarks = document.getElementById("out_remarks").value;
@@ -1155,9 +1098,13 @@ function visitorout(selectedId) {
             alert('An error occurred. Please try again.');
         });
 }
+
+
+
+
 function fetchAndDisplayVisitors() {
 
-    const factoryId = parseInt(localStorage.getItem("selectedFactoryId"));
+    const factoryId = parseInt(sessionStorage.getItem("selectedFactoryId"));
 
     if (!factoryId || isNaN(factoryId)) {
         console.warn("No valid factory ID");
@@ -1334,7 +1281,7 @@ async function editvisitor(v_id) {
             if (dept) departmentName = dept.department_name;
         }
 
-        console.log('Visitor Data:', visitor);
+     
 
         // Plain input fields
         document.getElementById('visitorname1').value = visitor.visitor_name || '';
@@ -1432,7 +1379,7 @@ function hasVisitorDataChanged() {
 
 // Ensure fetchCompanyDetails uses the correct input IDs
 function fetchCompanyDetails(companyId) {
-    console.log('Fetching details for company ID:', companyId);
+  
     fetch(new URL(`/api/VMScompany/company/jims/details?company_id=${companyId}`, baseUrl1), {
         credentials: "include"
     })
@@ -1443,7 +1390,7 @@ function fetchCompanyDetails(companyId) {
             return response.json();
         })
         .then(data => {
-            console.log('Parsed company details:', data);
+          
             if (Array.isArray(data) && data.length > 0) {
                 const company = data[0];
                 window.tlocationInput.value = company.City_name || '';
@@ -1483,8 +1430,7 @@ async function updateVisitor(v_id) {
         factoryId: selectedFactoryId
     };
 
-    console.log("the this getting the whoem to meet");
-    console.log(updatedVisitor.whom_to_meet);
+ 
     try {
         // Update visitor
         const visitorResponse = await fetch(apiUrl, {
@@ -1500,7 +1446,7 @@ async function updateVisitor(v_id) {
             throw new Error(`Failed to update visitor: ${visitorResponse.status}`);
         }
 
-        console.log('Update successful');
+    
         $('#exampleModalScrollable12').modal('hide');
         //  fetchAndDisplayVisitors(); // Refresh table
         showPopup("Visitor and company updated successfully!", "VMSEntry.jsp");

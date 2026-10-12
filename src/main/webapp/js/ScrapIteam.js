@@ -41,7 +41,7 @@ document.getElementById("modalScroll").addEventListener("click", function () {
 	$('#exampleModalScrollable').modal('show');
 });
 
-const selectedFactoryId = localStorage.getItem('selectedFactoryId');
+const selectedFactoryId = sessionStorage.getItem('selectedFactoryId');
 console.log('selectedFactoryId:', selectedFactoryId);
 
 document.addEventListener("DOMContentLoaded", function () {
@@ -51,7 +51,7 @@ document.addEventListener("DOMContentLoaded", function () {
 if (selectedFactoryId) {
     fetchUserList();
 } else {
-    console.error('No factory ID found in localStorage.');
+    console.error('No factory ID found in sessionStorage.');
 }
 
 function fetchUserList() {
@@ -105,11 +105,11 @@ function fetchUserList() {
 }
 
 document.addEventListener("DOMContentLoaded", function () {
-    const selectedFactoryId = localStorage.getItem("selectedFactoryId"); // Get factory_id from localStorage
+    const selectedFactoryId = sessionStorage.getItem("selectedFactoryId"); // Get factory_id from sessionStorage
     if (selectedFactoryId) {
         fetchSaleOrderTypes();
     } else {
-        console.error("No factory ID found in localStorage.");
+        console.error("No factory ID found in sessionStorage.");
     }
 });
 
@@ -156,11 +156,11 @@ async function fetchSaleOrderTypes() {
 }
 
 document.addEventListener("DOMContentLoaded", function () {
-    const selectedFactoryId = localStorage.getItem("selectedFactoryId"); // Get factory_id from localStorage
+    const selectedFactoryId = sessionStorage.getItem("selectedFactoryId"); // Get factory_id from sessionStorage
     if (selectedFactoryId) {
         fetchSaleOrderTypesupdate();
     } else {
-        console.error("No factory ID found in localStorage.");
+        console.error("No factory ID found in sessionStorage.");
     }
 });
 

@@ -1,6 +1,69 @@
+
+
+const currentPage1 = window.location.pathname.split("/").pop() + '.jsp';
+const UserId = sessionStorage.getItem('username');
+let allowedActions = [];
+
+async function loadActions() {
+    try {
+        const response = await fetch(
+            `${baseUrl}/api/page/actions?userId=${encodeURIComponent(UserId)}&pageName=${encodeURIComponent(currentPage1)}`,
+            {
+                method: "GET",
+                credentials: "include",
+                headers: { "Content-Type": "application/json" }
+            }
+        );
+
+        if (!response.ok) throw new Error("Failed to fetch actions");
+
+        allowedActions = await response.json();
+
+    } catch (error) {
+        console.error("Error:", error);
+    }
+}
+
+document.addEventListener("DOMContentLoaded", async function () {
+    await loadActions();
+    if (!allowedActions.includes("view")) {
+        blockUI();
+        return;
+    }
+});
+
+// ✅ blockUI — same as VMS
+function blockUI() {
+  const container = document.getElementById("container-wrapper");
+  if (!container) return;
+
+  container.style.pointerEvents = "none";
+  container.style.userSelect = "none";
+  container.style.opacity = "0.5";
+  container.style.position = "relative";
+
+  const overlay = document.createElement("div");
+  overlay.id = "contentBlockOverlay";
+  overlay.style.cssText = `
+    position: absolute; top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.6); z-index: 999;
+    display: flex; justify-content: center;
+    align-items: center; color: white;
+    font-size: 22px; text-align: center;
+  `;
+  overlay.innerHTML = `
+    <div>
+      🚫 Access Denied <br>
+      <small>You don't have permission to view this page</small>
+    </div>
+  `;
+  container.appendChild(overlay);
+}
 /* ═══════════════════════════════════════════════════════
    G2 Load Report — Factory -> Contract -> Phase -> Load -> Fetch -> Export
    Written in the same style as QCEntry.js: plain DOM + fetch(new URL(path, baseUrl1)).
+   Phase filter is now a multi-select checkbox dropdown (was a single <select>).
 ═══════════════════════════════════════════════════════ */
 
 const G2_BASE_URL = "/jssl/g2/loadreport";
@@ -15,7 +78,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const requiredIds = [
         "factorySelect", "fromDate", "toDate",
-        "contractInput", "phaseInput", "loadInput",
+        "contractInput", "phaseDropdownMenu", "loadInput",
         "fetchBtn", "exportBtn", "exportPdfBtn", "reportBody"
     ];
 
@@ -27,12 +90,29 @@ document.addEventListener("DOMContentLoaded", function () {
         );
     }
 
+    // ---- Phase checkbox dropdown open/close wiring ----
+    const phaseDropdown = document.getElementById("phaseDropdown");
+    const phaseToggle = document.getElementById("phaseDropdownToggle");
+    const phaseMenu = document.getElementById("phaseDropdownMenu");
+
+    if (phaseToggle) {
+        phaseToggle.addEventListener("click", function (e) {
+            e.stopPropagation();
+            phaseMenu.classList.toggle("show");
+        });
+    }
+
+    document.addEventListener("click", function (e) {
+        if (phaseDropdown && !phaseDropdown.contains(e.target)) {
+            phaseMenu.classList.remove("show");
+        }
+    });
+
     const contractInput = document.getElementById("contractInput");
-    const phaseInput = document.getElementById("phaseInput");
     const loadInput = document.getElementById("loadInput");
 
     if (contractInput) resetDropdown(contractInput, "Select Contract");
-    if (phaseInput) resetDropdown(phaseInput, "Select Phase");
+    resetPhaseDropdown("Select contract first");
     if (loadInput) resetDropdown(loadInput, "Select Load");
     disableExportButtons();
 
@@ -47,11 +127,13 @@ document.addEventListener("DOMContentLoaded", function () {
     if (fromDate) fromDate.addEventListener("change", onDateRangeChange);
     if (toDate) toDate.addEventListener("change", onDateRangeChange);
     if (contractInput) contractInput.addEventListener("change", onContractChange);
-    if (phaseInput) phaseInput.addEventListener("change", onPhaseChange);
     if (loadInput) loadInput.addEventListener("change", onLoadChange);
     if (fetchBtn) fetchBtn.addEventListener("click", fetchReport);
     if (exportBtn) exportBtn.addEventListener("click", exportToExcel);
     if (exportPdfBtn) exportPdfBtn.addEventListener("click", exportToPDF);
+
+    const typeSelect = document.getElementById("typeselect");
+    if (typeSelect) typeSelect.addEventListener("change", onTypeChange);
 });
 
 /* -------------------- UTIL -------------------- */
@@ -82,10 +164,89 @@ function selectedText(selectId) {
     return el && el.selectedOptions.length ? el.selectedOptions[0].text : "";
 }
 
+/* ═══════════════════════════════════════════════════════
+   PHASE CHECKBOX DROPDOWN — helpers
+═══════════════════════════════════════════════════════ */
+function resetPhaseDropdown(message) {
+    const menu = document.getElementById("phaseDropdownMenu");
+    const label = document.getElementById("phaseDropdownLabel");
+    if (menu) menu.innerHTML = '<div class="checkbox-dropdown-empty">' + message + '</div>';
+    if (label) label.textContent = "Select Phase";
+    if (menu) menu.classList.remove("show");
+}
+
+function renderPhaseCheckboxes(phases) {
+    const menu = document.getElementById("phaseDropdownMenu");
+    menu.innerHTML = "";
+
+    if (!phases.length) {
+        menu.innerHTML = '<div class="checkbox-dropdown-empty">No phases found</div>';
+        updatePhaseLabel();
+        return;
+    }
+
+    // "Select All" row
+/*    const allRow = document.createElement("label");
+    allRow.className = "checkbox-dropdown-item select-all";
+    allRow.innerHTML = `<input type="checkbox" id="phaseSelectAll" hidden> Select All`;
+    menu.appendChild(allRow);*/
+
+    phases.forEach(phase => {
+        const row = document.createElement("label");
+        row.className = "checkbox-dropdown-item";
+        row.innerHTML =
+            `<input type="checkbox" class="phaseCheckbox" value="${phase}"> ${phase}`;
+        menu.appendChild(row);
+    });
+
+    // Individual checkbox change
+    menu.querySelectorAll(".phaseCheckbox").forEach(cb => {
+        cb.addEventListener("change", function () {
+            //syncSelectAllState();
+            onPhaseChange();
+        });
+    });
+
+    // Select All toggle
+  /*  document.getElementById("phaseSelectAll").addEventListener("change", function () {
+        const checked = this.checked;
+        menu.querySelectorAll(".phaseCheckbox").forEach(cb => cb.checked = checked);
+        onPhaseChange();
+    });*/
+
+    updatePhaseLabel();
+}
+
+function syncSelectAllState() {
+    const boxes = document.querySelectorAll(".phaseCheckbox");
+    const selectAll = document.getElementById("phaseSelectAll");
+    if (!selectAll) return;
+    selectAll.checked = boxes.length > 0 &&
+        Array.from(boxes).every(cb => cb.checked);
+}
+
+function getSelectedPhases() {
+    return Array.from(document.querySelectorAll(".phaseCheckbox:checked"))
+        .map(cb => cb.value);
+}
+
+function updatePhaseLabel() {
+    const label = document.getElementById("phaseDropdownLabel");
+    if (!label) return;
+    const selected = getSelectedPhases();
+    if (selected.length === 0) {
+        label.textContent = "Select Phase";
+    } else if (selected.length === 1) {
+        label.textContent = selected[0];
+    } else {
+        label.textContent = selected.length + " phases selected";
+    }
+}
+
 /* -------------------- STEP 1: FACTORY CHANGE -> LOAD CONTRACTS -------------------- */
 function onFactoryChange() {
     resetDropdown(document.getElementById("contractInput"), "Select Contract");
-    resetDropdown(document.getElementById("phaseInput"), "Select Phase");
+    resetPhaseDropdown("Select contract first");
     resetDropdown(document.getElementById("loadInput"), "Select Load");
     disableExportButtons();
 
@@ -132,19 +293,22 @@ function loadContracts(factory) {
 /* -------------------- DATE RANGE CHANGE -------------------- */
 // Dates only filter Phases/Loads, so Contracts are left untouched here.
 function onDateRangeChange() {
-    resetDropdown(document.getElementById("phaseInput"), "Select Phase");
+    resetPhaseDropdown("Select Phase");
     resetDropdown(document.getElementById("loadInput"), "Select Load");
     disableExportButtons();
 }
 
 /* -------------------- STEP 2: CONTRACT CHANGE -> LOAD PHASES -------------------- */
 function onContractChange() {
-    resetDropdown(document.getElementById("phaseInput"), "Select Phase");
+    resetPhaseDropdown("Loading…");
     resetDropdown(document.getElementById("loadInput"), "Select Load");
     disableExportButtons();
 
     const contractId = document.getElementById("contractInput").value;
-    if (!contractId) return;
+    if (!contractId) {
+        resetPhaseDropdown("Select Phase");
+        return;
+    }
 
     loadPhases();
 }
@@ -154,6 +318,8 @@ function loadPhases() {
     const contractId = document.getElementById("contractInput").value;
     const fromDate = document.getElementById("fromDate").value;
     const toDate = document.getElementById("toDate").value;
+
+    resetPhaseDropdown("Loading…");
 
     fetch(
         new URL(
@@ -166,27 +332,25 @@ function loadPhases() {
     .then(data => {
         if (data.error) {
             console.error(data.error);
+            resetPhaseDropdown("Select Phase");
             return;
         }
-        const phaseDDL = document.getElementById("phaseInput");
-        resetDropdown(phaseDDL, "Select Phase");
-        (data.Data || []).forEach(phase => {
-            const opt = document.createElement("option");
-            opt.value = phase;
-            opt.textContent = phase;
-            phaseDDL.appendChild(opt);
-        });
+        renderPhaseCheckboxes(data.Data || []);
     })
-    .catch(err => console.error("Failed to load phases", err));
+    .catch(err => {
+        console.error("Failed to load phases", err);
+        resetPhaseDropdown("Select Phase");
+    });
 }
 
 /* -------------------- STEP 3: PHASE CHANGE -> LOAD LOADS -------------------- */
 function onPhaseChange() {
+    updatePhaseLabel();
     resetDropdown(document.getElementById("loadInput"), "Select Load");
     disableExportButtons();
 
-    const phase = document.getElementById("phaseInput").value;
-    if (!phase) return;
+    const selectedPhases = getSelectedPhases();
+    if (selectedPhases.length === 0) return;
 
     loadLoads();
 }
@@ -194,14 +358,15 @@ function onPhaseChange() {
 function loadLoads() {
     const factory = document.getElementById("factorySelect").value;
     const contractId = document.getElementById("contractInput").value;
-    const phase = document.getElementById("phaseInput").value;
+    const selectedPhases = getSelectedPhases();
+    const phaseParam = selectedPhases.map(p => encodeURIComponent(p)).join(",");
     const fromDate = document.getElementById("fromDate").value;
     const toDate = document.getElementById("toDate").value;
     const type = document.getElementById("typeselect").value;
 
     fetch(
         new URL(
-            `${G2_BASE_URL}/loads?factory=${factory}&contractId=${contractId}&phase=${encodeURIComponent(phase)}&fromDate=${fromDate}&toDate=${toDate}`,
+            `${G2_BASE_URL}/loads?factory=${factory}&contractId=${contractId}&phase=${phaseParam}&fromDate=${fromDate}&toDate=${toDate}`,
             baseUrl1
         ),
         { method: "GET", credentials: "include" }
@@ -216,7 +381,7 @@ function loadLoads() {
         const loadDDL = document.getElementById("loadInput");
 
         // Summary -> Show All
-        if (type === "1") {
+        if (type === "1" || type==='2') {
             resetDropdown(loadDDL, "All");
         } else {
             resetDropdown(loadDDL, "Select Load");
@@ -230,7 +395,7 @@ function loadLoads() {
         });
 
         // Select "All" by default for Summary
-        if (type === "1") {
+        if (type === "1" || type === "1") {
             loadDDL.selectedIndex = 0;
         }
     })
@@ -248,24 +413,28 @@ function onLoadChange() {
 function fetchReport() {
 
     const type = document.getElementById("typeselect").value;
-	if (type === "1") {
-	    // Summary
-	    REPORT_COLUMNS = ALL_REPORT_COLUMNS.filter(col =>
-	        !["mark", "ssize", "dims", "paintcode", "descr"].includes(col.key)
-	    );
-	} else {
-	    // Detail
-	    REPORT_COLUMNS = [...ALL_REPORT_COLUMNS];
-	}
+    if (type === "1") {
+        // Summary
+        REPORT_COLUMNS = ALL_REPORT_COLUMNS.filter(col =>
+            !["mark", "ssize", "dims", "paintcode", "descr"].includes(col.key)
+        );
+    } else {
+        // Detail
+        REPORT_COLUMNS = [...ALL_REPORT_COLUMNS];
+    }
+
     const factory = document.getElementById("factorySelect").value;
     const contractId = document.getElementById("contractInput").value;
-    const phase = document.getElementById("phaseInput").value;
+    const selectedPhases = getSelectedPhases();
+    const phaseParam = selectedPhases.map(p => encodeURIComponent(p)).join(",");
     const loadId = document.getElementById("loadInput").value;
     const fromDate = document.getElementById("fromDate").value;
     const toDate = document.getElementById("toDate").value;
 
     // Validation
-    if (!factory || !contractId || !phase || (type === "2" && !loadId)) {
+    if (!factory || !contractId || selectedPhases.length === 0 || (type === "2" && loadId)) {
+		console.log("Type:", type);
+		console.log("Load ID:", loadId);
         const reportBody = document.getElementById("reportBody");
         reportBody.innerHTML =
             '<div class="state-msg error">Please select Factory, Contract, Phase' +
@@ -286,7 +455,7 @@ function fetchReport() {
         type: selectedText("typeselect"),
         factory: selectedText("factorySelect"),
         contract: selectedText("contractInput"),
-        phase: phase,
+        phase: selectedPhases.join(", "),
         load: loadId ? selectedText("loadInput") : "All",
         fromDate: fromDate,
         toDate: toDate
@@ -307,7 +476,7 @@ function fetchReport() {
         apiUrl =
             `${G2_BASE_URL}/fetch-summary-report?factory=${factory}` +
             `&contractId=${contractId}` +
-            `&phase=${encodeURIComponent(phase)}` +
+            `&phase=${phaseParam}` +
             `&fromDate=${encodeURIComponent(fromDate)}` +
             `&toDate=${encodeURIComponent(toDate)}`;
 
@@ -316,16 +485,20 @@ function fetchReport() {
             apiUrl += `&loadId=${encodeURIComponent(loadId)}`;
         }
 
-    } else {
-        // Detail Report
-        apiUrl =
-            `${G2_BASE_URL}/fetch-report?factory=${factory}` +
-            `&contractId=${contractId}` +
-            `&phase=${encodeURIComponent(phase)}` +
-            `&loadId=${encodeURIComponent(loadId)}` +
-            `&fromDate=${encodeURIComponent(fromDate)}` +
-            `&toDate=${encodeURIComponent(toDate)}`;
-    }
+		} else {
+		    // Detail Report
+		    apiUrl =
+		        `${G2_BASE_URL}/fetch-report?factory=${factory}` +
+		        `&contractId=${contractId}` +
+		        `&phase=${phaseParam}` +
+		        `&fromDate=${encodeURIComponent(fromDate)}` +
+		        `&toDate=${encodeURIComponent(toDate)}`;
+
+		    // Add loadId only when a specific load is selected
+		    if (loadId) {
+		        apiUrl += `&loadId=${encodeURIComponent(loadId)}`;
+		    }
+		}
 
     fetch(
         new URL(apiUrl, baseUrl1),
@@ -365,6 +538,7 @@ function fetchReport() {
         fetchBtn.disabled = false;
     });
 }
+
 /* ═══════════════════════════════════════════════════════
    RENDER TABLE
 ═══════════════════════════════════════════════════════ */
@@ -383,18 +557,18 @@ let REPORT_COLUMNS = [
     { key: 'tweight', label: 'Total Weight', numeric: true },
     { key: 'tarea', label: 'Total Area', numeric: true },
     { key: 'descr', label: 'Description' },
-	{ key: 'Assembledqty', label: 'Ass Qty', numeric: true },
+    { key: 'Assembledqty', label: 'Ass Qty', numeric: true },
     { key: 'AssembledWeight', label: 'Ass Total Wt', numeric: true },
-	{ key: 'Weldedqty', label: 'Weld Qty', numeric: true },
+    { key: 'Weldedqty', label: 'Weld Qty', numeric: true },
     { key: 'WeldedWeight', label: 'Weld Total Wt', numeric: true },
-	{ key: 'treatedqty', label: 'Treat Qty', numeric: true },
+    { key: 'treatedqty', label: 'Treat Qty', numeric: true },
     { key: 'TreatedWeight', label: 'Treat Total Wt', numeric: true },
-	{ key: 'DispatchedWeight', label: 'Dispatched Total Wt', numeric: true },
-	{ key: 'DispatchStatus', label: 'Dispatch Status' },
+    { key: 'DispatchedWeight', label: 'Dispatched Total Wt', numeric: true },
+    { key: 'DispatchStatus', label: 'Dispatch Status' },
     { key: 'DispatchBalanceQty', label: 'Dispatch Bal Qty', numeric: true },
-
 ];
 const ALL_REPORT_COLUMNS = [...REPORT_COLUMNS];
+
 function statusBadge(value) {
     if (value === 'Shipped') {
         return '<span style="color:#198754;font-weight:600;">Shipped</span>';
@@ -467,7 +641,7 @@ function goToPage(p) { currentPage = p; renderReportTable(currentReportData); }
 
 /* -------------------- MAIN RENDER (now paginated) -------------------- */
 function renderReportTable(data) {
-	
+
     const reportBody = document.getElementById("reportBody");
 
     const totalPages = Math.ceil(data.length / rowsPerPage) || 1;
@@ -650,8 +824,9 @@ function exportToPDF() {
     doc.save(fileName.replace(/\s+/g, '_'));
 }
 
-document.getElementById("typeselect").addEventListener("change", onTypeChange);
-
+/* ═══════════════════════════════════════════════════════
+   TYPE CHANGE — resets everything downstream
+═══════════════════════════════════════════════════════ */
 function onTypeChange() {
 
     // Clear Factory
@@ -661,7 +836,7 @@ function onTypeChange() {
     resetDropdown(document.getElementById("contractInput"), "Select Contract");
 
     // Clear Phase
-    resetDropdown(document.getElementById("phaseInput"), "Select Phase");
+    resetPhaseDropdown("Select contract first");
 
     // Clear Load
     resetDropdown(document.getElementById("loadInput"), "Select Load");

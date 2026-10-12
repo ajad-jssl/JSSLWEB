@@ -12,6 +12,15 @@ $(document).ready(function () {
     loadMyTickets();
     loadNotifications();
     loadEmployeeDropdown();
+	
+	$('#empCodeSelect').select2({
+	      theme: 'bootstrap',
+	      placeholder: '-- Select Employee --',
+	      allowClear: true,
+	      width: '100%',
+	      dropdownParent: $('#reportModal')   // critical: keeps dropdown working inside Bootstrap modal
+	  });
+	
 
     var username = sessionStorage.getItem('username') ||
                    sessionStorage.getItem('user_name') || 'Unknown User';
@@ -37,10 +46,8 @@ $(document).ready(function () {
 
 /* ── EMPLOYEE DROPDOWN ──────────────────────────────────────────────────── */
 function loadEmployeeDropdown() {
-    var factoryId = parseInt(localStorage.getItem('selectedFactoryId') || '0');
-
-    /* locid mapping: adjust if your factory→locid mapping differs */
-    var locid = 3 ;
+    var factoryId = parseInt(sessionStorage.getItem('selectedFactoryId') || '0');
+    var locid = 3;
 
     $.ajax({
         url: new URL('/api/ticket/employee/getEmployeesByLocation', baseUrl).toString(),
@@ -60,11 +67,11 @@ function loadEmployeeDropdown() {
                     '</option>'
                 );
             });
+            $dd.trigger('change.select2'); // refresh Select2 to reflect new options
         },
         error: function () { console.error('Unable to load employee list'); }
     });
 }
-
 /* ── MACHINE DROPDOWNS ───────────────────────────────────────────────────── */
 function loadMachineDescriptionDropdown() {
     $.ajax({
@@ -84,7 +91,7 @@ function loadMachineDescriptionDropdown() {
 }
 
 function onCategoryChange() {
-	var factoryId = parseInt(localStorage.getItem('selectedFactoryId') || '0');
+	var factoryId = parseInt(sessionStorage.getItem('selectedFactoryId') || '0');
     var machineDescriptionId = $('#catSelect').val();
     var $ms = $('#machineSelect');
     $ms.empty().append('<option value="">-- Select Machine --</option>')
@@ -134,6 +141,9 @@ function selectBroke(el, val, tab) {
     updateBrokeSelectionSummary();
 }
 
+
+
+
 function updateBrokeSelectionSummary() {
     var list = Array.from(selectedBrokeSet);
     if (list.length === 0) {
@@ -156,39 +166,33 @@ function switchBrokeTab(t) {
 
 /* ── SUBMIT REPORT ───────────────────────────────────────────────────────── */
 function submitReport() {
+    var $btn = $('.btn-submit-modal');
+    if ($btn.prop('disabled')) return; // ignore double-clicks while a request is in flight
+
     var cat       = $('#catSelect').val();
     var machine   = $('#machineSelect').val();
     var desc      = $('#problemDesc').val().trim();
     var userId    = parseInt(sessionStorage.getItem('id') || '0');
-    var factoryId = parseInt(localStorage.getItem('selectedFactoryId') || '0');
+    var factoryId = parseInt(sessionStorage.getItem('selectedFactoryId') || '0');
 
-    /* Employee fields */
     var empCode = $('#empCodeSelect').val();
     var empName = $('#empNameHidden').val().trim();
     var mobile  = $('#mobileInput').val().trim();
 
     var whatBroke = Array.from(selectedBrokeSet).join(', ');
 
-    console.log('Factory:', factoryId);
-
-    if (!empCode) {
-        alert('Please select an employee.');
-        return;
-    }
-    if (!cat || !machine) {
-        alert('Please select machine type and machine.');
-        return;
-    }
-    if (selectedBrokeSet.size === 0) {
-        alert('Please select at least one item from "What Broke?".');
-        return;
-    }
-    if (!desc) {
-        alert('Please enter a problem description.');
-        return;
-    }
+    if (!empCode) { alert('Please select an employee.'); return; }
+	if(!mobile){alert("please Select the Mobile Number..."); return;}
+    if (!cat || !machine) { alert('Please select machine type and machine.'); return; }
+    if (!desc) { alert('Please enter a problem description.'); return; }
     if (!factoryId) { alert('Factory not selected. Please select a factory first.'); return; }
     if (!userId)    { alert('Session expired. Please log in again.'); return; }
+if(!mobile){alert("please Select the Mobile Number...")}
+	
+	
+    /* Lock the button so it can't be clicked again until the request finishes */
+    $btn.prop('disabled', true)
+        .html('<i class="fas fa-spinner fa-spin"></i> Submitting...');
 
     $.ajax({
         url: new URL('/api/ticket/raise', baseUrl).toString(),
@@ -213,20 +217,30 @@ function submitReport() {
                 loadMyTickets();
                 setTimeout(function () {
                     $('#reportModal').modal('hide');
-                    resetModal();
+                    resetModal(); // resetModal will re-enable the button
                 }, 1800);
             } else {
                 alert('Error: ' + response.message);
+                resetSubmitButton();
             }
         },
-        error: function () { alert('Failed to submit. Please try again.'); }
+        error: function () {
+            alert('Failed to submit. Please try again.');
+            resetSubmitButton();
+        }
     });
+}
+
+function resetSubmitButton() {
+    $('.btn-submit-modal')
+        .prop('disabled', false)
+        .html('<i class="fas fa-paper-plane"></i> Submit Report');
 }
 
 /* ── LOAD MY TICKETS ─────────────────────────────────────────────────────── */
 function loadMyTickets() {
     var userId    = parseInt(sessionStorage.getItem('id') || '0');
-    var factoryId = parseInt(localStorage.getItem('selectedFactoryId') || '0');
+    var factoryId = parseInt(sessionStorage.getItem('selectedFactoryId') || '0');
     if (!userId || !factoryId) return;
 
     $.ajax({
@@ -428,7 +442,7 @@ function getTickerWorkerStageLabel(status) {
 /* ── NOTIFICATIONS ───────────────────────────────────────────────────────── */
 function loadNotifications() {
     var userId    = parseInt(sessionStorage.getItem('user_id') || '0');
-    var factoryId = parseInt(localStorage.getItem('selectedFactoryId') || '0');
+    var factoryId = parseInt(sessionStorage.getItem('selectedFactoryId') || '0');
     if (!userId || !factoryId) return;
 
     $.ajax({
@@ -488,7 +502,7 @@ function markNotifRead(notifId, el) {
 
 /* ── RESET MODAL ─────────────────────────────────────────────────────────── */
 function resetModal() {
-    $('#empCodeSelect').val('');
+    $('#empCodeSelect').val('').trigger('change.select2');
     $('#mobileInput').val('');
     $('#empNameHidden').val('');
     $('#catSelect').val('');
@@ -500,4 +514,5 @@ function resetModal() {
     $('.broke-chip').removeClass('sel-elec sel-mech sel-hydr');
     $('#brokeSelectionSummary').text('').hide();
     $('#successAlert').hide();
+    resetSubmitButton();
 }

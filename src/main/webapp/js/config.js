@@ -1,18 +1,48 @@
-const baseUrl = 'http://localhost:8004';
-const baseUrl1 = 'http://localhost:8004';
-/*const baseUrl = 'http://10.10.94.4:8004';
-const baseUrl1 = 'http://10.10.94.4:8004';*/
-/*const baseUrl = 'http://10.10.94.112:8004';
-const baseUrl1 = 'http://10.10.94.112:8004';*/
 
-/*const baseUrl = 'https://jims.jssl.in';
-const baseUrl1 = 'https://jims.jssl.in';*/
 
-/*const baseUrls = {
-    default: 'http://localhost:8089',
-    factory_1: 'http://10.1.2.121:8082',
-    factory_2: 'http://example.com:8083' // Add as many as needed
-};*/
-//10.10.94.112:8090/jssl2024
+const baseUrl = 'https://jims.jssl.in';
+const baseUrl1 = 'https://jims.jssl.in';
 
-//const baseUrl = 'http://10.10.94.112:8090';
+
+(function () {
+	$('#sidebarToggleTop').click(function () {
+		     $('#accordionSidebar').toggleClass('toggled');
+		 });
+
+  
+    const originalFetch = window.fetch;
+
+    window.fetch = function (url, options = {}) {
+        const sessionId = sessionStorage.getItem("session_id");
+
+        options.headers = {
+            ...options.headers,
+            ...(sessionId ? { "X-Session-Id": sessionId } : {})
+        };
+        options.credentials = options.credentials || "include";
+
+        return originalFetch(url, options);
+    };
+
+  
+    function attachAjaxPrefilter() {
+        if (window.$ && $.ajaxPrefilter) {
+            $.ajaxPrefilter(function (options, originalOptions, jqXHR) {
+                const sessionId = sessionStorage.getItem("session_id");
+                if (sessionId) {
+                    jqXHR.setRequestHeader("X-Session-Id", sessionId);
+                }
+                options.xhrFields = options.xhrFields || {};
+                options.xhrFields.withCredentials = true;
+            });
+        }
+    }
+
+    if (window.$ && $.ajaxPrefilter) {
+        attachAjaxPrefilter();
+    } else {
+       
+        document.addEventListener("DOMContentLoaded", attachAjaxPrefilter);
+    }
+
+})();

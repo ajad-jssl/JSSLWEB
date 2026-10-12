@@ -45,6 +45,58 @@ function loadAllowedActions() {
 }
 
 
+// ---------- Shared helper ----------
+function normalizeText(str) {
+    return (str || "").replace(/\s+/g, " ").trim().toLowerCase();
+}
+
+/**
+ * Dedupe a list of {id, label} records by normalized label text.
+ * If a duplicate is found, prefer the one whose id matches selectedId
+ * (so pre-selection still works correctly even if the backend has
+ * two different ids pointing to the same display text).
+ */
+function dedupeByLabel(records, selectedId) {
+    const map = new Map(); // key: normalized label -> record
+    records.forEach((rec) => {
+        const key = normalizeText(rec.label);
+        if (!key) return;
+        const existing = map.get(key);
+        if (!existing) {
+            map.set(key, rec);
+        } else if (selectedId && String(rec.id) === String(selectedId)) {
+            // incoming one is the actual selected record — prefer it
+            map.set(key, rec);
+        }
+        // else: keep the first one seen, drop this duplicate
+    });
+    return Array.from(map.values());
+}
+
+function populateSelect(selectElement, records, selectedId, placeholder, fallbackText) {
+    selectElement.innerHTML = `<option value="">${placeholder}</option>`;
+
+    let matched = false;
+    records.forEach((rec) => {
+        const option = document.createElement("option");
+        option.value = rec.id;
+        option.textContent = rec.label;
+        if (selectedId && String(rec.id) === String(selectedId)) {
+            option.selected = true;
+            matched = true;
+        }
+        selectElement.appendChild(option);
+    });
+
+    if (!matched && fallbackText) {
+        const fallbackOption = document.createElement("option");
+        fallbackOption.value = fallbackText;
+        fallbackOption.textContent = fallbackText;
+        fallbackOption.selected = true;
+        selectElement.insertBefore(fallbackOption, selectElement.children[1] || null);
+    }
+}
+
 document.getElementById("modalScroll1").addEventListener("click", function () {
     // show custom message instead of opening modal
 	  //const allowed = window.allowedActions || [];
@@ -59,17 +111,25 @@ document.getElementById("modalScroll1").addEventListener("click", function () {
 
 document.addEventListener("DOMContentLoaded", function () {
 	loadAllowedActions();
-    const selectedFactoryId = localStorage.getItem("selectedFactoryId"); // Get factory_id from localStorage
+	fetchBusinessUnitList();       
+	fetchInvoiceAddressList();     
+    fetchWorkOrderList();          
+    fetchConsigneeAddressList();  
+	fetchservice();
+	fetchhsn(); 
+	fetchServiceCodeList();   
+	fetchHsnCodeList();  
+    const selectedFactoryId = sessionStorage.getItem("selectedFactoryId"); // Get factory_id from sessionStorage
     if (selectedFactoryId) {
         fetchCont(selectedFactoryId); // Fetch contractor list on page load
     } else {
-        console.error("No factory ID found in localStorage.");
+        console.error("No factory ID found in sessionStorage.");
     }
 
     // Add event listener for contractor dropdown change
     document.getElementById("cont").addEventListener("change", function () {
         const selectedContractorId = this.value; // Get selected contractor ID
-        const selectedFactoryId = localStorage.getItem("selectedFactoryId"); // Get factory ID again
+        const selectedFactoryId = sessionStorage.getItem("selectedFactoryId"); // Get factory ID again
 
         if (selectedContractorId) {
             fetchLoad(selectedFactoryId, selectedContractorId); // Fetch load dropdown
@@ -165,390 +225,576 @@ async function fetchLoad(factoryId, contractId) {
     }
 }
 
+async function fetchSalebusunit(targetId = "bus", currentValueText = null) {
+    try {
+        const url = new URL(`/jssl/contract/listbusinessunitnew`, baseUrl);
+
+        const response = await fetch(url, {
+            method: "GET",
+            credentials: "include"
+        });
+        if (!response.ok) throw new Error("Failed to fetch sale order types");
+
+        const json = await response.json();
+
+        if (json.status !== "yes" || !json.Data.length) {
+            console.warn("No sale order types found.");
+            return;
+        }
+
+        const selectElement = document.getElementById(targetId);
+        if (!selectElement) return;
+
+        selectElement.innerHTML = `<option value="">Select Business Unit</option>`;
+
+        //let matchFound = false;
+
+		json.Data.forEach((type) => {
+		    if (type.business_unit_id && type.business_unit_name) {
+		        const bindaddress = type.business_unit_name + type.location + '(' + type.gst_number + ')';
+
+		        const option = document.createElement("option");
+		        option.value = type.business_unit_id;
+		        option.textContent = bindaddress;
+
+		        // Loosen the match — check if currentValueText starts with the business unit name
+		        if (currentValueText && currentValueText.startsWith(type.business_unit_name)) {
+		            option.selected = true;
+		            matchFound = true;
+		        }
+
+		        selectElement.appendChild(option);
+		    }
+		});
+
+        // Only add currentValueText as a fallback option if it wasn't found in the API list
+        /*if (currentValueText && !matchFound) {
+            const currentOption = document.createElement("option");
+            currentOption.value = currentValueText;
+            currentOption.textContent = currentValueText;
+            currentOption.selected = true;
+            selectElement.insertBefore(currentOption, selectElement.firstChild.nextSibling);
+        }*/
+    } catch (error) {
+        console.error("Error fetching sale order types:", error);
+    }
+}
+
+async function fetchinvoiceto(targetId = "into", currentValueText = null) {
+    try {
+        const url = new URL(`/jssl/invoiceConsigneeAddress/getInvoiceAddress`, baseUrl);
+        const response = await fetch(url, { method: "GET", credentials: "include" });
+        if (!response.ok) throw new Error("Failed to fetch invoice addresses");
+        const json = await response.json();
+        if (json.status !== "yes" || !json.InvoiceAddress?.length) {
+            console.warn("No invoice addresses found.");
+            return;
+        }
+
+        const selectElement = document.getElementById(targetId);
+        if (!selectElement) return;
+
+        const records = json.InvoiceAddress
+            .filter(t => t.is_verified == 1 && t.id && t.address)
+            .map(t => ({ id: t.id, label: t.address }));
+
+        // find id matching currentValueText by exact address text, if any
+        let matchedId = null;
+        const match = records.find(r => normalizeText(r.label) === normalizeText(currentValueText));
+        if (match) matchedId = match.id;
+
+        const deduped = dedupeByLabel(records, matchedId);
+        populateSelect(selectElement, deduped, matchedId, "Select invoice to", matchedId ? null : currentValueText);
+    } catch (error) {
+        console.error("Error fetching invoice addresses:", error);
+    }
+}
+
+async function fetchSalework(targetId = "work", currentValueText = null) {
+    try {
+        const url = new URL(`/jssl/contract/listworkordernew`, baseUrl);
+        const response = await fetch(url, { method: "GET", credentials: "include" });
+        if (!response.ok) throw new Error("Failed to fetch work orders");
+        const json = await response.json();
+        if (json.status !== "yes" || !json.Data.length) {
+            console.warn("No work orders found.");
+            return;
+        }
+
+        const selectElement = document.getElementById(targetId);
+        if (!selectElement) return;
+
+        const records = json.Data
+            .filter(t => t.work_id && t.workorder_no)
+            .map(t => ({ id: t.work_id, label: t.workorder_no }));
+
+        let matchedId = null;
+        const match = records.find(r => normalizeText(r.label) === normalizeText(currentValueText));
+        if (match) matchedId = match.id;
+
+        const deduped = dedupeByLabel(records, matchedId);
+        populateSelect(selectElement, deduped, matchedId, "Select work order", matchedId ? null : currentValueText);
+    } catch (error) {
+        console.error("Error fetching work orders:", error);
+    }
+}
+
+async function fetchconname(targetId = "consig", currentValueText = null) {
+    try {
+        const url = new URL(`/jssl/invoiceConsigneeAddress/getConsigneeAddressNew`, baseUrl);
+        const response = await fetch(url, { method: "GET", credentials: "include" });
+        if (!response.ok) throw new Error("Failed to fetch consignee addresses");
+        const json = await response.json();
+        if (json.status !== "yes" || !json.ConsigneeAddress?.length) {
+            console.warn("No consignee addresses found.");
+            return;
+        }
+
+        const selectElement = document.getElementById(targetId);
+        if (!selectElement) return;
+
+        const records = json.ConsigneeAddress
+            .filter(t => t.is_verified == 1 && t.id && t.address)
+            .map(t => ({ id: t.id, label: t.address }));
+
+        let matchedId = null;
+        const match = records.find(r => normalizeText(r.label) === normalizeText(currentValueText));
+        if (match) matchedId = match.id;
+
+        const deduped = dedupeByLabel(records, matchedId);
+        populateSelect(selectElement, deduped, matchedId, "Select", matchedId ? null : currentValueText);
+    } catch (error) {
+        console.error("Error fetching consignee addresses:", error);
+    }
+}
+
+// BEFORE: these took no parameters, so calls like
+//   fetchservice("officeservice", contractor.s_code_value)
+// silently ignored both arguments and just repopulated the
+// dropdown with the blank default option every time.
+
+// ---------- Shared helpers (reuse if already defined elsewhere in your file) ----------
+function normalizeText(str) {
+    return (str || "").replace(/\s+/g, " ").trim().toLowerCase();
+}
+
+function dedupeByLabel(records, selectedId) {
+    const map = new Map();
+    records.forEach((rec) => {
+        const key = normalizeText(rec.label);
+        if (!key) return;
+        const existing = map.get(key);
+        if (!existing) {
+            map.set(key, rec);
+        } else if (selectedId && String(rec.id) === String(selectedId)) {
+            map.set(key, rec);
+        }
+    });
+    return Array.from(map.values());
+}
+
+function populateSelect(selectElement, records, selectedId, placeholder, fallbackText) {
+    selectElement.innerHTML = `<option value="">${placeholder}</option>`;
+
+    let matched = false;
+    records.forEach((rec) => {
+        const option = document.createElement("option");
+        option.value = rec.id;
+        option.textContent = rec.label;
+        if (selectedId && String(rec.id) === String(selectedId)) {
+            option.selected = true;
+            matched = true;
+        }
+        selectElement.appendChild(option);
+    });
+
+    if (!matched && fallbackText) {
+        const fallbackOption = document.createElement("option");
+        fallbackOption.value = fallbackText;
+        fallbackOption.textContent = fallbackText;
+        fallbackOption.selected = true;
+        selectElement.insertBefore(fallbackOption, selectElement.children[1] || null);
+    }
+}
+
+
+async function fetchservice(targetId = "officeservice", currentValueText = null) {
+    try {
+        const url = new URL(`/jssl/master/listservicecodemasternew`, baseUrl);
+        const response = await fetch(url, { method: "GET", credentials: "include" });
+        if (!response.ok) throw new Error("Failed to fetch service codes");
+        const json = await response.json();
+        if (json.status !== "yes" || !json.Data.length) {
+            console.warn("No service codes found.");
+            return;
+        }
+
+        const selectElement = document.getElementById(targetId);
+        if (!selectElement) return;
+
+        const records = json.Data
+            .filter(t => t.servicecode_id && t.service_code)
+            .map(t => ({ id: t.servicecode_id, label: t.service_code }));
+
+        let matchedId = null;
+        const match = records.find(r => normalizeText(r.label) === normalizeText(currentValueText));
+        if (match) matchedId = match.id;
+
+        const deduped = dedupeByLabel(records, matchedId);
+        populateSelect(selectElement, deduped, matchedId, "Select service code", matchedId ? null : currentValueText);
+    } catch (error) {
+        console.error("Error fetching service codes:", error);
+    }
+}
+
+async function fetchhsn(targetId = "officehsn", currentValueText = null) {
+    try {
+        const url = new URL(`/jssl/master/listHsncodemasternew`, baseUrl);
+        const response = await fetch(url, { method: "GET", credentials: "include" });
+        if (!response.ok) throw new Error("Failed to fetch hsn codes");
+        const json = await response.json();
+        if (json.status !== "yes" || !json.Data.length) {
+            console.warn("No hsn codes found.");
+            return;
+        }
+
+        const selectElement = document.getElementById(targetId);
+        if (!selectElement) return;
+
+        const records = json.Data
+            .filter(t => t.servicecode_id && t.service_code)
+            .map(t => ({ id: t.servicecode_id, label: t.service_code }));
+
+        let matchedId = null;
+        const match = records.find(r => normalizeText(r.label) === normalizeText(currentValueText));
+        if (match) matchedId = match.id;
+
+        const deduped = dedupeByLabel(records, matchedId);
+        populateSelect(selectElement, deduped, matchedId, "Select hsn code", matchedId ? null : currentValueText);
+    } catch (error) {
+        console.error("Error fetching hsn codes:", error);
+    }
+}
+
 // Fetch the QsPacking data using contractor_id and load_id
 async function fetchQsPackingData(contractId, loadId) {
     try {
-        const selectedFactoryId = localStorage.getItem("selectedFactoryId"); // Get the factory_id from localStorage
+        const selectedFactoryId = sessionStorage.getItem("selectedFactoryId"); // Get the factory_id from sessionStorage
 
         // Ensure factory_id is available
         if (!selectedFactoryId) {
-            console.error("No factory ID found in localStorage.");
+            console.error("No factory ID found in sessionStorage.");
             return;
         }
 
         const url = new URL(`/jssl/invoice/getcontractqsadvancepackingdetailsnew`, baseUrl);
-        
+
         // Append the parameters to the URL
         url.searchParams.append("contract_id", contractId);
         url.searchParams.append("load_id", loadId);
         url.searchParams.append("factory_id", selectedFactoryId); // Append factory_id as well
 
-        const response = await fetch(url,{
-				           method: "GET",
-				           credentials: "include"   // ✅ Always send JSESSIONID cookie
-				       });
+        const response = await fetch(url, {
+            method: "GET",
+            credentials: "include"   // ✅ Always send JSESSIONID cookie
+        });
         if (!response.ok) throw new Error("Failed to fetch QsPacking data");
 
         const json = await response.json();
-        
+
         if (json.Grand_Total_value && json.Grand_Total_value.length > 0) {
-        const Grand_Total_value = json.Grand_Total_value[0];
-        
-            const grandvalue = Grand_Total_value.Grand_Total_tax; // Assuming the bank details ID is inside this property
+            const Grand_Total_value = json.Grand_Total_value[0];
+
+            const grandvalue = Grand_Total_value.Grand_Total_tax;
             const grand1 = document.getElementById("ingrandv");
             if (grand1) {
-                grand1.value = grandvalue; // Populate the bank name field
+                grand1.value = grandvalue;
             }
-         } else {
-            console.warn("No Contractor Data found.");
-        }
-        
-        if (json.QsPacking_Data && json.QsPacking_Data.length > 0) {
-        const QsPacking = json.QsPacking_Data[0];
-        
-            const freightValue = QsPacking.freight; // Assuming the bank details ID is inside this property
-            const frie = document.getElementById("freight");
-            if (frie) {
-                frie.value = freightValue; // Populate the bank name field
-            }
-            
-            const pnidValue = QsPacking.pn_id; // Assuming the bank details ID is inside this property
-            const pnid = document.getElementById("id11");
-            if (pnid) {
-                pnid.value = pnidValue; // Populate the bank name field
-            }
-            
         } else {
             console.warn("No Contractor Data found.");
         }
+
+        if (json.QsPacking_Data && json.QsPacking_Data.length > 0) {
+            const QsPacking = json.QsPacking_Data[0];
+
+            const freightValue = QsPacking.freight;
+            const frie = document.getElementById("freight");
+            if (frie) {
+                frie.value = freightValue;
+            }
+
+            const pnidValue = QsPacking.pn_id;
+            const pnid = document.getElementById("id11");
+            if (pnid) {
+                pnid.value = pnidValue;
+            }
+
+        } else {
+            console.warn("No Contractor Data found.");
+        }
+
         // Check if Contractor_Data exists and contains items
         if (json.Contractor_Data && json.Contractor_Data.length > 0) {
             // Get the first item (or iterate if needed)
             const contractor = json.Contractor_Data[0];
 
             // Set the bank name from the contractor data
-            const bankDetailsIdValue = contractor.bank_details_id_value; // Assuming the bank details ID is inside this property
+            const bankDetailsIdValue = contractor.bank_details_id_value;
             const bankInput = document.getElementById("bank");
             if (bankInput) {
-                bankInput.value = bankDetailsIdValue; // Populate the bank name field
+                bankInput.value = bankDetailsIdValue;
             }
-        // Set the work order from the contractor data
-            const workIdValue = contractor.work_id_value; // Assuming the work order ID is inside this property
-            const workInput = document.getElementById("work");
-            if (workInput) {
-                workInput.value = workIdValue; // Populate the work order field
-            }
-            /*const InvoiceTypeCal = contractor.invoice_type_calculation; // Assuming the work order ID is inside this property
+
+            fetchSalework("work", contractor.work_id_value);
+
+            const InvoiceTypeCal = contractor.invoice_type_calculation; // 1 or 2
             const InvoiceTypeCalcu = document.getElementById("intypecal");
-            if (InvoiceTypeCalcu) {
-                InvoiceTypeCalcu.value = InvoiceTypeCal; // Populate the work order field
-            }*/
-			const InvoiceTypeCal = contractor.invoice_type_calculation; // 1 or 2
-			const InvoiceTypeCalcu = document.getElementById("intypecal");
-			const InvoiceTypeCalDb = document.getElementById("intypecal_db");
+            const InvoiceTypeCalDb = document.getElementById("intypecal_db");
 
-			if (InvoiceTypeCalcu && InvoiceTypeCalDb) {
+            if (InvoiceTypeCalcu && InvoiceTypeCalDb) {
 
-			    // store DB value
-			    InvoiceTypeCalDb.value = InvoiceTypeCal;
+                // store DB value
+                InvoiceTypeCalDb.value = InvoiceTypeCal;
 
-			    // show user-friendly text
-			    if (InvoiceTypeCal == 1) {
-			        InvoiceTypeCalcu.value = "Amount";
-			    } else if (InvoiceTypeCal == 2) {
-			        InvoiceTypeCalcu.value = "Percentage";
-			    } else {
-			        InvoiceTypeCalcu.value = "";
-			    }
-			}
-            const InvoiceToValue = contractor.invoice_to_id_value; // Assuming the work order ID is inside this property
-            const InvoiceTo = document.getElementById("ininto");
-            if (InvoiceTo) {
-                InvoiceTo.value = InvoiceToValue; // Populate the work order field
+                // show user-friendly text
+                if (InvoiceTypeCal == 1) {
+                    InvoiceTypeCalcu.value = "Amount";
+                } else if (InvoiceTypeCal == 2) {
+                    InvoiceTypeCalcu.value = "Percentage";
+                } else {
+                    InvoiceTypeCalcu.value = "";
+                }
             }
-            /*const ProductValue = contractor.product_desc_id; // Assuming the work order ID is inside this property
+
+            fetchinvoiceto("ininto", contractor.invoice_to_id_value);
+
+            const ProductValue = contractor.product_desc_id; // 1 or 2
             const ProDec = document.getElementById("prodesc");
-            if (ProDec) {
-                ProDec.value = ProductValue; // Populate the work order field
-            }*/
-			const ProductValue = contractor.product_desc_id; // 1 or 2
-			const ProDec = document.getElementById("prodesc");
-			const ProDecDb = document.getElementById("prodesc_db");
+            const ProDecDb = document.getElementById("prodesc_db");
 
-			if (ProDec && ProDecDb) {
+            if (ProDec && ProDecDb) {
 
-			// store DB value
-			ProDecDb.value = ProductValue;
+                // store DB value
+                ProDecDb.value = ProductValue;
 
-			// show user-friendly text
-			if (ProductValue == 1) {
-			ProDec.value = "Product desc";
-			} else if (ProductValue == 2) {
-			ProDec.value = "pd";
-			} else {
-			ProDec.value = "";
-			}
-			}
-            const ShipmentValue = contractor.shipment_mode_id_value; // Assuming the work order ID is inside this property
+                // show user-friendly text
+                if (ProductValue == 1) {
+                    ProDec.value = "Product desc";
+                } else if (ProductValue == 2) {
+                    ProDec.value = "pd";
+                } else {
+                    ProDec.value = "";
+                }
+            }
+
+            const ShipmentValue = contractor.shipment_mode_id_value;
             const Ship = document.getElementById("shipmode");
             if (Ship) {
-                Ship.value = ShipmentValue; // Populate the work order field
+                Ship.value = ShipmentValue;
             }
-            const ExportValue = contractor.export; // Assuming the work order ID is inside this property
+
+            const ExportValue = contractor.export;
             const exp = document.getElementById("expt");
             if (exp) {
-                exp.value = ExportValue; // Populate the work order field
+                exp.value = ExportValue;
             }
-           /* const TaxPayValye = contractor.tax_payable; // Assuming the work order ID is inside this property
+
+            const TaxPayValye = contractor.tax_payable; // 1 or 2
             const taxpay = document.getElementById("taxres");
-            if (taxpay) {
-                taxpay.value = TaxPayValye; // Populate the work order field
-            }*/
-			const TaxPayValye = contractor.tax_payable; // 1 or 2
-			const taxpay = document.getElementById("taxres");
-			const taxpayDb = document.getElementById("taxres_db");
+            const taxpayDb = document.getElementById("taxres_db");
 
-			if (taxpay && taxpayDb) {
+            if (taxpay && taxpayDb) {
 
-			// store DB value
-			taxpayDb.value = TaxPayValye;
+                // store DB value
+                taxpayDb.value = TaxPayValye;
 
-			// show user-friendly text
-			if (TaxPayValye == 1) {
-			taxpay.value = "No";
-				} else if (TaxPayValye == 2) {
-			taxpay.value = "Yes";
-				} else {
-			taxpay.value = "";
-				}
-			}
-            const PercenValue = contractor.percentage_value; // Assuming the work order ID is inside this property
+                // show user-friendly text
+                if (TaxPayValye == 1) {
+                    taxpay.value = "No";
+                } else if (TaxPayValye == 2) {
+                    taxpay.value = "Yes";
+                } else {
+                    taxpay.value = "";
+                }
+            }
+
+            const PercenValue = contractor.percentage_value;
             const per = document.getElementById("percen");
             if (per) {
-                per.value = PercenValue; // Populate the work order field
+                per.value = PercenValue;
             }
-            const ConValue = contractor.consignee_id_value; // Assuming the work order ID is inside this property
-            const conadd = document.getElementById("billing");
-            if (conadd) {
-                conadd.value = ConValue; // Populate the work order field
-            }
-            const DelValue = contractor.delivery_condition_id_value; // Assuming the work order ID is inside this property
+
+            fetchconname("billing", contractor.consignee_id_value);
+
+            const DelValue = contractor.delivery_condition_id_value;
             const del = document.getElementById("delivery");
             if (del) {
-                del.value = DelValue; // Populate the work order field
+                del.value = DelValue;
             }
-            const RegValue = contractor.reg_office_id_value; // Assuming the work order ID is inside this property
+
+            const RegValue = contractor.reg_office_id_value;
             const reg = document.getElementById("office");
             if (reg) {
-                reg.value = RegValue; // Populate the work order field
+                reg.value = RegValue;
             }
+
             if (contractor.export === 'yes') {
-                    $('#exportFields1').show();
-                } else {
-                    $('#exportFields1').hide();
-                }
-            const AreaValue = contractor.area_no; // Assuming the work order ID is inside this property
+                $('#exportFields1').show();
+            } else {
+                $('#exportFields1').hide();
+            }
+
+            const AreaValue = contractor.area_no;
             const area = document.getElementById("are");
             if (area) {
-                area.value = AreaValue; // Populate the work order field
+                area.value = AreaValue;
             }
-            const LotValue = contractor.lot_no; // Assuming the work order ID is inside this property
+
+            const LotValue = contractor.lot_no;
             const lot = document.getElementById("lut");
             if (lot) {
-                lot.value = LotValue; // Populate the work order field
+                lot.value = LotValue;
             }
-            const contValue = contractor.containter_no; // Assuming the work order ID is inside this property
+
+            const contValue = contractor.containter_no;
             const cont = document.getElementById("connum");
             if (cont) {
-                cont.value = contValue; // Populate the work order field
+                cont.value = contValue;
             }
-            const epcgnoValue = contractor.epcgno; // Assuming the work order ID is inside this property
+
+            const epcgnoValue = contractor.epcgno;
             const epcgno = document.getElementById("epog");
             if (epcgno) {
-                epcgno.value = epcgnoValue; // Populate the work order field
+                epcgno.value = epcgnoValue;
             }
-            const exptitelvalue = contractor.export_title; // Assuming the work order ID is inside this property
+
+            const exptitelvalue = contractor.export_title;
             const expval = document.getElementById("exptitle");
             if (expval) {
-                expval.value = exptitelvalue; // Populate the work order field
+                expval.value = exptitelvalue;
             }
-            const ServiceValue = contractor.s_code_value; // Assuming the work order ID is inside this property
-            const Scode = document.getElementById("service");
-            if (Scode) {
-                Scode.value = ServiceValue; // Populate the work order field
-            }
-            const HsnValue = contractor.h_code_value; // Assuming the work order ID is inside this property
-            const Hcode = document.getElementById("hsncode");
-            if (Hcode) {
-                Hcode.value = HsnValue; // Populate the work order field
-            }
-            const BNameValue = contractor.businessUnitName; // Assuming the work order ID is inside this property
-            const Bname = document.getElementById("inbusunit");
-            if (Bname) {
-                Bname.value = BNameValue; // Populate the work order field
-            }
-            const ScodeNameValue = contractor.s_code_value; // Assuming the work order ID is inside this property
-            const Scodename = document.getElementById("officeservice");
-            if (Scodename) {
-                Scodename.value = ScodeNameValue; // Populate the work order field
-            }
-            const HcodeNameValue = contractor.h_code_value; // Assuming the work order ID is inside this property
-            const Hcodename = document.getElementById("officehsn");
-            if (Hcodename) {
-                Hcodename.value = HcodeNameValue; // Populate the work order field
-            }
-            const con_slnoValue = contractor.con_slno; // Assuming the work order ID is inside this property
+
+            // Service Code / HSN Code: fetchservice/fetchhsn are the single
+            // source of truth here. They populate the dropdown from the
+            // master list AND pre-select contractor.s_code_value /
+            // contractor.h_code_value when present, leaving it on the
+            // default/blank option otherwise. No manual .value overwrite
+            // follows this, so the user can still change the selection
+            // afterward without it being stomped back to the fetched value.
+            fetchservice("officeservice", contractor.s_code_value);
+            fetchhsn("officehsn", contractor.h_code_value);
+
+            // Populate the dropdown alongside it
+            fetchSalebusunit("inbusunit", contractor.businessUnitName);
+
+            const con_slnoValue = contractor.con_slno;
             const con_slno = document.getElementById("id11con");
             if (con_slno) {
-                con_slno.value = con_slnoValue; // Populate the work order field
+                con_slno.value = con_slnoValue;
             }
         } else {
             console.warn("No Contractor Data found.");
         }
-        
 
         // Check if QsPacking_Data exists and contains items
-        /*if (json.QsPacking_Data && json.QsPacking_Data.length > 0) {
-            const container = document.querySelector(".dynamic-row"); // Find the container for dynamic rows
-            container.innerHTML = ""; // Clear any existing rows
+        if (json.QsPacking_Data && json.QsPacking_Data.length > 0) {
 
-            // Loop through QsPacking_Data and create input fields dynamically
+            const container = document.querySelector(".dynamic-row");
+            container.innerHTML = "";   // clear only THIS panel
+
             json.QsPacking_Data.forEach((item, index) => {
-                const div = document.createElement("div");
-                div.classList.add("form-group-container", "col-md-12"); // Add classes to style the row
 
-                // Create fields dynamically based on the data
-                div.innerHTML = `
-                    <div class="form-row">
-                        <div class="form-group col-md-1 col-sm-12">
-                            <label for="uom_${index}"><b>UOM</b></label>
-                            <input type="text" id="uom_${index}" value="${item.uom_name}" class="form-control" disabled>
+                const showLabel = index === 0;
+
+                container.insertAdjacentHTML("beforeend", `
+                    <div class="row align-items-center mb-1">
+
+                        <div class="col-auto">
+                            ${showLabel ? '<label class="small-label d-block">UOM</label>' : ''}
+                            <input type="text" class="form-control form-control-sm small-input"
+                                   value="${item.uom_name}" readonly>
                         </div>
-                        <div class="form-group col-md-1 col-sm-12">
-                            <label for="qty_${index}"><b>Quantity</b></label>
-                            <input type="number" id="qty_${index}" value="${item.qty}" class="form-control" disabled>
+
+                        <div class="col-auto">
+                            ${showLabel ? '<label class="small-label d-block">Quantity</label>' : ''}
+                            <input type="text" class="form-control form-control-sm small-input text-right"
+                                   value="${Number(item.qty).toFixed(2)}" readonly>
                         </div>
-                        <div class="form-group col-md-1 col-sm-12">
-                            <label for="kg_${index}"><b>Kg</b></label>
-                            <input type="number" id="kg_${index}" value="${item.per_kgs}" class="form-control" disabled>
+
+                        <div class="col-auto">
+                            ${showLabel ? '<label class="small-label d-block">Kg</label>' : ''}
+                            <input type="text" class="form-control form-control-sm small-input text-right"
+                                   value="${Number(item.per_kgs).toFixed(2)}" readonly>
                         </div>
-                        <div class="form-group col-md-1 col-sm-12">
-                            <label for="unit_price_${index}"><b>Unit Price</b></label>
-                            <input type="number" id="unit_price_${index}" value="${item.unit_price}" class="form-control" disabled>
+
+                        <div class="col-auto">
+                            ${showLabel ? '<label class="small-label d-block">Unit Price</label>' : ''}
+                            <input type="text" class="form-control form-control-sm small-input text-right"
+                                   value="${Number(item.unit_price).toFixed(2)}" readonly>
                         </div>
-                        <div class="form-group col-md-1 col-sm-12">
-                            <label for="total_${index}"><b>Total</b></label>
-                            <input type="number" id="total_${index}" value="${item.total}" class="form-control" disabled>
+
+                        <div class="col-auto">
+                            ${showLabel ? '<label class="small-label d-block">Total</label>' : ''}
+                            <input type="text" class="form-control form-control-sm small-input text-right"
+                                   value="${Number(item.total).toFixed(2)}" readonly>
                         </div>
-                        <div class="form-group col-md-2 col-sm-12">
-                            <label for="mile_${index}"><b>Milestone</b></label>
-                            <input type="text" id="mile_${index}" value="${item.milestone_name}" class="form-control" disabled>
+
+                        <div class="col-auto">
+                            ${showLabel ? '<label class="small-label d-block">Invoice Type</label>' : ''}
+                            <input type="text" class="form-control form-control-sm small-input"
+                                   value="${item.scrap_name_type_id}" readonly>
                         </div>
-                        <div class="form-group col-md-2 col-sm-12">
-                            <label for="intype_${index}"><b>Invoice Type</b></label>
-                            <input type="text" id="intype_${index}" value="${item.scrap_name_type_id}" class="form-control" disabled>
+
+                        <div class="col-auto">
+                            ${showLabel ? '<label class="small-label d-block">Milestone</label>' : ''}
+                            <input type="text" class="form-control form-control-sm small-input"
+                                   value="${item.milestone_name}" readonly>
                         </div>
-                        
-                        </div>
-                `;*/
-				if (json.QsPacking_Data && json.QsPacking_Data.length > 0) {
 
-						    const container = document.querySelector(".dynamic-row");
-						    container.innerHTML = "";   // clear only THIS panel
-
-						    json.QsPacking_Data.forEach((item, index) => {
-
-						        const showLabel = index === 0;
-
-						        container.insertAdjacentHTML("beforeend", `
-						            <div class="row align-items-center mb-1">
-
-						                <div class="col-auto">
-						                    ${showLabel ? '<label class="small-label d-block">UOM</label>' : ''}
-						                    <input type="text" class="form-control form-control-sm small-input"
-						                           value="${item.uom_name}" readonly>
-						                </div>
-
-						                <div class="col-auto">
-						                    ${showLabel ? '<label class="small-label d-block">Quantity</label>' : ''}
-						                    <input type="text" class="form-control form-control-sm small-input text-right"
-						                           value="${Number(item.qty).toFixed(2)}" readonly>
-						                </div>
-
-						                <div class="col-auto">
-						                    ${showLabel ? '<label class="small-label d-block">Kg</label>' : ''}
-						                    <input type="text" class="form-control form-control-sm small-input text-right"
-						                           value="${Number(item.per_kgs).toFixed(2)}" readonly>
-						                </div>
-
-						                <div class="col-auto">
-						                    ${showLabel ? '<label class="small-label d-block">Unit Price</label>' : ''}
-						                    <input type="text" class="form-control form-control-sm small-input text-right"
-						                           value="${Number(item.unit_price).toFixed(2)}" readonly>
-						                </div>
-
-						                <div class="col-auto">
-						                    ${showLabel ? '<label class="small-label d-block">Total</label>' : ''}
-						                    <input type="text" class="form-control form-control-sm small-input text-right"
-						                           value="${Number(item.total).toFixed(2)}" readonly>
-						                </div>
-
-						                <div class="col-auto">
-						                    ${showLabel ? '<label class="small-label d-block">Invoice Type</label>' : ''}
-						                    <input type="text" class="form-control form-control-sm small-input"
-						                           value="${item.scrap_name_type_id}" readonly>
-						                </div>
-
-						                <div class="col-auto">
-						                    ${showLabel ? '<label class="small-label d-block">Milestone</label>' : ''}
-						                    <input type="text" class="form-control form-control-sm small-input"
-						                           value="${item.milestone_name}" readonly>
-						                </div>
-
-						            </div>
-						            <hr style="width:100%;border-top:1px solid #ccc;">
-						        `);
-						    });
-						} else {
+                    </div>
+                    <hr style="width:100%;border-top:1px solid #ccc;">
+                `);
+            });
+        } else {
             console.warn("No QsPacking data found.");
         }
-       // Now, handle tax data and append it to .dynamic-row1
+
+        // Now, handle tax data and append it to .dynamic-row1
         if (json.tax && json.tax.length > 0) {
-            const taxContainer = document.querySelector(".dynamic-row1"); // Find the container for dynamic tax rows
-            taxContainer.innerHTML = ""; // Clear any existing rows
+            const taxContainer = document.querySelector(".dynamic-row1");
+            taxContainer.innerHTML = "";
 
-            // Loop through tax data and create dynamic rows
-			json.tax.forEach((tax, taxIndex) => {
-					    $(".dynamic-row1").append(`
-					        <div class="row align-items-center mb-2">
-					            <div class="col-auto">
-					                <label class="small-label1">Tax Name</label>
-					                <input type="text"
-					                       class="form-control form-control-sm small-input1"
-					                       value="${tax.tax_name}"
-					                       readonly>
-					            </div>
+            json.tax.forEach((tax, taxIndex) => {
+                $(".dynamic-row1").append(`
+                    <div class="row align-items-center mb-2">
+                        <div class="col-auto">
+                            <label class="small-label1">Tax Name</label>
+                            <input type="text"
+                                   class="form-control form-control-sm small-input1"
+                                   value="${tax.tax_name}"
+                                   readonly>
+                        </div>
 
-					            <div class="col-auto">
-					                <label class="small-label1">Tax %</label>
-					                <input type="text"
-					                       class="form-control form-control-sm small-input1 text-right"
-					                       value="${tax.tax_per}"
-					                       readonly>
-					            </div>
+                        <div class="col-auto">
+                            <label class="small-label1">Tax %</label>
+                            <input type="text"
+                                   class="form-control form-control-sm small-input1 text-right"
+                                   value="${tax.tax_per}"
+                                   readonly>
+                        </div>
 
-					            <div class="col-auto">
-					                <label class="small-label1">Tax Value</label>
-					                <input type="text"
-					                       class="form-control form-control-sm small-input1 text-right"
-					                       value="${tax.tax_value}"
-					                       readonly>
-					            </div>
-					        </div>
+                        <div class="col-auto">
+                            <label class="small-label1">Tax Value</label>
+                            <input type="text"
+                                   class="form-control form-control-sm small-input1 text-right"
+                                   value="${tax.tax_value}"
+                                   readonly>
+                        </div>
+                    </div>
 
-					        <hr class="my-1" style="width:100%;border-top:1px solid #ddd;">
-					    `);
-					});
+                    <hr class="my-1" style="width:100%;border-top:1px solid #ddd;">
+                `);
+            });
         } else {
             console.warn("No tax data found.");
         }
@@ -558,7 +804,7 @@ async function fetchQsPackingData(contractId, loadId) {
 }
 
 document.addEventListener("DOMContentLoaded", function () {
-    const selectedFactoryId = localStorage.getItem("selectedFactoryId"); // Get factory_id from localStorage
+    const selectedFactoryId = sessionStorage.getItem("selectedFactoryId"); // Get factory_id from sessionStorage
     if (selectedFactoryId) {
         fetchinvoice(selectedFactoryId);
         fetchBgType();
@@ -566,7 +812,7 @@ document.addEventListener("DOMContentLoaded", function () {
         fetchinvoiceEdit(selectedFactoryId);
         fetchBgTypeedit();
     } else {
-        console.error("No factory ID found in localStorage.");
+        console.error("No factory ID found in sessionStorage.");
     }
 });
 
@@ -1214,6 +1460,8 @@ function openModalAdd() {
    // var username = document.getElementById('intype444').value.trim();
     var prodes = document.getElementById('prodes').value.trim();
     var remark = document.getElementById('remark').value.trim();
+	var servicecode = document.getElementById('officeservice').value.trim();
+	var hsncode = document.getElementById('officehsn').value.trim();
     var showError = false; // Initialize showError variable
 
     // Username Validation
@@ -1223,7 +1471,7 @@ function openModalAdd() {
         showError = true;
     } else {
         document.getElementById('Vehicleerror').innerText = "";
-        document.getElementById('Vehicleerror').style.display = "none";
+        document.getElementById('Vehicleerror').style.display = "none"; 
     }*/
     
     if (prodes === '') {
@@ -1243,6 +1491,15 @@ function openModalAdd() {
         document.getElementById('productCodeError4').innerText = "";
         document.getElementById('productCodeError4').style.display = "none";
     }
+	
+	if (servicecode === '' && hsncode === '') {
+	        document.getElementById('servicecodeError4').innerText = "Please enter service/HSN code.";
+	        document.getElementById('servicecodeError4').style.display = "inline-block";
+	        showError = true;
+	    } else {
+	        document.getElementById('servicecodeError4').innerText = "";
+	        document.getElementById('servicecodeError4').style.display = "none";
+	    }
    
    // If no errors, proceed
     if (!showError) {
@@ -1250,8 +1507,8 @@ function openModalAdd() {
     }
 }
    
-// Fetch selectedFactoryId from localStorage
-const selectedFactoryId = localStorage.getItem('selectedFactoryId');
+// Fetch selectedFactoryId from sessionStorage
+const selectedFactoryId = sessionStorage.getItem('selectedFactoryId');
 console.log('selectedFactoryId:', selectedFactoryId);
 
 function addevent() {
@@ -1292,7 +1549,23 @@ function addevent() {
             contract_name: contname,
             factory_id: selectedFactoryId,
            // type_id: intype444.value,
-            pn_id: id11.value
+            pn_id: id11.value,
+			// ---- Contract Details modal fields ----
+			business_unit_id: document.getElementById("inbusunit").value,
+			invoice_type_calculation: document.getElementById("intypecal").value,
+			invoice_to_id: document.getElementById("ininto").value,
+			product_desc_id: document.getElementById("prodesc").value,
+			shipment_mode_id: document.getElementById("shipmode").value,
+			work_id: document.getElementById("work").value,
+			export: document.getElementById("expt").value,
+			tax_ex_inc: document.getElementById("taxres").value,
+			percentage_value: document.getElementById("percen").value,
+			consignee_id: document.getElementById("billing").value,
+			bank_details_id: document.getElementById("bank").value,
+			delivery_condition_id: document.getElementById("delivery").value,
+		    regd_office_id: document.getElementById("office").value,
+			s_code: document.getElementById("officeservice").value,
+			h_code: document.getElementById("officehsn").value
         }),
         success: function (data) {
             var result = data.message;
@@ -1326,6 +1599,79 @@ function setInputValue(selector, value) {
     $(selector).val(value ? value : ""); // Set value or empty string if undefined/null
 }
 
+let businessUnitList = [];
+let invoiceAddressList = [];
+let workOrderList = [];
+let consigneeAddressList = [];
+let servicecodelist = [];
+let hsncodelist = [];
+
+async function fetchBusinessUnitList() {
+    try {
+        const url = new URL(`/jssl/contract/listbusinessunitnew`, baseUrl);
+        const response = await fetch(url, { method: "GET", credentials: "include" });
+        const json = await response.json();
+        businessUnitList = (json.status === "yes" && json.Data) ? json.Data : [];
+    } catch (error) {
+        console.error("Error fetching business unit list:", error);
+    }
+}
+
+async function fetchInvoiceAddressList() {
+    try {
+        const url = new URL(`/jssl/invoiceConsigneeAddress/getInvoiceAddress`, baseUrl);
+        const response = await fetch(url, { method: "GET", credentials: "include" });
+        const json = await response.json();
+        invoiceAddressList = (json.status === "yes" && json.InvoiceAddress) ? json.InvoiceAddress : [];
+    } catch (error) {
+        console.error("Error fetching invoice address list:", error);
+    }
+}
+
+async function fetchWorkOrderList() {
+    try {
+        const url = new URL(`/jssl/contract/listworkordernew`, baseUrl);
+        const response = await fetch(url, { method: "GET", credentials: "include" });
+        const json = await response.json();
+        workOrderList = (json.status === "yes" && json.Data) ? json.Data : [];
+    } catch (error) {
+        console.error("Error fetching work order list:", error);
+    }
+}
+
+async function fetchConsigneeAddressList() {
+    try {
+        const url = new URL(`/jssl/invoiceConsigneeAddress/getConsigneeAddressNew`, baseUrl);
+        const response = await fetch(url, { method: "GET", credentials: "include" });
+        const json = await response.json();
+        consigneeAddressList = (json.status === "yes" && json.ConsigneeAddress) ? json.ConsigneeAddress : [];
+    } catch (error) {
+        console.error("Error fetching consignee address list:", error);
+    }
+}
+
+async function fetchServiceCodeList() {
+    try {
+        const url = new URL(`/jssl/master/listservicecodemasternew`, baseUrl);
+        const response = await fetch(url, { method: "GET", credentials: "include" });
+        const json = await response.json();
+        servicecodelist = (json.status === "yes" && json.Data) ? json.Data : [];
+    } catch (error) {
+        console.error("Error fetching service code list:", error);
+    }
+}
+
+async function fetchHsnCodeList() {
+    try {
+        const url = new URL(`/jssl/master/listHsncodemasternew`, baseUrl);
+        const response = await fetch(url, { method: "GET", credentials: "include" });
+        const json = await response.json();
+        hsncodelist = (json.status === "yes" && json.Data) ? json.Data : [];
+    } catch (error) {
+        console.error("Error fetching HSN code list:", error);
+    }
+}
+
 async function editRecord(id) {
 	 // const allowed = window.allowedActions || [];
 
@@ -1349,6 +1695,44 @@ async function editRecord(id) {
         const invoiceData = json.Invoice_Data || {};
         const GrandValue = json.Grand_Total_value || [];
         const ContData = json.Contractor_Data || [];
+		
+		// ---- NEW: resolve Contract Details display text from InvoiceContractMaster, fallback to ContData ----
+		   const ContractMasterData = json.InvoiceContractMaster || {};
+
+		   const matchedBU = businessUnitList.find(b => String(b.business_unit_id) === String(ContractMasterData.bid));
+		   const buDisplay = matchedBU
+		       ? `${matchedBU.business_unit_name} ${matchedBU.orgName},${matchedBU.location},${matchedBU.stateName}(${matchedBU.gst_number})`
+		       : (ContData.length > 0 ? ContData[0].business_unit_name : "");
+
+		   const matchedInvoiceTo = invoiceAddressList.find(a => String(a.id) === String(ContractMasterData.invoice_to_id));
+		   const invoiceToDisplay = matchedInvoiceTo
+		       ? matchedInvoiceTo.address
+		       : (ContData.length > 0 ? ContData[0].invoice_to_id_value : "");
+
+		   const matchedWork = workOrderList.find(w => String(w.work_id) === String(ContractMasterData.work_id));
+		   const workDisplay = matchedWork
+		       ? matchedWork.workorder_no
+		       : (ContData.length > 0 ? ContData[0].work_id_value : "");
+
+		   const matchedConsignee = consigneeAddressList.find(c => String(c.id) === String(ContractMasterData.consignee_id));
+		   const consigneeDisplay = matchedConsignee
+		       ? matchedConsignee.address
+		       : (ContData.length > 0 ? ContData[0].consignee_id_value : "");
+			   
+		   const matchedService = servicecodelist.find(s => String(s.servicecode_id) === String(ContractMasterData.s_code));
+		   const serviceDisplay = matchedService ? matchedService.service_code : (ContData.length > 0 ? ContData[0].s_code_value : "");
+
+		   const matchedHsn = hsncodelist.find(h => String(h.servicecode_id) === String(ContractMasterData.h_code));
+		   const hsnDisplay = matchedHsn ? matchedHsn.service_code : (ContData.length > 0 ? ContData[0].h_code_value : "");
+
+			   
+		   
+		   setInputValue("#bunitv",     buDisplay);
+		   setInputValue("#intov",      invoiceToDisplay);
+		   setInputValue("#workorderv", workDisplay);
+		   setInputValue("#nandconv",   consigneeDisplay);
+		   setInputValue("#newscode2", serviceDisplay);
+		   setInputValue("#newhcode2", hsnDisplay);
 
         $(".dynamic-row11, .dynamic-row122").empty(); // Clear previous content
 
@@ -1380,16 +1764,16 @@ async function editRecord(id) {
 
         // Set contractor data fields
         const contractorFields = {
-            "#bunitv": "business_unit_name",
+            //"#bunitv": "business_unit_name",
            // "#intypev": "invoice_type_calculation",
-            "#intov": "invoice_to_id_value",
+           // "#intov": "invoice_to_id_value",
            // "#prodesv": "product_desc_id",
             "#shipmodev": "shipment_mode_id_value",
-            "#workorderv": "work_id_value",
+           // "#workorderv": "work_id_value",
             "#exptv": "export",
            // "#taxresv": "tax_payable",
             "#percenv": "percentage_value",
-            "#nandconv": "consignee_id_value",
+            //"#nandconv": "consignee_id_value",
             "#banknamev": "bank_details_id_value",
             "#deliveryconv": "delivery_condition_id_value",
             "#officevv": "reg_office_id_value",
@@ -1400,8 +1784,8 @@ async function editRecord(id) {
             "#connumv": "containter_no",
             "#epogv": "epcgno",
             "#exptitlev": "export_title",
-            "#newscode2": "s_code_value",
-            "#newhcode2": "h_code_value",
+            //"#newscode2": "s_code_value",
+            //"#newhcode2": "h_code_value",
             
         };
 		
@@ -1600,6 +1984,43 @@ async function editRecord11(id) {
         const invoiceData = json.Invoice_Data || {};
         const GrandValue = json.Grand_Total_value || [];
         const ContData = json.Contractor_Data || [];
+		
+		// ---- NEW: resolve Contract Details display text from InvoiceContractMaster, fallback to ContData ----
+		        const ContractMasterData = json.InvoiceContractMaster || {};
+
+		        const matchedBU = businessUnitList.find(b => String(b.business_unit_id) === String(ContractMasterData.bid));
+		        const buDisplay = matchedBU
+		            ? `${matchedBU.business_unit_name} ${matchedBU.orgName},${matchedBU.location},${matchedBU.stateName}(${matchedBU.gst_number})`
+		            : (ContData.length > 0 ? ContData[0].business_unit_name : "");
+
+		        const matchedInvoiceTo = invoiceAddressList.find(a => String(a.id) === String(ContractMasterData.invoice_to_id));
+		        const invoiceToDisplay = matchedInvoiceTo
+		            ? matchedInvoiceTo.address
+		            : (ContData.length > 0 ? ContData[0].invoice_to_id_value : "");
+
+		        const matchedWork = workOrderList.find(w => String(w.work_id) === String(ContractMasterData.work_id));
+		        const workDisplay = matchedWork
+		            ? matchedWork.workorder_no
+		            : (ContData.length > 0 ? ContData[0].work_id_value : "");
+
+		        const matchedConsignee = consigneeAddressList.find(c => String(c.id) === String(ContractMasterData.consignee_id));
+		        const consigneeDisplay = matchedConsignee
+		            ? matchedConsignee.address
+		            : (ContData.length > 0 ? ContData[0].consignee_id_value : "");
+					
+				const matchedService = servicecodelist.find(s => String(s.servicecode_id) === String(ContractMasterData.s_code));
+				const serviceDisplay = matchedService ? matchedService.service_code : (ContData.length > 0 ? ContData[0].s_code_value : "");
+
+				const matchedHsn = hsncodelist.find(h => String(h.servicecode_id) === String(ContractMasterData.h_code));
+				const hsnDisplay = matchedHsn ? matchedHsn.service_code : (ContData.length > 0 ? ContData[0].h_code_value : "");
+
+		        setInputValue("#bunitvv",     buDisplay);
+		        setInputValue("#intovv",      invoiceToDisplay);
+		        setInputValue("#workordervv", workDisplay);
+		        setInputValue("#nandconvv",   consigneeDisplay);
+				setInputValue("#newscode1", serviceDisplay);
+				setInputValue("#newhcode1", hsnDisplay);
+		        // ---- END NEW ----
 
         $(".dynamic-row11test, .dynamic-row122test").empty(); // Clear previous content
 
@@ -1632,16 +2053,16 @@ async function editRecord11(id) {
 
         // Set contractor data fields
         const contractorFields = {
-            "#bunitvv": "business_unit_name",
+            //"#bunitvv": "business_unit_name",
             //"#intypevv": "invoice_type_calculation",
-            "#intovv": "invoice_to_id_value",
+            //"#intovv": "invoice_to_id_value",
             //"#prodesvv": "product_desc_id",
             "#shipmodevv": "shipment_mode_id_value",
-            "#workordervv": "work_id_value",
+            //"#workordervv": "work_id_value",
             "#exptvv": "export",
            //"#taxresvv": "tax_payable",
             "#percenvv": "percentage_value",
-            "#nandconvv": "consignee_id_value",
+            //"#nandconvv": "consignee_id_value",
             "#banknamevv": "bank_details_id_value",
             "#deliveryconvv": "delivery_condition_id_value",
             "#officevvv": "reg_office_id_value",
@@ -1652,8 +2073,8 @@ async function editRecord11(id) {
             "#connumvv": "containter_no",
             "#epogvv": "epcgno",
             "#exptitlevv": "export_title",
-            "#newscode1": "s_code_value",
-            "#newhcode1": "h_code_value",
+            //"#newscode1": "s_code_value",
+            //"#newhcode1": "h_code_value",
         };
         
 		const InvoiceTypeCal1 =
@@ -1826,6 +2247,150 @@ async function editRecord11(id) {
     }
 }
 
+async function fetchSalebusunitEdit(targetId, selectedId, fallbackText, verified_status) {
+    const url = new URL(`/jssl/contract/listbusinessunitnew`, baseUrl);
+    const response = await fetch(url, { method: "GET", credentials: "include" });
+    const json = await response.json();
+    if (json.status !== "yes" || !json.Data.length) return;
+
+    const selectElement = document.getElementById(targetId);
+    selectElement.innerHTML = `<option value="">Select Business Unit</option>`;
+
+    let matched = false;
+    json.Data.forEach((type) => {
+        const bindaddress = type.business_unit_name + type.location + '(' + type.gst_number + ')';
+        const option = document.createElement("option");
+        option.value = type.business_unit_id;
+        option.textContent = bindaddress;
+        if (selectedId && String(type.business_unit_id) === String(selectedId)) {
+            option.selected = true;
+            matched = true;
+        }
+        selectElement.appendChild(option);
+    });
+
+    // Fallback: no ID match, but we have a display string from Contractor_Data
+    if (!matched && fallbackText) {
+        const fallbackOption = document.createElement("option");
+        fallbackOption.value = fallbackText;
+        fallbackOption.textContent = fallbackText;
+        fallbackOption.selected = true;
+        selectElement.insertBefore(fallbackOption, selectElement.firstChild.nextSibling);
+    }
+
+    // ✅ Make it read-only once verified
+    if (verified_status === "true" || verified_status === "1" || verified_status === 1) {
+        selectElement.setAttribute("disabled", "disabled");
+    } else {
+        selectElement.removeAttribute("disabled"); // reset in case it was disabled from a previous open
+    }
+}
+
+async function fetchinvoicetoEdit(targetId, selectedId, fallbackText) {
+    try {
+        const url = new URL(`/jssl/invoiceConsigneeAddress/getInvoiceAddress`, baseUrl);
+        const response = await fetch(url, { method: "GET", credentials: "include" });
+        const json = await response.json();
+        if (json.status !== "yes" || !json.InvoiceAddress?.length) return;
+
+        const selectElement = document.getElementById(targetId);
+        if (!selectElement) return;
+
+        const records = json.InvoiceAddress
+            .filter(t => t.is_verified == 1 && t.id)
+            .map(t => ({ id: t.id, label: t.address }));
+
+        const deduped = dedupeByLabel(records, selectedId);
+        populateSelect(selectElement, deduped, selectedId, "Select invoice to", fallbackText);
+    } catch (err) {
+        console.error("Error fetching invoice addresses:", err);
+    }
+}
+
+async function fetchSaleworkEdit(targetId, selectedId, fallbackText) {
+    try {
+        const url = new URL(`/jssl/contract/listworkordernew`, baseUrl);
+        const response = await fetch(url, { method: "GET", credentials: "include" });
+        const json = await response.json();
+        if (json.status !== "yes" || !json.Data.length) return;
+
+        const selectElement = document.getElementById(targetId);
+        if (!selectElement) return;
+
+        const records = json.Data
+            .filter(t => t.work_id)
+            .map(t => ({ id: t.work_id, label: t.workorder_no }));
+
+        const deduped = dedupeByLabel(records, selectedId);
+        populateSelect(selectElement, deduped, selectedId, "Select work order", fallbackText);
+    } catch (err) {
+        console.error("Error fetching work orders:", err);
+    }
+}
+
+async function fetchconnameEdit(targetId, selectedId, fallbackText) {
+    try {
+        const url = new URL(`/jssl/invoiceConsigneeAddress/getConsigneeAddressNew`, baseUrl);
+        const response = await fetch(url, { method: "GET", credentials: "include" });
+        const json = await response.json();
+        if (json.status !== "yes" || !json.ConsigneeAddress?.length) return;
+
+        const selectElement = document.getElementById(targetId);
+        if (!selectElement) return;
+
+        const records = json.ConsigneeAddress
+            .filter(t => t.is_verified == 1 && t.id)
+            .map(t => ({ id: t.id, label: t.address }));
+
+        const deduped = dedupeByLabel(records, selectedId);
+        populateSelect(selectElement, deduped, selectedId, "Select", fallbackText);
+    } catch (err) {
+        console.error("Error fetching consignee addresses:", err);
+    }
+}
+
+async function fetchservicecodeEdit(targetId, selectedId, fallbackText) {
+    try {
+        const url = new URL(`/jssl/master/listservicecodemasternew`, baseUrl);
+        const response = await fetch(url, { method: "GET", credentials: "include" });
+        const json = await response.json();
+        if (json.status !== "yes" || !json.Data.length) return;
+
+        const selectElement = document.getElementById(targetId);
+        if (!selectElement) return;
+
+        const records = json.Data
+            .filter(t => t.servicecode_id)
+            .map(t => ({ id: t.servicecode_id, label: t.service_code }));
+
+        const deduped = dedupeByLabel(records, selectedId);
+        populateSelect(selectElement, deduped, selectedId, "Select Service Code", fallbackText);
+    } catch (err) {
+        console.error("Error fetching service codes:", err);
+    }
+}
+
+async function fetchhsncodeEdit(targetId, selectedId, fallbackText) {
+    try {
+        const url = new URL(`/jssl/master/listHsncodemasternew`, baseUrl);
+        const response = await fetch(url, { method: "GET", credentials: "include" });
+        const json = await response.json();
+        if (json.status !== "yes" || !json.Data.length) return;
+
+        const selectElement = document.getElementById(targetId);
+        if (!selectElement) return;
+
+        const records = json.Data
+            .filter(t => t.servicecode_id)
+            .map(t => ({ id: t.servicecode_id, label: t.service_code }));
+
+        const deduped = dedupeByLabel(records, selectedId);
+        populateSelect(selectElement, deduped, selectedId, "Select HSN Code", fallbackText);
+    } catch (err) {
+        console.error("Error fetching hsn codes:", err);
+    }
+}
+
 async function editRecordInvoice(id) {
     try {
         const url = new URL(`/jssl/invoice/searchadvidnew`, baseUrl);
@@ -1843,6 +2408,32 @@ async function editRecordInvoice(id) {
         const invoiceData = json.Invoice_Data || {};
         const GrandValue = json.Grand_Total_value || [];
         const ContData = json.Contractor_Data || [];
+		
+		// ---- NEW: populate Contract Details from INVOICE_CONTRACT_MASTER ----
+		const ContractMasterData = json.InvoiceContractMaster || {};
+
+		setInputValue("#vconslnoupdate", ContractMasterData.con_slno || invoiceData.contract_slno || "");
+		
+		//fetchSalebusunitEdit("bunitvup", ContractMasterData.bid || (ContData.length > 0 ? ContData[0].business_unit_name : ""));
+		fetchSalebusunitEdit("bunitvup",ContractMasterData.bid,ContData.length > 0 ? ContData[0].business_unit_name : "",ContData.length > 0 ? ContractMasterData.verified_status : undefined);
+		document.getElementById("intypevup").value = ContractMasterData.invoice_type_calculation || "2";
+		//fetchinvoicetoEdit("intovup", ContractMasterData.invoice_to_id || (ContData.length > 0 ? ContData[0].invoice_to_id_value : ""));
+		fetchinvoicetoEdit("intovup",ContractMasterData.invoice_to_id,ContData.length > 0 ? ContData[0].invoice_to_id_value : "");
+		document.getElementById("prodesvup").value = ContractMasterData.product_desc_id || "1";
+		setInputValue("#shipmodevup", ContData.length > 0 ? ContData[0].shipment_mode_id_value : "");
+		//fetchSaleworkEdit("workordervup", ContractMasterData.work_id || (ContData.length > 0 ? ContData[0].work_id_value : ""));
+		fetchSaleworkEdit("workordervup",ContractMasterData.work_id,ContData.length > 0 ? ContData[0].work_id_value : "");
+		setInputValue("#exptvup", ContractMasterData.export);
+		document.getElementById("taxresvup").value = ContractMasterData.tax_ex_inc || "0";
+		setInputValue("#percenvup", ContractMasterData.percentage_value);
+		//fetchconnameEdit("nandconvup", ContractMasterData.consignee_id || (ContData.length > 0 ? ContData[0].consignee_id_value : ""));
+		fetchconnameEdit("nandconvup",ContractMasterData.consignee_id,ContData.length > 0 ? ContData[0].consignee_id_value : "");
+		setInputValue("#banknamevup", ContData.length > 0 ? ContData[0].bank_details_id_value : "");
+		setInputValue("#deliveryconvup", ContData.length > 0 ? ContData[0].delivery_condition_id_value : "");
+		setInputValue("#officevvup", ContData.length > 0 ? ContData[0].reg_office_id_value : "");
+		fetchservicecodeEdit("newscode",ContractMasterData.s_code,ContData.length > 0 ? ContData[0].s_code_value  : "");
+		fetchhsncodeEdit("newhcode",ContractMasterData.h_code,ContData.length > 0 ? ContData[0].h_code_value  : "");
+		        // ---- END NEW ----
 
         $(".dynamic-row11uptest, .dynamic-row122up").empty(); // Clear previous content
         
@@ -1895,8 +2486,8 @@ async function editRecordInvoice(id) {
             "#connumvup": "containter_no",
             "#epogvup": "epcgno",
             "#exptitlevup": "export_title",
-            "#newhcode": "h_code_value",
-            "#newscode": "s_code_value",
+            //"#newhcode": "h_code_value",
+            //"#newscode": "s_code_value",
         };
 
 		const InvoiceTypeCal =
@@ -2244,6 +2835,24 @@ function addeventupdate() {
             lc_issue_date: lcdatevup.value, 
             id: vidverifyup.value,
            // invoice_type_id:intypeeditup.value
+		   // ---- Contract Details modal fields ----
+		   	con_slno: document.getElementById("vconslnoupdate").value,
+		   	factory_id: selectedFactoryId,
+		   	business_unit_id: document.getElementById("bunitvup").value,
+		   	invoice_type_calculation: document.getElementById("intypevup").value,
+		    invoice_to_id: document.getElementById("intovup").value,
+		   	product_desc_id: document.getElementById("prodesvup").value,
+		   	shipment_mode_id: document.getElementById("shipmodevup").value,
+		   	work_id: document.getElementById("workordervup").value,
+		   	export: document.getElementById("exptvup").value,
+		   	tax_ex_inc: document.getElementById("taxresvup").value,
+		   	percentage_value: document.getElementById("percenvup").value,
+		   	consignee_id: document.getElementById("nandconvup").value,   // ✅ FIXED
+		    bank_details_id: document.getElementById("banknamevup").value,
+		   	delivery_condition_id: document.getElementById("deliveryconvup").value,
+		   	regd_office_id: document.getElementById("officevvup").value,
+			s_code: document.getElementById("newscode").value,
+			h_code: document.getElementById("newhcode").value,
         }),
         success: function (data) {
             var result = data.message;
@@ -3488,6 +4097,68 @@ async function printRecord(id) {
         const tax               = json.tax;
         const Grand_Total_value = json.Grand_Total_value;
 
+        // ---- resolve Invoice To / Consignee / Work Order from InvoiceContractMaster, fallback to Contractor_Data ----
+        const ContractMasterData = json.InvoiceContractMaster || {};
+
+        const matchedInvoiceTo = invoiceAddressList.find(a => String(a.id) === String(ContractMasterData.invoice_to_id));
+        const resolvedInvoiceTo = matchedInvoiceTo
+            ? matchedInvoiceTo.address
+            : Contractor_Data[0].invoice_to_id_value;
+
+        const matchedConsignee = consigneeAddressList.find(c => String(c.id) === String(ContractMasterData.consignee_id));
+        const resolvedConsignee = matchedConsignee
+            ? matchedConsignee.address
+            : Contractor_Data[0].consignee_id_value;
+			
+			const resolvedInvoiceDistrict  = matchedInvoiceTo ? matchedInvoiceTo.district   : Contractor_Data[0].invoiceDistrict;
+			const resolvedInvoicePinNo     = matchedInvoiceTo ? matchedInvoiceTo.pin_no     : Contractor_Data[0].invoicePinNo;
+			const resolvedInvoiceStateName = matchedInvoiceTo ? matchedInvoiceTo.state_name : Contractor_Data[0].invoiceStateName;
+			const resolvedInvoiceStateCode = matchedInvoiceTo ? matchedInvoiceTo.state_id   : Contractor_Data[0].invoiceStateCode;
+			const resolvedInvoiceGstNo     = matchedInvoiceTo ? matchedInvoiceTo.gst_no     : Contractor_Data[0].invoiceGstNo;
+			const resolvedInvoicePanNo     = matchedInvoiceTo ? matchedInvoiceTo.pan_no     : Contractor_Data[0].invoicePanNo;
+
+			const resolvedConsigneeDistrict  = matchedConsignee ? matchedConsignee.district   : Contractor_Data[0].consigneeDistrict;
+			const resolvedConsigneePinNo     = matchedConsignee ? matchedConsignee.pin_no     : Contractor_Data[0].consigneePinNo;
+			const resolvedConsigneeStateName = matchedConsignee ? matchedConsignee.state_name : Contractor_Data[0].consigneeStateName;
+			const resolvedConsigneeStateCode = matchedConsignee ? matchedConsignee.state_id   : Contractor_Data[0].consigneeStateCode;
+			const resolvedConsigneeGstNo     = matchedConsignee ? matchedConsignee.gst_no     : Contractor_Data[0].consigneeGstNo;
+			const resolvedConsigneePanNo     = matchedConsignee ? matchedConsignee.pan_no     : Contractor_Data[0].consigneePanNo;
+
+        const matchedWork = workOrderList.find(w => String(w.work_id) === String(ContractMasterData.work_id));
+        const resolvedWork = matchedWork
+            ? matchedWork.workorder_no
+            : Contractor_Data[0].work_id_value;
+
+        function cleanBusinessUnitAddress(name) {
+            if (!name) return '';
+            return name
+                .replace(/^JBU-\d+\s*/i, '')
+                .replace(/^JSW\s+Severfield\s+Structures\s+Limited\s*/i, '')
+                .trim();
+        }
+
+        const matchedBU = businessUnitList.find(b => String(b.business_unit_id) === String(ContractMasterData.bid));
+        const resolvedbudisplay = matchedBU
+            ? `${cleanBusinessUnitAddress(matchedBU.business_unit_name)},${matchedBU.district || ''}-${matchedBU.pinNo || ''}<br>${matchedBU.location || ''}`
+            : (Contractor_Data.length > 0 ? cleanBusinessUnitAddress(Contractor_Data[0].business_unit_name) : "");
+
+        // ---- NEW: resolve Service Code / HSN Code from InvoiceContractMaster, fallback to Contractor_Data ----
+        const matchedService = servicecodelist.find(s => String(s.servicecode_id) === String(ContractMasterData.s_code));
+        const serviceDisplay = matchedService
+            ? matchedService.service_code
+            : (Contractor_Data.length > 0 ? Contractor_Data[0].s_code_value : "");
+
+        const matchedHsn = hsncodelist.find(h => String(h.servicecode_id) === String(ContractMasterData.h_code));
+        const hsnDisplay = matchedHsn
+            ? matchedHsn.service_code
+            : (Contractor_Data.length > 0 ? Contractor_Data[0].h_code_value : "");
+
+        // combine — show whichever is present, "Service / HSN" if both exist
+		const serviceHsnDisplay = [serviceDisplay, hsnDisplay]
+		    .filter(x => x && x.toString().trim() !== "" && x.toString().trim().toLowerCase() !== "null")
+		    .join(" / ");
+        // ---- END NEW ----
+
         const Grand_Total_tax        = Grand_Total_value[0].Grand_Total_tax;
         const Total_adv_tax_Taxable  = Grand_Total_value[0].Total_adv_tax_Taxable;
         const Tax_Final_total        = Grand_Total_value[0].Tax_Final_total;
@@ -3496,7 +4167,6 @@ async function printRecord(id) {
         const invoiceno   = Invoice_Data.invoice_no;
         const lr_docketno = Invoice_Data.lr_docketno;
         const date_val    = Invoice_Data.date_val;
-        //const factory_id  = Invoice_Data.factory_id;
         const cancel      = Invoice_Data.cancel;
         const productdesc = Invoice_Data.product_desc;
 
@@ -3506,26 +4176,16 @@ async function printRecord(id) {
         if (!response_factory.ok) throw new Error("Failed to fetch factory data");
         const factory_json = await response_factory.json();
 
-        const factory_data_map     = factory_json.FactoryDetails;
-       // const FactoryDataBasedById = factory_data_map.find(f => f.id === factory_id);
-        const MumbaiAddress        = factory_data_map.find(f => f.id === "4");
+        const factory_data_map = factory_json.FactoryDetails;
+        const MumbaiAddress    = factory_data_map.find(f => f.id === "4");
+        const reg_addresss     = MumbaiAddress.address;
 
-        const reg_addresss    = MumbaiAddress.address;
-		// ── Business Unit Address (cleaned, trimmed, no stray commas) ──────────
-		        const address = Contractor_Data[0].businessUnitName
-		            .split(',')
-		            .slice(1)
-		            .map(x => x.trim())
-		            .filter(x => x !== "")
-		            .join(', ');
-		const factory_Address = address;
-       // const factory_Address = FactoryDataBasedById.address;
-	   // ── Business Unit State Code / GSTIN / PAN (pulled from Contractor_Data) ─
-	    const state_Code     = Contractor_Data[0].businessStateName;
-	    const Gst_Code       = Contractor_Data[0].businessgstNumber;
-	   	const Pan_Code       = Contractor_Data[0].businesspanNumber;
-        // ── Contractor / Invoice Fields ───────────────────────────────────────
-        const invoice_to_id_value         = Contractor_Data[0].invoice_to_id_value;
+        const bid = resolvedbudisplay;
+		const state_Code = ContractMasterData.state_id   || Contractor_Data[0].invoiceStateCode;
+		const Gst_Code   = ContractMasterData.gst_number || Contractor_Data[0].invoiceGstNo;
+		const Pan_Code   = ContractMasterData.pan_number || Contractor_Data[0].invoicePanNo;
+
+        const invoice_to_id_value         = resolvedInvoiceTo;
         const tax_payable                 = Contractor_Data[0].tax_payable == 1 ? "No" : "Yes";
         const area_no                     = Contractor_Data[0].area_no;
         const lot_no                      = Contractor_Data[0].lot_no;
@@ -3533,16 +4193,16 @@ async function printRecord(id) {
         const epcgno                      = Contractor_Data[0].epcgno;
         const shipment_mode_id_value      = Contractor_Data[0].shipment_mode_id_value;
         const delivery_condition_id_value = Contractor_Data[0].delivery_condition_id_value;
-        const consignee_id_value          = Contractor_Data[0].consignee_id_value;
-        const work_id_value               = Contractor_Data[0].work_id_value;
-        const invoiceStateName            = Contractor_Data[0].invoiceStateName;
-        const consigneeStateName          = Contractor_Data[0].consigneeStateName;
-        const invoiceStateCode            = Contractor_Data[0].invoiceStateCode;
-        const consigneeStateCode          = Contractor_Data[0].consigneeStateCode;
-        const invoiceGstNo                = Contractor_Data[0].invoiceGstNo;
-        const consigneeGstNo              = Contractor_Data[0].consigneeGstNo;
-        const invoicePanNo                = Contractor_Data[0].invoicePanNo;
-        const consigneePanNo              = Contractor_Data[0].consigneePanNo;
+        const consignee_id_value          = resolvedConsignee;
+        const work_id_value               = resolvedWork;
+		const invoiceStateName            = resolvedInvoiceStateName;
+		const consigneeStateName          = resolvedConsigneeStateName;
+		const invoiceStateCode            = resolvedInvoiceStateCode;
+		const consigneeStateCode          = resolvedConsigneeStateCode;
+		const invoiceGstNo                = resolvedInvoiceGstNo;
+		const consigneeGstNo              = resolvedConsigneeGstNo;
+		const invoicePanNo                = resolvedInvoicePanNo;
+		const consigneePanNo              = resolvedConsigneePanNo;
         const bankName                    = Contractor_Data[0].org_name;
         const account_number              = Contractor_Data[0].account_number;
         const branch_address              = Contractor_Data[0].bankName + ' ' + Contractor_Data[0].branch_address;
@@ -3582,7 +4242,7 @@ async function printRecord(id) {
                 <tr class="product-row">
                     <td colspan="1" style="text-align:right;">${index + 1}</td>
                     <td colspan="4" class="desc-col descri">${item.scrap_name_type_id || ''}</td>
-                    <td colspan="1" style="text-align:right !important;">${item.serviceCode || ''}</td>
+                    <td colspan="1" style="text-align:right !important;">${serviceHsnDisplay}</td>
                     <td colspan="1" style="text-align:left !important;">${item.uom_name || ''}</td>
                     <td colspan="1" class="qtys">${item.qty || ''}</td>
                     <td colspan="2" class="weits">${item.per_kgs || ''}</td>
@@ -3664,200 +4324,82 @@ async function printRecord(id) {
         const htmlContent = `
             <style>
                 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
-
                 * { box-sizing: border-box; }
-
                 .watermark {
-                    position: absolute;
-                    top: 50%;
-                    left: 50%;
+                    position: absolute; top: 50%; left: 50%;
                     transform: translate(-50%, -50%) rotate(-45deg);
-                    font-size: 120px;
-                    font-weight: bold;
-                    opacity: 0.15;
-                    pointer-events: none;
-                    z-index: 9999;
-                    white-space: nowrap;
-                    letter-spacing: 10px;
+                    font-size: 120px; font-weight: bold; opacity: 0.15;
+                    pointer-events: none; z-index: 9999; white-space: nowrap; letter-spacing: 10px;
                 }
                 .watermark.cancelled { color: #ff0000; }
                 .watermark.verified  { color: #4CAF50; }
-
                 .page { position: relative; }
-
                 html, body {
-                    margin: 0;
-                    padding: 0;
+                    margin: 0; padding: 0;
                     font-family: "Times New Roman", Times, serif;
-                    color: black !important;
-                    background-color: #fff !important;
-                    font-size: 10px;
-                    line-height: 2;
+                    color: black !important; background-color: #fff !important;
+                    font-size: 10px; line-height: 2;
                 }
-
-                .page {
-                    width: 202mm;
-                    height: 297mm;
-                    overflow: visible;
-                    page-break-after: avoid !important;
-                    margin: 0;
-                    padding: 0;
-                }
+                .page { width: 202mm; height: 297mm; overflow: visible; page-break-after: avoid !important; margin: 0; padding: 0; }
                 .page:last-child { page-break-after: avoid !important; }
-
                 .invoice-container {
-                    width: 100%;
-                    height: auto;
-                    overflow: visible;
-                    -webkit-font-smoothing: antialiased;
-                    text-rendering: geometricPrecision;
-                    page-break-inside: avoid;
-                    margin: 0;
-                    padding: 1mm;
+                    width: 100%; height: auto; overflow: visible;
+                    -webkit-font-smoothing: antialiased; text-rendering: geometricPrecision;
+                    page-break-inside: avoid; margin: 0; padding: 1mm;
                 }
-
-                table {
-                    border-collapse: collapse !important;
-                    table-layout: fixed;
-                    page-break-inside: avoid;
-                    width: 100%;
-                    margin: 0;
-                    padding: 0;
-                }
-
-                td, th {
-                    border-right: 0.5px solid #000;
-                    border-bottom: 0.5px solid #000;
-                    padding: 2px 4px;
-                    vertical-align: top;
-                    font-size: 10px;
-                    line-height: 1.05;
-                    word-wrap: break-word;
-                }
-
+                table { border-collapse: collapse !important; table-layout: fixed; page-break-inside: avoid; width: 100%; margin: 0; padding: 0; }
+                td, th { border-right: 0.5px solid #000; border-bottom: 0.5px solid #000; padding: 2px 4px; vertical-align: top; font-size: 10px; line-height: 1.05; word-wrap: break-word; }
                 tr { page-break-inside: avoid; }
                 tr:first-child th { border-top: 0.5px solid #000; }
-
-                td:first-child,
-                th:first-child { border-left: 0.5px solid #000; }
-
+                td:first-child, th:first-child { border-left: 0.5px solid #000; }
                 .company-details-table { border-top: 0.5px solid #000 !important; }
-
                 .header, .footer { text-align: center; margin: 0; padding: 0; }
-
-                .invoice-header {
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                    margin-bottom: 2mm;
-                }
-
-                .gst-text {
-                    font-size: 15px;
-                    font-weight: 500;
-                    text-align: center;
-                    margin-left: 300px !important;
-                }
-
+                .invoice-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2mm; }
+                .gst-text { font-size: 15px; font-weight: 500; text-align: center; margin-left: 300px !important; }
                 .copy-label { font-size: 12px; font-weight: normal; }
-
                 td br, th br { display: block; margin: 0; line-height: 1; }
-
                 .company-details-table td { padding: 4px; font-size: 11px !important; }
-
                 .company-logo img { width: 60px; height: auto; display: block; margin-bottom: 2px; }
-
                 .product-row td:nth-child(n+4) { text-align: right !important; }
-
-                .product-row td,
-                .empty-row td { height: 22px; }
-
+                .product-row td, .empty-row td { height: 22px; }
                 .empty-row td { border-top: none !important; border-bottom: none !important; }
-
                 .last-product td { border-bottom: none !important; }
-
-                .product-table .desc-col {
-                    line-height: 1.5 !important;
-                    white-space: normal;
-                    word-break: break-word;
-                }
-
+                .product-table .desc-col { line-height: 1.5 !important; white-space: normal; word-break: break-word; }
                 .product-table .fright-row .fright-data { line-height: 1.6 !important; padding: 5px !important; }
-
                 .total-body .total-datatd  { line-height: 1.6 !important; padding: 5px !important; }
                 .total-body .total-datatds { line-height: 2.5 !important; text-align: right !important; }
-
                 .desc-col.descri { font-size: 7px !important; padding: 1px !important; }
                 .desc-col.tols   { text-align: right !important; }
                 .desc-col.prs    { text-align: right !important; }
                 .desc-col.weits  { text-align: right !important; }
                 .desc-col.qtys   { text-align: right !important; }
-
-                .product-table th,
-                .product-table td { padding: 3px 5px; line-height: 1.2; }
-
+                .product-table th, .product-table td { padding: 3px 5px; line-height: 1.2; }
                 .product-row td { border-bottom: none; }
-
                 .freight-vlaue { text-align: right !important; }
                 .fright-row    { border: 0.5px solid #000 !important; }
-
-                .tax-row .tax-name {
-                    line-height: 0.8 !important;
-                    text-align: right !important;
-                    padding: 5px !important;
-                }
+                .tax-row .tax-name { line-height: 0.8 !important; text-align: right !important; padding: 5px !important; }
                 .tax-row .tax-per { text-align: right !important; vertical-align: middle !important; }
-
-                .total-word .total-words-des {
-                    line-height: 1.2 !important;
-                    font-size: 8px !important;
-                    padding: 0 0 5px 5px !important;
-                }
+                .total-word .total-words-des { line-height: 1.2 !important; font-size: 8px !important; padding: 0 0 5px 5px !important; }
                 .total-words-des.ss { vertical-align: middle !important; }
                 .total-word .total-words-val { text-align: right !important; vertical-align: middle !important; }
-
                 .particulars-row { line-height: 1 !important; }
                 .particulars-row td { padding-top: 5px !important; }
                 .particulars-row .particulars-row-prtd { font-size: 8px !important; }
-
                 .particulars-row-body { padding-top: 5px !important; }
-                .particulars-row-body .particulars-row-body-td {
-                    text-align: right !important;
-                    font-size: 8px !important;
-                }
-
+                .particulars-row-body .particulars-row-body-td { text-align: right !important; font-size: 8px !important; }
                 .td-body-tax { text-align: right !important; line-height: 2 !important; }
-
                 .Bank_details { line-height: 1.8 !important; font-size: 8px !important; }
-
-                .last-data td {
-                    line-height: 1.5 !important;
-                    font-size: 9px !important;
-                    padding-top: 6px !important;
-                }
+                .last-data td { line-height: 1.5 !important; font-size: 9px !important; padding-top: 6px !important; }
                 .last-data td:last-child { text-align: center !important; vertical-align: middle !important; }
                 .last-data td:last-child span { display: block; text-align: center; }
-
                 .footer { padding-top: 6px !important; }
                 .footer p { font-size: 9px; line-height: 1.2; margin: 0; padding: 0; }
-
                 .invoice-line { display: flex; justify-content: space-between; width: 80%; }
-
                 .fixed-8px td { font-size: 8px !important; line-height: 1.1 !important; }
-
                 .terms { margin-top: 2mm; }
-
                 .header, .footer, .gst-text, .copy-label { text-align: center; }
-
                 .samefontweight { font-weight: 550; }
-
-                .fulladdress,
-                .conaddress,
-                .facotry_address {
-                    white-space: pre-line;
-                    display: inline-block;
-                    line-height: 1.5;
-                }
+                .fulladdress, .conaddress, .facotry_address { white-space: pre-line; display: inline-block; line-height: 1.5; }
             </style>
 
             <div class="invoice-container">
@@ -3871,19 +4413,19 @@ async function printRecord(id) {
 
                 <table class="company-details-table">
                     <tr>
-					<td colspan="6">
-					    <div class="company-logo">
-					        <img src="img/logo/download.png" alt="Company Logo" style="width:100px;">
-					        </div>
-					      <strong>JSW Serverfiled Structures Limited</strong><br>
-					      <span class="facotry_address"></span>
-					       <p>
-					        <b>State Code:</b> <span class="state_code"></span><br>
-					        <b>GSTIN:</b> <span class="gst_code"></span> &nbsp; 
-							<b>PAN:</b> <span class="pan_code"></span><br>
-					        <b>ICE No:</b> 0309033152 &nbsp; <b>CIN No:</b> U28112MH2009PLC191045<br>
-					        <b>Email:</b> invoice@jssl.in &nbsp; <b>Website:</b> www.jssl.in<br>
-					         </td>
+                    <td colspan="6">
+                        <div class="company-logo">
+                            <img src="img/logo/download.png" alt="Company Logo" style="width:100px;">
+                        </div>
+                        <strong>JSW Serverfiled Structures Limited</strong><br>
+                        <span class="bid"></span>
+                        <p>
+                            <b>State Code:</b> <span class="state_code"></span><br>
+                            <b>GSTIN:</b> <span class="gst_code"></span> &nbsp;
+                            <b>PAN:</b> <span class="pan_code"></span><br>
+                            <b>ICE No:</b> 0309033152 &nbsp; <b>CIN No:</b> U28112MH2009PLC191045<br>
+                            <b>Email:</b> invoice@jssl.in &nbsp; <b>Website:</b> www.jssl.in<br>
+                        </td>
                         <td colspan="6">
                             <br>
                             <div class="invoice-line">
@@ -4084,131 +4626,76 @@ async function printRecord(id) {
         `;
 
         // ── Fill Invoice Data into DOM ─────────────────────────────────────────
-             function fillInvoice(container) {
+        function fillInvoice(container) {
 
-            // FACTORY DETAILS
             container.querySelector(".reg_add").textContent    = reg_addresss;
             container.querySelector(".gst_code").textContent   = Gst_Code;
             container.querySelector(".state_code").textContent = state_Code;
-			container.querySelector(".pan_code").textContent   = Pan_Code;
-            container.querySelector('.facotry_address').textContent = factory_Address;
+            container.querySelector(".pan_code").textContent   = Pan_Code;
+            container.querySelector('.bid').innerHTML = bid;
 
-            // INVOICE HEADER
             container.querySelector('.datetime').textContent     = formattedDateTime;
             container.querySelector('.dateor').textContent       = work_date;
             container.querySelector('.date').textContent         = currentDate;
             container.querySelector('.invoiceNumber').textContent = invoiceno;
 
-            // INVOICE TO DETAILS
-			const invoiceToValue = invoice_to_id_value || '';
-			 
-						// Split using \r\n
-						const invoiceLines = invoiceToValue.split(/\r?\n/);
-			 
-						// First line
-						const line1 = invoiceLines[0] || '';
-			 
-						// Second line
-						const line2 = invoiceLines[1] || '';
-			 
-						// Third line → remove ", Thane, Maharashtra"
-						const line3 = (invoiceLines[2] || '')
-						    ;
-			 
-						// Set values
-						container.querySelector('.shipto11').textContent = line1;
-			 
-						container.querySelector('.shipto11add2').textContent = line2;
-			 
-						container.querySelector('.shipto11add3').textContent = line3;
-						const districtAndPin = [
-						    Contractor_Data[0].invoiceDistrict,
-						    Contractor_Data[0].invoicePinNo
-						]
-						.filter(x => x && x.toString().trim() !== "")
-						.join("-");
-			 
-						const invoiceAddress = [
-						    Invoice_Data.addressLine1up,
-						    Invoice_Data.addressLine2up,
-						    Invoice_Data.addressLine3up,
-						    districtAndPin
-						]
-						.filter(x => x && x.toString().trim() !== "")
-						.join("\n");
-			 
-						console.log("the the invoice address is this2 ", invoiceAddress);
-			 
-						container.querySelector('.fulladdress').textContent = invoiceAddress;
-			 
-					    container.querySelector('.statename').textContent =
-					        invoiceStateName || '';
-			 
-					    container.querySelector('.stcode11').textContent =
-					        invoiceStateCode || '';
-			 
-					    container.querySelector('.placeofsupply').textContent =
-					        Invoice_Data.supply_place || '';
-			 
-					    container.querySelector('.ingst').textContent =
-					        invoiceGstNo || '';
-			 
-					    container.querySelector('.panin').textContent =
-					        invoicePanNo || '';
-			 
-					    // =========================
-					    // CONSIGNEE DETAILS
-					    // =========================
-			 
-						console.log("the consignee value is this ", consignee_id_value);
-			 
-						const consigneeValue = consignee_id_value || '';
-			 
-						// Split using \r\n
-						const consigneeLines = consigneeValue.split(/\r?\n/);
-			 
-						// First line
-						const conLine1 = consigneeLines[0] || '';
-			 
-						// Second line
-						const conLine2 = consigneeLines[1] || '';
-			 
-						// Third line
-						const conLine3 = consigneeLines[2] || '';
-			 
-						// Set values
-						container.querySelector('.conname').textContent = conLine1;
-			 
-						container.querySelector('.conname1').textContent = conLine2;
-			 
-						container.querySelector('.conname2').textContent = conLine3;
-			 
-							const consigneeDistrictAndPin = [
-							    Contractor_Data[0].consigneeDistrict,
-							    Contractor_Data[0].consigneePinNo
-							]
-							.filter(x => x && x.toString().trim() !== "")
-							.join("-");
-			 
-							const consigneeAddress = [
-							    Invoice_Data.conaddressLine1,
-							    Invoice_Data.conaddressLine2,
-							    Invoice_Data.conaddressLine3,
-							    consigneeDistrictAndPin
-							]
-							.filter(x => x && x.toString().trim() !== "")
-							.join("\n");
-			 
-							container.querySelector('.conaddress').textContent =
-							    consigneeAddress;
+            const invoiceToValue = invoice_to_id_value || '';
+            const invoiceLines = invoiceToValue.split(/\r?\n/);
+            const line1 = invoiceLines[0] || '';
+            const line2 = invoiceLines[1] || '';
+            const line3 = (invoiceLines[2] || '');
 
+            container.querySelector('.shipto11').textContent = line1;
+            container.querySelector('.shipto11add2').textContent = line2;
+            container.querySelector('.shipto11add3').textContent = line3;
+
+			const districtAndPin = [
+			    resolvedInvoiceDistrict,
+			    resolvedInvoicePinNo
+			].filter(x => x && x.toString().trim() !== "").join("-");
+
+            const invoiceAddress = [
+                Invoice_Data.addressLine1up,
+                Invoice_Data.addressLine2up,
+                Invoice_Data.addressLine3up,
+                districtAndPin
+            ].filter(x => x && x.toString().trim() !== "").join("\n");
+
+            container.querySelector('.fulladdress').textContent = invoiceAddress;
+            container.querySelector('.statename').textContent = invoiceStateName || '';
+            container.querySelector('.stcode11').textContent = invoiceStateCode || '';
+            container.querySelector('.placeofsupply').textContent = Invoice_Data.supply_place || '';
+            container.querySelector('.ingst').textContent = invoiceGstNo || '';
+            container.querySelector('.panin').textContent = invoicePanNo || '';
+
+            const consigneeValue = consignee_id_value || '';
+            const consigneeLines = consigneeValue.split(/\r?\n/);
+            const conLine1 = consigneeLines[0] || '';
+            const conLine2 = consigneeLines[1] || '';
+            const conLine3 = consigneeLines[2] || '';
+
+            container.querySelector('.conname').textContent = conLine1;
+            container.querySelector('.conname1').textContent = conLine2;
+            container.querySelector('.conname2').textContent = conLine3;
+
+			const consigneeDistrictAndPin = [
+			    resolvedConsigneeDistrict,
+			    resolvedConsigneePinNo
+			].filter(x => x && x.toString().trim() !== "").join("-");
+
+            const consigneeAddress = [
+                Invoice_Data.conaddressLine1,
+                Invoice_Data.conaddressLine2,
+                Invoice_Data.conaddressLine3,
+                consigneeDistrictAndPin
+            ].filter(x => x && x.toString().trim() !== "").join("\n");
+
+            container.querySelector('.conaddress').textContent = consigneeAddress;
             container.querySelector('.state').textContent          = consigneeStateName || '';
             container.querySelector('.stateco').textContent        = consigneeStateCode || '';
-            //container.querySelector('.conplaceofsupply').textContent = Contractor_Data[0].supply_place || '';
             container.querySelector('.congst').textContent         = consigneeGstNo || '';
             container.querySelector('.pancon').textContent         = consigneePanNo || '';
 
-            // TRANSPORT DETAILS
             container.querySelector('.taxpayre').textContent  = tax_payable;
             container.querySelector('.areano').textContent    = area_no || '';
             container.querySelector('.contlo').textContent    = containter_no || '';
@@ -4223,8 +4710,6 @@ async function printRecord(id) {
             container.querySelector('.vehino').textContent    = vechile_no || '';
             container.querySelector('.contrefno').textContent = con_code_with_lot_no || '';
 
-            // TOTALS  ← all formatted with commas
-            //container.querySelector('.freight').textContent       = formatAmount(freight);
             container.querySelector('.qtytotal').textContent      = total_qty || '';
             container.querySelector('.wiegtotal').textContent     = total_kgs || '';
             container.querySelector('.val11').textContent         = formatAmount(basic_value);
@@ -4233,7 +4718,6 @@ async function printRecord(id) {
             container.querySelector('.taxbasic').textContent      = formatAmount(Total_adv_tax_Taxable);
             container.querySelector('.taxtotal').textContent      = formatAmount(Tax_Final_total);
 
-            // BANK DETAILS
             container.querySelector('.bankname').textContent = bankName || '';
             container.querySelector('.acc').textContent      = account_number || '';
             container.querySelector('.bname').textContent    = branch_address || '';
@@ -4242,41 +4726,6 @@ async function printRecord(id) {
             container.querySelector('.ifsc').textContent     = ifsc_code || '';
         }
 
-        // ── Auto-fit font size ────────────────────────────────────────────────
-        function autoFitInvoice(container) {
-            const invoice   = container.querySelector(".invoice-container");
-            const maxHeight = 1000;
-            let fontSize    = 9;
-
-            function applySize(size) {
-                invoice.style.fontSize = size + "px";
-                invoice.querySelectorAll("td, th").forEach(el => {
-                    el.style.fontSize   = size + "px";
-                    el.style.padding    = "1px 2px";
-                    el.style.lineHeight = "1.05";
-                });
-            }
-
-            applySize(fontSize);
-            if (invoice.scrollHeight === 0) return;
-
-            while (invoice.scrollHeight > maxHeight && fontSize > 6) {
-                fontSize--;
-                applySize(fontSize);
-            }
-            console.log("Final font size:", fontSize);
-        }
-
-        // ── Shrink long descriptions ──────────────────────────────────────────
-        function shrinkLongDescriptions(container) {
-            container.querySelectorAll(".desc-col").forEach(td => {
-                if (td.textContent.length > 200) {
-                    td.classList.add("desc-small", "desc-xsmall");
-                }
-            });
-        }
-
-        // ── Print / PDF ───────────────────────────────────────────────────────
         function downloadInvoicePDF(htmlContent, fillInvoice, hideLoader) {
             const prange = [
                 "Original For Recipient",
@@ -4298,12 +4747,7 @@ async function printRecord(id) {
                     <style>
                         @page { size: A4; margin: 10mm; }
                         body { margin: 0; padding: 0; font-family: Calibri, Arial, sans-serif; }
-                        .page {
-                            width: 100%;
-                            max-width: 210mm;
-                            margin: 0 auto;
-                            page-break-after: always;
-                        }
+                        .page { width: 100%; max-width: 210mm; margin: 0 auto; page-break-after: always; }
                         .page:last-child { page-break-after: avoid; }
                         @media print {
                             body { margin: 0; }

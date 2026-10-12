@@ -194,7 +194,7 @@ function fetchReport(type) {
         type: "GET",
         data: params,
         xhrFields: { withCredentials: true },
-        success: function (response) {
+/*        success: function (response) {
             var data = response.data || [];
 
             data.sort(function(a, b) {
@@ -211,7 +211,33 @@ function fetchReport(type) {
             }
 
             renderPivotTable(data, targetTableId);
-        },
+        },*/
+		success: function (response) {
+		    var data = response.data || [];
+
+		    data.sort(function (a, b) {
+		        var locA = locMap[a.location] || "";
+		        var locB = locMap[b.location] || "";
+		        if (locA !== locB) return locA.localeCompare(locB);
+		        return a.username.localeCompare(b.username);
+		    });
+
+		    var totals = {
+		        rowTotals:    response.rowTotals    || {},
+		        columnTotals: response.columnTotals || {},
+		        grandTotal:   response.grandTotal   || 0
+		    };
+
+		    if (type === "finance") {
+		        window._lastFinanceData   = data;
+		        window._lastFinanceTotals = totals;
+		    } else {
+		        window._lastReportData   = data;
+		        window._lastReportTotals = totals;
+		    }
+
+		    renderPivotTable(data, targetTableId, totals);
+		},
         error: function (xhr) {
             console.error("Report error:", xhr.responseText);
             if (type === "finance") window._lastFinanceData = [];
@@ -329,7 +355,7 @@ function fetchReport(type) {
 
 
 
-function renderPivotTable(data, tableId) {
+/*function renderPivotTable(data, tableId) {
     tableId = tableId || "TableID"; // default keeps old calls working
 
     if (!data || data.length === 0) {
@@ -342,12 +368,12 @@ function renderPivotTable(data, tableId) {
         return;
     }
 
-    /* unique sorted contracts */
+     unique sorted contracts 
     var contractSet = {};
     for (var i = 0; i < data.length; i++) { contractSet[data[i].jobCode] = true; }
     var contracts = Object.keys(contractSet).sort();
 
-    /* unique employees in first-appearance order */
+     unique employees in first-appearance order 
     var empOrder = [], empSeen = {};
     for (var i = 0; i < data.length; i++) {
         var u = data[i].username;
@@ -363,6 +389,10 @@ function renderPivotTable(data, tableId) {
 
     var thHtml = '<th>SL.NO</th><th>Location</th><th style="text-align:left">Name</th>';
     for (var c = 0; c < contracts.length; c++) { thHtml += '<th>' + contracts[c] + '</th>'; }
+  for (var c = 0; c < contracts.length; c++) {
+      var headerName = (contracts[c] === 'Stock') ? 'Indirect' : contracts[c];
+      thHtml += '<th>' + headerName + '</th>';
+  }
     thHtml += '<th>Total</th>';
     $("#" + tableId + " thead tr").html(thHtml);
 
@@ -409,31 +439,35 @@ function renderPivotTable(data, tableId) {
     bodyHtml += '</tr>';
 
     $("#" + tableId + " tbody").html(bodyHtml);
-}
+}*/
 
 
-function exportToExcelitem(type) {
-	
-	var data = (type === "finance") ? (window._lastFinanceData || []) : (window._lastReportData || []);
-	    var sheetName = (type === "finance") ? "DO Finance Sheet" : "DO Time Sheet ";
-	    var fileName  = (type === "finance") ? "DO_Finance_Report.xlsx" : "DO_TimeSheet_Report.xlsx";
+/*function renderPivotTable(data, tableId, totals) {
+    tableId = tableId || "TableID";
+    totals  = totals  || { rowTotals: {}, columnTotals: {}, grandTotal: 0 };
 
-	    if (!data || data.length === 0) {
-	        alert("No data to export. Please search first.");
-	        return;
-	    }
+    if (!data || data.length === 0) {
+        $("#" + tableId + " thead tr").html(
+            '<th>SL.NO</th><th>Location</th><th>Name</th><th>Total Hours</th>'
+        );
+        $("#" + tableId + " tbody").html(
+            '<tr><td colspan="4" class="text-center text-muted">No records found.</td></tr>'
+        );
+        return;
+    }
 
-  
-
-    /* ── same pivot build as renderPivotTable ── */
     var contractSet = {};
     for (var i = 0; i < data.length; i++) { contractSet[data[i].jobCode] = true; }
     var contracts = Object.keys(contractSet).sort();
 
-    var empOrder = [], empSeen = {};
+    var empOrder = [], empSeen = {}, empUserId = {};
     for (var i = 0; i < data.length; i++) {
         var u = data[i].username;
-        if (!empSeen[u]) { empSeen[u] = true; empOrder.push(u); }
+        if (!empSeen[u]) {
+            empSeen[u] = true;
+            empOrder.push(u);
+            empUserId[u] = data[i].userId; // remember userId for totals lookup
+        }
     }
 
     var pivot = {};
@@ -443,18 +477,190 @@ function exportToExcelitem(type) {
         pivot[r.username][r.jobCode] = parseFloat(r.finalTotal) || 0;
     }
 
-    /* total columns = SL.NO + Location + Name + contracts + Total */
+    var thHtml = '<th>SL.NO</th><th>Location</th><th style="text-align:left">Name</th>';
+    for (var c = 0; c < contracts.length; c++) {
+        var headerName = (contracts[c] === 'Stock') ? 'Indirect' : contracts[c];
+        thHtml += '<th>' + headerName + '</th>';
+    }
+    thHtml += '<th>Total</th>';
+    $("#" + tableId + " thead tr").html(thHtml);
+
+    var bodyHtml = "";
+
+    for (var e = 0; e < empOrder.length; e++) {
+        var emp     = empOrder[e];
+        var empData = pivot[emp] || {};
+        var rowBg   = (e % 2 === 0) ? "#ffffff" : "#f4f9f4";
+
+        var locId = null;
+        for (var i = 0; i < data.length; i++) {
+            if (data[i].username === emp) { locId = data[i].location; break; }
+        }
+        var locName = locMap[locId] || "-";
+
+        // ── row total comes straight from backend, keyed by userId ──
+        var rowTotal = totals.rowTotals[String(empUserId[emp])] || 0;
+
+        bodyHtml += '<tr style="background:' + rowBg + '">';
+        bodyHtml += '<td>' + (e + 1) + '</td>';
+        bodyHtml += '<td style="font-weight:500;color:#37499A">' + locName + '</td>';
+        bodyHtml += '<td style="text-align:left;font-weight:500">' + emp + '</td>';
+
+        for (var c = 0; c < contracts.length; c++) {
+            var h = empData[contracts[c]] || 0;
+            bodyHtml += (h > 0)
+                ? '<td style="color:#155724;font-weight:600">' + h.toFixed(2) + '</td>'
+                : '<td style="color:#ccc">-</td>';
+        }
+
+        bodyHtml += '<td style="font-weight:700;background:#e8f5e9;color:#1b5e20">'
+                 + rowTotal.toFixed(2) + '</td>';
+        bodyHtml += '</tr>';
+    }
+
+    // ── TOTAL footer row — also straight from backend ──
+    bodyHtml += '<tr style="background:#1b5e20;color:#fff;font-weight:700">';
+    bodyHtml += '<td></td><td></td>';
+    bodyHtml += '<td style="text-align:left;letter-spacing:.5px">TOTAL</td>';
+    for (var c = 0; c < contracts.length; c++) {
+        var colTotal = totals.columnTotals[contracts[c]] || 0;
+        bodyHtml += '<td>' + colTotal.toFixed(2) + '</td>';
+    }
+    bodyHtml += '<td style="background:#145214">' + (totals.grandTotal || 0).toFixed(2) + '</td>';
+    bodyHtml += '</tr>';
+
+    $("#" + tableId + " tbody").html(bodyHtml);
+}*/
+
+function renderPivotTable(data, tableId, totals) {
+    tableId = tableId || "TableID";
+    totals  = totals  || { rowTotals: {}, columnTotals: {}, grandTotal: 0 };
+
+    if (!data || data.length === 0) {
+        $("#" + tableId + " thead tr").html(
+            '<th>SL.NO</th><th>Location</th><th>Emp Code</th><th>Name</th><th>Total Hours</th>'
+        );
+        $("#" + tableId + " tbody").html(
+            '<tr><td colspan="5" class="text-center text-muted">No records found.</td></tr>'
+        );
+        return;
+    }
+
+    var contractSet = {};
+    for (var i = 0; i < data.length; i++) { contractSet[data[i].jobCode] = true; }
+    var contracts = Object.keys(contractSet).sort();
+
+    var empOrder = [], empSeen = {}, empUserId = {}, empCode = {};
+    for (var i = 0; i < data.length; i++) {
+        var u = data[i].username;
+        if (!empSeen[u]) {
+            empSeen[u] = true;
+            empOrder.push(u);
+            empUserId[u] = data[i].userId;   // remember userId for totals lookup
+            empCode[u]   = data[i].empcode;  // remember empcode for display
+        }
+    }
+
+    var pivot = {};
+    for (var i = 0; i < data.length; i++) {
+        var r = data[i];
+        if (!pivot[r.username]) pivot[r.username] = {};
+        pivot[r.username][r.jobCode] = parseFloat(r.finalTotal) || 0;
+    }
+
+    var thHtml = '<th>SL.NO</th><th>Location</th><th>Emp Code</th><th style="text-align:left">Name</th>';
+    for (var c = 0; c < contracts.length; c++) {
+        var headerName = (contracts[c] === 'Stock') ? 'Indirect' : contracts[c];
+        thHtml += '<th>' + headerName + '</th>';
+    }
+    thHtml += '<th>Total</th>';
+    $("#" + tableId + " thead tr").html(thHtml);
+
+    var bodyHtml = "";
+
+    for (var e = 0; e < empOrder.length; e++) {
+        var emp     = empOrder[e];
+        var empData = pivot[emp] || {};
+        var rowBg   = (e % 2 === 0) ? "#ffffff" : "#f4f9f4";
+
+        var locId = null;
+        for (var i = 0; i < data.length; i++) {
+            if (data[i].username === emp) { locId = data[i].location; break; }
+        }
+        var locName = locMap[locId] || "-";
+
+        // ── row total comes straight from backend, keyed by userId ──
+        var rowTotal = totals.rowTotals[String(empUserId[emp])] || 0;
+
+        bodyHtml += '<tr style="background:' + rowBg + '">';
+        bodyHtml += '<td>' + (e + 1) + '</td>';
+        bodyHtml += '<td style="font-weight:500;color:#37499A">' + locName + '</td>';
+        bodyHtml += '<td>' + (empCode[emp] || "-") + '</td>';
+        bodyHtml += '<td style="text-align:left;font-weight:500">' + emp + '</td>';
+
+        for (var c = 0; c < contracts.length; c++) {
+            var h = empData[contracts[c]] || 0;
+            bodyHtml += (h > 0)
+                ? '<td style="color:#155724;font-weight:600">' + h.toFixed(2) + '</td>'
+                : '<td style="color:#ccc">-</td>';
+        }
+
+        bodyHtml += '<td style="font-weight:700;background:#e8f5e9;color:#1b5e20">'
+                 + rowTotal.toFixed(2) + '</td>';
+        bodyHtml += '</tr>';
+    }
+
+    // ── TOTAL footer row — also straight from backend ──
+    bodyHtml += '<tr style="background:#1b5e20;color:#fff;font-weight:700">';
+    bodyHtml += '<td></td><td></td><td></td>';
+    bodyHtml += '<td style="text-align:left;letter-spacing:.5px">TOTAL</td>';
+    for (var c = 0; c < contracts.length; c++) {
+        var colTotal = totals.columnTotals[contracts[c]] || 0;
+        bodyHtml += '<td>' + colTotal.toFixed(2) + '</td>';
+    }
+    bodyHtml += '<td style="background:#145214">' + (totals.grandTotal || 0).toFixed(2) + '</td>';
+    bodyHtml += '</tr>';
+
+    $("#" + tableId + " tbody").html(bodyHtml);
+}
+
+
+/*function exportToExcelitem(type) {
+    var data   = (type === "finance") ? (window._lastFinanceData   || []) : (window._lastReportData   || []);
+    var totals = (type === "finance") ? (window._lastFinanceTotals || {}) : (window._lastReportTotals || {});
+    var sheetName = (type === "finance") ? "DO Finance Sheet" : "DO Time Sheet ";
+    var fileName  = (type === "finance") ? "DO_Finance_Report.xlsx" : "DO_TimeSheet_Report.xlsx";
+
+    if (!data || data.length === 0) {
+        alert("No data to export. Please search first.");
+        return;
+    }
+
+    var contractSet = {};
+    for (var i = 0; i < data.length; i++) { contractSet[data[i].jobCode] = true; }
+    var contracts = Object.keys(contractSet).sort();
+
+    var empOrder = [], empSeen = {}, empUserId = {};
+    for (var i = 0; i < data.length; i++) {
+        var u = data[i].username;
+        if (!empSeen[u]) { empSeen[u] = true; empOrder.push(u); empUserId[u] = data[i].userId; }
+    }
+
+    var pivot = {};
+    for (var i = 0; i < data.length; i++) {
+        var r = data[i];
+        if (!pivot[r.username]) pivot[r.username] = {};
+        pivot[r.username][r.jobCode] = parseFloat(r.finalTotal) || 0;
+    }
+
     var totalCols = 3 + contracts.length + 1;
 
-    /* ── Build AOA ── */
     var titleRow  = ["DO Manhours"];
     var headerRow = ["SL.NO", "Location", "Name"];
     for (var c = 0; c < contracts.length; c++) { headerRow.push(contracts[c]); }
     headerRow.push("Total");
 
-    var dataRows   = [];
-    var colTotals  = new Array(contracts.length).fill(0);
-    var grandTotal = 0;
+    var dataRows = [];
 
     for (var e = 0; e < empOrder.length; e++) {
         var emp     = empOrder[e];
@@ -466,35 +672,33 @@ function exportToExcelitem(type) {
         }
         var locName = locMap[locId] || "-";
 
-        var row    = [e + 1, locName, emp];
-        var rowSum = 0;
+        var row      = [e + 1, locName, emp];
+        var rowTotal = totals.rowTotals[String(empUserId[emp])] || 0;
 
         for (var c = 0; c < contracts.length; c++) {
-            var h = empData[contracts[c]] || 0;
-            colTotals[c] += h;
-            rowSum        += h;
-            row.push(h);
+            row.push(empData[contracts[c]] || 0);
         }
-        row.push(rowSum);
-        grandTotal += rowSum;
+        row.push(rowTotal);
         dataRows.push(row);
     }
 
     var totalRow = ["", "", "TOTAL"];
-    for (var c = 0; c < contracts.length; c++) { totalRow.push(colTotals[c]); }
-    totalRow.push(grandTotal);
+    for (var c = 0; c < contracts.length; c++) {
+        totalRow.push(totals.columnTotals[contracts[c]] || 0);
+    }
+    totalRow.push(totals.grandTotal || 0);
 
     var aoa = [titleRow, headerRow].concat(dataRows).concat([totalRow]);
 
-    /* ── Worksheet ── */
+     ── Worksheet ── 
     var ws = XLSX.utils.aoa_to_sheet(aoa);
 
-    /* ── Merge title row ── */
+     ── Merge title row ── 
     ws["!merges"] = [
         { s: { r: 0, c: 0 }, e: { r: 0, c: totalCols - 1 } }
     ];
 
-    /* ── Column widths ── */
+     ── Column widths ── 
     var colWidths = [{ wch: 7 }, { wch: 16 }, { wch: 28 }];
     for (var c = 0; c < contracts.length; c++) {
         colWidths.push({ wch: Math.max(contracts[c].length + 2, 10) });
@@ -502,15 +706,15 @@ function exportToExcelitem(type) {
     colWidths.push({ wch: 10 });
     ws["!cols"] = colWidths;
 
-    /* ── Helper: encode cell address ── */
+     ── Helper: encode cell address ── 
     function ec(r, c) { return XLSX.utils.encode_cell({ r: r, c: c }); }
 
-    /* ── Helper: ensure cell exists ── */
+     ── Helper: ensure cell exists ── 
     function ensureCell(addr, v) {
         if (!ws[addr]) ws[addr] = { v: v, t: typeof v === "number" ? "n" : "s" };
     }
 
-    /* ── Row 0: Title ── */
+     ── Row 0: Title ── 
     ensureCell(ec(0, 0), "DO Manhours");
     ws[ec(0, 0)].s = {
         font:      { bold: true, sz: 16, color: { rgb: "1B5E20" } },
@@ -518,7 +722,7 @@ function exportToExcelitem(type) {
         fill:      { fgColor: { rgb: "E8F5E9" } }
     };
 
-    /* ── Row 1: Header ── */
+     ── Row 1: Header ── 
     for (var c = 0; c < headerRow.length; c++) {
         var addr = ec(1, c);
         ensureCell(addr, headerRow[c]);
@@ -535,10 +739,10 @@ function exportToExcelitem(type) {
         };
     }
 
-    /* ── Rows 2..N: data rows ── */
+     ── Rows 2..N: data rows ── 
     for (var e = 0; e < dataRows.length; e++) {
         var row    = dataRows[e];
-        var excelR = e + 2; /* row 0=title, row 1=header, so data starts at 2 */
+        var excelR = e + 2;  row 0=title, row 1=header, so data starts at 2 
         var isEven = (e % 2 === 0);
         var rowFill = isEven ? "FFFFFF" : "F4F9F4";
 
@@ -546,7 +750,7 @@ function exportToExcelitem(type) {
             var addr = ec(excelR, c);
             ensureCell(addr, row[c]);
 
-            /* default cell style */
+             default cell style 
             var cellStyle = {
                 fill:      { fgColor: { rgb: rowFill } },
                 alignment: { horizontal: "center", vertical: "center" },
@@ -559,31 +763,31 @@ function exportToExcelitem(type) {
             };
 
             if (c === 0) {
-                /* SL.NO — plain */
+                 SL.NO — plain 
                 cellStyle.font = { sz: 10 };
 
             } else if (c === 1) {
-                /* Location — navy blue bold */
+                 Location — navy blue bold 
                 cellStyle.font = { bold: true, sz: 10, color: { rgb: "37499A" } };
 
             } else if (c === 2) {
-                /* Name — left-aligned */
+                 Name — left-aligned 
                 cellStyle.font      = { bold: true, sz: 10 };
                 cellStyle.alignment = { horizontal: "left", vertical: "center" };
 
             } else if (c === row.length - 1) {
-                /* Row Total — green bg */
+                 Row Total — green bg 
                 cellStyle.fill = { fgColor: { rgb: "E8F5E9" } };
                 cellStyle.font = { bold: true, sz: 10, color: { rgb: "1B5E20" } };
 
             } else {
-                /* Contract hours columns */
+                 Contract hours columns 
                 var val = row[c];
                 if (val > 0) {
-                    /* non-zero — dark green bold */
+                     non-zero — dark green bold 
                     cellStyle.font = { bold: true, sz: 10, color: { rgb: "155724" } };
                 } else {
-                    /* zero — light grey dash */
+                     zero — light grey dash 
                     ws[addr].v = "-";
                     ws[addr].t = "s";
                     cellStyle.font = { sz: 10, color: { rgb: "CCCCCC" } };
@@ -594,7 +798,7 @@ function exportToExcelitem(type) {
         }
     }
 
-    /* ── Last row: TOTAL footer ── */
+     ── Last row: TOTAL footer ── 
     var totalR = 2 + dataRows.length;
     for (var c = 0; c < totalRow.length; c++) {
         var addr = ec(totalR, c);
@@ -614,12 +818,207 @@ function exportToExcelitem(type) {
         };
     }
 
-    /* ── Write — use xlsxb (bookType xlsx supports styles) ── */
+     ── Write — use xlsxb (bookType xlsx supports styles) ── 
 	var wb = XLSX.utils.book_new();
 	  XLSX.utils.book_append_sheet(wb, ws, sheetName);
 	  XLSX.writeFile(wb, fileName);
-}
+}*/
 
+
+
+function exportToExcelitem(type) {
+    var data   = (type === "finance") ? (window._lastFinanceData   || []) : (window._lastReportData   || []);
+    var totals = (type === "finance") ? (window._lastFinanceTotals || {}) : (window._lastReportTotals || {});
+    var sheetName = (type === "finance") ? "DO Finance Sheet" : "DO Time Sheet ";
+    var fileName  = (type === "finance") ? "DO_Finance_Report.xlsx" : "DO_TimeSheet_Report.xlsx";
+
+    if (!data || data.length === 0) {
+        alert("No data to export. Please search first.");
+        return;
+    }
+
+	var contractSet = {};
+	for (var i = 0; i < data.length; i++) { contractSet[data[i].jobCode] = true; }
+	var contracts = Object.keys(contractSet).sort();
+
+	var empOrder = [], empSeen = {}, empUserId = {}, empCode = {};
+	for (var i = 0; i < data.length; i++) {
+	    var u = data[i].username;
+	    if (!empSeen[u]) {
+	        empSeen[u] = true;
+	        empOrder.push(u);
+	        empUserId[u] = data[i].userId;
+	        empCode[u]   = data[i].empcode;
+	    }
+	}
+
+	var pivot = {};
+	for (var i = 0; i < data.length; i++) {
+	    var r = data[i];
+	    if (!pivot[r.username]) pivot[r.username] = {};
+	    pivot[r.username][r.jobCode] = parseFloat(r.finalTotal) || 0;
+	}
+
+	var totalCols = 4 + contracts.length + 1;
+
+	var titleRow  = ["DO Manhours"];
+	var headerRow = ["SL.NO", "Location", "Emp Code", "Name"];
+	for (var c = 0; c < contracts.length; c++) {
+	    var headerName = (contracts[c] === 'Stock') ? 'Indirect' : contracts[c];
+	    headerRow.push(headerName);
+	}
+	headerRow.push("Total");
+
+    var dataRows = [];
+
+    for (var e = 0; e < empOrder.length; e++) {
+        var emp     = empOrder[e];
+        var empData = pivot[emp] || {};
+
+        var locId = null;
+        for (var i = 0; i < data.length; i++) {
+            if (data[i].username === emp) { locId = data[i].location; break; }
+        }
+        var locName = locMap[locId] || "-";
+
+        var row      = [e + 1, locName, empCode[emp] || "-", emp];
+        var rowTotal = totals.rowTotals[String(empUserId[emp])] || 0;
+
+        for (var c = 0; c < contracts.length; c++) {
+            row.push(empData[contracts[c]] || 0);
+        }
+        row.push(rowTotal);
+        dataRows.push(row);
+    }
+
+    var totalRow = ["", "", "", "TOTAL"];
+    for (var c = 0; c < contracts.length; c++) {
+        totalRow.push(totals.columnTotals[contracts[c]] || 0);
+    }
+    totalRow.push(totals.grandTotal || 0);
+
+    var aoa = [titleRow, headerRow].concat(dataRows).concat([totalRow]);
+
+    var ws = XLSX.utils.aoa_to_sheet(aoa);
+
+    ws["!merges"] = [
+        { s: { r: 0, c: 0 }, e: { r: 0, c: totalCols - 1 } }
+    ];
+
+    var colWidths = [{ wch: 7 }, { wch: 16 }, { wch: 12 }, { wch: 28 }];
+    for (var c = 0; c < contracts.length; c++) {
+        colWidths.push({ wch: Math.max(contracts[c].length + 2, 10) });
+    }
+    colWidths.push({ wch: 10 });
+    ws["!cols"] = colWidths;
+
+    function ec(r, c) { return XLSX.utils.encode_cell({ r: r, c: c }); }
+
+    function ensureCell(addr, v) {
+        if (!ws[addr]) ws[addr] = { v: v, t: typeof v === "number" ? "n" : "s" };
+    }
+
+    ensureCell(ec(0, 0), "DO Manhours");
+    ws[ec(0, 0)].s = {
+        font:      { bold: true, sz: 16, color: { rgb: "1B5E20" } },
+        alignment: { horizontal: "center", vertical: "center" },
+        fill:      { fgColor: { rgb: "E8F5E9" } }
+    };
+
+    for (var c = 0; c < headerRow.length; c++) {
+        var addr = ec(1, c);
+        ensureCell(addr, headerRow[c]);
+        ws[addr].s = {
+            font:      { bold: true, sz: 11, color: { rgb: "FFFFFF" } },
+            fill:      { fgColor: { rgb: "1B5E20" } },
+            alignment: { horizontal: "center", vertical: "center" },
+            border: {
+                top:    { style: "thin", color: { rgb: "FFFFFF" } },
+                bottom: { style: "thin", color: { rgb: "FFFFFF" } },
+                left:   { style: "thin", color: { rgb: "FFFFFF" } },
+                right:  { style: "thin", color: { rgb: "FFFFFF" } }
+            }
+        };
+    }
+
+    for (var e = 0; e < dataRows.length; e++) {
+        var row    = dataRows[e];
+        var excelR = e + 2;
+        var isEven = (e % 2 === 0);
+        var rowFill = isEven ? "FFFFFF" : "F4F9F4";
+
+        for (var c = 0; c < row.length; c++) {
+            var addr = ec(excelR, c);
+            ensureCell(addr, row[c]);
+
+            var cellStyle = {
+                fill:      { fgColor: { rgb: rowFill } },
+                alignment: { horizontal: "center", vertical: "center" },
+                border: {
+                    top:    { style: "thin", color: { rgb: "DDDDDD" } },
+                    bottom: { style: "thin", color: { rgb: "DDDDDD" } },
+                    left:   { style: "thin", color: { rgb: "DDDDDD" } },
+                    right:  { style: "thin", color: { rgb: "DDDDDD" } }
+                }
+            };
+
+            if (c === 0) {
+                cellStyle.font = { sz: 10 };
+
+            } else if (c === 1) {
+                cellStyle.font = { bold: true, sz: 10, color: { rgb: "37499A" } };
+
+            } else if (c === 2) {
+                /* Emp Code — plain centered */
+                cellStyle.font = { sz: 10 };
+
+            } else if (c === 3) {
+                /* Name — left-aligned */
+                cellStyle.font      = { bold: true, sz: 10 };
+                cellStyle.alignment = { horizontal: "left", vertical: "center" };
+
+            } else if (c === row.length - 1) {
+                cellStyle.fill = { fgColor: { rgb: "E8F5E9" } };
+                cellStyle.font = { bold: true, sz: 10, color: { rgb: "1B5E20" } };
+
+            } else {
+                var val = row[c];
+                if (val > 0) {
+                    cellStyle.font = { bold: true, sz: 10, color: { rgb: "155724" } };
+                } else {
+                    ws[addr].v = "-";
+                    ws[addr].t = "s";
+                    cellStyle.font = { sz: 10, color: { rgb: "CCCCCC" } };
+                }
+            }
+
+            ws[addr].s = cellStyle;
+        }
+    }
+
+    var totalR = 2 + dataRows.length;
+    for (var c = 0; c < totalRow.length; c++) {
+        var addr = ec(totalR, c);
+        ensureCell(addr, totalRow[c]);
+
+        var bgColor = (c === totalRow.length - 1) ? "145214" : "1B5E20";
+        ws[addr].s = {
+            font:      { bold: true, sz: 11, color: { rgb: "FFFFFF" } },
+            fill:      { fgColor: { rgb: bgColor } },
+            alignment: { horizontal: c === 3 ? "left" : "center", vertical: "center" },
+            border: {
+                top:    { style: "thin", color: { rgb: "FFFFFF" } },
+                bottom: { style: "thin", color: { rgb: "FFFFFF" } },
+                left:   { style: "thin", color: { rgb: "FFFFFF" } },
+                right:  { style: "thin", color: { rgb: "FFFFFF" } }
+            }
+        };
+    }
+
+    var wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, sheetName);
+    XLSX.writeFile(wb, fileName);
+}
 
 function blockUI() {
 

@@ -53,7 +53,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 });
 
-const selectedFactoryId = localStorage.getItem('selectedFactoryId');
+const selectedFactoryId = sessionStorage.getItem('selectedFactoryId');
 const selecteduserId = sessionStorage.getItem('id');
 
 function loadContractors() {
@@ -86,7 +86,7 @@ async function getSupplierId() {
 
 
 function getContractorList(supplierId) {
-	 localStorage.setItem("selectedSupplierId", supplierId);
+	 sessionStorage.setItem("selectedSupplierId", supplierId);
 /*    const supplierId = '168'; // Replace dynamically if needed*/
     const url = new URL(`api/subconlistcontracts?supplierId=${supplierId}&factory_id=${selectedFactoryId}`,baseUrl1);
 
@@ -200,7 +200,7 @@ $(document).ready(function () {
 		$("#container-wrapper2").hide();
         const contractId = $(this).val();
      /*   const supId = '168'; // Replace dynamically if needed*/
-	 const supplierId = localStorage.getItem("selectedSupplierId");
+	 const supplierId = sessionStorage.getItem("selectedSupplierId");
         if (contractId) {
             getLotnumber(contractId, supplierId);
 			getLoadNumber(contractId,supplierId);
@@ -229,7 +229,7 @@ $("#Lotnumber").change(function () {
 
 function updatePackingNoteTable(contractId, loadno) {
   /*  const supId = '168'; // Fixed supplier ID*/
-  const supplierId = localStorage.getItem("selectedSupplierId");
+  const supplierId = sessionStorage.getItem("selectedSupplierId");
   
   
   console.log("the selected contract_id",contractId);
@@ -397,7 +397,7 @@ $("#contractor").change(function () {
 $("#phases").change(function () {
 	const phaseId= $(this).val();
  	const contractId = $("#contractor option:selected").val();
-	 const supplierId = localStorage.getItem("selectedSupplierId");
+	 const supplierId = sessionStorage.getItem("selectedSupplierId");
 	if(phaseId)
 		{
 			getloads(contractId,phaseId,supplierId)
@@ -959,7 +959,7 @@ function addtranspoter() {
 		const loadId= $(this).val();
 	 	const contractId = $("#contractor option:selected").val();
 		const phaseId = $("#phases option:selected").val();
-		 const supplierId = localStorage.getItem("selectedSupplierId");
+		 const supplierId = sessionStorage.getItem("selectedSupplierId");
 		if(phaseId)
 			{
 				getloaddata(contractId,phaseId,supplierId,loadId)
@@ -1043,7 +1043,7 @@ function addtranspoter() {
 	
 	function onItemLoadClicked() {
 	    // Gather the data you need to send in the POST request
-		const supplierId = localStorage.getItem("selectedSupplierId");
+		const supplierId = sessionStorage.getItem("selectedSupplierId");
 		const lblLoadId= window.selectedTloadId;
 	 	const contractId = $("#contractor option:selected").val(); // Assuming you have an input with this ID
 	    const phaseLoadId = $("#load option:selected").val(); // Same assumption for phaseLoadId
@@ -1239,7 +1239,7 @@ function addtranspoter() {
 		});
 
 		function onUnloadClicked(){
-	/*	 const supplierId = localStorage.getItem("selectedSupplierId");
+	/*	 const supplierId = sessionStorage.getItem("selectedSupplierId");
 				const url = new URL(`/api/piecesunload/update?qty=${selectedQty}&tloadId=${selectedTloadId}&piecesId=${selectedPieceId}&loadId=${selectedLoad}&supplierId=${supplierId}&factory_id=${selectedFactoryId}`,baseUrl1);
 			    // Use the fetch API to send the POST request
 				// Use the fetch API to send the POST request
@@ -1270,7 +1270,7 @@ function addtranspoter() {
 				    console.error('Error:', error);
 				    alert('Error while updating the piece instance.');
 				});*/
-				const supplierId = localStorage.getItem("selectedSupplierId");
+				const supplierId = sessionStorage.getItem("selectedSupplierId");
 
 				const url = `${baseUrl1}/api/piecesunload/update` +
 				    `?qty=${selectedQty}` +

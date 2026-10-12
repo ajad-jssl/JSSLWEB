@@ -29,11 +29,11 @@ long ts = System.currentTimeMillis();
 <link href="css/ruang-admin.min.css" rel="stylesheet" />
 <link href="vendor/datatables/dataTables.bootstrap4.min.css"
 	rel="stylesheet">
-<!-- <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css" /> -->
+
 <link rel="stylesheet"
-	href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css" />
+	href="externalLibrary/cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css" />
 <link rel="stylesheet" href="css/main.css">
-<script src="js/user.js"></script>
+
 <script>
     const user_id = sessionStorage.getItem('user_id');
     if (!user_id) {
@@ -349,7 +349,7 @@ stroke-dashoffset
 <body onload="fetchUserList();">
 	<div id="wrapper">
 		<!-- Sidebar -->
-		<%@ include file="sidebar.jsp"%>
+		<%@ include file="useraccess_sidebar.jsp"%>
 
 		<!-- Sidebar -->
 		<div id="content-wrapper" class="d-flex flex-column">
@@ -396,7 +396,7 @@ stroke-dashoffset
 						class="d-sm-flex align-items-center justify-content-between mb-4">
 						<h1 class="h3 mb-0 text-gray-800">User List</h1>
 						<ol class="breadcrumb">
-							<li class="breadcrumb-item"><a href="Dashboard.jsp">Home</a></li>
+							<li class="breadcrumb-item"><a href="useraccess_Dashboard.jsp">Home</a></li>
 							<li class="breadcrumb-item active" aria-current="page">User</li>
 
 						</ol>
@@ -802,56 +802,7 @@ stroke-dashoffset
 
 
 
-		<!-- 
-<div class="modal fade" id="exampleModalScrollable" tabindex="-1" role="dialog"
-            aria-labelledby="exampleModalScrollableTitle" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-scrollable" style="max-width: 400px;" role="document">
-              <div class="modal-content">
-                <div class="modal-header">
-                  <h5 class="modal-title" id="exampleModalScrollableTitle"><b>Create Invoice Details</b></h5>
-                  <button type="button" class="close white-button" data-dismiss="modal" aria-label="Close">
-    <span aria-hidden="true">&times;</span>
-</button>
-                </div>
-                <div class="modal-body">
-  <form id="productForm">
-    <div class="form-row">
-      <div class="form-group col-md-10">
-        <label for="inputName11"><b>:</b></label>
-        <input type="text" class="form-control form-control-sm"  id="inputName11" placeholder="Enter ">
-        <div id="productCodeErrorcredit" class="error-message"></div>
-      </div>
-      </div>
-      <div class="form-row">
-      <div class="form-group col-md-10">
-        <label for="inputName11"><b>:</b></label>
-        <input type="text" class="form-control form-control-sm"  id="inputName11" placeholder="Enter ">
-        <div id="productCodeErrorcredit" class="error-message"></div>
-      </div>
-      </div>
-      <div class="form-row">
-      <div class="form-group col-md-10">
-        <label for="inputName11"><b>:</b></label>
-        <input type="text" class="form-control form-control-sm"  id="inputName11" placeholder="Enter ">
-        <div id="productCodeErrorcredit" class="error-message"></div>
-      </div>
-      </div>
-      </form>
-</div>
 
-                <div class="modal-footer">
-    <button type="button" class="btn btn-sm btn-danger" data-dismiss="modal">Close</button>
-    <button type="button" class="btn btn-sm btn-warning" id="resetButton">Reset</button>
-    <button type="button" class="btn btn-sm btn-success" onclick="openModalAdd();">Create</button>
-</div>
-
-              </div>
-            </div>
-          </div> -->
-
-
-
-		<!-- view gst -->
 		<div class="modal fade" id="exampleModalScrollableedit" tabindex="-1"
 			role="dialog" aria-labelledby="exampleModalScrollableTitle"
 			aria-hidden="true">
@@ -1048,37 +999,36 @@ stroke-dashoffset
 	<script src="vendor/jquery/jquery.min.js"></script>
 	<script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
 	<script src="vendor/jquery-easing/jquery.easing.min.js"></script>
-	<script src="js/ruang-admin.min.js"></script>
-	<!-- Page level plugins -->
+	
+	
 	<script src="vendor/datatables/jquery.dataTables.min.js"></script>
 	<script src="vendor/datatables/dataTables.bootstrap4.min.js"></script>
-	<!-- <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script> -->
+	
 	<script
-		src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
+		src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
 	<script
-		src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+		src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 	<script
-		src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
+		src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
 	<script
-		src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
+		src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
 	<script
-		src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
+		src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
 	<script
-		src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
-	<script src="js/config.js"></script>
-	<script src="js/logout.js"></script>
-	<script src="js/username.js"></script>
-	<script src="js/user.js?v=<%=ts%>"></script>
-	<script src="js/createdby.js"></script>
-	<script src="js/Sessionfilter.js"></script>
+		src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
+	<script src="js/config.js?v=<%=jsVersion%>"></script>
+	<script src="js/logout.js?v=<%=jsVersion%>"></script>
+	<script src="js/username.js?v=<%=jsVersion%>"></script>
+	<script src="js/user.js?v=<%=jsVersion%>"></script>
+	<script src="js/createdby.js?v=<%=jsVersion%>"></script>
+	<script src="js/Sessionfilter.js?v=<%=jsVersion%>"></script>
 	   	  <script>
-/* const moduleId = localStorage.getItem("selectedModuleId"); */
-  // This maps action names from the API to button IDs on this page
+
   window.actionElementMap = {
   };
 </script>
-  <script src="js/permissions.js"></script>
-	<!-- Page level custom scripts -->
+  <script src="js/permissions.js?v=<%=jsVersion%>"></script>
+	
 	<script>
 //Reset logic for the form when the close button is clicked
   $('.close').on('click', function () {
@@ -1096,87 +1046,12 @@ stroke-dashoffset
   });
 
   </script>
-	<!--   <script>
-// Track user activity and logout after 2 minutes (120000 ms)
-let inactivityTime = function () {
-    let timeout;
-
-    // Reset timer on any user activity
-    function resetTimer() {
-        clearTimeout(timeout);
-        timeout = setTimeout(triggerLogout, 900000); // 15 minutes
-    }
-
-    // Event listener for activity
-    window.onload = resetTimer;
-    document.onmousemove = resetTimer;
-    document.onkeydown = resetTimer;
-    document.onclick = resetTimer;
-    document.onscroll = resetTimer;
-
-    function triggerLogout() {
-        // Create a dummy event to pass to logoutUser
-        let dummyEvent = new Event('logout');
-        logoutUser(dummyEvent);
-    }
-};
-
-inactivityTime();
-
-function logoutUser(event) {
-    if (event && event.preventDefault) {
-        event.preventDefault();
-    }
-
-    var user_id = sessionStorage.getItem('user_id'); 
-    if (!user_id) {
-        alert("User ID not found. Please login first.");
-        return;
-    }
-
-    if (typeof baseUrl === 'undefined' || !baseUrl) {
-        console.error("baseUrl is not defined or is empty.");
-        return;
-    }
-
-    const url = baseUrl.endsWith('/') ? baseUrl + 'jssl/user/userlogout' : baseUrl + '/jssl/user/userlogout';
-
-    $.ajax({
-        url: url,
-        type: 'POST',
-    	xhrFields: {
-		    withCredentials: true
-		},
-        data: $.param({ user_id: user_id }),
-        contentType: 'application/x-www-form-urlencoded',
-        dataType: 'json',
-        cache: false,
-        success: function(data) {
-            console.log("Server response:", data);
-            
-            if (data.status === "yes" && data.message === "Logout Success") {
-                sessionStorage.removeItem("user_id");
-                sessionStorage.removeItem("username");
-                sessionStorage.removeItem("isLoggedIn");
-                localStorage.removeItem("selectedFactoryId");
-                window.location = "newlogin.jsp";
-            } else {
-                console.error("Logout failed.");
-            }
-        },
-        error: function(xhr, status, error) {
-            console.error("AJAX error:", error);
-            console.error("Response text:", xhr.responseText);
-            alert("Error: " + (xhr.responseText || "An error occurred."));
-        }
-    });
-}
-</script> -->
 
 
 
-	<script src="js/urlrestrictAccessScript.js"></script>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+	<script src="js/urlrestrictAccessScript.js?v=<%=jsVersion%>"></script>
+
+<script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/xlsx/0.20.3/xlsx.full.min.js"></script>
 </body>
 </html>

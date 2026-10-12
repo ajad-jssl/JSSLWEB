@@ -1310,7 +1310,7 @@ table.table-bordered th, table.table-bordered td {
 
 
 	<script
-		src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+		src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.20.3/xlsx.full.min.js"></script>
 
 
 

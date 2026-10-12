@@ -5,9 +5,7 @@
     response.setHeader("Pragma", "no-cache"); // HTTP 1.0
     response.setDateHeader("Expires", 0); // Proxies
 %>
-<%
-long ts = System.currentTimeMillis();
-%>
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -22,11 +20,10 @@ long ts = System.currentTimeMillis();
       <link href="vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css" />
       <link href="css/ruang-admin.min.css" rel="stylesheet" />
       <link href="vendor/datatables/dataTables.bootstrap4.min.css" rel="stylesheet">
-      <!-- <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css" /> -->
-      <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css" />
+      
+    <link rel="stylesheet" href="externalLibrary/cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css" />
       <link rel="stylesheet" href="css/main.css">
-       <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-       <script src="js/sidebar.js"></script>
+    
   <style>
    .error-message {
     color: red;
@@ -173,7 +170,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
     }
     </script>
 
-<body onload="fetchUserList();">
+<body >
    <div id="wrapper">
     <!-- Sidebar -->
          <%@ include file="QCSidebar.jsp" %>
@@ -445,8 +442,8 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
           </div>
           
           <!-- jQuery -->
-      <script src="http://cdn.jsdelivr.net/npm/@popperjs/core@2.9.1/dist/umd/popper.min.js"></script>         
-              <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+          
+             
               
               <div class="modal fade" id="exampleModalCenterfab" tabindex="-1" role="dialog"
             aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
@@ -519,8 +516,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
             </div>
           </div>
               
-              <script src="http://cdn.jsdelivr.net/npm/@popperjs/core@2.9.1/dist/umd/popper.min.js"></script>         
-              <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+         
 
               </div>
             </div>
@@ -661,9 +657,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
               </div>
             </div>
           </div>
-              
-              <script src="http://cdn.jsdelivr.net/npm/@popperjs/core@2.9.1/dist/umd/popper.min.js"></script>         
-              <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+   
               
               
               <div class="modal fade" id="exampleModalScrollableConrev" tabindex="-1" role="dialog"
@@ -783,8 +777,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
             </div>
           </div>
               
-              <script src="http://cdn.jsdelivr.net/npm/@popperjs/core@2.9.1/dist/umd/popper.min.js"></script>         
-              <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+              
           
           
  <div class="modal fade" id="exampleModalScrollableposition" tabindex="-1" role="dialog"
@@ -845,8 +838,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
             </div>
           </div>
               
-              <script src="http://cdn.jsdelivr.net/npm/@popperjs/core@2.9.1/dist/umd/popper.min.js"></script>         
-              <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+            
           
           
 <div class="modal fade" id="exampleModalScrollablepositionUp" tabindex="-1" role="dialog"
@@ -907,8 +899,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
             </div>
           </div>
               
-              <script src="http://cdn.jsdelivr.net/npm/@popperjs/core@2.9.1/dist/umd/popper.min.js"></script>         
-              <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  
           
           
           
@@ -970,8 +961,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
             </div>
           </div>
               
-              <script src="http://cdn.jsdelivr.net/npm/@popperjs/core@2.9.1/dist/umd/popper.min.js"></script>         
-              <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+            
           
           <!--  Update Consignee Address -->  
 <div class="modal fade" id="exampleModalScrollableprocessup" tabindex="-1" role="dialog"
@@ -1032,8 +1022,8 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
             </div>
           </div>
               
-              <script src="http://cdn.jsdelivr.net/npm/@popperjs/core@2.9.1/dist/umd/popper.min.js"></script>         
-              <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+                  
+        
  	</div>
   </div>
  </div>
@@ -1042,35 +1032,36 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
   <a class="scroll-to-top rounded" href="#page-top">
     <i class="fas fa-angle-up"></i>
   </a>
-  <script src="js/config.js"></script>
+   <script src="externalLibrary/cdn.jsdelivr.net/npm/@popperjs/core@2.9.1/dist/umd/popper.min.js"></script>   
   <script src="vendor/jquery/jquery.min.js"></script>
       <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
       <script src="vendor/jquery-easing/jquery.easing.min.js"></script>
-      <script src="js/ruang-admin.min.js"></script>
-      <!-- Page level plugins -->
+     
+  <script src="js/config.js?v=<%=jsVersion%>"></script>
+  
+
       <script src="vendor/datatables/jquery.dataTables.min.js"></script>
       <script src="vendor/datatables/dataTables.bootstrap4.min.js"></script>
     <!-- <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script> -->
-    <script src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
-    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
-    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
-  <script src="js/QC.js?v=<%=ts%>"></script>
-      <script src="js/logout.js"></script>
-  <script src="js/username.js"></script>
-  <script src="js/factoryid.js"></script>
-   	  <script src="js/modifiedby.js"></script>
-   	  <script src="js/createdby.js"></script>
-   	   <script src="js/Sessionfilter.js"></script>
+    <script src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
+    <script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
+    <script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
+    <script src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
+    <script src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
+  <script src="js/QC.js?v=<%=jsVersion%>"></script>
+      <script src="js/logout.js?v=<%=jsVersion%>"></script>
+  <script src="js/username.js?v=<%=jsVersion%>"></script>
+  <script src="js/factoryid.js?v=<%=jsVersion%>"></script>
+   	  <script src="js/modifiedby.js?v=<%=jsVersion%>"></script>
+   	  <script src="js/createdby.js?v=<%=jsVersion%>"></script>
+   	   <script src="js/Sessionfilter.js?v=<%=jsVersion%>"></script>
       	  <script>
-/* const moduleId = localStorage.getItem("selectedModuleId"); */
-  // This maps action names from the API to button IDs on this page
+
   window.actionElementMap = {
   };
 </script>	  
-  <script src="js/permissions.js"></script>
+  <script src="js/permissions.js?v=<%=jsVersion%>"></script>
 <script>
 $(document).ready(function () {
 
@@ -1091,7 +1082,7 @@ function toggleTables() {
 
     if ($("#fabricatorRadio").is(":checked")) {
         $("#fabricatorTable").show();
-        renderFabricators();
+        //renderFabricators();
     } else if ($("#welderRadio").is(":checked")) {
         $("#welderTable").show();
         renderWelders();
@@ -1122,13 +1113,7 @@ $(document).ready(function () {
 });
 </script>
 
-<!-- <script>
-function VehicleType Click() {
-	setTimeout(() => {
-		$('#tableID1_wrapper .dataTables_scrollHeadInner th').click();
-	}, 200);
-}
-</script>  -->
+
 </body>
 
 </html>

@@ -1,8 +1,9 @@
- <script src="js/sidebar.js"></script>
- <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+	<%@ include file="version.jsp" %>
+	<script src="externalLibrary/code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="js/sidebar.js?v=<%=jsVersion%>"></script>
 <ul class="navbar-nav sidebar sidebar-light accordion" id="accordionSidebar">
   <!-- Logo -->
-  <a class="sidebar-brand d-flex align-items-center justify-content-center mb-3 mt-3" href="Dashboard.jsp" style="background-color: white;">
+  <a class="sidebar-brand d-flex align-items-center justify-content-center mb-3 mt-3" href="HomeDashboard.jsp" style="background-color: white;">
     <div class="sidebar-brand-icon">
       <img src="img/logo/download.png" style="max-height: 4.3rem;">
     </div>
@@ -11,7 +12,14 @@
 
   <hr class="sidebar-divider my-0">
 
+  <li class="nav-item active">
+    <a class="nav-link" href="HomeDashboard.jsp">
+      <i class="fas fa-home"></i>
+      <span>Dashboard</span>
+    </a>
+  </li>
 
+  <hr class="sidebar-divider">
 </ul>
 
 <script>
@@ -58,7 +66,7 @@ if (!window.sidebarInitialized) {
         const filteredPages = uniquePages.filter(pageUrl => pageUrl.length > 0);
 
         console.log("Unique pages after filter:", filteredPages);
-        renderSidebarLinks(uniquePages);
+        renderSidebarLinks(data);
       })
       .catch(err => {
         console.error("Sidebar fetch error:", err);
@@ -66,6 +74,7 @@ if (!window.sidebarInitialized) {
       });
   });
   function renderSidebarLinks(pages) {
+
 	  if (!Array.isArray(pages)) {
 	    console.warn("Invalid input, expected array:", pages);
 	    return;
@@ -77,7 +86,8 @@ if (!window.sidebarInitialized) {
 	  if (!sidebarUl) return;
 
 	  // Remove old dynamic menu items
-	  [...sidebarUl.querySelectorAll('li.dynamic-menu-item')].forEach(el => el.remove());
+	  [...sidebarUl.querySelectorAll('li.dynamic-menu-item')]
+	    .forEach(el => el.remove());
 
 	  // Add heading
 	  const heading = document.createElement("li");
@@ -85,46 +95,53 @@ if (!window.sidebarInitialized) {
 	  heading.textContent = "Features";
 	  sidebarUl.appendChild(heading);
 
-	  // Debug input
-	  pages.forEach(p => console.log("Page input:", JSON.stringify(p)));
+	  // Remove duplicate pageUrls
+	 /*  const uniquePages = [
+	    ...new Map(
+	      pages.map(item => [item.pageUrl, item])
+	    ).values()
+	  ];
 
-	  // Clean + validate pages
-	  const filteredPages = pages
-	    .map(p => typeof p === 'string' ? p.trim() : '')
-	    .filter(p => p !== '');
+	  uniquePages.forEach(item => { */
 
-	  const entries = filteredPages
-	    .map(pageUrl => {
-	      const label = generateLabel(pageUrl);
-	      console.log(`Mapping entry: url="${pageUrl}", label="${label}"`);
-	      return [pageUrl, label];
-	    })
-	    .filter(([url, label]) => url !== '' && label !== '');
+		// Remove items whose displayName ends with "Dashboard" (case-insensitive)
+		  const filteredByDashboard = pages.filter(item => {
+		      const name = (item.displayName || "").trim().toLowerCase();
+		      return !name.endsWith("dashboard");
+		  });
 
-	  const pagesObj = Object.fromEntries(entries);
-		  Object.entries(pagesObj).forEach(([pageUrl, label]) => {
-			  console.log(`Rendering: url="${pageUrl}", label="${label}"`);
+		  // Remove duplicate pageUrls
+		  const uniquePages = [
+		      ...new Map(
+		        filteredByDashboard.map(item => [item.pageUrl, item])
+		      ).values()
+		  ];
 
-			  const li = document.createElement("li");
-			  li.className = "nav-item dynamic-menu-item";
+		  uniquePages.forEach(item => {
+	    const pageUrl = item.pageUrl;
+	    const displayName = item.displayName;
 
-			  const a = document.createElement("a");
-			  a.className = "nav-link";
-			  a.href = pageUrl;
+	    const li = document.createElement("li");
+	    li.className = "nav-item dynamic-menu-item";
 
-			  const icon = document.createElement("i");
-			  icon.className = "fas fa-user-cog";
-			  icon.style.color = "#007bff";
+	    const a = document.createElement("a");
+	    a.className = "nav-link";
+	    a.href = pageUrl; // navigation still uses pageUrl
 
-			  const span = document.createElement("span");
-			  span.textContent = label;
+	    const icon = document.createElement("i");
+	    icon.className = "fas fa-user-cog";
+	    icon.style.color = "#007bff";
 
-			  a.appendChild(icon);
-			  a.appendChild(span);
-			  li.appendChild(a);
-			  sidebarUl.appendChild(li);
-			});
+	    const span = document.createElement("span");
+	    span.textContent = displayName; // display only displayName
 
+	    a.appendChild(icon);
+	    a.appendChild(span);
+
+	    li.appendChild(a);
+
+	    sidebarUl.appendChild(li);
+	  });
 	}
 
 

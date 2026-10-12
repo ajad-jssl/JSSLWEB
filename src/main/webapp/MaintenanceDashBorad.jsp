@@ -4,9 +4,9 @@
   response.setHeader("Pragma","no-cache");
   response.setDateHeader("Expires",0);
 %>
-<%
-long ts = System.currentTimeMillis();
-%>
+
+
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -19,8 +19,8 @@ long ts = System.currentTimeMillis();
   <link href="vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
   <link href="css/ruang-admin.min.css" rel="stylesheet">
   <link rel="stylesheet" href="css/main.css">
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+ <!--  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"> -->
+
   <script src="vendor/chart.js/Chart.min.js"></script>
   <script>
     var user_id = sessionStorage.getItem('user_id');
@@ -653,13 +653,14 @@ long ts = System.currentTimeMillis();
 
 <a class="scroll-to-top rounded" href="#page-top"><i class="fas fa-angle-up"></i></a>
 
-<script src="js/config.js"></script>
+
 <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
 <script src="vendor/jquery-easing/jquery.easing.min.js"></script>
-<script src="js/ruang-admin.min.js"></script>
-<script src="js/username.js"></script>
-<script src="js/logout.js"></script>
-<script src="js/Sessionfilter.js"></script>
-<script src="js/maintenanceDashboard.js?v=<%=ts%>"></script>
+<script src="js/maintenanceDashboard.js?v=<%=jsVersion%>"></script>
+<script src="js/config.js?v=<%=jsVersion%>"></script>
+<script src="js/username.js?v=<%=jsVersion%>"></script>
+<script src="js/logout.js?v=<%=jsVersion%>"></script>
+<script src="js/Sessionfilter.js?v=<%=jsVersion%>"></script>
+
 </body>
 </html>

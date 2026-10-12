@@ -131,13 +131,13 @@ function fetchvehiclegatepassData() {
 
 
 
- async function fetchVehicleDetails(vehicle_id) {
+async function fetchVehicleDetails(vehicle_id) {
 	if (Object.keys(userMap1).length === 0) {
 	        await loadUserMap();
 	    }
     const url = new URL(`/api/invoiceexit/jims/getVehicleDetails?vehicle_id=${vehicle_id}`, baseUrl1);
 
-    fetch(url, { credentials: "include" })
+    authFetch(url)
         .then(response => response.json())
         .then(data => {
             if (data.length > 0) {
@@ -147,7 +147,7 @@ function fetchvehiclegatepassData() {
                 document.getElementById("container12").style.display = "block";
 
                 document.getElementById("lblPassNo").innerText = details.vechile_id || '';
-				
+
                 document.getElementById("vname").innerText = details.name || '';
                 document.getElementById("lblcompanyname").innerText = details.Company_name || '';
                 document.getElementById("dl").innerText = details.dl || '';
@@ -156,29 +156,73 @@ function fetchvehiclegatepassData() {
                 document.getElementById("vehNo").innerText = details.vecno || '';
                 document.getElementById("rem").innerText = details.inremarks || '';
 				const userInfo = userMap1[String(details.wtm)];
-				document.getElementById("wtsn").innerText = userInfo ? userInfo.username : (details.wtm || "");
-               // document.getElementById("wtsn").innerText = userMap[details.wtm] || '';
-			   
+				document.getElementById("wtsn").innerText =
+				    (userInfo ? userInfo.username : (details.wtm || ""))
+				        .replace(/^\d+\s*-\s*/, '')
+				        .replace(/\s*\([^)]*\)\s*$/, '')
+				        .trim();
+
+				document.getElementById("wtmSignatureName").innerText =
+				    (userInfo ? userInfo.username : (details.wtm || ""))
+				        .replace(/^\d+\s*-\s*/, '')
+				        .replace(/\s*\([^)]*\)\s*$/, '')
+				        .trim();
+
 			   document.getElementById("deptm").innerText = userInfo
 			   		      ? userInfo.department
 			   		      : (details.Department_name || "");
-                //document.getElementById("deptm").innerText = details.Department_name || '';
-				
-				
-				if (details.photo_filename) {
-									     document.getElementById("vehiclePhoto").src =
-									         baseUrl1 + "/api/invoiceexit/viewImage?fileName=" + details.photo_filename;
-									 } else {
-									     //document.getElementById("visitorPhoto").src = "default-photo.jpg";
-									 } 
-				
+
+				setVehiclePhoto(details);
+
             } else {
                 document.getElementById("vtsrecipt").style.display = "none";
                 document.getElementById("container12").style.display = "none";
             }
+        })
+        .catch(error => {
+            console.error('Error fetching vehicle details:', error);
         });
 }
 
+function setVehiclePhoto(details) {
+    const photoEl = document.getElementById("vehiclePhoto");
+    if (!photoEl) return;
+
+    // Revoke any previous blob URL before replacing it
+    if (photoEl.src && photoEl.src.startsWith('blob:')) {
+        URL.revokeObjectURL(photoEl.src);
+    }
+
+    if (!details.photo_filename) {
+        photoEl.src = '';
+        return;
+    }
+
+    const photoUrl = baseUrl1 + "/api/invoiceexit/viewImage?fileName=" + details.photo_filename;
+
+    authFetch(photoUrl)
+        .then(response => {
+            if (!response.ok) throw new Error("Photo fetch failed: " + response.status);
+            return response.blob();
+        })
+        .then(blob => {
+            photoEl.src = URL.createObjectURL(blob);
+        })
+        .catch(error => {
+            console.error("Error loading vehicle photo:", error);
+            photoEl.src = '';
+        });
+}
+function authFetch(url, options = {}) {
+  return fetch(url, {
+    ...options,
+    credentials: 'include',
+    headers: {
+      ...(options.headers || {}),
+      'X-Session-Id': sessionStorage.getItem('session_id') || ''
+    }
+  });
+}
 
 	
 	$("#vehiclepassno").on('change',function(){

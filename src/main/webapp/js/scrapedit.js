@@ -1,10 +1,10 @@
 document.addEventListener("DOMContentLoaded", function () {
-    const selectedFactoryId = localStorage.getItem("selectedFactoryId"); // Get factory_id from localStorage
+    const selectedFactoryId = sessionStorage.getItem("selectedFactoryId"); // Get factory_id from sessionStorage
     if (selectedFactoryId) {
         fetchSaleOrderTypesUP(selectedFactoryId);
         
     } else {
-        console.error("No factory ID found in localStorage.");
+        console.error("No factory ID found in sessionStorage.");
     }
 });
 
@@ -51,11 +51,11 @@ async function fetchSaleOrderTypesUP() {
 }
 
 document.addEventListener("DOMContentLoaded", function () {
-    const selectedFactoryId = localStorage.getItem("selectedFactoryId"); // Get factory_id from localStorage
+    const selectedFactoryId = sessionStorage.getItem("selectedFactoryId"); // Get factory_id from sessionStorage
     if (selectedFactoryId) {
         fetchLocationTypesUP(selectedFactoryId);
     } else {
-        console.error("No factory ID found in localStorage.");
+        console.error("No factory ID found in sessionStorage.");
     }
 });
 
@@ -102,11 +102,11 @@ async function fetchLocationTypesUP() {
 }
 
 document.addEventListener("DOMContentLoaded", function () {
-    const selectedFactoryId = localStorage.getItem("selectedFactoryId"); // Get factory_id from localStorage
+    const selectedFactoryId = sessionStorage.getItem("selectedFactoryId"); // Get factory_id from sessionStorage
     if (selectedFactoryId) {
         fetchOrderToUP(selectedFactoryId);
     } else {
-        console.error("No factory ID found in localStorage.");
+        console.error("No factory ID found in sessionStorage.");
     }
 });
 
@@ -153,11 +153,11 @@ async function fetchOrderToUP() {
 }
 
 document.addEventListener("DOMContentLoaded", function () {
-    const selectedFactoryId = localStorage.getItem("selectedFactoryId"); // Get factory_id from localStorage
+    const selectedFactoryId = sessionStorage.getItem("selectedFactoryId"); // Get factory_id from sessionStorage
     if (selectedFactoryId) {
         fetchbillingup(selectedFactoryId);
     } else {
-        console.error("No factory ID found in localStorage.");
+        console.error("No factory ID found in sessionStorage.");
     }
 });
 
@@ -246,11 +246,11 @@ async function fetchbillingup() {
 }
 
 document.addEventListener("DOMContentLoaded", function () {
-    const selectedFactoryId = localStorage.getItem("selectedFactoryId"); // Get factory_id from localStorage
+    const selectedFactoryId = sessionStorage.getItem("selectedFactoryId"); // Get factory_id from sessionStorage
     if (selectedFactoryId) {
         fetchshippingup(selectedFactoryId);
     } else {
-        console.error("No factory ID found in localStorage.");
+        console.error("No factory ID found in sessionStorage.");
     }
 });
 
@@ -340,11 +340,11 @@ async function fetchshippingup() {
 
 
 document.addEventListener("DOMContentLoaded", function () {
-    const selectedFactoryId = localStorage.getItem("selectedFactoryId"); // Get factory_id from localStorage
+    const selectedFactoryId = sessionStorage.getItem("selectedFactoryId"); // Get factory_id from sessionStorage
     if (selectedFactoryId) {
         fetchbusunitup(selectedFactoryId);
     } else {
-        console.error("No factory ID found in localStorage.");
+        console.error("No factory ID found in sessionStorage.");
     }
 });
 
@@ -379,7 +379,7 @@ async function fetchbusunitup() {
 		// Populate dropdown options using SalesOrderTypeDetails array
 				        json.Data.forEach((type) => {
 				            if (type.business_unit_id && type.business_unit_name) { 
-							let bindaddress1 = type.bu_code+'-'+type.business_unit_name +' '+type.orgName +',' +type.location+','+type.stateName +'('+type.gst_number +')';
+							let bindaddress1 = type.business_unit_name +' '+type.orgName +',' +type.location+','+type.stateName +'('+type.gst_number +')';
         // Populate dropdown options using SalesOrderTypeDetails array
         /*json.Data.forEach((type) => {
             if (type.business_unit_id && type.business_unit_name) { // Ensure both values exist*/
@@ -395,13 +395,13 @@ async function fetchbusunitup() {
 }
 
 document.addEventListener("DOMContentLoaded", function () {
-    const selectedFactoryId = localStorage.getItem("selectedFactoryId"); // Get factory_id from localStorage
+    const selectedFactoryId = sessionStorage.getItem("selectedFactoryId"); // Get factory_id from sessionStorage
     if (selectedFactoryId) {
         fetchscraptypeedit(selectedFactoryId);
         fetchscrapItemedit(selectedFactoryId);
         fetchuomedit(selectedFactoryId);
     } else {
-        console.error("No factory ID found in localStorage.");
+        console.error("No factory ID found in sessionStorage.");
     }
 });
 
@@ -533,7 +533,7 @@ async function fetchTaxData(selectId, taxPercentId, taxValueId) {
                 taxMap[tax_id] = tax_per;
                 const option = document.createElement("option");
                 option.value = tax_id;
-                option.textContent = tax_name;
+                option.textContent = tax_name+ '-'+tax_per;
                 selectElement.appendChild(option);
             }
         });
@@ -545,7 +545,10 @@ async function fetchTaxData(selectId, taxPercentId, taxValueId) {
             const taxValue = ((taxPercent / 100) * totalAmount).toFixed(2);
 
             document.getElementById(taxPercentId).value = taxPercent;
-            document.getElementById(taxValueId).value = taxValue;
+            /*document.getElementById(taxValueId).value = taxValue;*/
+			calculateTaxes(
+			parseFloat(document.getElementById("toaddup").value) || 0
+			);
 
             calculateGrandTotal();
         });
@@ -599,11 +602,64 @@ function calculateTotalEdit() {
     calculateTaxes(total);
 }
 
-function calculateTaxes(total) {
+/*function calculateTaxes(total) {
     ["tax11up", "tax12up", "tax13up"].forEach((taxPercentId, index) => {
         const taxValueId = `tax${index + 1}valueup`;
         const taxPercent = parseFloat(document.getElementById(taxPercentId).value) || 0;
         document.getElementById(taxValueId).value = ((taxPercent / 100) * total).toFixed(2);
+    });
+
+    calculateGrandTotal();
+}*/
+
+function calculateTaxes(total) {
+
+    let gstTotal = 0;
+
+    ["tax1addup", "tax2addup", "tax3addup"].forEach((selectId, index) => {
+
+        const taxPercentId = `tax1${index + 1}up`;
+        const taxValueId = `tax${index + 1}valueup`;
+
+        const select = document.getElementById(selectId);
+        const taxName = select.options[select.selectedIndex]?.text?.toUpperCase() || "";
+
+        const taxPercent =
+            parseFloat(document.getElementById(taxPercentId).value) || 0;
+
+        // GST taxes calculated on Net Amount
+        if (!taxName.includes("TCS")) {
+            const taxValue = (total * taxPercent) / 100;
+
+            document.getElementById(taxValueId).value =
+                taxValue.toFixed(2);
+
+            gstTotal += taxValue;
+        }
+    });
+
+    // TCS Calculation
+    ["tax1addup", "tax2addup", "tax3addup"].forEach((selectId, index) => {
+
+        const taxPercentId = `tax1${index + 1}up`;
+        const taxValueId = `tax${index + 1}valueup`;
+
+        const select = document.getElementById(selectId);
+        const taxName = select.options[select.selectedIndex]?.text?.toUpperCase() || "";
+
+        const taxPercent =
+            parseFloat(document.getElementById(taxPercentId).value) || 0;
+
+        // TCS = Net Amount + GST
+        if (taxName.includes("TCS")) {
+
+            const tcsBase = total + gstTotal;
+
+            const tcsValue = (tcsBase * taxPercent) / 100;
+
+            document.getElementById(taxValueId).value =
+                tcsValue.toFixed(2);
+        }
     });
 
     calculateGrandTotal();
@@ -982,7 +1038,7 @@ function openModalUpdate() {
     }
 }
 
-function updateevent() {
+/*function updateevent() {
 	$('#exampleModalCenter66update').modal('hide');
 	
 	const tax1 = tax1addup.value;
@@ -1070,6 +1126,178 @@ function updateevent() {
         },
         error: function () {
             console.error('Request failed.');
+        }
+    });
+}*/
+
+function updateevent() {
+
+    $('#exampleModalCenter66update').modal('hide');
+
+    const tax1 = tax1addup.value;
+    const tax2 = tax2addup.value;
+    const tax3 = tax3addup.value;
+
+    // Check duplicate tax
+    if (
+        (tax1 && (tax1 === tax2 || tax1 === tax3)) ||
+        (tax2 && (tax2 === tax3))
+    ) {
+        alert("Duplicate tax not allowed");
+        return;
+    }
+
+    // ---------------------------------------------
+    // Get Terms & Conditions separately
+    // ---------------------------------------------
+    const termsConditionsValues =
+        Array.from(
+            document.querySelectorAll("#myTablup tbody tr .textareaup")
+        )
+        .map(textarea => textarea.value.trim())
+        .filter(value => value !== "");
+
+    // ---------------------------------------------
+    // Get SL No separately
+    // ---------------------------------------------
+    const slNoValues =
+        Array.from(
+            document.querySelectorAll("#myTablup tbody tr .sl_no")
+        )
+        .map(input => input.value.trim())
+        .filter(value => value !== "");
+
+    // ---------------------------------------------
+    // Validate count
+    // ---------------------------------------------
+    if (termsConditionsValues.length !== slNoValues.length) {
+
+        console.error("Terms Conditions:", termsConditionsValues);
+        console.error("SL Numbers:", slNoValues);
+
+        alert(
+            "Terms and conditions count (" +
+            termsConditionsValues.length +
+            ") does not match SL No count (" +
+            slNoValues.length +
+            ")."
+        );
+
+        return;
+    }
+
+    // ---------------------------------------------
+    // Create AJAX data
+    // ---------------------------------------------
+    const ajaxData = {
+        sale_order_type_id: saleOrderTypeAddup.value,
+        location_type_id: locationTypeAddUP.value,
+        sale_order_to_id: saleOrderToup.value,
+        auction_date: auctionDateup.value,
+        sale_order_duration: durationDateup.value,
+        advance_payment: advancePaymentup.value,
+        billing_address_id: billingaddup.value,
+        shipping_address_id: shippingaddup.value,
+        business_unit_id: businessUnitAddressup.value,
+
+        tax1: tax1addup.value,
+        tax1_value: tax1valueup.value,
+        tax2: tax2addup.value,
+        tax2_value: tax2valueup.value,
+        tax3: tax3addup.value,
+        tax3_value: tax3valueup.value,
+
+        net_amount: netAmountup.value,
+        total_tax: totalTaxup.value,
+        grand_total: grandTotalup.value,
+
+        sale_order_code: saleOrderNoUP.value,
+        soe_id: soeid.value,
+        modified_by: createdById,
+
+        auction_no: Auctionaddup.value,
+        scrap_type_id: scrapTypeup.value,
+        scrapitem_id: scrapItemup.value,
+        uom_id: uomup.value,
+        soei_id: soeiid.value,
+
+        quantity: qtyaddup.value,
+        kg: kgup.value,
+        unit_price: upriceup.value,
+        total: toaddup.value,
+        tolerance: toleaddup.value,
+
+        // IMPORTANT:
+        // Do NOT join these with comma
+        terms_conditions: termsConditionsValues,
+        sl_no: slNoValues
+    };
+
+    // ---------------------------------------------
+    // AJAX
+    // ---------------------------------------------
+    $.ajax({
+
+        url: new URL(
+            '/jssl/saleOrderEntry/updateSaleOrderNew',
+            baseUrl
+        ),
+
+        type: 'POST',
+
+        xhrFields: {
+            withCredentials: true
+        },
+
+        dataType: 'json',
+
+        data: $.param(ajaxData, true),
+
+        success: function (data) {
+
+            var result = data.message;
+
+            if (
+                result &&
+                result.toLowerCase().includes("success")
+            ) {
+
+                const popup =
+                    $('<div class="popup">Sale Order Updated Successfully!</div>')
+                    .appendTo('body')
+                    .hide()
+                    .fadeIn(400);
+
+                setTimeout(function () {
+
+                    popup.fadeOut(400, function () {
+
+                        $(this).remove();
+
+                        window.location = 'Scrap.jsp';
+
+                    });
+
+                }, 800);
+
+            } else {
+
+                const errorMessage =
+                    data.message || 'Failed to update sale order.';
+
+                $('#errorMessage').text(errorMessage);
+
+                $('#exampleModalCenterDup').modal('show');
+            }
+        },
+
+        error: function (xhr, status, error) {
+
+            console.error("Request failed.");
+            console.error("Status:", status);
+            console.error("Error:", error);
+            console.error("Response:", xhr.responseText);
+
         }
     });
 }

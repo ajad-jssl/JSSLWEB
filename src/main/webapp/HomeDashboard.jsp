@@ -15,9 +15,10 @@ long ts = System.currentTimeMillis();
 <link href="css/ruang-admin.min.css" rel="stylesheet">
 <link rel="stylesheet" href="css/main.css">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+
+
+<script src="externalLibrary/cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+<script src="externalLibrary/cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
 <script>
     var user_id = sessionStorage.getItem('user_id');
     if (!user_id) { window.location.href = "newlogin.jsp"; }
@@ -83,7 +84,7 @@ body {
 .dash-canvas {
     flex: 1;
     padding: 10px 18px 28px;
-    display: flex;
+    display: none;
     flex-direction: column;
     gap: 10px;
     overflow-y: auto;
@@ -487,6 +488,7 @@ body {
 
 <body id="page-top">
 <div id="wrapper">
+ <%@ include file="Homedashboardsidebar.jsp" %>
     <div id="content-wrapper" class="d-flex flex-column">
         <div id="content">
 
@@ -768,14 +770,14 @@ body {
         </div>
     </div>
 </div>
-
-<script src="js/config.js"></script>
 <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
 <script src="vendor/jquery-easing/jquery.easing.min.js"></script>
-<script src="js/ruang-admin.min.js"></script>
-<script src="js/username.js"></script>
-<script src="js/logout.js"></script>
-<script src="js/Sessionfilter.js"></script>
+<script src="js/config.js?v=<%=jsVersion%>"></script>
+
+
+<script src="js/username.js?v=<%=jsVersion%>"></script>
+<script src="js/logout.js?v=<%=jsVersion%>"></script>
+<script src="js/Sessionfilter.js?v=<%=jsVersion%>"></script>
 
 <script>
 /* ============================================================
@@ -1163,13 +1165,7 @@ function applyFilter() { buildAll(); }
 /* ============================================================
    INIT
    ============================================================ */
-window.addEventListener('DOMContentLoaded', () => {
-    const uid = sessionStorage.getItem('username') || sessionStorage.getItem('user_id') || 'User';
-    const el  = document.getElementById('usernameDisplay');
-    if (el) el.textContent = uid;
 
-    buildAll();
-});
 
 function formatIndianNumber(value, decimals = 1) {
 
@@ -1194,7 +1190,85 @@ function formatToLakhs(value) {
 }
 </script>
 
-<script src="js/config.js"></script>
-<script src="js/HomeDashBoard.js"></script>
+
+
+<script src="js/HomeDashBoard.js?v=<%=jsVersion%>"></script>
+<script>
+(function () {
+  var userId = sessionStorage.getItem('user_id');
+  var username = sessionStorage.getItem('username'); // used by the actions API
+  var moduleName = 'G2Reports';
+  var pageName = 'HomeDashboard.jsp'; // used for /api/page/actions
+  var currentPage = window.location.pathname.split("/").pop()+'.jsp';
+
+  if (!userId) {
+    window.location.href = 'newlogin.jsp';
+    return;
+  }
+
+  // --- Check 1: module/page permission ---
+  var permUrl = new URL('/api/user-permissions-module-details', baseUrl);
+  permUrl.searchParams.append('userId', userId);
+  permUrl.searchParams.append('moduleName', moduleName);
+
+  var permCheck = fetch(permUrl, { credentials: 'include' })
+    .then(function (res) { return res.json(); })
+    .then(function (data) {
+      if (!Array.isArray(data) || data.length === 0) return false;
+      return data.some(function (item) {
+        return (item.pageUrl || '').trim().toLowerCase() === currentPage.toLowerCase();
+      });
+    })
+    .catch(function (err) {
+      console.error('Permission check failed:', err);
+      return false;
+    });
+
+  // --- Check 2: action-level permission (must include "view") ---
+  var actionsUrl = baseUrl + '/api/page/actions?userId=' + encodeURIComponent(username) +
+                    '&pageName=' + encodeURIComponent(pageName);
+
+  var actionCheck = fetch(actionsUrl, { method: 'GET', credentials: 'include', headers: { 'Content-Type': 'application/json' } })
+    .then(function (res) {
+      if (!res.ok) throw new Error('Failed to fetch actions');
+      return res.json();
+    })
+    .then(function (allowedActions) {
+      if (!Array.isArray(allowedActions)) return false;
+      return allowedActions.some(function (action) {
+        return String(action).trim().toLowerCase() === 'view';
+      });
+    })
+    .catch(function (err) {
+      console.error('Action check failed:', err);
+      return false;
+    });
+
+  // --- Both must pass ---
+  Promise.all([permCheck, actionCheck]).then(function (results) {
+    var hasPagePermission = results[0];
+    var hasViewAction = results[1];
+
+    if (hasPagePermission && hasViewAction) {
+      grantAccess();
+    } else {
+      denyAccess();
+    }
+  });
+
+  function grantAccess() {
+	    var canvas = document.querySelector('.dash-canvas');
+	    if (canvas) canvas.style.display = 'flex';
+
+	    if (typeof window.initHomeDashboard === 'function') {
+	      window.initHomeDashboard();
+	    }
+	  }
+
+	  function denyAccess() {
+	    // dash-canvas stays hidden — no API calls fire, no data loads
+	  }
+})();
+</script>
 </body>
 </html>

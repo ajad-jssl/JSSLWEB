@@ -116,11 +116,11 @@ $(document).ready(function (){
 	
 	
 
-	    const radio = localStorage.getItem("selectedAssetRadio");
+	    const radio = sessionStorage.getItem("selectedAssetRadio");
 
 	    if (radio) {
 	        $("#" + radio).prop("checked", true).trigger("change");
-	        localStorage.removeItem("selectedAssetRadio");
+	        sessionStorage.removeItem("selectedAssetRadio");
 	    }
 
 

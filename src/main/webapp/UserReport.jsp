@@ -20,7 +20,7 @@
 	  <link href="css/masterpage.css" rel="stylesheet">
 <link href="css/ruang-admin.min.css" rel="stylesheet">
 <link rel="stylesheet" href="css/main.css">
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
 <script>
     
    
@@ -557,8 +557,8 @@ body {
 						class="d-sm-flex align-items-center justify-content-between mb-4">
 						<h1 class="h3 mb-0 text-gray-800">User Report</h1>
 						<ol class="breadcrumb">
-							<li class="breadcrumb-item"><a href="GPMSDashboard.jsp">Home</a></li>
-							<li class="breadcrumb-item"><a href="ItemsDeuReport.jsp">SubContract
+							<li class="breadcrumb-item"><a href="useraccess_Dashboard.jsp">Home</a></li>
+							<li class="breadcrumb-item"><a href="#">SubContract
 									Report</a></li>
 
 						</ol>
@@ -815,25 +815,25 @@ body {
 	<a class="scroll-to-top rounded" href="#page-top"> <i
 		class="fas fa-angle-up"></i>
 	</a>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/xlsx/0.20.3/xlsx.full.min.js"></script>
 	<!-- Scripts -->
-	<script src="js/config.js"></script>
+
 	<script src="vendor/jquery/jquery.min.js"></script>
 	<script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
 	<script src="vendor/jquery-easing/jquery.easing.min.js"></script>
-	<script src="js/ruang-admin.min.js"></script>
-	<script src="js/username.js"></script>
-	<script src="js/logout.js"></script>
+		<script src="js/config.js?v=<%=jsVersion%>"></script>
+
+	<script src="js/username.js?v=<%=jsVersion%>"></script>
+	<script src="js/logout.js?v=<%=jsVersion%>"></script>
 	<!-- <script src="js/assignPermissions.js"></script> -->
-	<script src="js/Sessionfilter.js"></script>
+	<script src="js/Sessionfilter.js?v=<%=jsVersion%>"></script>
 	<script>
-/* const moduleId = localStorage.getItem("selectedModuleId"); */
-  // This maps action names from the API to button IDs on this page
+
   window.actionElementMap = {
   };
 </script>
-	<script src="js/permissions.js"></script>
-	<script src="js/UserReport.js">
+	<script src="js/permissions.js?v=<%=jsVersion%>"></script>
+	<script src="js/UserReport.js?v=<%=jsVersion%>">
   
  
   

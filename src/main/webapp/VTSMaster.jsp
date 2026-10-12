@@ -5,9 +5,7 @@
     response.setHeader("Pragma", "no-cache"); // HTTP 1.0
     response.setDateHeader("Expires", 0); // Proxies
 %>
-<%
-long ts = System.currentTimeMillis();
-%>
+
 <!DOCTYPE html>
 <html lang="en">
 
@@ -27,8 +25,8 @@ long ts = System.currentTimeMillis();
 <link href="css/main.css" rel="stylesheet">
 <link href="css/masterpage.css" rel="stylesheet">
 <link rel="stylesheet"
-	href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" />
-<script src="js/sidebar.js"></script>
+	href="externalLibrary/cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" />
+
 
 <style>
 .card-grid {
@@ -160,17 +158,18 @@ long ts = System.currentTimeMillis();
 	</a>
 
 	<!-- Scripts -->
-	<script src="js/config.js"></script>
+	
 	<script src="vendor/jquery/jquery.min.js"></script>
 	<script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
 	<script src="vendor/jquery-easing/jquery.easing.min.js"></script>
-	<script src="js/ruang-admin.min.js"></script>
-	<!-- Page level plugins -->
-	<script src="js/VTSMaster.js?v=<%=ts%>"></script>
-	<script src="js/logout.js"></script>
-	<script src="js/username.js"></script>
-	<script src="js/permissions.js"></script>
-	<script src="js/Sessionfilter.js"></script>
+	
+	<script src="js/config.js?v=<%=jsVersion%>"></script>
+
+	<script src="js/VTSMaster.js?v=<%=jsVersion%>"></script>
+	<script src="js/logout.js?v=<%=jsVersion%>"></script>
+	<script src="js/username.js?v=<%=jsVersion%>"></script>
+	<script src="js/permissions.js?v=<%=jsVersion%>"></script>
+	<script src="js/Sessionfilter.js?v=<%=jsVersion%>"></script>
 	<script>
 function openRegisterPage(title) {
 

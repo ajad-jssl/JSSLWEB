@@ -626,7 +626,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 </div> 
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.20.3/xlsx.full.min.js"></script>
    
 <script>
  function exportToExcel() {
@@ -714,14 +714,10 @@ function printContainer1() {
   </a>
  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
 
-  <!-- Bootstrap JS and dependencies -->
+  
 
 
-<!-- <script>
-  document.getElementById("btnnext").addEventListener("click", function () {
-    document.getElementById("container2").style.display = "block";
-  });
-</script> -->  
+ 
 
    <script src="js/config.js"></script>
   <script src="vendor/jquery/jquery.min.js"></script>

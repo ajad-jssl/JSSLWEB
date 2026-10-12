@@ -1,5 +1,5 @@
-// Retrieve the selected factory ID from localStorage
-const selectedFactoryId = localStorage.getItem('selectedFactoryId');
+// Retrieve the selected factory ID fromsessionStorage
+const selectedFactoryId =sessionStorage.getItem('selectedFactoryId');
 if (selectedFactoryId) {
     fetchFabricatorMasterCount();
 	fetchwelderMasterCount();
@@ -7,7 +7,7 @@ if (selectedFactoryId) {
 	fetchpositionMasterCount();
 	fetchprocessMasterCount();
 } else {
-    console.error('No factory ID found in localStorage.');
+    console.error('No factory ID found insessionStorage.');
 }
 
 function fetchFabricatorMasterCount() {

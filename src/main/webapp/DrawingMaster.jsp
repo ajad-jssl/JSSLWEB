@@ -1,4 +1,9 @@
-
+<%@ page language="java" contentType="text/html; charset=ISO-8859-1" pageEncoding="ISO-8859-1" isELIgnored="true" %>
+<%
+  response.setHeader("Cache-Control","no-cache,no-store,must-revalidate");
+  response.setHeader("Pragma","no-cache");
+  response.setDateHeader("Expires",0);
+%>
 
 <!DOCTYPE html>
 <html lang="en">
@@ -15,8 +20,8 @@
   <link href="css/ruang-admin.min.css" rel="stylesheet">
   <link href="css/main.css" rel="stylesheet">
   <link href="css/masterpage.css" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"/>
-     <script src="js/sidebar.js"></script>
+<link rel="stylesheet" href="externalLibrary/cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"/>
+
 
 <style>
   .card-grid {
@@ -193,22 +198,23 @@
     </div>
   </div>
 
-  <!-- Scroll to Top Button -->
+
   <a class="scroll-to-top rounded" href="#page-top">
     <i class="fas fa-angle-up"></i>
   </a>
 
   <!-- Scripts -->
-  <script src="js/config.js"></script>
-  <script src="vendor/jquery/jquery.min.js"></script>
+    <script src="vendor/jquery/jquery.min.js"></script>
       <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
       <script src="vendor/jquery-easing/jquery.easing.min.js"></script>
-      <script src="js/ruang-admin.min.js"></script>
-      <!-- Page level plugins -->
+  <script src="js/config.js?v=<%=jsVersion%>"></script>
 
-  <script src="js/logout.js"></script>
-  <script src="js/username.js"></script>
-<script src="js/DrawingMaster.js"></script>
+
+
+<script src="js/Sessionfilter.js?v=<%=jsVersion%>"></script>
+  <script src="js/logout.js?v=<%=jsVersion%>"></script>
+  <script src="js/username.js?v=<%=jsVersion%>"></script>
+<script src="js/DrawingMaster.js?v=<%=jsVersion%>"></script>
     <script>
    function openSection(radioId) {
 	    localStorage.setItem("selectedAssetRadio", radioId);

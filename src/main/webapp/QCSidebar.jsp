@@ -1,7 +1,9 @@
-<script src="js/sidebar.js"></script>
- <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+	<%@ include file="version.jsp" %>
+	<script src="externalLibrary/code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="js/sidebar.js?v=<%=jsVersion%>"></script>
+
 <ul class="navbar-nav sidebar sidebar-light accordion" id="accordionSidebar">
-    <a class="sidebar-brand d-flex align-items-center justify-content-center mb-3 mt-3" href="Dashboard.jsp" style="background-color: white;">
+    <a class="sidebar-brand d-flex align-items-center justify-content-center mb-3 mt-3" href="QCDashboard.jsp" style="background-color: white;">
         <div class="sidebar-brand-icon">
             <img src="img/logo/download.png" style="max-height: 4.3rem;">
         </div>
@@ -11,7 +13,7 @@
     <hr class="sidebar-divider my-0" style="margin-top:10px;">
     
     <li class="nav-item active">
-        <a class="nav-link" href="AMSDashBoard.jsp">
+        <a class="nav-link" href="QCDashboard.jsp">
             <i class="fas fa-home"></i>
             <span>Dashboard</span>
         </a>
@@ -19,49 +21,7 @@
 
     <hr class="sidebar-divider">
     </ul>
-<!--     <div class="sidebar-heading">Features</div>
-    
-     <li class="nav-item" id="qs-package">
-        <a class="nav-link" href="VTSMaster.jsp">
-            <i class="fas fa-clipboard-check" style="color: #007bff;"></i>
-            <span>General Master</span>
-        </a>
-    </li>
 
-    <li class="nav-item" id="qs-package">
-        <a class="nav-link" href="Vehicle.jsp">
-            <i class="fas fa-clipboard-check" style="color: #007bff;"></i>
-            <span>Vehicle Entry</span>
-        </a>
-    </li>
-    
-    <li class="nav-item" id="qs-package">
-        <a class="nav-link" href="VehicleOut.jsp">
-            <i class="fas fa-box-open" style="color: #007bff;"></i>
-            <span>Vehicle Out</span>
-        </a>
-    </li> -->
-
- <!--  <li class="nav-item" id="invoice-module">
-        <a class="nav-link" href="VehicleSite.jsp">
-            <i class="fas fa-shipping-fast" style="color: #007bff;"></i>
-            <span>Vehicle Site</span>
-        </a>
-  </li> -->
-<!--   
-   <li class="nav-item" id="invoice-module">
-        <a class="nav-link" href="Rejected.jsp">
-            <i class="far fa-file-alt" style="color: #007bff;"></i>
-            <span>Rejected</span>
-        </a>
-    </li>
-   <li class="nav-item" id="scrap-module">
-        <a class="nav-link" href="RejectedOut.jsp">
-            <i class="fas fa-recycle" style="color: #dc3545;"></i>
-            <span>Rejected Out</span>
-        </a>
-    </li>
-</ul> -->
 <script>
 if (!window.sidebarInitialized) {
   window.sidebarInitialized = true;

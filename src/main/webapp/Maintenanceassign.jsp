@@ -3,7 +3,7 @@
     response.setHeader("Pragma","no-cache");
     response.setDateHeader("Expires",0);
 %>
-<%  long ts = System.currentTimeMillis(); %>
+
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <!DOCTYPE html>
 <html>
@@ -17,10 +17,15 @@
 <link href="vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
 <link href="css/ruang-admin.min.css" rel="stylesheet">
 <link href="vendor/datatables/dataTables.bootstrap4.min.css" rel="stylesheet">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
+
+
+
+
+<link rel="stylesheet" href="externalLibrary/cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+<script src="externalLibrary/cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
+
 <link rel="stylesheet" href="css/main.css">
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
 
 <style>
 /* ── Reuse the same design tokens ── */
@@ -327,29 +332,29 @@ button.close { padding:0; background:transparent; border:0; }
         <div class="modal-content">
             <div class="modal-header-custom">
                 <div class="modal-title-text">
-                    <i class="fas fa-user-plus"></i> Assign Ticket <span id="assignTicketIdDisplay" style="opacity:.8;font-weight:400;"></span>
+                    <i class="fas fa-user-plus"></i>  Ticket <span id="assignTicketIdDisplay" style="opacity:.8;font-weight:400;"></span>
                 </div>
                 <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
             </div>
             <div class="modal-body">
-                <div class="form-section-title">Select Worker(s)</div>
+                <div class="form-section-title">Select Technician(s)</div>
                 <div class="form-group mb-3">
-                    <label class="form-label-sm">Workers <span style="color:#dc3545;">*</span>
-                        <small class="text-muted">(Hold Ctrl / Cmd to select multiple)</small>
+                    <label class="form-label-sm">Technicians <span style="color:#dc3545;">*</span>
+                        <!-- <small class="text-muted">(Hold Ctrl / Cmd to select multiple)</small> -->
                     </label>
                     <select class="form-control form-control-sm" id="workerSelect" multiple size="5"></select>
                 </div>
                 <div class="form-group mb-2">
                     <label class="form-label-sm">Assignment Note <small class="text-muted">(optional)</small></label>
                     <textarea class="form-control form-control-sm" id="assignNote" rows="3"
-                        placeholder="Any special instructions for the worker..."></textarea>
+                        placeholder=""></textarea>
                 </div>
                 <div id="prevAssignees"></div>
             </div>
             <div class="modal-footer d-flex justify-content-end" style="gap:10px;">
                 <button type="button" class="btn-cancel-modal" data-dismiss="modal">Cancel</button>
                 <button   id="btnSubmitAssign"  type="button" class="btn-submit-modal" onclick="submitAssign()">
-                    <i class="fas fa-paper-plane"></i> Assign
+                    <i class="fas fa-paper-plane"></i> StartWork
                 </button>
             </div>
         </div>
@@ -390,20 +395,21 @@ button.close { padding:0; background:transparent; border:0; }
 
 <a class="scroll-to-top rounded" href="#page-top"><i class="fas fa-angle-up"></i></a>
 
-<script src="js/config.js"></script>
+
 <script src="vendor/jquery/jquery.min.js"></script>
 <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
-<script src="vendor/jquery-easing/jquery.easing.min.js"></script>
-<script src="js/ruang-admin.min.js"></script>
+
 <script src="vendor/datatables/jquery.dataTables.min.js"></script>
 <script src="vendor/datatables/dataTables.bootstrap4.min.js"></script>
-<script src="js/logout.js"></script>
-<script src="js/username.js"></script>
-<script src="js/factoryid.js"></script>
-<script src="js/Sessionfilter.js"></script>
+<script src="js/config.js?v=<%=jsVersion%>"></script>
 
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
-<script src="js/Maintenanceassign.js?v=<%=ts%>"></script>
+<script src="js/logout.js?v=<%=jsVersion%>"></script>
+<script src="js/username.js?v=<%=jsVersion%>"></script>
+<script src="js/factoryid.js?v=<%=jsVersion%>"></script>
+<script src="js/Sessionfilter.js?v=<%=jsVersion%>"></script>
+
+<script src="externalLibrary/cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
+<script src="js/Maintenanceassign.js?v=<%=jsVersion%>"></script>
 <script>
 function toggleNotifDropdown() {
     $('#notifDropdown').toggleClass('open');

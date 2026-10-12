@@ -70,6 +70,7 @@ document.addEventListener("DOMContentLoaded", function () {
     fetctype(1);
     fetchUserList(selectedFactoryId);
 	fetchinvoicetype();
+	fetchRGPno(selectedFactoryId);
 });
 
 // Function to add a new row
@@ -94,17 +95,16 @@ function addRow() {
 
 	    <div class="form-group col-md-1">
 	        <input type="number" class="form-control form-control-sm text-right"
-	            id="qty-${rowCount}" placeholder="Quantity" onkeydown="return allowOnlyPositive(event)"
+	            id="qty-${rowCount}" placeholder="Quantity"
 	            autocomplete="off" 
 	            oninput="calculateTotal(${rowCount});" min="0">
 				<div class="qty-error" style="color:red; display:none;"></div>
 	    </div>
 
 	    <div class="form-group col-md-1">
-	        <input type="number" class="form-control form-control-sm text-right"
-	            id="kg-${rowCount}" placeholder="Kg"
-	            autocomplete="off" onkeydown="return allowOnlyPositive(event)"
-	            oninput="calculateTotal(${rowCount});" min="0">
+		<input type="number" class="form-control form-control-sm text-right"
+				       id="kg-${rowCount}" placeholder="Quantity" onkeydown="return allowOnlyPositive(event)"
+				       oninput="calculateTotal(${rowCount})" min="0" step="0.01">
 				<div class="kg-error" style="color:red; display:none;"></div>
 	    </div>
 
@@ -205,9 +205,9 @@ function removeRow(rowId) {
 // Fetch UOM data and populate the UOM dropdown for a specific row
 async function fetchuom(rowId) {
     try {
-        const selectedFactoryId = localStorage.getItem("selectedFactoryId");
+        const selectedFactoryId = sessionStorage.getItem("selectedFactoryId");
         if (!selectedFactoryId) {
-            console.error("No factory ID found in localStorage.");
+            console.error("No factory ID found in sessionStorage.");
             return;
         }
 
@@ -253,9 +253,9 @@ async function fetchuom(rowId) {
 // Fetch Type data and populate the Type dropdown for a specific row
 async function fetctype(rowId) {
     try {
-        const selectedFactoryId = localStorage.getItem("selectedFactoryId");
+        const selectedFactoryId = sessionStorage.getItem("selectedFactoryId");
         if (!selectedFactoryId) {
-            console.error("No factory ID found in localStorage.");
+            console.error("No factory ID found in sessionStorage.");
             return;
         }
 
@@ -301,11 +301,11 @@ async function fetctype(rowId) {
     
 // Get the factory_id
 document.addEventListener("DOMContentLoaded", function() {
-    const selectedFactoryId = localStorage.getItem("selectedFactoryId"); // Get factory_id from localStorage
+    const selectedFactoryId = sessionStorage.getItem("selectedFactoryId"); // Get factory_id from sessionStorage
     if (selectedFactoryId) {
         fetchcont(selectedFactoryId);  // Fetch contractors initially
     } else {
-        console.error("No factory ID found in localStorage.");
+        console.error("No factory ID found in sessionStorage.");
     }
 });
 
@@ -314,7 +314,7 @@ async function fetchinvoicetype() {
         // Construct the API URL properly
         const url = new URL(`/jssl/master/listinvoicetypenew`, baseUrl1);
 
-        const selectedFactoryId = localStorage.getItem("selectedFactoryId");
+        const selectedFactoryId = sessionStorage.getItem("selectedFactoryId");
 
         // Fetch data from API
         const response = await fetch(url, {
@@ -526,7 +526,7 @@ let currentFactoryIdChallan = null;
 function fetchUserList(selectedFactoryId) {
 
     currentFactoryIdChallan = selectedFactoryId ||
-                              localStorage.getItem("selectedFactoryId");
+                              sessionStorage.getItem("selectedFactoryId");
 
     //  Destroy existing DataTable
     if ($.fn.DataTable.isDataTable('#tableID')) {
@@ -817,7 +817,7 @@ function openModalAdd() {
 }
 
 // Fetch factory ID
-const selectedFactoryId = localStorage.getItem('selectedFactoryId');
+const selectedFactoryId = sessionStorage.getItem('selectedFactoryId');
 console.log('selectedFactoryId:', selectedFactoryId);
 
 // Add Event Function
@@ -894,6 +894,7 @@ console.warn(uom)
     formData.append('grand_total', totalNo.value);
     formData.append('created_by', createdById);
     formData.append('factory_id', selectedFactoryId);
+	formData.append('gpid', GPno.value);
     
     if (file) {
 		formData.append('filepath', file); // Correct key // Append file only if selected
@@ -1139,7 +1140,7 @@ function editRecord(pn_id) {
                     <div class="form-group col-md-1">
                         <input type="number"
                                class="form-control form-control-sm text-right"
-                               id="qty_${index}" onkeydown="return allowOnlyPositive(event)"
+                               id="qty_${index}"
                                value="${parseFloat(record.qty || 0).toFixed(2)}"
                                oninput="calculateRowTotalupdate(${index})">
                     </div>
@@ -1398,12 +1399,12 @@ let typeOptionsHTML = "";
 
 // When the DOM is loaded, fetch dropdown options based on the factory ID.
 document.addEventListener("DOMContentLoaded", function() {
-    const selectedFactoryId = localStorage.getItem("selectedFactoryId"); // Get factory_id from localStorage
+    const selectedFactoryId = sessionStorage.getItem("selectedFactoryId"); // Get factory_id from sessionStorage
     if (selectedFactoryId) {
         fetchuomEdit();
         fetchtypeEdit();
     } else {
-        console.error("No factory ID found in localStorage.");
+        console.error("No factory ID found in sessionStorage.");
     }
 });
 
@@ -1750,3 +1751,203 @@ document.getElementById('eyeIconBtnview').addEventListener('click', function() {
 });
 
 
+async function fetchRGPno(factoryId) {
+    try {
+        const url = new URL(`/jssl/invoice/gpno_nonsecurity`, baseUrl1);
+        url.searchParams.append("factory_id", factoryId);
+
+		const response = await fetch(url,{
+						           method: "GET",
+						           credentials: "include"   // ✅ Always send JSESSIONID cookie
+						       });
+        if (!response.ok) throw new Error("Failed to fetch RPGno");
+
+        const json = await response.json();
+
+
+        const selectElement = document.getElementById("GPno");
+        selectElement.innerHTML = `<option value="">Select GP Number</option>`;
+
+        json.forEach((type) => {
+            if (type.gpid && type.gp_no) {
+                const option = document.createElement("option");
+                option.value = type.gpid;
+                option.textContent = type.gp_no;
+                selectElement.appendChild(option);
+            }
+        });
+    } catch (error) {
+        console.error("Error fetching Gpno:", error);
+    }
+}
+
+$(document).ready(function () {
+
+    $("#invoice").change(function () {
+
+        var invoiceType = $("#invoice option:selected").text().trim().toUpperCase();
+
+        if (invoiceType === "GP") {
+
+            $("#GPno").prop("disabled", false);
+
+            // Set Contractor and Milestone to "Others"
+			$("#cont").prop("disabled", true);
+			$("#mile").prop("disabled", true);
+			inputFieldsContainer.style.display = "block";
+			
+            // If using Select2 or Bootstrap Select, refresh if needed
+            // $("#cont").trigger("change");
+            // $("#mile").trigger("change");
+
+            // loadGpNumbers();
+
+        } else {
+
+            $("#GPno").prop("disabled", true).val("").empty();
+			$("#cont").prop("disabled", false);
+			$("#mile").prop("disabled", false);
+			inputFieldsContainer.style.display = "none";
+            fetchRGPno(selectedFactoryId);
+        }
+
+    });
+
+});
+
+	$("#GPno").on("change", function () {
+	
+	    const gpNo = $("#GPno option:selected").text().trim();
+		const gpid = this.value;
+	
+	    if (!gpNo || gpNo === "Select GP No") {
+	        $("#dynamicRowsContainer").empty();
+	        calculateGrandTotal();
+	        return;
+	    }
+		const returnableUrl = new URL(`/api/returnable/${gpid}`, baseUrl1);
+
+		fetch(returnableUrl, { credentials: "include" })
+		    .then(response => response.json())
+		    .then(data => {
+
+		        // If API returns an array
+		        if (Array.isArray(data) && data.length > 0) {
+		            $("#transname").val(data[0].transportName || "");
+		            $("#vehino").val(data[0].vehicleNo || "");
+		        }
+		        // If API returns a single object
+		        else {
+		            $("#transname").val(data.transportName || "");
+		            $("#vehino").val(data.vehicleNo || "");
+		        }
+
+		    })
+		    .catch(error => {
+		        console.error("Error fetching transport details:", error);
+		    });
+			
+	    const url = new URL(`/jssl/contracts/jims/gpnoitemdetails`, baseUrl1);
+	    url.search = new URLSearchParams({
+	        gp_no: gpNo
+	    }).toString();
+	
+	    fetch(url, { credentials: "include" })
+	        .then(response => response.json())
+	        .then(data => {
+	
+	            const dynamicContainer = document.getElementById("dynamicRowsContainer");
+	            dynamicContainer.innerHTML = "";
+	
+	            data.forEach((record, index) => {
+	
+	                const newRow = document.createElement("div");
+	                newRow.className = "form-row dynamic-row mb-2";
+	                newRow.id = `row_${index}`;
+	
+					newRow.innerHTML = `
+					    <!-- UOM -->
+					    <div class="form-group col-md-2">
+					        <select class="form-control form-control-sm" id="uom-${index}"></select>
+					        <div class="uom-error" style="color:red; display:none;"></div>
+					    </div>
+	
+					    <!-- Quantity -->
+					    <div class="form-group col-md-1">
+					        <input type="number"
+					               class="form-control form-control-sm text-right"
+					               id="qty-${index}"
+					               value="${parseFloat(record.qty || 0).toFixed(2)}"
+					               oninput="calculateTotal(${index})"
+					               min="0">
+					        <div class="qty-error" style="color:red; display:none;"></div>
+					    </div>
+	
+					    <!-- Kgs -->
+					    <div class="form-group col-md-1">
+					        <input type="number"
+					               class="form-control form-control-sm text-right"
+					               id="kg-${index}"
+					               value="${parseFloat(record.per_kgs || 0).toFixed(2)}"
+					               oninput="calculateTotal(${index})"
+					               min="0">
+					        <div class="kg-error" style="color:red; display:none;"></div>
+					    </div>
+	
+					    <!-- Unit Price -->
+					    <div class="form-group col-md-2">
+					        <input type="number"
+					               class="form-control form-control-sm text-right"
+					               id="uniprice-${index}"
+					               value="${parseFloat(record.itmPrice || 0).toFixed(2)}"
+					               oninput="calculateTotal(${index})"
+					               min="0">
+					        <div class="unitprice-error" style="color:red; display:none;"></div>
+					    </div>
+	
+					    <!-- Type -->
+					    <div class="form-group col-md-2">
+					        <select class="form-control form-control-sm" id="type-${index}"></select>
+					        <div class="type-error" style="color:red; display:none;"></div>
+					    </div>
+	
+					    <!-- Total -->
+					    <div class="form-group col-md-1">
+					        <input type="text"
+					               class="form-control form-control-sm text-right"
+					               id="total-${index}"
+					               value="${parseFloat(record.total || 0).toFixed(2)}"
+					               readonly>
+					    </div>
+	
+					    <!-- Delete -->
+					    <div class="form-group col-md-1 text-center">
+					        <i class="bi bi-trash text-danger"
+					           style="cursor:pointer; font-size:16px;"
+					           onclick="removeRow(${index});"
+					           title="Delete"></i>
+					    </div>
+					`;
+	
+	                dynamicContainer.appendChild(newRow);
+	
+	                // Set dropdown values
+	              
+					
+					
+					fetctype(index);
+					fetchuom(index).then(() => {
+					    $(`#uom-${index}`).val(record.UM);
+					});
+					// Call the function to update grand total
+					calculateGrandTotal();
+	               
+	            });
+	
+	        })
+	        .catch(error => {
+	            console.error("Error fetching GP items:", error);
+	            alert("Failed to load GP items.");
+	        });
+	
+	});

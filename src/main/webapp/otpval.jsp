@@ -5,9 +5,7 @@
   response.setHeader("Pragma", "no-cache");
   response.setDateHeader("Expires", 0);
 %>
-<%
-long ts = System.currentTimeMillis();
-%>
+<%@ include file="version.jsp" %>
 <!DOCTYPE html>
 <html>
 <head>
@@ -256,7 +254,8 @@ to {
 <link href="vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet"
 	type="text/css" />
 <link href="css/ruang-admin.min.css" rel="stylesheet" />
-<script src="js/config.js"></script>
+
+ <script src="js/config.js?v=<%=jsVersion%>"></script>
 <script src="vendor/jquery/jquery.min.js"></script>
 <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
 
@@ -364,6 +363,6 @@ to {
 		</div>
 	</div>
 
-	<script src="js/otpval.js?v=<%=ts%>"></script>
+	<script src="js/otpval.js?v=<%=jsVersion%>"></script>
 </body>
 </html>

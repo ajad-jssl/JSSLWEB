@@ -41,8 +41,8 @@ document.getElementById("#modalScroll").addEventListener("click", function () {
 	$('#exampleModalScrollable').modal('show');
 });
 
-// Fetch selectedFactoryId from localStorage
-const selectedFactoryId = localStorage.getItem('selectedFactoryId');
+// Fetch selectedFactoryId from sessionStorage
+const selectedFactoryId = sessionStorage.getItem('selectedFactoryId');
 console.log('selectedFactoryId:', selectedFactoryId);
 
 document.addEventListener("DOMContentLoaded", function () {
@@ -52,7 +52,7 @@ document.addEventListener("DOMContentLoaded", function () {
 if (selectedFactoryId) {
     fetchUserList();
 } else {
-    console.error('No factory ID found in localStorage.');
+    console.error('No factory ID found in sessionStorage.');
 }
 
 
@@ -145,11 +145,11 @@ async function fetchUserList() {
 
 // get the factory_id
 document.addEventListener("DOMContentLoaded", function() {
-    const selectedFactoryId = localStorage.getItem("selectedFactoryId"); // Get factory_id from localStorage
+    const selectedFactoryId = sessionStorage.getItem("selectedFactoryId"); // Get factory_id from sessionStorage
     if (selectedFactoryId) {
         fetchSaleOrderTypes(selectedFactoryId);
     } else {
-        console.error("No factory ID found in localStorage.");
+        console.error("No factory ID found in sessionStorage.");
     }
 });
 
@@ -217,30 +217,7 @@ function openModalAdd() {
         document.getElementById('productCodeErrorcredit').innerText = "";
         document.getElementById('productCodeErrorcredit').style.display = "none";
     }
-    /*    if (username11 === '') {
-            document.getElementById('productCodeErrorcreditAA').innerText = "Please Enter Taxable Amount.";
-            document.getElementById('productCodeErrorcreditAA').style.display = "inline-block";
-            showError = true;
-        } else {
-            document.getElementById('productCodeErrorcreditAA').innerText = "";
-            document.getElementById('productCodeErrorcreditAA').style.display = "none";
-        }
-        if (state === '') {
-            document.getElementById('productCodeErrorcreditAA1').innerText = "Please Enter Non Taxable Amount.";
-            document.getElementById('productCodeErrorcreditAA1').style.display = "inline-block";
-            showError = true;
-        } else {
-            document.getElementById('productCodeErrorcreditAA1').innerText = "";
-            document.getElementById('productCodeErrorcreditAA1').style.display = "none";
-        }*/
-    /*    if (countryId === '') {
-            document.getElementById('productCodeErrormiledesc').innerText = "Please Enter Opening Balance.";
-            document.getElementById('productCodeErrormiledesc').style.display = "inline-block";
-            showError = true;
-        } else {
-            document.getElementById('productCodeErrormiledesc').innerText = "";
-            document.getElementById('productCodeErrormiledesc').style.display = "none";
-        }*/
+
     if (statedesc === '') {
         document.getElementById('productCodeErrormiledesc1').innerText = "Please Enter Description.";
         document.getElementById('productCodeErrormiledesc1').style.display = "inline-block";
@@ -287,6 +264,8 @@ function openModalAdd() {
 
 function addevent() {
     // Validate role code and role description
+	
+	$('#exampleModalCenter66').modal('hide');
     $.ajax({
         url: new URL('/jssl/openingbalance/addnew', baseUrl), // Move 'const' to the correct place taxvaluedesc
         type: 'POST',

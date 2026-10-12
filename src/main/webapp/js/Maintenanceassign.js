@@ -16,7 +16,7 @@ $(document).ready(function () {
 
 // ── LOAD ALL OPEN TICKETS ─────────────────────────────────────────────────
 /*function loadAllTickets() {
-    var factoryId = parseInt(localStorage.getItem('selectedFactoryId') || '0');
+    var factoryId = parseInt(sessionStorage.getItem('selectedFactoryId') || '0');
     if (!factoryId) return;
 
     $.ajax({
@@ -118,11 +118,11 @@ $(document).ready(function () {
 
 var currentPage = 1;
 var totalPages  = 1;
-var pageSize    = 5;
+var pageSize    = 3;
 
 function loadAllTickets(page) {
     page = page || currentPage;
-    var factoryId = parseInt(localStorage.getItem('selectedFactoryId') || '0');
+    var factoryId = parseInt(sessionStorage.getItem('selectedFactoryId') || '0');
     if (!factoryId) return;
 
     $.ajax({
@@ -162,7 +162,7 @@ function loadAllTickets(page) {
 
 					if (t.STATUS !== 5) {
 					    assignBtn = '<button class="btn-assign-action" onclick="openAssignModal(' + t.TICKET_ID + ',' + t.MACHINE_DESC_ID + ')">' +
-					                '<i class="fas fa-user-plus"></i> Assign</button>';
+					                '<i class="fas fa-user-plus"></i>Start Working</button>';
 
 					    if (t.assigns && t.assigns.length > 0) {
 					        var allDone = t.assigns.every(function (a) {
@@ -320,7 +320,7 @@ function getRowClass(status) {
 
 // ── LOAD WORKER DROPDOWN ──────────────────────────────────────────────────
 async function loadWorkerDropdown(machineCategoryId, ticket_id) {
-    var factoryId = parseInt(localStorage.getItem('selectedFactoryId') || '0');
+    var factoryId = parseInt(sessionStorage.getItem('selectedFactoryId') || '0');
     $.ajax({
         url: new URL('/api/ticket/getWorkers', baseUrl).toString(),
         type: 'GET',
@@ -329,6 +329,8 @@ async function loadWorkerDropdown(machineCategoryId, ticket_id) {
         success: function (workers) {
             var $sel = $('#workerSelect');
             $sel.empty();
+            $sel.removeAttr('multiple');          // ← single select only
+            $sel.data('workerList', workers);     // ← store full list for name lookup
             $.each(workers, function (i, w) {
                 $sel.append('<option value="' + w.Worker_EmpCode + '">' + w.employee_display_name + '</option>');
             });
@@ -343,7 +345,7 @@ async function loadWorkerDropdown(machineCategoryId, ticket_id) {
 async function openAssignModal(ticketId, machineCategoryId) {
     $('#btnSubmitAssign')
         .prop('disabled', false)
-        .html('<i class="fas fa-paper-plane"></i> Assign');
+        .html('<i class="fas fa-play"></i> Start Work');
     selectedTicketId = ticketId;
     $('#assignModal').modal('show');
     $('#assignTicketIdDisplay').text('#' + ticketId);
@@ -376,19 +378,23 @@ function submitAssign() {
     var $btn = $('#btnSubmitAssign');
     if ($btn.prop('disabled')) return;
 
-    var workerIds  = $('#workerSelect').val();
+    var $sel       = $('#workerSelect');
+    var workerId   = $sel.val();                  // ← single value now
+    var workerName = $sel.find('option:selected').text();
     var note       = $('#assignNote').val().trim();
     var assignedBy = parseInt(sessionStorage.getItem('id') || '0');
-    var factoryId  = parseInt(localStorage.getItem('selectedFactoryId') || '0');
+    var factoryId  = parseInt(sessionStorage.getItem('selectedFactoryId') || '0');
     var reportedBy = selectedTicketData && selectedTicketData.ticket.REPORTED_BY
                      ? selectedTicketData.ticket.REPORTED_BY : 0;
 
-    if (!workerIds || workerIds.length === 0) {
-        alert('Please select at least one worker.');
+    if (!workerId) {
+        alert('Please select a Technician.');
         return;
     }
 
-    $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Assigning...');
+    $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Working...');
+
+    console.log("the worker id is this", workerId);
 
     $.ajax({
         url: new URL('/api/ticket/assign', baseUrl).toString(),
@@ -397,7 +403,7 @@ function submitAssign() {
         data: {
             ticketId:   selectedTicketId,
             factoryId:  factoryId,
-            workerIds:  workerIds,
+            workerIds:  [workerId],               // ← send as array for API compatibility
             assignedBy: assignedBy,
             assignNote: note,
             reportedBy: reportedBy
@@ -405,21 +411,50 @@ function submitAssign() {
         xhrFields: { withCredentials: true },
         success: function (res) {
             if (res.status) {
-                $('#assignModal').modal('hide');
-                loadAllTickets();
-                showToast('Ticket ' + $('#assignTicketIdDisplay').text() + ' assigned successfully!', 'success');
+                // ── Store assigned worker in sessionStorage ──────────────
+                sessionStorage.setItem('worker_emp_code', workerId);
+                sessionStorage.setItem('worker_emp_name', workerName);
+                // ──────────────────────────────────────────────────────
+
+                // ── NEW: auto-start work using the assignId returned by /assign ──
+                $.ajax({
+                    url: new URL('/api/ticket/startWork', baseUrl).toString(),
+                    type: 'POST',
+                    data: {
+                        ticketId:   selectedTicketId,
+                        assignId:   res.assignId,     // ← comes from backend response now
+                        factoryId:  factoryId,
+                        workerId:   workerId,
+                        reportedBy: reportedBy
+                    },
+                    xhrFields: { withCredentials: true },
+                    success: function (startRes) {
+                        $('#assignModal').modal('hide');
+                        loadAllTickets();
+                        showToast('Ticket ' + $('#assignTicketIdDisplay').text() + ' assigned & work started!', 'success');
+                        showPopup("Work started. Redirecting to worker screen...", 'Maintenanceworker.jsp');
+                    },
+                    error: function () {
+                        // assign succeeded but auto-start failed — don't block the flow
+                        $('#assignModal').modal('hide');
+                        loadAllTickets();
+                        showToast('Assigned, but auto-start failed. Please start manually.', 'info');
+                        showPopup("you click the start button to start the work", 'Maintenanceworker.jsp');
+                    }
+                });
+                // ───────────────────────────────────────────────────────────────
+
             } else {
-                $btn.prop('disabled', false).html('<i class="fas fa-paper-plane"></i> Assign');
+                $btn.prop('disabled', false).html('<i class="fas fa-paper-plane"></i> Start Work');
                 alert('Error: ' + res.message);
             }
         },
         error: function () {
-            $btn.prop('disabled', false).html('<i class="fas fa-paper-plane"></i> Assign');
+            $btn.prop('disabled', false).html('<i class="fas fa-paper-plane"></i> Start Work');
             alert('Failed to assign. Please try again.');
         }
     });
 }
-
 // ── CLOSE TICKET (Normal — all workers done) ──────────────────────────────
 function confirmClose(ticketId, reportedBy) {
     Swal.fire({
@@ -516,7 +551,7 @@ function getWorkerStageLabel(status) {
 // ── ACTUAL CLOSE API CALL ─────────────────────────────────────────────────
 function doCloseTicket(ticketId, reportedBy, remarks) {
     var closedBy  = parseInt(sessionStorage.getItem('id') || '0');
-    var factoryId = parseInt(localStorage.getItem('selectedFactoryId') || '0');
+    var factoryId = parseInt(sessionStorage.getItem('selectedFactoryId') || '0');
 	
 console.log("the closed Remarks are this",remarks);
 
@@ -668,7 +703,7 @@ function formatWorkTime(hours) {
 // ── NOTIFICATIONS ─────────────────────────────────────────────────────────
 function loadNotifications() {
     var userId    = parseInt(sessionStorage.getItem('user_id') || '0');
-    var factoryId = parseInt(localStorage.getItem('selectedFactoryId') || '0');
+    var factoryId = parseInt(sessionStorage.getItem('selectedFactoryId') || '0');
     if (!userId || !factoryId) return;
 
     $.ajax({
@@ -728,5 +763,16 @@ function showToast(msg, type) {
     var $t = $('<div class="toast-notif toast-' + type + '">' + msg + '</div>');
     $('body').append($t);
     setTimeout(function () { $t.addClass('show'); }, 10);
-    setTimeout(function () { $t.removeClass('show'); setTimeout(function () { $t.remove(); }, 400); }, 3000);
+    setTimeout(function () { $t.removeClass('show'); setTimeout(function () { $t.remove(); }, 400); }, 1000);
+}
+
+
+function showPopup(message, redirectUrl) {
+	var popup = $('<div class="popup">' + message + '</div>').appendTo('body').hide().fadeIn(400);
+	setTimeout(function() {
+		popup.fadeOut(400, function() {
+			$(this).remove();
+			window.location = redirectUrl;
+		});
+	}, 1000);
 }

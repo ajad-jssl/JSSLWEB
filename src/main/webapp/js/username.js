@@ -1,13 +1,13 @@
 document.addEventListener('DOMContentLoaded', function () {
-    // Username
+
     const username = sessionStorage.getItem('username');
 
     if (username) {
         document.getElementById('usernameDisplay').textContent = username;
     }
 
-    // Factory ID
-    const factoryId = localStorage.getItem('selectedFactoryId');
+    
+    const factoryId = sessionStorage.getItem('selectedFactoryId');
     const factoryName = getFactoryName(factoryId);
 
     if (factoryName) {
@@ -17,7 +17,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 });
 
-// Map factory IDs to factory names
+
 function getFactoryName(id) {
     switch (id) {
         case '1':

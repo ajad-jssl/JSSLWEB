@@ -460,49 +460,39 @@ function populateContractDropdown() {
     });
 }
 // Load data on page ready
-$(document).ready(function(){ 
-  loadData(); 
+function initInvoiceDashboard() {
+  loadData();
   populateContractDropdown();
+
   $('.regionFilter').on('change', function () {
 
-      // Uncheck all except the clicked one
       $('.regionFilter').not(this).prop('checked', false);
 
-      // If user unchecks everything → default to ALL
       if (!$('.regionFilter:checked').length) {
         $('.regionFilter[value="ALL"]').prop('checked', true);
       }
-	  $('.contractSelect').val('');
+      $('.contractSelect').val('');
 
-      // Get selected value
       var selectedFactory = $('.regionFilter:checked').val();
 
       console.log("Selected Factory:", selectedFactory);
 
-      // Call new function (NOT loadData)
       onFactoryChange(selectedFactory);
 
     });
-	
-	
-	
-	$('.contractSelect').on('change', function () {
 
-	      // Uncheck all except the clicked one
-	     
+  $('.contractSelect').on('change', function () {
 
+      var selectContract = $('.contractSelect').val();
 
-	      // Get selected value
-	      var selectContract = $('.contractSelect').val();
+      console.log("Selected Contract:", selectContract);
 
-	      console.log("Selected Contract:", selectContract);
+      onContractChange(selectContract);
 
-	      // Call new function (NOT loadData)
-	      onContractChange(selectContract);
+    });
+}
 
-	    });
-  
-});
+window.initInvoiceDashboard = initInvoiceDashboard;
 
 
 function onContractChange(selectContract){

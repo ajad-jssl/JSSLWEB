@@ -9,9 +9,9 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import io.github.bucket4j.Bandwidth;
+
 import io.github.bucket4j.Bucket;
-import io.github.bucket4j.Refill;
+
 
 import java.io.IOException;
 import java.time.Duration;
@@ -29,8 +29,9 @@ public class RateLimitFilter implements Filter {
 			Arrays.asList("/newlogin", "/forgotpass", "/otpval", "/reset", "/Home", "/"));
 
 	private Bucket createNewBucket() {
-		// 5 requests per minute per IP for these sensitive pages
-		return Bucket.builder().addLimit(Bandwidth.classic(10, Refill.greedy(10, Duration.ofMinutes(1)))).build();
+	    return Bucket.builder()
+	        .addLimit(limit -> limit.capacity(10).refillGreedy(10, Duration.ofMinutes(1)))
+	        .build();
 	}
 
 	@Override

@@ -74,15 +74,15 @@ function addNewRow() {
     table.appendChild(newTbody);
 }
 
-// Fetch selectedFactoryId from localStorage
-const selectedFactoryId = localStorage.getItem('selectedFactoryId');
+// Fetch selectedFactoryId from sessionStorage
+const selectedFactoryId = sessionStorage.getItem('selectedFactoryId');
 console.log('selectedFactoryId:', selectedFactoryId);
 
 // Ensure the ID is available before making the API call
 if (selectedFactoryId) {
-    fetchUserList(selectedFactoryId);
+    //fetchUserList(selectedFactoryId);
 } else {
-    console.error('No factory ID found in localStorage.');
+    console.error('No factory ID found in sessionStorage.');
 }
 
 // Function to fetch the list of users/vendors based on the selected factory ID
@@ -265,6 +265,7 @@ function fetchUserList(selectedFactoryId) {
             { title: "Sale Order To"    },
             { title: "Location"         },
             { title: "Edit",  orderable: false },
+			{ title: "Cancel",orderable: false },
             { title: "Print", orderable: false }
         ],
         ajax: function (data, callback, settings) {
@@ -300,17 +301,38 @@ function fetchUserList(selectedFactoryId) {
                         return;
                     }
 
-                    const rows = json.SaleOrderDetails.map(item => {
-                        return [
-                            item.sale_order_code    || '',           // col 0
-                            formatDate(item.auction_date),           // col 1
-                            item.saleorder_typename || '',           // col 2
-                            item.address            || '',           // col 3
-                            item.location_name      || '',           // col 4
-                            `<i class="fa fa-edit" style="color:blue; cursor:pointer;" onclick="editRecord('${item.sale_order_code}')"></i>`,   // col 5
-                            `<i class="fa fa-print" style="color:green; cursor:pointer;" onclick="printRecord('${item.sale_order_code}')"></i>`  // col 6
-                        ];
-                    });
+					const rows = json.SaleOrderDetails.map(item => {
+
+					    const isCancelled = item.cancel == "true";
+
+					    return [
+					        item.sale_order_code || '',
+					        formatDate(item.auction_date),
+					        item.saleorder_typename || '',
+					        item.address || '',
+					        item.location_name || '',
+
+					        isCancelled
+					            ? `<i class="fa fa-edit text-muted"
+					                  style="cursor:not-allowed;"
+					                  title="Sale Order Cancelled"></i>`
+					            : `<i class="fa fa-edit text-primary"
+					                  style="cursor:pointer;"
+					                  onclick="editRecord('${item.sale_order_code}')"></i>`,
+
+					        isCancelled
+					            ? `<i class="fa fa-times-circle text-muted"
+					                  style="cursor:not-allowed;"
+					                  title="Sale Order Cancelled"></i>`
+					            : `<i class="fa fa-times-circle text-danger"
+					                  style="cursor:pointer;"
+					                  onclick="openModalcancel('${item.sale_order_code}')"></i>`,
+
+					        `<i class="fa fa-print text-success"
+					              style="cursor:pointer;"
+					              onclick="printRecord('${item.sale_order_code}')"></i>`
+					    ];
+					});
 
                     callback({
                         draw: data.draw,
@@ -333,11 +355,12 @@ function fetchUserList(selectedFactoryId) {
 }
 document.addEventListener("DOMContentLoaded", function () {
 	loadAllowedActions();
-    const selectedFactoryId = localStorage.getItem("selectedFactoryId"); // Get factory_id from localStorage
+    const selectedFactoryId = sessionStorage.getItem("selectedFactoryId"); // Get factory_id from sessionStorage
     if (selectedFactoryId) {
         fetchSaleOrderTypes(selectedFactoryId);
+		fetchUserList(selectedFactoryId);
     } else {
-        console.error("No factory ID found in localStorage.");
+        console.error("No factory ID found in sessionStorage.");
     }
 });
 
@@ -384,11 +407,11 @@ async function fetchSaleOrderTypes() {
 }
 
 document.addEventListener("DOMContentLoaded", function () {
-    const selectedFactoryId = localStorage.getItem("selectedFactoryId"); // Get factory_id from localStorage
+    const selectedFactoryId = sessionStorage.getItem("selectedFactoryId"); // Get factory_id from sessionStorage
     if (selectedFactoryId) {
         fetchLocationTypes(selectedFactoryId);
     } else {
-        console.error("No factory ID found in localStorage.");
+        console.error("No factory ID found in sessionStorage.");
     }
 });
 
@@ -435,11 +458,11 @@ async function fetchLocationTypes() {
 }
 
 document.addEventListener("DOMContentLoaded", function () {
-    const selectedFactoryId = localStorage.getItem("selectedFactoryId"); // Get factory_id from localStorage
+    const selectedFactoryId = sessionStorage.getItem("selectedFactoryId"); // Get factory_id from sessionStorage
     if (selectedFactoryId) {
         fetchOrderTo(selectedFactoryId);
     } else {
-        console.error("No factory ID found in localStorage.");
+        console.error("No factory ID found in sessionStorage.");
     }
 });
 
@@ -486,11 +509,11 @@ async function fetchOrderTo() {
 }
 
 document.addEventListener("DOMContentLoaded", function () {
-    const selectedFactoryId = localStorage.getItem("selectedFactoryId"); // Get factory_id from localStorage
+    const selectedFactoryId = sessionStorage.getItem("selectedFactoryId"); // Get factory_id from sessionStorage
     if (selectedFactoryId) {
         fetchbilling();
     } else {
-        console.error("No factory ID found in localStorage.");
+        console.error("No factory ID found in sessionStorage.");
     }
 });
 
@@ -537,11 +560,11 @@ async function fetchshipping() {
 }
 
 document.addEventListener("DOMContentLoaded", function () {
-    const selectedFactoryId = localStorage.getItem("selectedFactoryId"); // Get factory_id from localStorage
+    const selectedFactoryId = sessionStorage.getItem("selectedFactoryId"); // Get factory_id from sessionStorage
     if (selectedFactoryId) {
         fetchshipping();
     } else {
-        console.error("No factory ID found in localStorage.");
+        console.error("No factory ID found in sessionStorage.");
     }
 });
 
@@ -588,11 +611,11 @@ async function fetchbilling() {
 }
 
 document.addEventListener("DOMContentLoaded", function () {
-    const selectedFactoryId = localStorage.getItem("selectedFactoryId"); // Get factory_id from localStorage
+    const selectedFactoryId = sessionStorage.getItem("selectedFactoryId"); // Get factory_id from sessionStorage
     if (selectedFactoryId) {
         fetchbusunit();
     } else {
-        console.error("No factory ID found in localStorage.");
+        console.error("No factory ID found in sessionStorage.");
     }
 });
 
@@ -627,7 +650,7 @@ async function fetchbusunit() {
 		// Populate dropdown options using SalesOrderTypeDetails array
 		        json.Data.forEach((type) => {
 		            if (type.business_unit_id && type.business_unit_name) { 
-					let bindaddress = type.bu_code+'-'+type.business_unit_name +' '+type.orgName +',' +type.location+','+type.stateName +'('+type.gst_number +')';
+					let bindaddress = type.business_unit_name + type.location + '(' + type.gst_number + ')';
         // Populate dropdown options using SalesOrderTypeDetails array
        /* json.Data.forEach((type) => {
             if (type.business_unit_id && type.business_unit_name) { // Ensure both values exist*/
@@ -643,11 +666,11 @@ async function fetchbusunit() {
 }
 
 document.addEventListener("DOMContentLoaded", function () {
-    const selectedFactoryId = localStorage.getItem("selectedFactoryId"); // Get factory_id from localStorage
+    const selectedFactoryId = sessionStorage.getItem("selectedFactoryId"); // Get factory_id from sessionStorage
     if (selectedFactoryId) {
         fetchscraptype(selectedFactoryId);
     } else {
-        console.error("No factory ID found in localStorage.");
+        console.error("No factory ID found in sessionStorage.");
     }
 });
 
@@ -694,11 +717,11 @@ async function fetchscraptype(factoryId) {
 }
 
 document.addEventListener("DOMContentLoaded", function () {
-    const selectedFactoryId = localStorage.getItem("selectedFactoryId"); // Get factory_id from localStorage
+    const selectedFactoryId = sessionStorage.getItem("selectedFactoryId"); // Get factory_id from sessionStorage
     if (selectedFactoryId) {
         fetchscrapItem(selectedFactoryId);
     } else {
-        console.error("No factory ID found in localStorage.");
+        console.error("No factory ID found in sessionStorage.");
     }
 });
 
@@ -745,11 +768,11 @@ async function fetchscrapItem(factoryId) {
 }
 
 document.addEventListener("DOMContentLoaded", function () {
-    const selectedFactoryId = localStorage.getItem("selectedFactoryId"); // Get factory_id from localStorage
+    const selectedFactoryId = sessionStorage.getItem("selectedFactoryId"); // Get factory_id from sessionStorage
     if (selectedFactoryId) {
         fetchuom();
     } else {
-        console.error("No factory ID found in localStorage.");
+        console.error("No factory ID found in sessionStorage.");
     }
 });
 
@@ -844,7 +867,7 @@ async function fetchtaxadd1() {
                 const option = document.createElement("option");
                 option.value = type.tax_id;
                 option.dataset.taxPer = type.tax_per; // Store tax_per as a data attribute
-                option.textContent = type.tax_name;
+                option.textContent = type.tax_name+ '-'+type.tax_per;
                 selectElement.appendChild(option);
             }
         });
@@ -852,8 +875,15 @@ async function fetchtaxadd1() {
         // Function to calculate and update tax value
         function updateTaxValue() {
             const taxPer = parseFloat(taxInput.value) || 0;
-            const totalNo = parseFloat(totalNoInput.value) || 0;
-            const taxAmount = (totalNo * taxPer) / 100;
+         /*   const totalNo = parseFloat(totalNoInput.value) || 0;
+            const taxAmount = (totalNo * taxPer) / 100;*/
+			const selectedOption = selectElement.options[selectElement.selectedIndex];
+			const taxName = (selectedOption.text || "").trim().toUpperCase();
+			const totalNo = parseFloat(totalNoInput.value) || 0;
+			const grandTotal = parseFloat(document.getElementById("grandTotal").value) || 0;
+			// If TCS calculate on Grand Total else on Net Amount
+			const baseAmount = taxName.includes("TCS") ? grandTotal : totalNo;
+			const taxAmount = (baseAmount * taxPer) / 100;
             taxValueInput.value = taxAmount.toFixed(2); // Show result with 2 decimal places
             updateTotalTax();
             updateGrandTotal();
@@ -928,19 +958,26 @@ async function fetchtaxadd2() {
                 const option = document.createElement("option");
                 option.value = type.tax_id;
                 option.dataset.taxPer = type.tax_per; // Store tax_per as a data attribute
-                option.textContent = type.tax_name;
+                option.textContent = type.tax_name+ '-'+type.tax_per;
                 selectElement.appendChild(option);
             }
         });
 
         // Function to calculate and update tax value
         function updateTaxValue() {
-            const taxPer = parseFloat(taxInput.value) || 0;
-            const totalNo = parseFloat(totalNoInput.value) || 0;
-            const taxAmount = (totalNo * taxPer) / 100;
-            taxValueInput.value = taxAmount.toFixed(2); // Show result with 2 decimal places
-            updateTotalTax();
-            updateGrandTotal();
+			const taxPer = parseFloat(taxInput.value) || 0;
+			   /*   const totalNo = parseFloat(totalNoInput.value) || 0;
+			      const taxAmount = (totalNo * taxPer) / 100;*/
+				const selectedOption = selectElement.options[selectElement.selectedIndex];
+				const taxName = (selectedOption.text || "").trim().toUpperCase();
+				const totalNo = parseFloat(totalNoInput.value) || 0;
+				const grandTotal = parseFloat(document.getElementById("grandTotal").value) || 0;
+				// If TCS calculate on Grand Total else on Net Amount
+				const baseAmount = taxName.includes("TCS") ? grandTotal : totalNo;
+				const taxAmount = (baseAmount * taxPer) / 100;
+			      taxValueInput.value = taxAmount.toFixed(2); // Show result with 2 decimal places
+			      updateTotalTax();
+			      updateGrandTotal();
         }
 
         // Event listener to update tax percentage and value
@@ -1011,18 +1048,26 @@ async function fetchtaxadd3() {
                 const option = document.createElement("option");
                 option.value = type.tax_id;
                 option.dataset.taxPer = type.tax_per; // Store tax_per as a data attribute
-                option.textContent = type.tax_name;
+                option.textContent = type.tax_name+ '-'+type.tax_per;
                 selectElement.appendChild(option);
             }
         });
 
         // Function to calculate and update tax value
         function updateTaxValue() {
-            const taxPer = parseFloat(taxInput.value) || 0;
-            const totalNo = parseFloat(totalNoInput.value) || 0;
-            const taxAmount = (totalNo * taxPer) / 100;
-            taxValueInput.value = taxAmount.toFixed(2); // Show result with 2 decimal places
-             updateTotalTax();
+			const taxPer = parseFloat(taxInput.value) || 0;
+			   /*   const totalNo = parseFloat(totalNoInput.value) || 0;
+			      const taxAmount = (totalNo * taxPer) / 100;*/
+				const selectedOption = selectElement.options[selectElement.selectedIndex];
+				const taxName = (selectedOption.text || "").trim().toUpperCase();
+				const totalNo = parseFloat(totalNoInput.value) || 0;
+				const grandTotal = parseFloat(document.getElementById("grandTotal").value) || 0;
+				// If TCS calculate on Grand Total else on Net Amount
+				const baseAmount = taxName.includes("TCS") ? grandTotal : totalNo;
+				const taxAmount = (baseAmount * taxPer) / 100;
+			      taxValueInput.value = taxAmount.toFixed(2); // Show result with 2 decimal places
+			      updateTotalTax();
+			      updateGrandTotal();
         }
 
         // Event listener to update tax percentage and value
@@ -1442,14 +1487,14 @@ function updateGrandTotal() {
  }
  
  
- async function printRecord(sale_order_code) {
+async function printRecord(sale_order_code) {
 	   // const allowed = window.allowedActions || [];
 	if (!allowed.includes("Print")) {
 	    alert(" You do not have permission to print.");
 	    return;
 	}
      try {
-
+		
          const url = new URL(
              `/jssl/saleOrderEntry/getSaleOrderBasedOnIdNew?sale_order_code=${sale_order_code}`,
              baseUrl
@@ -1572,46 +1617,54 @@ function updateGrandTotal() {
 		     });
 		 }
 
-		 const selectedFactoryId = localStorage.getItem('selectedFactoryId');
-		 let factoryHtml = "";
+		 /* ================= BUSINESS UNIT / FACTORY BLOCK =================
+		    Bound dynamically from orderlevel[0] (BUSINESS_UNITS join in the
+		    query) — NOT hardcoded per business unit id, and NOT read from
+		    sessionStorage. Whatever business unit is attached to this sale
+		    order is what gets printed.
+		 */
 
-		 if (selectedFactoryId == 1) {
+		 const bu = orderlevel[0] || {};
 
-		     factoryHtml = `
-		         <b>JSW Severfield Structures Ltd</b><br>
-		         Near 10 MT Gate, Beside Cement Plant - 2,<br>
-		         Vidyanagar P.O. Torangallu, Ballari - 583275<br>
-		         State Name : Karnataka, State Code: 29<br>
-		         Country: India<br>
-		         GSTIN : 29AACCJ1473D1ZQ<br>
-		         PAN: AACCJ1473D
-		     `;
+		 // Strip any leading "JBU-<number>" style prefix (e.g. "JBU-4 ") from the business unit name
+		 const cleanBusinessUnitName = (bu.business_unit_name || "JSW Severfield Structures Ltd")
+		     .replace(/^JBU-?\s*\d+\s*/i, "")
+		     .trim();
 
-		 } else if (selectedFactoryId == 2) {
+		 const factoryAddressLines = [
+		     cleanBusinessUnitName,
+		     bu.location || "",
+		     bu.state_id ? `State Code: ${bu.state_id}` : "",
+		     bu.country ? `Country: ${bu.country}` : "",
+		     bu.gst_number ? `GSTIN : ${bu.gst_number}` : "",
+		     bu.pan_number ? `PAN: ${bu.pan_number}` : ""
+		 ].filter(line => line !== "");
 
-		     factoryHtml = `
-		         <b>JSW Severfield Structures Ltd</b><br>
-		         Survey No 140, Opp. Raj Engineering Works,<br>
-		         Vagra Taluk, Bharuch District, Gujarat - 392012<br>
-		         State Name : Gujarat, State Code: 24<br>
-		         Country: India<br>
-		         GSTIN : 24AACCJ1473D2ZZ<br>
-		         PAN: AACCJ1473D
-		     `;
-
-		 } else {
-
-		     factoryHtml = `
-		         <b>JSW Severfield Structures Ltd</b>
-		     `;
-		 }
+		 const factoryHtml = factoryAddressLines.join("<br>");
 
          /* ================= HTML CONTENT ================= */
-		 
+		 const isCancelled = orderlevel[0].cancel == "true";
 		 const pdfContainer = document.createElement("div");
 		 pdfContainer.style.width = "210mm";
 
 		 pdfContainer.innerHTML = `
+		 ${isCancelled ? `
+		 <div style="
+		     position:absolute;
+		     top:50%;
+		     left:50%;
+		     transform:translate(-50%, -50%) rotate(-45deg);
+		     font-size:100px;
+		     font-weight:bold;
+		     color:red;
+		     opacity:0.15;
+		     z-index:9999;
+		     pointer-events:none;
+		     white-space:nowrap;
+		 ">
+		     CANCELLED
+		 </div>
+		 ` : ''}
 		 <div style="width:190mm; margin:8mm auto; font-family:Arial; font-size:11px; border:1px solid #000;">
 
 		     <!-- HEADER -->
@@ -1684,7 +1737,7 @@ function updateGrandTotal() {
 
 		     <!-- FOOTER -->
 		     <div style="margin-top:10px; padding:5px; text-align:right;">
-		         For JSW Severfield Structures Ltd<br><br>
+		         For ${cleanBusinessUnitName}<br><br>
 		         Authorized Signatory
 		     </div>
 
@@ -1726,6 +1779,7 @@ function updateGrandTotal() {
  }
 
 
+
  function formatDateDDMMYY(dateString) {
 
      if (!dateString) return "";
@@ -1741,5 +1795,60 @@ function updateGrandTotal() {
      return `${day}-${month}-${year}`;
  }
 
+ function openModalcancel(id) {
+     // Open the modal
+ 	//  const allowed = window.allowedActions || [];
 
+ 	if (!allowed.includes("Cancel")) {
+ 	  alert(" You do not have permission to Cancel.");
+ 	  $('#exampleModalCenter16').modal('hide');
+ 	  return;
+ 	}
+     $('#exampleModalCenter16').modal('show');
+
+     // Store the id and pn_id in the modal's data attributes
+     $('#exampleModalCenter16').attr('data-id', id);
+ }
+
+ function cancelRecord() {
+
+     $('#exampleModalCenter16').modal('hide');
+
+     var id = $('#exampleModalCenter16').attr('data-id');
+
+     $.ajax({
+         url: new URL('/jssl/saleorder/cancel', baseUrl),
+         type: 'POST',
+         dataType: 'json',
+         xhrFields: {
+             withCredentials: true
+         },
+         data: {
+             id: id,
+             cancelled_by: createdById
+         },
+		 success: function(data) {
+
+		     if (data.message === "Success") {
+
+		         const popup = $('<div class="popup">Sale Order Cancelled Successfully!</div>')
+		             .appendTo('body')
+		             .hide()
+		             .fadeIn(400);
+					 setTimeout(function() {
+					                 popup.fadeOut(400, function() {
+					                     $(this).remove();
+					                     window.location = 'Scrap.jsp';
+					                 });
+					             }, 800);
+
+		     } else {
+
+		         alert(data.message);
+		         // Output:
+		         // "Can't cancel Sale Order. Transaction already done."
+		     }
+		 }
+     });
+ }
 

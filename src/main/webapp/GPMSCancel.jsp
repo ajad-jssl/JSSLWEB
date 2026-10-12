@@ -190,7 +190,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
                 
                 <ul class="navbar-nav ml-auto">
 				
-                    <button class="btn btn-link" onclick="window.location.href='GPMSLandingpage.jsp'" style="background-color: transparent; color: white; border: none;">
+                    <button class="btn btn-link" onclick="window.location.href='Landingpage.jsp'" style="background-color: transparent; color: white; border: none;">
                         <i class="fa fa-home"></i>
                     </button>
                     <div class="topbar-divider d-none d-sm-block"></div>

@@ -6,6 +6,7 @@
   response.setHeader("Pragma", "no-cache"); // HTTP 1.0
   response.setDateHeader("Expires", 0); // Proxies
 %>
+<%@ include file="version.jsp" %>
 <!DOCTYPE html>
 <html>
 <head>
@@ -13,19 +14,15 @@
 <title>JSSL</title>
 <link rel="stylesheet" href="css/newlogin.css">
 <!-- Bootstrap CSS -->
-<link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+
+<link href="externalLibrary/stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
 <link rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"/>
+      href="externalLibrary/cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"/>
 
 
 <style>
 
 
-@import url('https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400..700;1,400..700&display=swap');
-
-/* body {
-  font-family: 'Libre Baskerville', serif;
-} */
 
    :root {
             --accent: #0f172a;
@@ -104,7 +101,7 @@ font-family: 'Libre Baskerville', serif;
 </style>
 
 
- <script src="js/sidebar.js"></script>
+
         <script>
         function checkLoggedIn(){
 		    if (sessionStorage.getItem("isLoggedIn") === "true") {
@@ -113,189 +110,73 @@ font-family: 'Libre Baskerville', serif;
         }
 		</script>
 		
-	<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>	
-		 
+<script src="externalLibrary/code.jquery.com/jquery-3.6.0.min.js"></script>	
+	 <script src="js/sidebar.js?v=<%=jsVersion%>"></script>	 
+	 
 <script>
-//Login User Function
 
-/* function loginUser(event) {
-    event.preventDefault();
 
-    var username = document.getElementById('username').value;
-    var password = document.getElementById('password').value;
-
-    if (!username || !password) {
-        alert("Please enter both username and password.");
-        return;
-    }
-
-    // Construct the full URL dynamically using baseUrl
-    const url = new URL('/jssl/user/userlogin', baseUrl); // Construct the URL
-
-    // Serialize the data using $.param to format it as x-www-form-urlencoded
-    var data = $.param({ username: username, password: password });
-
-    $.ajax({
-        url: url, 
-        type: 'POST',
-        data: data,  // Use the serialized form data
-        contentType: 'application/x-www-form-urlencoded',  // Ensure the correct content type
-        dataType: 'json',
-        cache: false, 
-        xhrFields: {
-            withCredentials: true   // ✅ allow cookies (JSESSIONID)
-        },
-        success: function(data) {
-            console.log("Server response:", data);
-            var user_id = data.user_id;
-            var id = data.id;
-            console.log(user_id);
-            if (data.message === "Success") {
-                sessionStorage.setItem("isLoggedIn", "true");
-                sessionStorage.setItem("username", username);
-                sessionStorage.setItem("user_id", user_id);
-                sessionStorage.setItem("id", id);
-                window.location = "Landingpage.jsp";
-            } else {
-            	$('#loginErrorMessage').text(data.message || "Login failed. Please check your credentials.");
-                $('#loginErrorModal').modal('show');
-            }
-        },
-        error: function(xhr, status, error) {
-            console.error("AJAX error:", error);
-            console.error("Response text:", xhr.responseText);
-            alert("Error: " + (xhr.responseText || "An error occurred."));
-        }
-    });
-} */
 
 function loginUser(event) {
     event.preventDefault();
- 
+
     const username = document.getElementById('username').value;
     const password = document.getElementById('password').value;
- 
+
     if (!username || !password) {
         alert("Please enter both username and password.");
         return;
     }
- 
-    /* ================= PRIMARY LOGIN ================= */
-    const primaryUrl = new URL('/jssl/user/userlogin', baseUrl);
- 
+
+    const url = new URL('/jssl/user/userlogin', baseUrl);
+
     $.ajax({
-        url: primaryUrl,
+        url: url,
         type: 'POST',
         data: $.param({ username, password }),
         contentType: 'application/x-www-form-urlencoded',
         dataType: 'json',
         cache: false,
         xhrFields: { withCredentials: true },
- 
+
         success: function (res) {
-            console.log("Primary response:", res);
- 
+          
+
             if (res && res.message === "Success" && res.status === "yes") {
-                // ✅ Primary login success
                 sessionStorage.setItem("isLoggedIn",  "true");
-                sessionStorage.setItem("username",     username);
-                sessionStorage.setItem("user_id",      username);
+                sessionStorage.setItem("username",     res.username || username);
+                sessionStorage.setItem("user_id",      res.user_id || username);
                 sessionStorage.setItem("id",           res.id);
-                sessionStorage.setItem("loction_id",   res.loction_id);
+                sessionStorage.setItem("loction_id",   res.loction_id || res.location || "");
                 sessionStorage.setItem("factory_id",   res.factory_id);
-              window.location = "Landingpage.jsp";  
-              
-         /*      window.location = 'HomeDashboard.jsp'; */
-              
-              
-            
-              
-            /*   alert("successfully login"); */
- 
-            } else if (res && res.user_exists === false) {
-                // ✅ User not in primary DB → try secondary
-                callSecondaryLogin();
- 
-            } else if (res && res.user_exists === true && res.status === "no") {
-                // ✅ User in primary DB but failed → show message only
-                showError(res.message);
+                sessionStorage.setItem("full_name",    res.full_name || "");
+                sessionStorage.setItem("Empcode",      res.EmpCode || "");
+                sessionStorage.setItem("session_id", res.session_id);
+
+              window.location = "Landingpage.jsp";
+
+            } else {
+                showError(res.message || "Login failed. Please check your credentials.");
             }
         },
- 
-        error: function () {
-            // ✅ Primary system down → try secondary
-            callSecondaryLogin();
-        }
-    });  // ✅ $.ajax closes here
- 
-    /* ================= SECONDARY LOGIN ================= */
-    function callSecondaryLogin() {
-        console.log("Trying secondary login...");
- 
-        $.ajax({
-            url: baseUrl + '/api/proxy/secondary-login',
-            type: 'POST',
-            contentType: 'application/json',
-            dataType: 'json',
-            xhrFields: { withCredentials: true },
-            data: JSON.stringify({
-                username: username,
-                password: password,
-                sourceSystem: "B"
-            }),
- 
-            success: function (res) {
-                console.log("Secondary response:", res);
- 
-                if (res && res.success === true && res.status === "yes") {
-                    // ✅ Secondary success
-                    sessionStorage.setItem("isLoggedIn",  "true");
-                    sessionStorage.setItem("user_id",      res.user_id);
-                    sessionStorage.setItem("username",     res.username);
-                    sessionStorage.setItem("full_name",    res.full_name  || "");
-                    sessionStorage.setItem("factory_id",   res.factory_id );
-                    sessionStorage.setItem("loction_id",   res.location || "");
-                    sessionStorage.setItem("id",res.id);
-                    sessionStorage.setItem("Empcode",    res.EmpCode || "");
-                             window.location = "Landingpage.jsp"; 
-                   
-               /*   alert("successfully login");  */
- 
-                } else {
-                    showError("Invalid username or password.");
-                }
-            },
- 
-            error: function (xhr) {
 
-                let message = "Login failed. Please try again.";
-
-                try {
-
-                    const response = JSON.parse(xhr.responseText);
-
-                    if (response.message) {
-                        message = response.message;
-                    }
-
-                } catch (e) {
-                    console.error("JSON parse error", e);
-                }
-
-                showError(message);
+        error: function (xhr) {
+            let message = "Login failed. Please try again.";
+            try {
+                const response = JSON.parse(xhr.responseText);
+                if (response.message) message = response.message;
+            } catch (e) {
+                console.error("JSON parse error", e);
             }
-        });  // ✅ secondary $.ajax closes here
-    }
- 
-    /* ================= ERROR HANDLER ================= */
+            showError(message);
+        }
+    });
+
     function showError(message) {
         $('#loginErrorMessage').text(message);
         $('#loginErrorModal').modal('show');
     }
- 
-}  // ✅ loginUser function closes here
-
-
+}
 
         </script> 
  
@@ -342,16 +223,14 @@ function loginUser(event) {
       id="password"
   >
 
-  <!-- Eye toggle -->
+
  <span class="toggle-password" onclick="togglePassword()">
     <i id="eyeIcon" class="fas fa-eye"></i>
 </span>
 </div>
    <div class="button_container">
     <button type="submit" class="submit_button" onclick="loginUser(event)">Login</button>
-  <!-- <button title="Login" type="submit" class="sign-in_btn" onclick="loginUser(event)">
-    <span>Login</span>
-  </button> -->
+  
    <button type="button" class="reset_button" onclick="window.location.href='reset.jsp';">Reset Password</button>
  </div>
  <div class="forgot_password">
@@ -376,7 +255,7 @@ function loginUser(event) {
         </button>
       </div>
       <div class="modal-body" id="loginErrorMessage">
-        <!-- Message will be injected here -->
+        
       </div>
     </div>
   </div>
@@ -384,7 +263,7 @@ function loginUser(event) {
 
  <script>
         $(document).ready(function() {
-            console.log("jQuery is loaded!");
+           
         });
         function togglePassword() {
             const passwordInput = document.getElementById("password");
@@ -402,17 +281,20 @@ function loginUser(event) {
         }
     </script>
 
-<script src="js/config.js"></script>
+
+ <script src="js/config.js?v=<%=jsVersion%>"></script>
 
 
-    <!--   <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script> -->
-      <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
-      <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-      <!-- jQuery -->
+   
+
+      
+        <script src="externalLibrary/cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
+      <script src="externalLibrary/stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    
 
 
-<!-- Bootstrap JS Bundle (includes Popper.js) -->
-<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
+
+<script src="externalLibrary/stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
       
 </body>
 </html>

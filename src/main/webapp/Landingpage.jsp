@@ -1,4 +1,4 @@
-<%-- <%@page import="com.JSSL2024.property.PropertyLink"%> --%>
+
 <%@ page language="java" contentType="text/html; charset=UTF-8"
 	pageEncoding="UTF-8"%>
 <%
@@ -7,65 +7,41 @@
   response.setDateHeader("Expires", 0); // Proxies
 %>
 
+
+<%@ include file="version.jsp"%>
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
- <link href="img/logo/download.png" rel="icon">
+<link href="img/logo/download.png" rel="icon">
 <title>JSSL</title>
-<!-- Bootstrap CSS -->
+
 
 <link
-	href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css"
+	href="externalLibrary/cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.5.0/font/bootstrap-icons.min.css"
 	rel="stylesheet">
-	 <link href="vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css">
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="js/sidebar.js"></script>
-<!-- <link rel="stylesheet" href="styles.css?v=12345"> -->
+<link href="vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet"
+	type="text/css">
 
-<!-- <script>
-  // Immediately check session on page load
-  (function checkSession() {
-      const checkSessionUrl = "http://localhost:8004/jssl/user/checkSession"; // adjust if needed
+<script src="externalLibrary/code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="js/sidebar.js?v=<%=jsVersion%>"></script>
 
-      fetch(checkSessionUrl, {
-          credentials: 'include' // send cookies like JSESSIONID
-      })
-      .then(res => res.json())
-      .then(data => {
-          if (data.status !== 'yes') {
-              // Call your existing logout function
-              logoutUser({ preventDefault: function() {} });
-          }
-          // Session valid → continue loading page
-      })
-      .catch(err => {
-          console.error('Error checking session:', err);
-          // fallback to logout in case of network/server error
-          logoutUser({ preventDefault: function() {} });
-      });
-  })();
-</script> -->
+
+
 
 
 <script>
-  //On page load, fetch user permissions from sessionStorage and update sidebar
+ 
     $(document).ready(function() {
-    	  // localStorage.removeItem('selectedFactoryId');
-    	 /*  checksession();  */ 
+    	
       const userPermissions = JSON.parse(sessionStorage.getItem("userPermissions"));
       if (userPermissions) {
      updateSidebarVisibility(userPermissions);
           restrictPageAccess(userPermissions);
       }
     });
-/*     const user_id = sessionStorage.getItem('user_id');
-    console.log(user_id);
-    if (!user_id) {
-    window.location.href = "newlogin.jsp";
-    }
-     */
+
     
     function noBack() {
         window.history.forward();
@@ -117,36 +93,29 @@ body {
 	font-weight: 600;
 }
 
-
-.logo-item{
-    display:flex;
-    align-items:center;
-    margin-left:0px;
+.logo-item {
+	display: flex;
+	align-items: center;
+	margin-left: 0px;
 }
 
-.logo-item img{
-    height:70px;
-    width:120px;
-    display:block;
-    border-radius :10px;
-    
-   
+.logo-item img {
+	height: 70px;
+	width: 120px;
+	display: block;
+	border-radius: 10px;
 }
 
 /* Remove Bootstrap hover background */
-.logo-item:hover,
-.logo-item:focus,
-.logo-item:active{
-    background: transparent !important;
+.logo-item:hover, .logo-item:focus, .logo-item:active {
+	background: transparent !important;
 }
 
 /* If wrapped inside nav-link */
-.logo-item .nav-link,
-.logo-item .nav-link:hover,
-.logo-item .nav-link:focus,
-.logo-item .nav-link:active{
-    background: transparent !important;
-    box-shadow: none !important;
+.logo-item .nav-link, .logo-item .nav-link:hover, .logo-item .nav-link:focus,
+	.logo-item .nav-link:active {
+	background: transparent !important;
+	box-shadow: none !important;
 }
 </style>
 
@@ -158,76 +127,56 @@ body {
 <link href="css/ruang-admin.min.css" rel="stylesheet">
 <script>
 
-/* document.addEventListener("DOMContentLoaded", function () {
 
-    // Push a dummy history state
-    history.pushState(null, document.title, location.href);
-
-    // Detect browser back button
-    window.addEventListener("popstate", function () {
-        console.log("Back button pressed → calling logout");
-
-        // Call logout exactly like session-check does
-        logoutUser({ preventDefault: function () {} });
-    });
-
-}); */
 </script>
 </head>
 
-<body >
-<nav
-    class="navbar navbar-expand navbar-light bg-navbar topbar mb-4 static-top"
-    style="background-color:#37499A; display:flex; align-items:center;">
+<body>
+	<nav
+		class="navbar navbar-expand navbar-light bg-navbar topbar mb-4 static-top"
+		style="background-color: #37499A; display: flex; align-items: center;">
 
-    <!-- Left Logo -->
-    <div class="logo-item">
-        <img src="img/logo/download.png" alt="Logo">
-    </div>
+		<!-- Left Logo -->
+		<div class="logo-item">
+			<img src="img/logo/download.png" alt="Logo">
+		</div>
 
-    <!-- Right Side -->
-    <ul class="navbar-nav ml-auto">
+		<!-- Right Side -->
+		<ul class="navbar-nav ml-auto">
 
-        <div class="dropdown-checkbox" style="position:relative; display:inline-block;">
+			<div class="dropdown-checkbox"
+				style="position: relative; display: inline-block;">
 
-            <button id="factoryDropdownBtn"
-                    class="dropdown-toggle"
-                    type="button"
-                    style="background-color:white; color:black; border:none;
-                           padding:10px 20px; border-radius:5px; font-size:14px;
-                           cursor:pointer; margin-top:14px;">
-                Select Factory
-            </button>
+				<button id="factoryDropdownBtn" class="dropdown-toggle"
+					type="button"
+					style="background-color: white; color: black; border: none; padding: 10px 20px; border-radius: 5px; font-size: 14px; cursor: pointer; margin-top: 14px;">
+					Select Factory</button>
 
-            <div id="factoryDropdownMenu"
-                 class="dropdown-menu"
-                 style="display:none; position:absolute; top:100%; left:0;
-                        border:1px solid #ccc; background:#fff; z-index:1000;
-                        padding:10px; width:200px; max-height:200px; overflow-y:auto;">
-            </div>
+				<div id="factoryDropdownMenu" class="dropdown-menu"
+					style="display: none; position: absolute; top: 100%; left: 0; border: 1px solid #ccc; background: #fff; z-index: 1000; padding: 10px; width: 200px; max-height: 200px; overflow-y: auto;">
+				</div>
 
-        </div>
+			</div>
 
-        <div class="topbar-divider d-none d-sm-block"></div>
+			<div class="topbar-divider d-none d-sm-block"></div>
 
-        <li class="nav-item dropdown no-arrow">
-            <a class="nav-link dropdown-toggle" href="#" id="userDropdown123"
-               data-toggle="dropdown">
-                <i class="fas fa-user text-white mr-2"></i>
-                <span class="ml-2 d-none d-lg-inline text-white small"
-                      id="usernameDisplay">Username</span>
-            </a>
+			<li class="nav-item dropdown no-arrow"><a
+				class="nav-link dropdown-toggle" href="#" id="userDropdown123"
+				data-toggle="dropdown"> <i class="fas fa-user text-white mr-2"></i>
+					<span class="ml-2 d-none d-lg-inline text-white small"
+					id="usernameDisplay">Username</span>
+			</a>
 
-            <div class="dropdown-menu dropdown-menu-right shadow animated--grow-in">
-                <a class="dropdown-item" onclick="logoutUser(event)">
-                    <i class="fas fa-sign-out-alt fa-sm fa-fw mr-2 text-gray-400"></i>
-                    Logout
-                </a>
-            </div>
-        </li>
+				<div
+					class="dropdown-menu dropdown-menu-right shadow animated--grow-in">
+					<a class="dropdown-item" onclick="logoutUser(event)"> <i
+						class="fas fa-sign-out-alt fa-sm fa-fw mr-2 text-gray-400"></i>
+						Logout
+					</a>
+				</div></li>
 
-    </ul>
-</nav>
+		</ul>
+	</nav>
 
 
 	<div class="container py-5">
@@ -244,12 +193,7 @@ body {
 		<div class="modal-dialog modal-dialog-centered" role="document">
 			<div class="modal-content"
 				style="width: 54%; right: -22%; border-width: thick; border-color: #eaecf4;">
-				<div class="modal-header1">
-					<!-- <h5 class="modal-title" id="exampleModalCenterTitle">Modal Vertically Centered</h5> -->
-					<!-- <button type="button" class="close" data-dismiss="modal" aria-label="Close" >
-                    <span aria-hidden="true">&times;</span>
-                  </button>  -->
-				</div>
+				<div class="modal-header1"></div>
 				<div class="modal-body">
 					<b>Please select a factory before proceeding!</b>
 				</div>
@@ -267,21 +211,20 @@ body {
 	<script src="vendor/jquery/jquery.min.js"></script>
 	<script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
 	<script src="vendor/jquery-easing/jquery.easing.min.js"></script>
-<!-- 	<script src="js/ruang-admin.min.js"></script> -->
+
 	<script src="vendor/chart.js/Chart.min.js"></script>
 	<script src="js/demo/chart-area-demo.js"></script>
-	     <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
-<!-- 	<script
-		src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script> -->
-	<script src="js/username.js"></script>
-	
-	<script src="js/config.js"></script>
-	<script src="js/userrole.js"></script>
-	<script src="js/Sessionfilter.js"></script>
-	<!-- <script src="js/factoryid.js"></script> -->
+	<script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+
+	<script src="js/username.js?v=<%=jsVersion%>"></script>
+
+	<script src="js/config.js?v=<%=jsVersion%>"></script>
+	<%-- <script src="js/userrole.js?v=<%=jsVersion%>"></script> --%>
+	<script src="js/Sessionfilter.js?v=<%=jsVersion%>"></script>
+
 	<script>
     function navigateToDashboard() {
-        let selectedFactoryId = localStorage.getItem('selectedFactoryId');
+        let selectedFactoryId = sessionStorage.getItem('selectedFactoryId');
         
         if (!selectedFactoryId) {
         	$('#exampleModalCenter66update').modal('show');
@@ -294,7 +237,7 @@ body {
     }
 </script>
 
-<script>
+	<script>
 document.addEventListener("DOMContentLoaded", function () {
 
     const dropdownBtn  = document.getElementById("factoryDropdownBtn");
@@ -303,7 +246,7 @@ document.addEventListener("DOMContentLoaded", function () {
     if (!dropdownBtn || !dropdownMenu) return;
 
     const userFactoryId = (sessionStorage.getItem("factory_id") || "").toUpperCase();
-    let selectedFactoryId = localStorage.getItem("selectedFactoryId") || null;
+    let selectedFactoryId = sessionStorage.getItem("selectedFactoryId") || null;
 
     // Toggle dropdown
     dropdownBtn.addEventListener("click", function (e) {
@@ -329,7 +272,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 dropdownBtn.classList.add("disabled");
                 dropdownBtn.style.pointerEvents = "none";
                 dropdownBtn.style.cursor = "default";
-                localStorage.setItem("selectedFactoryId", userFactoryId);
+                sessionStorage.setItem("selectedFactoryId", userFactoryId);
             }
         });
     } else {
@@ -374,7 +317,7 @@ function loadFactoryDropdown(currentSelectedId) {
 
             // Select factory on click
             item.addEventListener("click", function() {
-                localStorage.setItem("selectedFactoryId", factory.id);
+                sessionStorage.setItem("selectedFactoryId", factory.id);
                 document.getElementById("factoryDropdownBtn").innerText = factory.factory_name;
                 dropdownMenu.style.display = "none"; // close dropdown
             });
@@ -386,7 +329,7 @@ function loadFactoryDropdown(currentSelectedId) {
         const dropdownBtn = document.getElementById("factoryDropdownBtn");
         if (selectedFactoryName) {
             dropdownBtn.innerText = selectedFactoryName;
-        } else if (!localStorage.getItem("selectedFactoryId")) {
+        } else if (!sessionStorage.getItem("selectedFactoryId")) {
             dropdownBtn.innerText = "Select Factory";
         }
     })
@@ -409,20 +352,20 @@ function fetchFactoryById(factoryId, callback) {
 </script>
 
 
-<script>
+	<script>
 $(document).ready(function() {
     $("#closeModalBtn3").click(function() {
-        $("#exampleModalCenter66update").modal("hide"); // Replace #exampleModal with your modal ID
+        $("#exampleModalCenter66update").modal("hide"); // 
     });
 });
 </script>
 
-<script>
+	<script>
 $(document).ready(function() {
 
-	//  const userId = sessionStorage.getItem('user_id');
+
 	  const userId = sessionStorage.getItem('username');
-	//  const id = sessionStorage.getItem('id');
+
 	  if (!userId) {
 	    window.location.href = "newlogin";
 	    return;
@@ -437,7 +380,7 @@ $(document).ready(function() {
 	  .then(data => {
 
 	    const moduleDefaults = {};
-	    const allowedPages = [];   // ✅ NEW
+	    const allowedPages = [];   //  NEW
 
 	    data.forEach(item => {
 	      const moduleName = item.moduleName.trim();
@@ -447,11 +390,11 @@ $(document).ready(function() {
 	        moduleDefaults[moduleName] = item.pageUrl;
 	      }
 
-	      // ✅ collect all allowed pages
+	      //  collect all allowed pages
 	      allowedPages.push(item.pageUrl.trim());
 	    });
 
-	    // ✅ store allowed page list once
+	    //  store allowed page list once
 	    sessionStorage.setItem("allowedPages", JSON.stringify(allowedPages));
 
 	    renderModules(moduleDefaults);
@@ -466,7 +409,7 @@ $(document).ready(function() {
 	 
 	});
 
-	// Icon assigned per module name, matched to the fabrication-facility workflow each module covers.
+	
 	const moduleIconMap = {
 		"Invoice": "bi-receipt",                              // billing documents
 		"GPMS": "bi-box-arrow-up-right",                       // material gate pass — going out through the gate
@@ -474,7 +417,7 @@ $(document).ready(function() {
 		"VMS": "bi-person-check",                              // visitor pass — checked in at the gate
 		"ContractGP": "bi-person-lines-fill",                  // contract employee details entry
 		"SubCon": "bi-exclamation-octagon",                    // production work handed off / shared with subcontractor (used as fallback only — SubCon now uses a custom image below)
-		"User Access": "bi-person-gear",                       // access & permissions
+		"User Access": "bi-person",                       // access & permissions
 		"AMS": "bi-box-seam",                                  // asset given for site work
 		"QC Inspection": "bi-patch-check",                     // production inspection after completion
 		"Drawing": "bi-clock-history",                         // man-hour entry
@@ -494,10 +437,7 @@ $(document).ready(function() {
 	    const colDiv = document.createElement('div');
 	    colDiv.className = 'col-3 text-center';
 
-	    // Apply yellow background ONLY for NCR
-	 /*    if (moduleName === "NCR") {
-	        colDiv.classList.add('highlight-module');
-	    } */
+
 
 	    const flexDiv = document.createElement('div');
 	    flexDiv.className = 'd-flex flex-column align-items-center';
@@ -506,7 +446,7 @@ $(document).ready(function() {
 	    	  isTabClosing = false;
 	    	  if (moduleName !== "User Access" && moduleName !=="DO Time Sheet") {
 
-	    	  let selectedFactoryId = localStorage.getItem('selectedFactoryId');
+	    	  let selectedFactoryId = sessionStorage.getItem('selectedFactoryId');
 	          if (!selectedFactoryId) {
 	              $('#exampleModalCenter66update').modal('show');
 	              return;
@@ -519,7 +459,7 @@ $(document).ready(function() {
 	   	      
 	   	      
 	   	      
-	   	      window.location.href = 'InvoiceDashBorad';
+	   	      window.location.href = 'InvoiceDashBoard';
 	   	      return;
 	        }
 	        
@@ -554,7 +494,91 @@ $(document).ready(function() {
 	   	      window.location.href = 'VMSDashboard';
 	   	      return;
 	        }
+	       
+	        if(moduleName==="ContractGP"){
+	         	 sessionStorage.setItem('selectedModule', moduleName);
+		   	      sessionStorage.setItem('selectedPage', pageUrl);
+		   	      
+		   	      
+		   	      
+		   	      
+		   	      window.location.href = 'ContractDashboard';
+		   	      return;
+	        }
 	        
+	        if(moduleName==="QC Inspection"){
+	         	 sessionStorage.setItem('selectedModule', moduleName);
+		   	      sessionStorage.setItem('selectedPage', pageUrl);
+		   	      
+		   	      
+		   	      
+		   	      
+		   	      window.location.href = 'QCDashboard.jsp';
+		   	      return;
+	        }
+	        if(moduleName==="G2Reports"){
+	         	 sessionStorage.setItem('selectedModule', moduleName);
+		   	      sessionStorage.setItem('selectedPage', pageUrl);
+		   	      
+		   	      
+		   	      
+		   	      
+		   	      window.location.href = 'HomeDashboard.jsp';
+		   	      return;
+	        }
+	        if(moduleName==="User Access"){
+	         	 sessionStorage.setItem('selectedModule', moduleName);
+		   	      sessionStorage.setItem('selectedPage', pageUrl);
+		   	      
+		   	      
+		   	      
+		   	      
+		   	      window.location.href = 'useraccess_Dashboard.jsp';
+		   	      return;
+	        }
+	        if(moduleName==="SubCon"){
+	         	 sessionStorage.setItem('selectedModule', moduleName);
+		   	      sessionStorage.setItem('selectedPage', pageUrl);
+		   	      
+		   	      
+		   	      
+		   	      
+		   	      window.location.href = 'SubConDashboard.jsp';
+		   	      return;
+	        }
+	        
+	        if(moduleName==="VTS"){
+	         	 sessionStorage.setItem('selectedModule', moduleName);
+		   	      sessionStorage.setItem('selectedPage', pageUrl);
+		   	      
+		   	      
+		   	      
+		   	      
+		   	      window.location.href = 'VehicleDashboard.jsp';
+		   	      return;
+	        }
+	        
+	        if(moduleName==="GPMS"){
+	         	 sessionStorage.setItem('selectedModule', moduleName);
+		   	      sessionStorage.setItem('selectedPage', pageUrl);
+		   	      
+		   	      
+		   	      
+		   	      
+		   	      window.location.href = 'GPMSDashboard.jsp';
+		   	      return;
+	        }
+	        
+	        if(moduleName==="AMS"){
+	         	 sessionStorage.setItem('selectedModule', moduleName);
+		   	      sessionStorage.setItem('selectedPage', pageUrl);
+		   	      
+		   	      
+		   	      
+		   	      
+		   	      window.location.href = 'AMSDashBoard.jsp';
+		   	      return;
+	        }
 	        
 	        console.log(moduleName);
 	        console.log(pageUrl);
@@ -566,6 +590,9 @@ $(document).ready(function() {
 	      
 	      window.location.href = 'Dashboard';
 	    };
+	    
+	    
+	    
 
 	    const iconCard = document.createElement('div');
 	    iconCard.className = 'icon-card';
@@ -611,16 +638,16 @@ $(document).ready(function() {
 
 </script>
 
-<script>
+	<script>
 
 </script>
-<script>
+	<script>
 const url = new URL(window.location);
 
-// Add timestamp
+
 url.searchParams.set("ref", Date.now());
 
-// Generate random junk string
+
 function generateJunk(length) {
     const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
     let result = "";
@@ -630,12 +657,12 @@ function generateJunk(length) {
     return result;
 }
 
-// Add junk parameter
-url.searchParams.set("jims.jssl", generateJunk(200)); // 20 random characters
 
-// Replace URL without reload
+url.searchParams.set("jims.jssl", generateJunk(200));
+
+
 window.history.replaceState(null, "", url);
 </script>
-<script src="js/logout.js"></script>
+	<script src="js/logout.js?v=<%=jsVersion%>"></script>
 </body>
 </html>

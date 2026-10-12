@@ -3,7 +3,10 @@
     response.setHeader("Pragma","no-cache");
     response.setDateHeader("Expires",0);
 %>
-<%  long ts = System.currentTimeMillis(); %>
+
+
+
+
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <!DOCTYPE html>
 <html>
@@ -17,8 +20,12 @@
 <link href="vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css"/>
 <link href="css/ruang-admin.min.css" rel="stylesheet"/>
 <link href="vendor/datatables/dataTables.bootstrap4.min.css" rel="stylesheet">
+
+
 <link rel="stylesheet" href="css/main.css">
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<link href="externalLibrary/cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css" rel="stylesheet" />
+<link href="externalLibrary/cdnjs.cloudflare.com/ajax/libs/select2-bootstrap-theme/0.1.0-beta.10/select2-bootstrap.min.css" rel="stylesheet" />
 
 <style>
 button { padding:5px 15px; font-size:13px; background-color:#4CAF50; color:white; border:none; border-radius:5px; cursor:pointer; }
@@ -287,8 +294,10 @@ button.close { padding:0; background-color:transparent; border:0; -webkit-appear
                         <!-- hidden field to carry empName to JS -->
                         <input type="hidden" id="empNameHidden" />
                     </div>
+                    
+                    
                     <div class="col-md-6 form-group mb-3">
-                        <label class="form-label-sm">Mobile Number</label>
+                        <label class="form-label-sm">Mobile Number <span class="req">*</span></label>
                         <input type="text" class="form-control form-control-sm" id="mobileInput"
                                placeholder="Auto-filled or enter manually"
                                maxlength="10" />
@@ -317,7 +326,7 @@ button.close { padding:0; background-color:transparent; border:0; -webkit-appear
 
                 <!-- ── WHAT BROKE – multi-select across tabs ── -->
                 <div class="form-section-title mt-1">
-                    Type of Issues? <span class="req">*</span>
+                    Type of Issues? <span class="req"></span>
                     <span style="font-size:10px;color:#888;font-weight:400;text-transform:none;letter-spacing:0;">
                         &nbsp;(You can select multiple items across tabs)
                     </span>
@@ -414,16 +423,19 @@ button.close { padding:0; background-color:transparent; border:0; -webkit-appear
 
 <a class="scroll-to-top rounded" href="#page-top"><i class="fas fa-angle-up"></i></a>
 
-<script src="js/config.js"></script>
+
 <script src="vendor/jquery/jquery.min.js"></script>
 <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
 <script src="vendor/jquery-easing/jquery.easing.min.js"></script>
-<script src="js/ruang-admin.min.js"></script>
-<script src="js/logout.js"></script>
-<script src="js/username.js"></script>
-<script src="js/factoryid.js"></script>
-<script src="js/Sessionfilter.js"></script>
-<script src="js/MaintenanceTicker.js?v=<%=ts%>"></script>
+<script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.full.min.js"></script>
+
+<script src="js/config.js?v=<%=jsVersion%>"></script>
+
+<script src="js/logout.js?v=<%=jsVersion%>"></script>
+<script src="js/username.js?v=<%=jsVersion%>"></script>
+<script src="js/factoryid.js?v=<%=jsVersion%>"></script>
+<script src="js/Sessionfilter.js?v=<%=jsVersion%>"></script>
+<script src="js/MaintenanceTicker.js?v=<%=jsVersion%>"></script>
 <script>
 function toggleNotifDropdown() {
     $('#notifDropdown').toggleClass('open');

@@ -5,9 +5,7 @@
   response.setHeader("Pragma", "no-cache"); // HTTP 1.0
   response.setDateHeader("Expires", 0); // Proxies
 %>
-<%
-long ts = System.currentTimeMillis();
-%>
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -22,19 +20,18 @@ long ts = System.currentTimeMillis();
   <link href="vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css">
   <link href="css/ruang-admin.min.css" rel="stylesheet">
   <link rel="stylesheet" href="css/main.css">
-<!--   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" integrity="sha512-xxx" crossorigin="anonymous" /> -->
+
+
+
   <link href="css/masterpage.css" rel="stylesheet">
-   <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+   <link href="externalLibrary/cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 
 
   
-  <!-- Include Bootstrap CSS -->
- <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet">
 
-<!-- Include jQuery -->
+ <link href="externalLibrary/stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet">
 
-<!-- Include Bootstrap JS -->
-<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.bundle.min.js"></script>
+<script src="externalLibrary/stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.bundle.min.js"></script>
 
 <script>
     
@@ -343,7 +340,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
             <h1 class="h3 mb-0 text-gray-800">AMS Report</h1>
             <ol class="breadcrumb">
               <li class="breadcrumb-item"><a href="GPMSDashboard.jsp">Home</a></li>
-             <li class="breadcrumb-item"><a href="ItemsDeuReport.jsp">Ams Report</a></li>
+             <li class="breadcrumb-item"><a href="#">Ams Report</a></li>
               
             </ol>
           </div>
@@ -353,12 +350,20 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
     <!-- Radio Buttons -->
    <div class="d-flex justify-content-center mb-4">
     <div class="nav nav-tabs" id="gpmsTabs" role="tablist">
-        <a class="nav-item nav-link active" id="itemsTab" data-bs-toggle="tab" href="#items" role="tab"><b>AMS Detailed Report</b></a>
-        <!-- <a class="nav-item nav-link" id="returnableTab" data-bs-toggle="tab" href="#returnable" role="tab" onclick="toggleTables('returnable')">Returnable Report</a> -->
-        <!-- <a class="nav-item nav-link" id="nonreturnableTab" data-bs-toggle="tab" href="#nonreturnable" role="tab" onclick="toggleTables('nonreturnable')">Non Returnable Report</a> -->
-        <a class="nav-item nav-link" id="dateTab" data-bs-toggle="tab" href="#date" role="tab"><b>AMS History </b></a>
-    <!--     <a class="nav-item nav-link" id="outwardTab" data-bs-toggle="tab" href="#outward" role="tab" onclick="toggleTables('outward')"><b>Outward Returnable Report</b></a> -->
-      <!--   <a class="nav-item nav-link" id="nonoutwardTab" data-bs-toggle="tab" href="#nonoutward" role="tab" onclick="toggleTables('nonoutward')"><b>Outward Non Returnable Report</b></a>  -->
+        <!-- <a class="nav-item nav-link active" id="itemsTab" data-bs-toggle="tab" href="#items" role="tab"><b>AMS Detailed Report</b></a>
+        
+        <a class="nav-item nav-link" id="dateTab" data-bs-toggle="tab" href="#date" role="tab"><b>AMS History </b></a> -->
+    
+    <div class="nav nav-tabs" id="gpmsTabs" role="tablist">
+    <a class="nav-item nav-link active" id="itemsTab" data-toggle="tab" href="#items" role="tab"><b>AMS Detailed Report</b></a>
+    <a class="nav-item nav-link" id="dateTab" data-toggle="tab" href="#date" role="tab"><b>AMS History</b></a>
+</div>
+
+<!-- Empty panes just so Bootstrap 4's tab plugin has valid targets -->
+<div class="tab-content d-none">
+    <div class="tab-pane" id="items" role="tabpanel"></div>
+    <div class="tab-pane" id="date" role="tabpanel"></div>
+</div>
     </div>
 </div>
  </div>
@@ -610,7 +615,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 
 
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/xlsx/0.20.3/xlsx.full.min.js"></script>
    
 
 
@@ -776,42 +781,42 @@ function exportToExcelHistroy() {
   <a class="scroll-to-top rounded" href="#page-top">
     <i class="fas fa-angle-up"></i>
   </a>
- <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
-
-  <!-- Bootstrap JS and dependencies -->
 
 
-<!-- <script>
-  document.getElementById("btnnext").addEventListener("click", function () {
-    document.getElementById("container2").style.display = "block";
-  });
-</script> -->  
+  
 
- <script src="js/config.js"></script>
+
     <script src="vendor/jquery/jquery.min.js"></script>
     <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
     <script src="vendor/jquery-easing/jquery.easing.min.js"></script>
-    <script src="js/ruang-admin.min.js"></script>
-    <!-- Page level plugins -->
+    
+    
+    
     <script src="vendor/datatables/jquery.dataTables.min.js"></script>
     <script src="vendor/datatables/dataTables.bootstrap4.min.js"></script>
-    <!-- <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script> -->
-    <script src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
-    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
-    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script> 
-    <!--    <script src="js/AmsReport.js"></script> -->
-       
-         <script src="js/AmsReport.js?v=<%=ts%>"></script>
-  
-    <script src="js/outwardreturnable.js"></script>
-     <script src="js/username.js"></script>
-     <script src="js/logout.js"></script>
-   
-  <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+     <script src="js/config.js?v=<%=jsVersion%>"></script>
+    
+    
+    
+   <script src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
+    <script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
+    <script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
+    <script src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
+    <script src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script> 
 
-  <!-- Page level custom scripts -->
+
+
+       
+         <script src="js/AmsReport.js?v=<%=jsVersion%>"></script>
+  
+    <script src="js/outwardreturnable.js?v=<%=jsVersion%>"></script>
+     <script src="js/username.js?v=<%=jsVersion%>"></script>
+     <script src="js/logout.js?v=<%=jsVersion%>"></script>
+   
+   
+  <script src="externalLibrary/cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+  
 </body>
 </html>

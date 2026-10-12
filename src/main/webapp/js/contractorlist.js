@@ -41,8 +41,8 @@ document.getElementById("#modalScroll").addEventListener("click", function () {
 	$('#exampleModalScrollable').modal('show');
 });
 
-// Fetch selectedFactoryId from localStorage
-const selectedFactoryId = localStorage.getItem('selectedFactoryId');
+// Fetch selectedFactoryId from sessionStorage
+const selectedFactoryId = sessionStorage.getItem('selectedFactoryId');
 console.log('selectedFactoryId:', selectedFactoryId);
 
 document.addEventListener("DOMContentLoaded", function () {
@@ -52,7 +52,7 @@ document.addEventListener("DOMContentLoaded", function () {
 if (selectedFactoryId) {
     fetchUserList(selectedFactoryId);
 } else {
-    console.error('No factory ID found in localStorage.');
+    console.error('No factory ID found in sessionStorage.');
 }
 
 // Function to fetch the list of users/vendors based on the selected factory ID
@@ -121,7 +121,7 @@ async function fetchUserList(selectedFactoryId) {
 }
 
 document.addEventListener("DOMContentLoaded", function () {
-    const selectedFactoryId = localStorage.getItem("selectedFactoryId"); // Get factory_id from localStorage
+    const selectedFactoryId = sessionStorage.getItem("selectedFactoryId"); // Get factory_id from sessionStorage
     if (selectedFactoryId) {
         fetchSalework(selectedFactoryId);
         fetchSalebank(selectedFactoryId);
@@ -136,7 +136,7 @@ document.addEventListener("DOMContentLoaded", function () {
         fetchconname(selectedFactoryId);
         
     } else {
-        console.error("No factory ID found in localStorage.");
+        console.error("No factory ID found in sessionStorage.");
     }
 });
 
@@ -177,6 +177,7 @@ async function fetchSalework() {
                 selectElement.appendChild(option);
             }
         });
+		initSelect2('work', 'exampleModalScrollable', 'Select work order'); // ADD
     } catch (error) {
         console.error("Error fetching sale order types:", error);
     }
@@ -255,7 +256,7 @@ async function fetchSalebusunit() {
         // Populate dropdown options using SalesOrderTypeDetails array
         json.Data.forEach((type) => {
             if (type.business_unit_id && type.business_unit_name) { 
-			let bindaddress = type.bu_code+'-'+type.business_unit_name +' '+type.orgName +',' +type.location+','+type.stateName +'('+type.gst_number +')';
+			let bindaddress = type.business_unit_name +',' +type.location +'('+type.gst_number +')';
 				
 				// Ensure both values exist
                 const option = document.createElement("option");
@@ -264,6 +265,7 @@ async function fetchSalebusunit() {
                 selectElement.appendChild(option);
             }
         });
+		initSelect2('bus', 'exampleModalScrollable', 'Select Business Unit'); // ADD
     } catch (error) {
         console.error("Error fetching sale order types:", error);
     }
@@ -439,7 +441,7 @@ async function fetchdelivery() {
 
 async function fetchcont() {
     try {
-        const factoryId = localStorage.getItem("selectedFactoryId");
+        const factoryId = sessionStorage.getItem("selectedFactoryId");
         console.log("factoryId =", factoryId);
 		
         const url = new URL("/jssl/contractfrom/g2/listcontractorsbasedonfactory", baseUrl);
@@ -472,6 +474,7 @@ async function fetchcont() {
                 selectElement.appendChild(option);
             }
         });
+		initSelect2('cont', 'exampleModalScrollable', 'Select contractor');
 
     } catch (error) {
         console.error("Error fetching contractors:", error);
@@ -613,6 +616,7 @@ async function fetchinvoiceto() {
                 selectElement.appendChild(option);
             }
         });
+		initSelect2('into', 'exampleModalScrollable', 'Select invoice to'); // ADD
 
     } catch (error) {
         console.error("Error fetching invoice addresses:", error);
@@ -653,7 +657,9 @@ async function fetchconname() {
 
                 selectElement.appendChild(option);
             }
+			
         });
+		initSelect2('consig', 'exampleModalScrollable', 'Select'); // ADD
 
     } catch (error) {
         console.error("Error fetching consignee addresses:", error);
@@ -922,6 +928,8 @@ function openModalAdd() {
 }
 
 function addevent() {
+	
+	$("#exampleModalCenter66").modal("hide");
 	// Validate role code and role description
 	 const selectedTaxes = [];
     $('.tax-checkbox:checked').each(function() {
@@ -956,7 +964,7 @@ function addevent() {
 		export:exportSelect.value,
 		export_title_text:extitle.value,
 		freight_advance_recovery:fread.value,
-		h_code: hsncode.value ? hsncode.value : null,
+		h_code: hsncode.value,
 		invoice_to_id:into.value,
 		invoice_type_calculation:2,
 		lot_no:lut.value,
@@ -964,7 +972,7 @@ function addevent() {
 		percentage_value:per.value,
 		product_desc_id:1,
 		regd_office_id:reoffice.value,
-		s_code: serco.value ? serco.value : null,
+		s_code: serco.value,
 		shipment_mode_id:ship.value,
 		tax_ex_inc:taxein.value,
 		tax_payable:payre11.value,
@@ -1032,3 +1040,18 @@ document.addEventListener("DOMContentLoaded", function() {
             console.error('Error fetching factory:', error);
         });
 });
+
+
+// Reusable Select2 initializer — safe to call multiple times on the same select
+function initSelect2(selectId, modalId, placeholder) {
+    var $el = $('#' + selectId);
+    if ($el.hasClass('select2-hidden-accessible')) {
+        $el.select2('destroy'); // rebuild so newly fetched options are picked up
+    }
+    $el.select2({
+        dropdownParent: $('#' + modalId), // required so it renders correctly inside a Bootstrap modal
+        width: '100%',
+        placeholder: placeholder,
+        allowClear: false
+    });
+}

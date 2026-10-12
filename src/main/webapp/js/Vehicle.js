@@ -55,16 +55,16 @@ document.addEventListener("DOMContentLoaded", function () {
     fetchUserList(selectedFactoryId);
 });
 
-const selectedFactoryId = localStorage.getItem('selectedFactoryId');
+const selectedFactoryId = sessionStorage.getItem('selectedFactoryId');
 console.log('selectedFactoryId:', selectedFactoryId);
 
 document.addEventListener('DOMContentLoaded', fetchAndDisplayVehicle);
 /*document.addEventListener('DOMContentLoaded', 	fetchVehicleTypes);*/
 function fetchAndDisplayVehicle() {
-    currentFactoryIdVehicle = parseInt(localStorage.getItem("selectedFactoryId"), 10);
+    currentFactoryIdVehicle = parseInt(sessionStorage.getItem("selectedFactoryId"), 10);
  
     if (!currentFactoryIdVehicle || isNaN(currentFactoryIdVehicle)) {
-        console.warn("No valid factory ID in localStorage");
+        console.warn("No valid factory ID in sessionStorage");
         return;
     }
  

@@ -1,8 +1,12 @@
+
 <%@ page language="java" contentType="text/html; charset=UTF-8"
 	pageEncoding="UTF-8"%>
 <%
-long ts = System.currentTimeMillis();
+  response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate"); // HTTP 1.1
+  response.setHeader("Pragma", "no-cache"); // HTTP 1.0
+  response.setDateHeader("Expires", 0); // Proxies
 %>
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -21,25 +25,24 @@ long ts = System.currentTimeMillis();
 <link href="css/ruang-admin.min.css" rel="stylesheet" />
 <link href="vendor/datatables/dataTables.bootstrap4.min.css"
 	rel="stylesheet">
-<!-- <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css" /> -->
+
 <link rel="stylesheet"
-	href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css" />
-<link rel="stylesheet" href="css/main.css">
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="js/sidebar.js"></script>
+	href="externalLibrary/cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css" />
+
+
 <link
-	href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css"
+	href="externalLibrary/cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css"
 	rel="stylesheet"
 	integrity="sha384-KyZXEJjRkC9iY3NfJVzz6se99Nz05dfk03S8zNeS46E1H2nKfHlR9ltRf9TL7zG6"
 	crossorigin="anonymous">
 <link
-	href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css"
+href="externalLibrary/cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css"
 	rel="stylesheet" />
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
 <script
-	src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+	src="externalLibrary/cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <link rel="stylesheet"
-	href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+	href="externalLibrary/maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
 <style>
 .error-message {
 	color: red;
@@ -326,24 +329,7 @@ table.table-bordered th, table.table-bordered td {
     	window.location.href = "newlogin.jsp";
     }
     </script>
-<!-- <script type="text/javascript">
-    window.history.forward();
 
-    // Auth Guard
-    const loginStatus = sessionStorage.getItem('loginStatus');
-    if (loginStatus !== 'Success') {
-      logout();
-    }
-
-    function noBack() {
-      window.history.forward();
-    }
-
-    function logout() {
-      sessionStorage.removeItem('loginStatus');
-      window.location = "newlogin.jsp";
-    }
-  </script>  -->
 </head>
 
 <body onload="fetchcontractGP();">
@@ -397,7 +383,7 @@ table.table-bordered th, table.table-bordered td {
 						<h1 class="h3 mb-0 text-gray-800">Contract GP Report</h1>
 						<ol class="breadcrumb">
 							<li class="breadcrumb-item"><a href="ContractDashboard.jsp">Home</a></li>
-							<li class="breadcrumb-item"><a href="VisitorsReport.jsp">Contract
+							<li class="breadcrumb-item"><a href="ContractGPReport.jsp">Contract
 									GP Report</a></li>
 
 						</ol>
@@ -406,18 +392,7 @@ table.table-bordered th, table.table-bordered td {
 
 
 					<div class="container mt-5">
-						<!-- 	<div class="d-flex justify-content-center mb-4">
-							<div class="nav nav-tabs" id="contractGPTabs" role="tablist">
-								<a class="nav-item nav-link active" id="rangeTab"
-									data-bs-toggle="tab" href="#range" role="tab"
-									onclick="toggleTables('range')"><b>Date Range Report</b></a>
-							</div>
-							<div class="nav nav-tabs" id="contractGphistory" role="tablist">
-								<a class="nav-item nav-link active" id="rangeHistoryTab"
-									data-bs-toggle="tab" href="#range" role="tab"
-									onclick="toggleTables('history')"><b>History Report</b></a>
-							</div>
-						</div> -->
+			
 
 						<div class="d-flex justify-content-center mb-4">
 							<div class="nav nav-tabs" id="contractGPTabs" role="tablist">
@@ -611,6 +586,7 @@ table.table-bordered th, table.table-bordered td {
 														<th>Present Address</th>
 														<th>Factory Name</th>
 														<th>Active</th>
+														<th>Delete</th>
 														<th>Status Description</th>
 														<th>Rejoin Date</th>
 														<th>Performed By</th>
@@ -647,8 +623,8 @@ table.table-bordered th, table.table-bordered td {
 	</div>
 
 
-	<script
-		src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script
+		src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/xlsx/0.20.3/xlsx.full.min.js"></script>
 
 	<script>
    window.onload = function() {
@@ -669,24 +645,7 @@ table.table-bordered th, table.table-bordered td {
 </script>
 
 	<script>
-/* function toggleTables(tabName) {
 
-    const container3 = document.getElementById("container3"); // Date Range Report
-    const container5 = document.getElementById("container5"); // Single Report
-
-    if (tabName === "range") {
-        container3.style.display = "block";
-        container5.style.display = "none";
-    } 
-    else if (tabName === "history") {
-        container3.style.display = "none";
-        container5.style.display = "block";
-    }
-    else {
-        container3.style.display = "none";
-        container5.style.display = "none";
-    }
-} */
 
 function toggleTables(tabName) {
 
@@ -724,12 +683,7 @@ function toggleTables(tabName) {
 
 
 
-	<script>
-    // JavaScript to toggle the visibility of the input fields container
-    document.getElementById("getButton").addEventListener("click", function() {
-        document.getElementById("inputFieldsContainer").style.display = "block";
-    });
-</script>
+
 
 	<script>
 function printContainer1() {
@@ -738,7 +692,7 @@ function printContainer1() {
 
     var printWindow = window.open('', '', 'height=600,width=900');
     printWindow.document.write('<html><head><title>Print Report</title>');
-    printWindow.document.write('<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">'); // optional: Bootstrap CSS
+    printWindow.document.write('<link rel="stylesheet" href="externalLibrary/stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">');
     printWindow.document.write('</head><body>');
     printWindow.document.write(printContents);
     printWindow.document.write('</body></html>');
@@ -755,35 +709,37 @@ function printContainer1() {
 	</a>
 
 
-	<script src="js/config.js"></script>
+	
 	<script src="vendor/jquery/jquery.min.js"></script>
 	<script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
 	<script src="vendor/jquery-easing/jquery.easing.min.js"></script>
-	<script src="js/ruang-admin.min.js"></script>
-	<!-- Page level plugins -->
-	<script src="vendor/datatables/jquery.dataTables.min.js"></script>
+	
+		<script src="vendor/datatables/jquery.dataTables.min.js"></script>
+	<script src="js/config.js?v=<%=jsVersion%>"></script>
+
+
 	<script src="vendor/datatables/dataTables.bootstrap4.min.js"></script>
-	<!-- <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script> -->
+	
+<script
+		src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
 	<script
-		src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
+		src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 	<script
-		src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+		src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
 	<script
-		src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
+		src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
 	<script
-		src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
+		src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
 	<script
-		src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
-	<script
-		src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
-	<script src="js/ContractGPreport.js?v=<%=ts%>"></script>
-	<script src="js/username.js"></script>
-	<script src="js/createdby.js"></script>
-	<script src="js/modifiedby.js"></script>
-	<script src="js/factoryid.js"></script>
-	<script src="js/logout.js"></script>
+		src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
+	<script src="js/ContractGPreport.js?v=<%=jsVersion%>"></script>
+	<script src="js/username.js?v=<%=jsVersion%>"></script>
+	<script src="js/createdby.js?v=<%=jsVersion%>"></script>
+	<script src="js/modifiedby.js?v=<%=jsVersion%>"></script>
+	<script src="js/factoryid.js?v=<%=jsVersion%>"></script>
+	<script src="js/logout.js?v=<%=jsVersion%>"></script>
 	
 
-	<!-- Page level custom scripts -->
+
 </body>
 </html>

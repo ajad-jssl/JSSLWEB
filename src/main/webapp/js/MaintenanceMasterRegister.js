@@ -330,7 +330,7 @@ $("#createPage").click(function () {
     $("#pageDisplayError").hide();
 
     let selectedFactory =
-        localStorage.getItem("selectedFactoryId");
+        sessionStorage.getItem("selectedFactoryId");
 
     $.ajax({
 
@@ -383,7 +383,7 @@ $("#createPage").click(function () {
 
 function loadDepartments() {
 
-    let factory_id = localStorage.getItem("selectedFactoryId");
+    let factory_id = sessionStorage.getItem("selectedFactoryId");
 
     $.ajax({
         url: new URL("/api/department/getAll", baseUrl).toString(),
@@ -549,7 +549,7 @@ $("#modalpageAction").click(function (){
 
 $("#createMachine").click(function () {
 
-    let factory_id = localStorage.getItem("selectedFactoryId");
+    let factory_id = sessionStorage.getItem("selectedFactoryId");
 
     let machineCode = $("#machineCode").val().trim();
     let machineSubCode = $("#machineSubCode").val().trim();
@@ -600,7 +600,7 @@ $("#createMachine").click(function () {
         $("#MachineModalError").hide();
     }
 
-    if (poNumber === "") {
+   /* if (poNumber === "") {
         $("#PurchaseNoError").show();
         isValid = false;
     } else {
@@ -612,9 +612,9 @@ $("#createMachine").click(function () {
         isValid = false;
     } else {
         $("#PurchaseDateError").hide();
-    }
+    }*/
 
-    if (warrantyStartDate === "") {
+  /*  if (warrantyStartDate === "") {
         $("#warrateStartDateError").show();
         isValid = false;
     } else {
@@ -639,7 +639,7 @@ $("#createMachine").click(function () {
         $("#manufacturerNameError").show();
         isValid = false;
     }
-
+*/
     if (countryId === "") {
         $("#countryDateError").show();
         isValid = false;
@@ -756,7 +756,7 @@ $("#createMachine").click(function () {
 });
 function loadMachines() {
 
-    let factoryId = localStorage.getItem("selectedFactoryId");
+    let factoryId = sessionStorage.getItem("selectedFactoryId");
 
     $.ajax({
 
@@ -931,7 +931,7 @@ $("#updateMachine").click(function () {
     let deptId             = $("#departmentIdUp").val();
     let machineDescriptionId = $("#machineDescriptionIdUp").val();
     let machineId          = $("#machineIdUp").val();
-    let selectedFactory    = localStorage.getItem("selectedFactoryId");
+    let selectedFactory    = sessionStorage.getItem("selectedFactoryId");
 
     // --- Validation ---
     let isValid = true;
@@ -948,7 +948,7 @@ $("#updateMachine").click(function () {
     if (modelNo === "") {
         $("#MachineModelUpError").show(); isValid = false;
     }
-    if (poNumber === "") {
+   /* if (poNumber === "") {
         $("#PurchaseNoUpError").show(); isValid = false;
     }
     if (purchaseDate === "") {
@@ -965,7 +965,7 @@ $("#updateMachine").click(function () {
     }
     if (manufacturerName === "") {
         $("#ManufacturerNameUpError").show(); isValid = false;
-    }
+    }*/
     if (countryId === "") {
         $("#CountryUpError").show(); isValid = false;
     }
@@ -1111,7 +1111,7 @@ async function loadSelectedItems(machineId) {
 
 function loadDepartmentDropdown() {
 
-    let factoryId = localStorage.getItem("selectedFactoryId");
+    let factoryId = sessionStorage.getItem("selectedFactoryId");
 
     $.ajax({
 
@@ -1634,7 +1634,7 @@ $("#createWorkerMapping").click(function () {
 
     if (!isValid) return;
 
-    let factroy_id = localStorage.getItem("selectedFactoryId");
+    let factroy_id = sessionStorage.getItem("selectedFactoryId");
 
     var request = {
         empId:               parseInt(empId),
@@ -1682,7 +1682,7 @@ function showCenterMessage(message) {
 
 function loadWorkerMappings() {
 
-    var Factoryid = localStorage.getItem('selectedFactoryId');
+    var Factoryid = sessionStorage.getItem('selectedFactoryId');
 
     $.ajax({
         url: baseUrl + "/api/getAllWorkerMappings?Factoryid=" + encodeURIComponent(Factoryid),
@@ -1976,7 +1976,7 @@ $("#updateWorkerMapping").click(function () {
 
     var employeeDisplayName = $("#employeeSelectUp option:selected").text();
     var modifiedBy          = sessionStorage.getItem("id");
-    var factoryId           = localStorage.getItem("selectedFactoryId");
+    var factoryId           = sessionStorage.getItem("selectedFactoryId");
 
     // ── Validation ───────────────────────────────────────────────
     let isValid = true;

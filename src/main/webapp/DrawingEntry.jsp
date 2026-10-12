@@ -1,5 +1,11 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8"
 	pageEncoding="UTF-8"%>
+	
+	<%
+    response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+    response.setHeader("Pragma", "no-cache");
+    response.setDateHeader("Expires", 0);
+%>
 <!DOCTYPE html>
 <html>
 <head>
@@ -18,20 +24,19 @@
 <link href="css/ruang-admin.min.css" rel="stylesheet" />
 <link href="vendor/datatables/dataTables.bootstrap4.min.css"
 	rel="stylesheet">
-<!-- <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css" /> -->
+
 <link rel="stylesheet"
-	href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css" />
+	href="externalLibrary/cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css" />
 <link rel="stylesheet" href="css/main.css">
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="js/sidebar.js"></script>
+
 
 <link
-	href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css"
+	href="externalLibrary/cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css"
 	rel="stylesheet" />
 
 <script
-	src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-<script src="js/DrawingEntry.js"></script>
+	src="externalLibrary/cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
 <style>
 /* ====================================
    GLOBAL
@@ -1267,36 +1272,35 @@ div.dt-buttons>.dt-button {
 
 
 
-
-	<script src="js/config.js"></script>
-	<!-- <script src="vendor/jquery/jquery.min.js"></script> -->
 	<script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
 	<script src="vendor/jquery-easing/jquery.easing.min.js"></script>
-	<script src="js/ruang-admin.min.js"></script>
-	<!-- Page level plugins -->
+
 	<script src="vendor/datatables/jquery.dataTables.min.js"></script>
 	<script src="vendor/datatables/dataTables.bootstrap4.min.js"></script>
-	<!-- <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script> -->
+	<script src="js/config.js?v=<%=jsVersion%>"></script>
+
+
+	
+<script
+		src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
 	<script
-		src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
+		src="externalLibrary/cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js"></script>
 	<script
-		src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js"></script>
+		src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 	<script
-		src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+		src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
 	<script
-		src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
+		src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
 	<script
-		src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
+		src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
 	<script
-		src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
-	<script
-		src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
-	<!-- <script src="js/DrawingEntry.js"></script> -->
-	<script src="js/logout.js"></script>
-	<script src="js/username.js"></script>
-	<script src="js/createdby.js"></script>
-	<script src="js/modifiedby.js"></script>
-	<script src="js/Sessionfilter.js"></script>
+		src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
+<script src="js/DrawingEntry.js?v=<%=jsVersion%>"></script>
+	<script src="js/logout.js?v=<%=jsVersion%>"></script>
+	<script src="js/username.js?v=<%=jsVersion%>"></script>
+	<script src="js/createdby.js?v=<%=jsVersion%>"></script>
+	<script src="js/modifiedby.js?v=<%=jsVersion%>"></script>
+	<script src="js/Sessionfilter.js?v=<%=jsVersion%>"></script>
 	<script>
 		
 	</script>

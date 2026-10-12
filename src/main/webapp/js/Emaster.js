@@ -57,30 +57,7 @@ document.addEventListener("DOMContentLoaded", function() {
 	loadActions();
 	
 	
-    // Fetch departments from the backend
-	fetch(new URL('/api/employee/all', baseUrl1), {
-	    credentials: "include"
-	})
-  /*  fetch('http://localhost:8004/api/employee/all')*/
-        .then(response => response.json())
-        .then(data => {
-            // Get the select element
-            const departmentSelect = document.getElementById('department1');
-            
-            // Clear any existing options (if any)
-            departmentSelect.innerHTML = '<option value="">Select</option>';
-            
-            // Loop through the data and create new option elements
-            data.forEach(department1 => {
-                const option = document.createElement('option');
-                option.value = department1.deptID;  // Assuming 'deptID' is the value for option
-                option.textContent = department1.deptname;  // Assuming 'deptname' is the text for option
-                departmentSelect.appendChild(option);
-            });
-        })
-        .catch(error => {
-            console.error('Error fetching departments:', error);
-        });
+
 });
 
 
@@ -117,121 +94,7 @@ function populateUnitDropdown(selectElementId, data) {
 }
 
 
-document.addEventListener("DOMContentLoaded", function() {
-    // Fetch city data from the backend
-	fetch(new URL('/api/city', baseUrl1), {
-	    credentials: "include"
-	})
-  /*  fetch('http://localhost:8004/api/city/all')  */
-        .then(response => response.json()) 
-        .then(data => {
-            // Get the select element for "city"
-            const citySelect = document.getElementById('city');
-            
-            // Clear any existing options (if any)
-            citySelect.innerHTML = '<option value="">Select</option>';
-            
-            // Loop through the data and create new option elements
-            data.forEach(city => {
-                const option = document.createElement('option');
-                option.value = city.city;  // Assuming 'City' is the value for option
-                option.textContent = city.city;  // Assuming 'City' is the text for option
-                citySelect.appendChild(option);
-            });
-        })
-        .catch(error => {
-            console.error('Error fetching cities:', error);
-        });
-});
 
-
-
-document.addEventListener("DOMContentLoaded", function() {
-    // Fetch vendor data from the backend (replace with your actual API endpoint)
-	fetch(new URL('/api/vendor', baseUrl1)	, {
-	    credentials: "include"
-	})
-   /* fetch('http://localhost:8004/api/vendor/all')  // This is your Spring Boot API endpoint*/
-        .then(response => response.json())  // Parse the JSON response
-        .then(data => {
-            console.log(data);  // Log the data to the console for debugging
-            
-            // Get the select element for vendor
-            const vendorSelect = document.getElementById('vendor');
-            
-            // Clear any existing options (except the default "Select")
-            vendorSelect.innerHTML = '<option value="">Select</option>';
-            
-            // Check if the data array is not empty
-            if (data && data.length > 0) {
-                // Loop through the vendor data and create new option elements
-                data.forEach(vendor => {
-                    const option = document.createElement('option');
-                    option.value = vendor.cid;  // Assuming `cid` is the unique vendor identifier
-                    option.textContent = vendor.name;  // Assuming `name` is the vendor name
-                    vendorSelect.appendChild(option);  // Append the option to the dropdown
-                });
-            } else {
-                // If no vendor data is available, display a "No vendors found" option
-                const option = document.createElement('option');
-                option.value = '';  // Empty value for "No vendors"
-                option.textContent = 'No vendors found';
-                vendorSelect.appendChild(option);
-            }
-        })
-        .catch(error => {
-            console.error('Error fetching vendor data:', error);
-            
-            // Optionally, provide user feedback in case of an error
-            const vendorSelect = document.getElementById('vendor');
-            vendorSelect.innerHTML = '<option value="">Error loading data</option>';
-        });
-});
-
-
-
-
-document.addEventListener("DOMContentLoaded", function() {
-    // Fetch state data from the backend (replace with your actual API endpoint)
-	fetch(new URL('/api/state', baseUrl1)	, {
-	    credentials: "include"
-	})
-  /*  fetch('http://localhost:8004/api/state/all')  // This is your Spring Boot API endpoint*/
-        .then(response => response.json())  // Parse the JSON response
-        .then(data => {
-            console.log(data);  // Log the data to the console for debugging
-            
-            // Get the select element for the state dropdown
-            const stateSelect = document.getElementById('state');
-            
-            // Clear any existing options (except the default "Select")
-            stateSelect.innerHTML = '<option value="">Select</option>';
-            
-            // Check if the data array is not empty
-            if (data && data.length > 0) {
-                // Loop through the state data and create new option elements
-                data.forEach(state => {
-                    const option = document.createElement('option');
-                    option.value = state.cityId;  // Assuming 'CityId' is the unique identifier
-                    option.textContent = state.state;  // Assuming 'state' is the state name
-                    stateSelect.appendChild(option);  // Append the option to the dropdown
-                });
-            } else {
-                // If no state data is available, display a "No states found" option
-                const option = document.createElement('option');
-                option.value = '';  // Empty value for "No states"
-                option.textContent = 'No states found';
-                stateSelect.appendChild(option);
-            }
-        })
-        .catch(error => {
-            console.error('Error fetching state data:', error);
-            
-            // Optionally, provide user feedback in case of an error
-            const stateSelect = document.getElementById('state');
-            stateSelect.innerHTML = '<option value="">Error loading data</option>';
-        });
-});
 
 $(document).ready(function () {
     // Show confirmation modal when "Create" is clicked — ONLY IF validation passes

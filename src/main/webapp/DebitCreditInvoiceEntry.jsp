@@ -5,9 +5,7 @@
     response.setHeader("Pragma", "no-cache"); // HTTP 1.0
     response.setDateHeader("Expires", 0); // Proxies
 %>
-<%
-long ts = System.currentTimeMillis();
-%>
+
 <!DOCTYPE html>
 <html>
 
@@ -23,12 +21,12 @@ long ts = System.currentTimeMillis();
       <link href="vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css" />
       <link href="css/ruang-admin.min.css" rel="stylesheet" />
       <link href="vendor/datatables/dataTables.bootstrap4.min.css" rel="stylesheet">
-      <!-- <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css" /> -->
-      <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css" />
+    
+    
+    
+ <link rel="stylesheet" href="externalLibrary/cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css" />
       <link rel="stylesheet" href="css/main.css">
-       <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-      
-       <script src="js/sidebar.js"></script>
+       
   <style>
            .error-message {
         color: red;
@@ -249,30 +247,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
     	window.location.href = "newlogin.jsp";
     }
     </script>
-  <!--  <script>
-    const user_id = sessionStorage.getItem('user_id');
-    if (!user_id) {
-    	window.location.href = "newlogin.jsp";
-    }
-   </script> -->
-  <!-- <script type="text/javascript">
-    window.history.forward();
 
-    // Auth Guard
-    const loginStatus = sessionStorage.getItem('loginStatus');
-    if (loginStatus !== 'Success') {
-      logout();
-    }
-
-    function noBack() {
-      window.history.forward();
-    }
-
-    function logout() {
-      sessionStorage.removeItem('loginStatus');
-      window.location = "newlogin.jsp";
-    }
-  </script> -->
   <script type="text/javascript">
  function noBack() {
      window.history.forward();
@@ -283,7 +258,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 <body onload="fetchUserList();">
   <div id="wrapper">
     <!-- Sidebar -->
-      <%@ include file="sidebar.jsp" %>
+      <%@ include file="InVoiceSideBar.jsp" %>
     <!-- Sidebar -->
     <div id="content-wrapper" class="d-flex flex-column">
       <div id="content">
@@ -322,7 +297,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
           <div class="d-sm-flex align-items-center justify-content-between mb-4">
             <h1 class="h3 mb-0 text-gray-800">Debit Credit Invoice Entry</h1>
             <ol class="breadcrumb">
-             <li class="breadcrumb-item"><a href="Dashboard.jsp">Home</a></li>
+             <li class="breadcrumb-item"><a href="InvoiceDashBoard.jsp">Home</a></li>
              <li class="breadcrumb-item"><a href="DebitCreditSideMenu.jsp">Debit Credit</a></li>
              <li class="breadcrumb-item active" aria-current="page">Debit Credit Invoice Entry</li>
               
@@ -458,9 +433,14 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
         
         <div class="form-row dynamic-row">
             <!-- Scrap Type Dropdown -->
-            <div class="form-group col-md-3 col-sm-12">
+            <!-- <div class="form-group col-md-3 col-sm-12">
                 <label for="scrapType"><b>Business Unit:</b></label>
-                <input type="text" class="form-control form-control-sm" id="inbusunit" readonly>
+                <input type="text" class="form-control form-control-sm" id="inbusunit">
+            </div> -->
+            <div class="form-group col-md-3 col-sm-12">
+              <label for="scrapType"><b>Business Unit:</b></label>
+              <select class="form-control form-control-sm" id="inbusunit">
+              </select>
             </div>
             <div class="form-group col-md-3 col-sm-12">
                 <label for="scrapType"><b>Invoice Type Calculation:</b></label>
@@ -469,9 +449,14 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 				  <option value="2">Percentage</option>
 				  </select>
             </div>
-            <div class="form-group col-md-3 col-sm-12">
+            <!-- <div class="form-group col-md-3 col-sm-12">
                 <label for="uom"><b>Invoice TO:</b></label>
                 <input type="text" class="form-control form-control-sm" id="ininto" readonly>
+            </div> -->
+            <div class="form-group col-md-3 col-sm-12">
+              <label for="uom"><b>Invoice To:</b></label>
+              <select class="form-control form-control-sm" id="ininto">
+              </select>
             </div>
             <div class="form-group col-md-3 col-sm-12">
                 <label for="uom"><b>Product Description:</b></label>
@@ -485,10 +470,15 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
                 <input type="text" class="form-control form-control-sm" id="shipmode" readonly>
                 </div>
             <!-- Unit Price Input -->
-            <div class="form-group col-md-3 col-sm-12">
+            <!-- <div class="form-group col-md-3 col-sm-12">
                 <label for="unitPrice"><b>Work Order:</b></label>
                 <input type="text" class="form-control form-control-sm" id="work" readonly>
-                </div>
+                </div> -->
+                <div class="form-group col-md-3 col-sm-12">
+                 <label for="unitPrice"><b>Work Order:</b></label>
+                 <select class="form-control form-control-sm" id="work">
+                 </select>
+                </div>   
                 <div class="form-group col-md-3 col-sm-12" style="display:none;">
                 <label for="unitPrice"><b>Service Code:</b></label>
                 <input type="text" class="form-control form-control-sm" id="service" readonly>
@@ -509,9 +499,14 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
                 <label for="unitPrice"><b>Percentage(%):</b></label>
                 <input type="text" class="form-control form-control-sm" id="percen" readonly>
                 </div>
-            <div class="form-group col-md-3 col-sm-12">
+            <!-- <div class="form-group col-md-3 col-sm-12">
             <label for="totalor"><b>Name & Address of Consignee:</b></label>
             <input type="text" class="form-control form-control-sm" id="billing" readonly>
+        </div> -->
+        <div class="form-group col-md-3 col-sm-12">
+         <label for="totalor"><b>Name & Address of Consignee:</b></label>
+         <select class="form-control form-control-sm" id="billing">
+         </select>
         </div>
         <div class="form-group col-md-3 col-sm-12">
             <label for="totalso"><b>Bank Name:</b></label>
@@ -526,6 +521,17 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
             <input type="text" class="form-control form-control-sm" id="office" readonly>
                 </div>
                 <div class="form-group col-md-3 col-sm-12">
+         <label for="totalor"><b>Service Code:</b></label>
+         <select class="form-control form-control-sm" id="officeservice">
+         </select>
+         <div id="servicecodedcError4" class="error-message"></div>
+        </div>
+        <div class="form-group col-md-3 col-sm-12">
+         <label for="totalor"><b>HSN Code:</b></label>
+         <select class="form-control form-control-sm" id="officehsn">
+         </select>
+        </div>
+                <!-- <div class="form-group col-md-3 col-sm-12">
             <label for="totalso"><b>Service Code:</b></label>
             <input type="text" class="form-control form-control-sm" id="officeservice" readonly>
                 </div>
@@ -536,7 +542,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
                 <div class="form-group col-md-3 col-sm-12" style="display:none;">
             <label for="totalso"><b>HSN Code::</b></label>
             <input type="text" class="form-control form-control-sm" id="hsncode" readonly>
-                </div>
+                </div> -->
         </div>
     </div>
     <div id="exportFields1" style="display: none;">
@@ -1148,17 +1154,27 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
         
         <div class="form-row dynamic-row">
             <!-- Scrap Type Dropdown -->
-            <div class="form-group col-md-3 col-sm-12">
+            <!-- <div class="form-group col-md-3 col-sm-12">
                 <label for="scrapType"><b>Business Unit:</b></label>
-                <input type="text" class="form-control form-control-sm" id="bunitvup" readonly>
+                <input type="text" class="form-control form-control-sm" id="bunitvup">
+            </div> -->
+            <div class="form-group col-md-3 col-sm-12">
+              <label for="scrapType"><b>Business Unit:</b></label>
+              <select class="form-control form-control-sm" id="bunitvup">
+              </select>
             </div>
             <div class="form-group col-md-3 col-sm-12">
                 <label for="scrapType"><b>Invoice Type Calculation:</b></label>
                 <input type="text" class="form-control form-control-sm" id="intypevup" readonly>
             </div>
-            <div class="form-group col-md-3 col-sm-12">
+            <!-- <div class="form-group col-md-3 col-sm-12">
                 <label for="uom"><b>Invoice TO:</b></label>
-                <input type="text" class="form-control form-control-sm" id="intovup" readonly>
+                <input type="text" class="form-control form-control-sm" id="intovup">
+            </div> -->
+            <div class="form-group col-md-3 col-sm-12">
+              <label for="uom"><b>Invoice To:</b></label>
+              <select class="form-control form-control-sm" id="intovup">
+              </select>
             </div>
             <div class="form-group col-md-3 col-sm-12">
                 <label for="uom"><b>Product Description:</b></label>
@@ -1172,10 +1188,15 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
                 <input type="text" class="form-control form-control-sm" id="shipmodevup" readonly>
                 </div>
             <!-- Unit Price Input -->
-            <div class="form-group col-md-3 col-sm-12">
+            <!-- <div class="form-group col-md-3 col-sm-12">
                 <label for="unitPrice"><b>Work Order:</b></label>
-                <input type="text" class="form-control form-control-sm" id="workordervup" readonly>
-                </div>
+                <input type="text" class="form-control form-control-sm" id="workordervup">
+                </div> -->
+                <div class="form-group col-md-3 col-sm-12">
+                 <label for="unitPrice"><b>Work Order:</b></label>
+                 <select class="form-control form-control-sm" id="workordervup">
+                 </select>
+                </div>   
                 <div class="form-group col-md-3 col-sm-12">
                 <label for="unitPrice"><b>Export:</b></label>
                 <input type="text" class="form-control form-control-sm" id="exptvup" readonly>
@@ -1192,9 +1213,14 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
                 <label for="unitPrice"><b>Percentage(%):</b></label>
                 <input type="text" class="form-control form-control-sm" id="percenvup" readonly>
                 </div>
-            <div class="form-group col-md-3 col-sm-12">
+            <!-- <div class="form-group col-md-3 col-sm-12">
             <label for="totalor"><b>Name & Address of Consignee:</b></label>
-            <input type="text" class="form-control form-control-sm" id="nandconvup" readonly>
+            <input type="text" class="form-control form-control-sm" id="nandconvup">
+        </div> -->
+        <div class="form-group col-md-3 col-sm-12">
+         <label for="totalor"><b>Name & Address of Consignee:</b></label>
+         <select class="form-control form-control-sm" id="nandconvup">
+         </select>
         </div>
         <div class="form-group col-md-3 col-sm-12">
             <label for="totalso"><b>Bank Name:</b></label>
@@ -1208,14 +1234,24 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
             <label for="totalso"><b>Registered Office::</b></label>
             <input type="text" class="form-control form-control-sm" id="officevvup" readonly>
                 </div>
-                <div class="form-group col-md-3 col-sm-12">
+                <!-- <div class="form-group col-md-3 col-sm-12">
             <label for="totalso"><b>Service Code::</b></label>
             <input type="text" class="form-control form-control-sm" id="newscode" readonly>
                 </div>
                 <div class="form-group col-md-3 col-sm-12">
             <label for="totalso"><b>HSN Code::</b></label>
             <input type="text" class="form-control form-control-sm" id="newhcode" readonly>
-                </div>
+                </div> -->
+                <div class="form-group col-md-3 col-sm-12">
+         <label for="totalor"><b>Service Code:</b></label>
+         <select class="form-control form-control-sm" id="newscode">
+         </select>
+        </div>
+        <div class="form-group col-md-3 col-sm-12">
+         <label for="totalor"><b>HSN Code:</b></label>
+         <select class="form-control form-control-sm" id="newhcode">
+         </select>
+        </div>
             </div>
     </div>
     <div id="exportFields1verifyup" style="display: none;">
@@ -1470,6 +1506,10 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
         <label for="scrapSaleOrder"><b>PNID:</b></label>
         <input type="text" class="form-control form-control-sm" id="pnverifywwupscrap">
          </div>
+         <div class="form-group col-md-3" style="display:none;">
+          <label for="scrapSaleOrder"><b>Con Slno:</b></label>
+          <input type="text" class="form-control form-control-sm" id="vconslnoupdate">
+         </div>
          </div>
     </div>
  </div>
@@ -1478,9 +1518,14 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
         
         <div class="form-row dynamic-row">
             <!-- Scrap Type Dropdown -->
-            <div class="form-group col-md-3 col-sm-12">
+            <!-- <div class="form-group col-md-3 col-sm-12">
                 <label for="scrapType"><b>Business Unit:</b></label>
-                <input type="text" class="form-control form-control-sm" id="bunitvupscrap" readonly>
+                <input type="text" class="form-control form-control-sm" id="bunitvupscrap">
+            </div> -->
+            <div class="form-group col-md-3 col-sm-12">
+              <label for="scrapType"><b>Business Unit:</b></label>
+              <select class="form-control form-control-sm" id="bunitvupscrap">
+              </select>
             </div>
             <div class="form-group col-md-3 col-sm-12">
                 <label for="scrapType"><b>Invoice Type Calculation:</b></label>
@@ -1489,9 +1534,14 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
                 <option value="2">Percentage</option>
             </select>
             </div>
-            <div class="form-group col-md-3 col-sm-12">
+            <!-- <div class="form-group col-md-3 col-sm-12">
                 <label for="uom"><b>Invoice TO:</b></label>
-                <input type="text" class="form-control form-control-sm" id="intovupscrap" readonly>
+                <input type="text" class="form-control form-control-sm" id="intovupscrap">
+            </div> -->
+            <div class="form-group col-md-3 col-sm-12">
+              <label for="uom"><b>Invoice To:</b></label>
+              <select class="form-control form-control-sm" id="intovupscrap">
+              </select>
             </div>
             <div class="form-group col-md-3 col-sm-12">
                 <label for="uom"><b>Product Description:</b></label>
@@ -1505,10 +1555,15 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
                 <input type="text" class="form-control form-control-sm" id="shipmodevupscrap" readonly>
                 </div>
             <!-- Unit Price Input -->
-            <div class="form-group col-md-3 col-sm-12">
+            <!-- <div class="form-group col-md-3 col-sm-12">
                 <label for="unitPrice"><b>Work Order:</b></label>
-                <input type="text" class="form-control form-control-sm" id="workordervupscrap" readonly>
-                </div>
+                <input type="text" class="form-control form-control-sm" id="workordervupscrap">
+                </div> -->
+                <div class="form-group col-md-3 col-sm-12">
+                 <label for="unitPrice"><b>Work Order:</b></label>
+                 <select class="form-control form-control-sm" id="workordervupscrap">
+                 </select>
+                </div>   
                 <div class="form-group col-md-3 col-sm-12">
                 <label for="unitPrice"><b>Export:</b></label>
                 <input type="text" class="form-control form-control-sm" id="exptvupscrap" readonly>
@@ -1521,9 +1576,14 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
                 <label for="unitPrice"><b>Percentage(%):</b></label>
                 <input type="text" class="form-control form-control-sm" id="percenvupscrap" readonly>
                 </div>
-            <div class="form-group col-md-3 col-sm-12">
+            <!-- <div class="form-group col-md-3 col-sm-12">
             <label for="totalor"><b>Name & Address of Consignee:</b></label>
-            <input type="text" class="form-control form-control-sm" id="nandconvupscrap" readonly>
+            <input type="text" class="form-control form-control-sm" id="nandconvupscrap">
+        </div> -->
+       <div class="form-group col-md-3 col-sm-12">
+         <label for="totalor"><b>Name & Address of Consignee:</b></label>
+         <select class="form-control form-control-sm" id="nandconvupscrap">
+         </select>
         </div>
         <div class="form-group col-md-3 col-sm-12">
             <label for="totalso"><b>Bank Name:</b></label>
@@ -1537,14 +1597,24 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
             <label for="totalso"><b>Registered Office::</b></label>
             <input type="text" class="form-control form-control-sm" id="officevvupscrap" readonly>
                 </div>
-                <div class="form-group col-md-3 col-sm-12">
+                <!-- <div class="form-group col-md-3 col-sm-12">
             <label for="totalso"><b>Service Code::</b></label>
-            <input type="text" class="form-control form-control-sm" id="newscodescrap" readonly>
-                </div>
+            <input type="text" class="form-control form-control-sm" id="newscodescrap">
+                </div> -->
                 <div class="form-group col-md-3 col-sm-12">
+         <label for="totalor"><b>Service Code:</b></label>
+         <select class="form-control form-control-sm" id="newscodescrap">
+         </select>
+        </div>
+                <!-- <div class="form-group col-md-3 col-sm-12">
             <label for="totalso"><b>HSN Code::</b></label>
-            <input type="text" class="form-control form-control-sm" id="newhcodescrap" readonly>
-                </div>
+            <input type="text" class="form-control form-control-sm" id="newhcodescrap">
+                </div> -->
+                <div class="form-group col-md-3 col-sm-12">
+         <label for="totalor"><b>HSN Code:</b></label>
+         <select class="form-control form-control-sm" id="newhcodescrap">
+         </select>
+        </div>
             </div>
     </div>
     <div id="exportFields1verifyup" style="display: none;">
@@ -3116,17 +3186,31 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
                 <label for="scrapType"><b>Business Unit:</b></label>
                 <input type="text" class="form-control form-control-sm" id="bunitvvscrap" readonly>
             </div>
-            <div class="form-group col-md-3 col-sm-12">
+            <!-- <div class="form-group col-md-3 col-sm-12">
                 <label for="scrapType"><b>Invoice Type Calculation:</b></label>
                 <input type="text" class="form-control form-control-sm" id="intypevvscrap" readonly>
+            </div> -->
+            <div class="form-group col-md-3 col-sm-12">
+                <label for="scrapType"><b>Invoice Type Calculation:</b></label>
+               <!--  <input type="text" class="form-control form-control-sm" id="intypevscrap" readonly> -->
+                      <select class="form-control form-control-sm" id="intypevvscrap" disabled>
+				  <option value="2">Percentage</option>
+            </select>
             </div>
             <div class="form-group col-md-3 col-sm-12">
                 <label for="uom"><b>Invoice TO:</b></label>
                 <input type="text" class="form-control form-control-sm" id="intovvscrap" readonly>
             </div>
-            <div class="form-group col-md-3 col-sm-12">
+            <!-- <div class="form-group col-md-3 col-sm-12">
                 <label for="uom"><b>Product Description:</b></label>
                 <input type="text" class="form-control form-control-sm" id="prodesvvscrap" readonly>
+            </div> -->
+              <div class="form-group col-md-3 col-sm-12">
+                <label for="uom"><b>Product Description:</b></label>
+               <!--  <input type="text" class="form-control form-control-sm" id="prodesvscrap" readonly> -->
+                <select class="form-control form-control-sm" id="prodesvvscrap" disabled>
+          	<option value="1">Product decs</option>
+            </select>
             </div>
             <div class="form-group col-md-3 col-sm-12">
                 <label for="kgsMt"><b>Shipment Mode</b></label>
@@ -3320,40 +3404,42 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 
 
  
-<script src="js/config.js"></script>
+
   <script src="vendor/jquery/jquery.min.js"></script>
       <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
       <script src="vendor/jquery-easing/jquery.easing.min.js"></script>
-      <script src="js/ruang-admin.min.js"></script>
-      <!-- Page level plugins -->
+  
       <script src="vendor/datatables/jquery.dataTables.min.js"></script>
       <script src="vendor/datatables/dataTables.bootstrap4.min.js"></script>
-    <!-- <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script> -->
-    <script src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
-    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
-    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
-    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-   <script src="js/logout.js"></script>
-  <script src="js/username.js"></script>
-  <script src="js/DebitCreditInvoice.js?v=<%=ts%>"></script>
-   <script src="js/createdby.js"></script>
- 	   <script src="js/modifiedby.js"></script>
- 	  <script src="js/factoryid.js"></script>
- 	   <script src="js/Sessionfilter.js"></script>
+ <script src="js/config.js?v=<%=jsVersion%>"></script>
+ 
+ 
+   <script src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
+    <script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
+    <script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
+    <script src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
+    <script src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
+   
+   
+   
+   <script src="js/logout.js?v=<%=jsVersion%>"></script>
+  <script src="js/username.js?v=<%=jsVersion%>"></script>
+  <script src="js/DebitCreditInvoice.js?v=<%=jsVersion%>"></script>
+   <script src="js/createdby.js?v=<%=jsVersion%>"></script>
+ 	   <script src="js/modifiedby.js?v=<%=jsVersion%>"></script>
+ 	  <script src="js/factoryid.js?v=<%=jsVersion%>"></script>
+ 	   <script src="js/Sessionfilter.js?v=<%=jsVersion%>"></script>
  	   
  	   
- 	    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+ 	    
  	  <script>
 /* const moduleId = localStorage.getItem("selectedModuleId"); */
   // This maps action names from the API to button IDs on this page
   window.actionElementMap = {
   };
 </script>
-<script src="js/permissions.js"></script>
+<script src="js/permissions.js?v=<%=jsVersion%>"></script>
   <!-- Page level custom scripts -->
 <script>
     document.getElementById("toggleFields").addEventListener("click", function () {

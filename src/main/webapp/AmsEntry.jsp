@@ -7,9 +7,9 @@
   response.setHeader("Pragma", "no-cache"); // HTTP 1.0
   response.setDateHeader("Expires", 0); // Proxies
 %>
-<%
-long ts = System.currentTimeMillis();
-%>
+
+
+
 
 <!DOCTYPE html>
 <html>
@@ -27,29 +27,29 @@ long ts = System.currentTimeMillis();
 <link href="vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet"
 	type="text/css" />
 <link
-	href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css"
+	href="externalLibrary/cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css"
 	rel="stylesheet" />
 
 <link href="css/ruang-admin.min.css" rel="stylesheet" />
 <link href="vendor/datatables/dataTables.bootstrap4.min.css"
 	rel="stylesheet">
-<!-- <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css" /> -->
+
 <link rel="stylesheet"
-	href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css" />
+	href="externalLibrary/cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css" />
 <link rel="stylesheet" href="css/main.css">
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="js/sidebar.js"></script>
+
+
 <link href="css/main.css?v=1.0" rel="stylesheet">
 <link href="css/masterpage.css?v=1.0" rel="stylesheet">
-<!--    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-KyZXEJjRkC9iY3NfJVzz6se99Nz05dfk03S8zNeS46E1H2nKfHlR9ltRf9TL7zG6" crossorigin="anonymous"> -->
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+
 <script
-	src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+	src="externalLibrary/cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+
 <script
-	src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.1/umd/popper.min.js"></script>
+	src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.1/umd/popper.min.js"></script>
 <script
-	src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+	src="externalLibrary/stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 
 
 <style>
@@ -320,7 +320,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 						class="d-sm-flex align-items-center justify-content-between mb-4">
 						<h1 class="h3 mb-0 text-gray-800">Asset Entry</h1>
 						<ol class="breadcrumb">
-							<li class="breadcrumb-item"><a href="VehicleDashboard.jsp">Home</a></li>
+							<li class="breadcrumb-item"><a href="AMSDashBoard.jsp">Home</a></li>
 							<li class="breadcrumb-item active" aria-current="page">Ams_Master</li>
 
 						</ol>
@@ -713,9 +713,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 
 
 
-					<script
-						src="http://cdn.jsdelivr.net/npm/@popperjs/core@2.9.1/dist/umd/popper.min.js"></script>
-					<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+					
 
 
 
@@ -1009,11 +1007,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 								<!-- Optional header (empty to match example) -->
 								<div class="modal-header1">
 									<!-- If you want to include a close button, uncomment below -->
-									<!-- 
-        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-          <span aria-hidden="true">&times;</span>
-        </button>
-        -->
+							
 								</div>
 
 								<!-- Modal Body -->
@@ -1076,9 +1070,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 	<a class="scroll-to-top rounded" href="#page-top"> <i
 		class="fas fa-angle-up"></i>
 	</a>
-	<!--  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script> -->
-
-	<!-- Bootstrap JS and dependencies -->
+	
 
 	<script>
   // When modal is opened, disable Vehicle_No initially
@@ -1108,52 +1100,58 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 
 
 
+
 	<script
-		src="http://cdn.jsdelivr.net/npm/@popperjs/core@2.9.1/dist/umd/popper.min.js"></script>
-	<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-	<script src="js/config.js"></script>
+		src="externalLibrary/cdn.jsdelivr.net/npm/@popperjs/core@2.9.1/dist/umd/popper.min.js"></script>
+		
+
+
 	<script src="vendor/jquery/jquery.min.js"></script>
 	<script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
 	<script src="vendor/jquery-easing/jquery.easing.min.js"></script>
-	<script src="js/ruang-admin.min.js"></script>
-	<!-- Page level plugins -->
+
+
+
 	<script src="vendor/datatables/jquery.dataTables.min.js"></script>
 	<script src="vendor/datatables/dataTables.bootstrap4.min.js"></script>
-	<!-- <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script> -->
-	<script
-		src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
-	<script
-		src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-	<script
-		src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
-	<script
-		src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
-	<script
-		src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
-	<script
-		src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
-	<script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
-	<script
-		src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-	<!-- <script src="js/AmsEntry.js"></script> -->
+		<script src="js/config.js?v=<%=jsVersion%>"></script>
 	
 	
-	  <script src="js/AmsEntry.js?v=<%=ts%>"></script>
-	<script src="js/logout.js"></script>
-	<script src="js/username.js"></script>
+<script
+		src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
 	<script
-		src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-	<script src="js/createdby.js"></script>
-	<script src="js/modifiedby.js"></script>
-	<script src="js/Sessionfilter.js"></script>
-	<script src="js/permissions.js"></script>
+		src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+	<script
+		src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
+	<script
+		src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
+	<script
+		src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
+	<script
+		src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
+
+
+
+	
+	
+	  <script src="js/AmsEntry.js?v=<%=jsVersion%>"></script>
+	<script src="js/logout.js?v=<%=jsVersion%>"></script>
+	<script src="js/username.js?v=<%=jsVersion%>"></script>
+
+	<script src="js/createdby.js?v=<%=jsVersion%>"></script>
+	<script src="js/modifiedby.js?v=<%=jsVersion%>"></script>
+	<script src="js/Sessionfilter.js?v=<%=jsVersion%>"></script>
+	<script src="js/permissions.js?v=<%=jsVersion%>"></script>
+	<script
+		src="externalLibrary/cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+		
+		
 	<script>
-/* const moduleId = localStorage.getItem("selectedModuleId"); */
-  // This maps action names from the API to button IDs on this page
+
   window.actionElementMap = {
   };
 </script>
-	<script src="js/permissions.js"></script>
+	<script src="js/permissions.js?v=<%=jsVersion%>"></script>
 	<script>
 
 
@@ -1192,10 +1190,10 @@ $(document).ready(function () {
 	<script>
 $(document).ready(function(){
 
-    // Get today's date in YYYY-MM-DD format
+
     let today = new Date().toISOString().split('T')[0];
 
-    // Apply it as min value for all required date fields
+   
     $("#purchaseDate").attr("min", today).attr("max",today);
     $("#purchaseDate").val(today);
   
@@ -1227,68 +1225,7 @@ document.getElementById("warrantyStart").addEventListener("change", function () 
 
 
 
-/* function forceLogoutAndRedirect() {
 
-    const user_id = sessionStorage.getItem("user_id");
-    if (!user_id) {
-        sessionStorage.clear();
-        window.location.replace("newlogin.jsp");
-        return;
-    }
-
-    const url = baseUrl.endsWith('/')
-        ? baseUrl + 'jssl/user/userlogout'
-        : baseUrl + '/jssl/user/userlogout';
-
-    $.ajax({
-        url: url,
-        type: 'POST',
-        xhrFields: { withCredentials: true },
-        data: $.param({ user_id: user_id }),
-        contentType: 'application/x-www-form-urlencoded',
-        dataType: 'json',
-        cache: false,
-
-        success: function (data) {
-            console.log("Forced logout:", data);
-
-            // Cleanup after backend confirms logout
-            sessionStorage.clear();
-            localStorage.removeItem("selectedFactoryId");
-
-            window.location.replace("newlogin.jsp");
-        },
-
-        error: function (xhr) {
-            console.error("Force logout failed:", xhr.responseText);
-
-            // Even if backend fails, block UI access
-            sessionStorage.clear();
-            window.location.replace("newlogin.jsp");
-        }
-    });
-}
-(function checkPagePermission() {
-
-  const userId = sessionStorage.getItem("user_id");
-  const allowedPages = JSON.parse(sessionStorage.getItem("allowedPages"));
-
-  if (!userId || !allowedPages) {
-    forceLogoutAndRedirect();   // ð¥ CALL BACKEND LOGOUT
-    return;
-  }
-
-  const currentPage = window.location.pathname.split("/").pop();
-
-  const hasAccess = allowedPages.some(page =>
-    currentPage.toLowerCase() === page.toLowerCase()
-  );
-
-  if (!hasAccess) {
-    forceLogoutAndRedirect();   // ð¥ CALL BACKEND LOGOUT
-  }
-
-})(); */
 </script>
 
 

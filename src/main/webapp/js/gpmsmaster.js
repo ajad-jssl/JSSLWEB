@@ -1,12 +1,12 @@
 //const baseUrl1 = 'http://10.10.94.4:8004';
 
-// Retrieve the selected factory ID from localStorage
-const selectedFactoryId = localStorage.getItem('selectedFactoryId');
+// Retrieve the selected factory ID from sessionStorage
+const selectedFactoryId = sessionStorage.getItem('selectedFactoryId');
 if (selectedFactoryId) {
     fetchItemsMasterCount();
 	fetchClientMasterCount();
 } else {
-    console.error('No factory ID found in localStorage.');
+    console.error('No factory ID found in sessionStorage.');
 }
 
 function fetchItemsMasterCount() {

@@ -1,8 +1,6 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8"
     pageEncoding="UTF-8"%>
-<%
-long ts = System.currentTimeMillis();
-%>
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -13,30 +11,30 @@ long ts = System.currentTimeMillis();
   <meta name="author" content="">
   <link href="img/logo/download.png" rel="icon">
   <title>JSSL</title>
-    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
+     <link href="externalLibrary/cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
   <link href="vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
   <link href="vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css">
   <link href="css/ruang-admin.min.css" rel="stylesheet">
   <link rel="stylesheet" href="css/main.css">
-<!--   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" integrity="sha512-xxx" crossorigin="anonymous" /> -->
+
   <link href="css/masterpage.css" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/select2@4.0.13/dist/css/select2.min.css" rel="stylesheet" />
-  <script src="https://cdn.jsdelivr.net/npm/select2@4.0.13/dist/js/select2.min.js"></script>
+
+  <script src="externalLibrary/cdn.jsdelivr.net/npm/select2@4.0.13/dist/js/select2.min.js"></script>
   
-  <!-- Include Bootstrap CSS -->
- <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet">
 
-<!-- Include jQuery -->
-<!-- <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script> -->
+ <link href="externalLibrary/stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet">
 
-<!-- Include Bootstrap JS -->
-<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.bundle.min.js"></script>
+
+
+<script src="externalLibrary/stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.bundle.min.js"></script>
 
 <script>
     const user_id = sessionStorage.getItem('user_id');
     if (!user_id) {
     	window.location.href = "newlogin.jsp";
     }
+
     </script>
     
   <style>
@@ -185,12 +183,12 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
    .hide-column {
     display: none;
 }  
-  /* Style to highlight the row */
+ 
 .highlight {
-    background-color: #b0c4de; /* Light blue background for highlight */
+    background-color: #b0c4de; 
 }
 
-/* Optional: Style the link to make it look like a clickable element */
+
 .loadno-link {
     color: #007bff; /* Blue color for links */
     text-decoration: none; /* Remove underline */
@@ -270,24 +268,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
     }
   </style>
 
-<!-- <script type="text/javascript">
-    window.history.forward();
 
-    // Auth Guard
-    const loginStatus = sessionStorage.getItem('loginStatus');
-    if (loginStatus !== 'Success') {
-      logout();
-    }
-
-    function noBack() {
-      window.history.forward();
-    }
-
-    function logout() {
-      sessionStorage.removeItem('loginStatus');
-      window.location = "newlogin.jsp";
-    }
-  </script> --> 
 </head>
 
 <body>
@@ -332,7 +313,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
             <h1 class="h3 mb-0 text-gray-800">VMS Report</h1>
             <ol class="breadcrumb">
               <li class="breadcrumb-item"><a href="VMSDashboard.jsp">Home</a></li>
-             <li class="breadcrumb-item"><a href="VisitorsReport.jsp">VMS Report</a></li>
+             <li class="breadcrumb-item"><a href="VMSReport.jsp">VMS Report</a></li>
               
             </ol>
           </div>
@@ -396,7 +377,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
       </thead>
       <tbody id="visitorTableBody">
         <tr>
-          <!-- Insert actual values here -->
+ 
         </tr>
       </tbody>
     </table>
@@ -433,7 +414,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
       </thead>
       <tbody>
         <tr>
-          <!-- Insert actual values here -->
+         
           <td>1</td><td></td><td></td><td></td><td></td>
           <td></td><td></td><td></td><td></td><td></td>         
         </tr>
@@ -491,7 +472,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
                             </tr>
                         </thead>
                         <tbody id="visitorrep">
-                            <!-- Data will be inserted here -->
+                            
                         </tbody>
                     </table>
                 </div>
@@ -652,12 +633,10 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 </div> 
 
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/xlsx/0.20.3/xlsx.full.min.js"></script>
 
 <script>
-/*    window.onload = function() {
-	   fetchVisitorDetails(visitor_id);
-}; */
+
 </script>
    
 <script>
@@ -668,13 +647,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
  }
 </script>
 
-<!-- <script>
- function exportToExcel() {
-  var table = document.getElementById("Table");
-  var workbook = XLSX.utils.table_to_book(table, {sheet: "Visitors In Jssl Report"});
-  XLSX.writeFile(workbook, 'Visitors_In_Jssl_Report.xlsx');
- }
-</script> -->
+
 
 <script>
  function exportToExcelvdr() {
@@ -682,17 +655,9 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
   var workbook = XLSX.utils.table_to_book(table, {sheet: "Visitors Date Range Report"});
   XLSX.writeFile(workbook, 'Visitors_Date_Range_Report.xlsx');
  }
-</script>
 
-<script>
-/**
- * ✅ FIXED toggleTables function
- * - Preserves container5 (print receipt form) and container12/vmsrecipt (print card)
- * - Only clears other containers when switching away from receipt tab
- * - Prevents data loss when returning to receipt tab
- */
 function toggleTables(tab) {
-    console.log("Switching to tab:", tab);
+  
     document.getElementById("container1").style.display = "none";
     document.getElementById("container3").style.display = "none";
     document.getElementById("container5").style.display = "none";
@@ -819,40 +784,34 @@ function printContainer1() {
   <a class="scroll-to-top rounded" href="#page-top">
     <i class="fas fa-angle-up"></i>
   </a>
- <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+<script src="externalLibrary/cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+  
 
-  <!-- Bootstrap JS and dependencies -->
 
+ <script src="vendor/jquery/jquery.min.js"></script>
 
-<!-- <script>
-  document.getElementById("btnnext").addEventListener("click", function () {
-    document.getElementById("container2").style.display = "block";
-  });
-</script> -->  
-
-   <script src="js/config.js"></script>
-  <script src="vendor/jquery/jquery.min.js"></script>
-      <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
       <script src="vendor/jquery-easing/jquery.easing.min.js"></script>
-      <script src="js/ruang-admin.min.js"></script>
-      <!-- Page level plugins -->
-      <script src="vendor/datatables/jquery.dataTables.min.js"></script>
-      <script src="vendor/datatables/dataTables.bootstrap4.min.js"></script>
-    <!-- <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script> -->
-    <script src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
-    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
-    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>  
-    <script src="js/visitorrep.js?v=<%=ts%>"></script>
-    <script src="js/logout.js"></script>
-    <script src="js/username.js"></script>
-    <script src="js/createdby.js"></script>
- 	<script src="js/modifiedby.js"></script>
- 	<script src="js/factoryid.js"></script>
- 	<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+            <script src="vendor/datatables/jquery.dataTables.min.js"></script>
+   <script src="js/config.js?v=<%=jsVersion%>"></script>
+       <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+    
 
-  <!-- Page level custom scripts -->
+      <script src="vendor/datatables/dataTables.bootstrap4.min.js"></script>
+  
+     <script src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
+    <script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  
+    <script src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
+    <script src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>  
+    <script src="js/visitorrep.js?v=<%=jsVersion%>"></script>
+    <script src="js/logout.js?v=<%=jsVersion%>"></script>
+    <script src="js/username.js?v=<%=jsVersion%>"></script>
+    <script src="js/createdby.js?v=<%=jsVersion%>"></script>
+ 	<script src="js/modifiedby.js?v=<%=jsVersion%>"></script>
+ 	<script src="js/factoryid.js?v=<%=jsVersion%>"></script>
+ 	 <script src="js/Sessionfilter.js?v=<%=jsVersion%>"></script>
+ 		<script src="externalLibrary/cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+
 </body>
 </html>

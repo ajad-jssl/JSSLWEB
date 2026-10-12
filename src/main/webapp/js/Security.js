@@ -118,74 +118,14 @@ document.addEventListener("DOMContentLoaded", function() {
 	loadUserList();
 	loadShipmentDelivery(); 
     // Fetch gatepass data from the backend
-	fetch(new URL('/api/gatepass/all', baseUrl1)	, {
-	    credentials: "include"
-	})
-   // fetch('http://localhost:8004/api/gatepass/all')  // Replace with your correct API endpoint
-        .then(response => response.json())
-        .then(data => {
-            // Get the select element for "gatepass"
-            const gatepassSelect = document.getElementById('gatepass');
-            
-            // Clear any existing options (if any)
-            gatepassSelect.innerHTML = '<option value="">Select</option>';
-            
-            // Loop through the data and create new option elements
-            data.forEach(gatepass => {
-                const option = document.createElement('option');
-                option.value = gatepass.gpid;  // Assuming 'gp_no' is the value for option
-                option.textContent = gatepass.gp_no;  // Assuming 'gp_no' is the text for option
-                gatepassSelect.appendChild(option);
-            });
-        })
-        .catch(error => {
-            console.error('Error fetching gatepass data:', error);
-        });
+
 });
 
 
 
 
 document.addEventListener("DOMContentLoaded", function() {
-    // Fetch GatePass data from the backend (replace with your actual API endpoint)
-   // fetch('http://localhost:8004/api/gatepassno/all')  // This is your Spring Boot API endpoint
-	fetch(new URL('/api/gatepassno/all', baseUrl1)   , {
-       credentials: "include"
-   })
-        .then(response => response.json())  // Parse the JSON response
-        .then(data => {
-            console.log(data);  // Log the data to the console for debugging
-            
-            // Get the select element for gatepassno1
-            const gatepassSelect = document.getElementById('gatepassno1');
-            
-            // Clear any existing options (except the default "Select")
-            gatepassSelect.innerHTML = '<option value="">Select</option>';
-            
-            // Check if the data array is not empty
-            if (data && data.length > 0) {
-                // Loop through the gate pass data and create new option elements
-                data.forEach(gatepass => {
-                    const option = document.createElement('option');
-                    option.value = gatepass.ngpid;  // ngpid as the value for the option
-                    option.textContent = gatepass.gp_no;  // gp_no as the display text for the option
-                    gatepassSelect.appendChild(option);  // Append the option to the dropdown
-                });
-            } else {
-                // If no gate pass data is available, display a "No gate pass found" option
-                const option = document.createElement('option');
-                option.value = '';  // Empty value for "No gate pass"
-                option.textContent = 'No gate pass found';
-                gatepassSelect.appendChild(option);
-            }
-        })
-        .catch(error => {
-            console.error('Error fetching gate pass data:', error);
-            
-            // Optionally, provide user feedback in case of an error
-            const gatepassSelect = document.getElementById('gatepassno1');
-            gatepassSelect.innerHTML = '<option value="">Error loading data</option>';
-        });
+
 });
 
 $(document).ready(function () {
@@ -195,7 +135,7 @@ $(document).ready(function () {
 	});
 	
 	function getGpno() {
-	    const factoryId = localStorage.getItem('selectedFactoryId'); // Ensure this is correctly set
+	    const factoryId = sessionStorage.getItem('selectedFactoryId'); // Ensure this is correctly set
 	    const url = new URL(`/jssl/returnable/jims/gpno_nonsecurity?GP_type=1&factory_id=${factoryId}`, baseUrl1); // Correct template literal syntax
 	    fetch(url, { credentials: "include" })
 	        .then(response => {
@@ -226,7 +166,7 @@ $(document).ready(function () {
 
 function getnGpno() {
    // const url = new URL('http://localhost:8004/jssl/returnable/jims/gpno_nonsecurity?GP_type=2');
-    const factoryId = localStorage.getItem('selectedFactoryId');
+    const factoryId = sessionStorage.getItem('selectedFactoryId');
    const url = new URL(`/jssl/returnable/jims/gpno_nonsecurity?GP_type=2&factory_id=${factoryId}`, baseUrl1);
   fetch(url, { credentials: "include" })
         .then(response => {
@@ -257,7 +197,7 @@ function getnGpno() {
 
 
 /*function getallgpno() {
-    const factoryId = localStorage.getItem('selectedFactoryId');
+    const factoryId = sessionStorage.getItem('selectedFactoryId');
 
     const returnableUrl = new URL(`/api/returnable/filter?factory_id=${factoryId}`, baseUrl1);
     const itemsReceivedUrl = new URL(`/api/itemsrecieved`, baseUrl1);
@@ -299,8 +239,8 @@ function getnGpno() {
 }
 */
 
-function getallgpno() {
-    const factoryId = localStorage.getItem('selectedFactoryId');
+/*function getallgpno() {
+    const factoryId = sessionStorage.getItem('selectedFactoryId');
 
     const returnableUrl = new URL(
         `/api/returnable/filter?factory_id=${factoryId}`,
@@ -339,7 +279,41 @@ function getallgpno() {
             console.error("Error loading GP dropdown:", err);
         });
 }
+*/
 
+function getallgpno() {
+    const factoryId = sessionStorage.getItem('selectedFactoryId');
+
+    const pendingSecurityUrl = new URL(
+        `/api/returnable/newfilter?factory_id=${factoryId}`,
+        baseUrl1
+    );
+
+    const safeJson = (res) => {
+        if (res.status === 204) return [];
+        return res.text().then(text => text ? JSON.parse(text) : []);
+    };
+
+    fetch(pendingSecurityUrl, { credentials: "include" })
+        .then(safeJson)
+        .then(pendingData => {
+
+            const Gpnoselect = $("#gatepass_security");
+            Gpnoselect.empty();
+            Gpnoselect.append('<option value="" selected>Select Gpno</option>');
+
+            if (!Array.isArray(pendingData)) return;
+
+            pendingData.forEach(gp => {
+                Gpnoselect.append(
+                    `<option value="${gp.gpid}">${gp.gpNo}</option>`
+                );
+            });
+        })
+        .catch(err => {
+            console.error("Error loading GP dropdown:", err);
+        });
+}
 $('#gatepass').on('change', function() {
 	const gp_id=$(this).val();
 	getgpdetails(gp_id)
@@ -838,7 +812,7 @@ function updateitemdetailsintable(gpnoselect) {
         const unitMap = {};
         unitData.forEach(u => {
             //unitMap[u.uid] = u.unit;
-			unitMap[u.unit] = u.unit;
+			unitMap[u.uid] = u.unit;
         });
 
         const tableBody = $("#tableID tbody");
@@ -892,50 +866,52 @@ function updateitemdetailsintable(gpnoselect) {
             });
 
             // ✅ Input validation
-            $("#tableID").off("input").on("input",
-                "input[data-field='dcRef'], input[data-field='geRcvdQty']",
-                function () {
+			$("#tableID").off("input").on("input",
+			    "input[data-field='dcRef'], input[data-field='geRcvdQty']",
+			    function () {
 
-                const row = $(this).closest("tr");
-                const dcRef = row.find("input[data-field='dcRef']").val().trim();
-                const geRcvdQty = Number(row.find("input[data-field='geRcvdQty']").val());
-                const remaining = Number(row.find("td:eq(5)").text());
-                const checkbox = row.find(".selectCheckbox");
+			    const row = $(this).closest("tr");
+			    const itemId = row.find(".selectCheckbox").data("item-id");
+			    const dcRef = row.find("input[data-field='dcRef']").val().trim();
+			    const geRcvdQty = Number(row.find("input[data-field='geRcvdQty']").val());
+			    const remaining = Number(row.find("td:eq(5)").text());
+			    const checkbox = row.find(".selectCheckbox");
 
-                if (geRcvdQty > remaining) {
-                    showModalPopup("Received Qty must not exceed Remaining Qty.");
-                    $(this).val('');
-                    checkbox.prop("checked", false).prop("disabled", true);
-                    return;
-                }
+			    if (geRcvdQty > remaining) {
+			        showModalPopup("Received Qty must not exceed Remaining Qty.");
+			        $(this).val('');
+			        checkbox.prop("checked", false).prop("disabled", true);
+			        removeSelectedItem(itemId);
+			        return;
+			    }
 
-                if (dcRef !== "" && geRcvdQty > 0 && geRcvdQty <= remaining) {
-                    checkbox.prop("disabled", false);
-                } else {
-                    checkbox.prop("checked", false).prop("disabled", true);
-                }
-            });
-
+			    if (dcRef !== "" && geRcvdQty > 0 && geRcvdQty <= remaining) {
+			        checkbox.prop("disabled", false);
+			    } else {
+			        checkbox.prop("checked", false).prop("disabled", true);
+			        removeSelectedItem(itemId);
+			    }
+			});
             // ✅ Checkbox handler
-            $(".selectCheckbox").off("change").on("change", function () {
+			$(".selectCheckbox").off("change").on("change", function () {
 
-                const row = $(this).closest("tr");
-                const itemId = $(this).data("item-id");
-                const dcRef = row.find("input[data-field='dcRef']").val().trim();
-                const geRcvdQty = Number(row.find("input[data-field='geRcvdQty']").val());
-                const remaining = Number(row.find("td:eq(5)").text());
+			    const row = $(this).closest("tr");
+			    const itemId = $(this).data("item-id");
+			    const dcRef = row.find("input[data-field='dcRef']").val().trim();
+			    const geRcvdQty = Number(row.find("input[data-field='geRcvdQty']").val());
+			    const remaining = Number(row.find("td:eq(5)").text());
 
-                if (dcRef === "" || geRcvdQty <= 0 || geRcvdQty > remaining) {
-                    alert("Received Qty must be greater than 0 and not exceed Remaining Qty.");
-                    $(this).prop("checked", false);
-                    return;
-                }
-
-                if (this.checked) {
-                    getdcqty(itemId, dcRef, geRcvdQty);
-                }
-            });
-
+			    if (this.checked) {
+			        if (dcRef === "" || geRcvdQty <= 0 || geRcvdQty > remaining) {
+			            alert("Received Qty must be greater than 0 and not exceed Remaining Qty.");
+			            $(this).prop("checked", false);
+			            return;
+			        }
+			        getdcqty(itemId, dcRef, geRcvdQty);
+			    } else {
+			        removeSelectedItem(itemId);
+			    }
+			});
         } else {
             tableBody.append(
                 '<tr><td colspan="10" class="text-center">No data available</td></tr>'
@@ -974,62 +950,80 @@ function generateGpentryno(callback) {
 		   });
 }
 
-let selectedItems = [];
+/*let selectedItems = [];
 function getdcqty(itemId, dcRef, geRcvdQty) {
     selectedItems.push({ itemId, dcRef, geRcvdQty });
+}*/
+
+let selectedItems = [];
+
+function getdcqty(itemId, dcRef, geRcvdQty) {
+    // Remove any existing entry for this item first, to avoid duplicates
+    selectedItems = selectedItems.filter(item => item.itemId !== itemId);
+    selectedItems.push({ itemId, dcRef, geRcvdQty });
+}
+
+function removeSelectedItem(itemId) {
+    selectedItems = selectedItems.filter(item => item.itemId !== itemId);
 }
 
 $(document).ready(function () {
 
     // ✅ Create button click
-    $("#createret").click(function () {
-        console.log("Create clicked");
+	$("#createret").click(function () {
+	    console.log("Create clicked");
 
-        // Gatepass No Validation
-        let gatepassNo = $("#gatepass_security option:selected").val();
-        if (!gatepassNo) {
-            showModalPopup("Please select a Gatepass No.");
-            return;
-        }
+	    let gatepassNo = $("#gatepass_security option:selected").val();
+	    if (!gatepassNo) {
+	        showModalPopup("Please select a Gatepass No.");
+	        return;
+	    }
 
-        // Security Remarks Validation
-        const securityremarks = $("#securityremarks").val().trim();
-        if (!securityremarks) {
-            $("#securityremarksError").show();
-            return;
-        } else {
-            $("#securityremarksError").hide();
-        }
+	    const securityremarks = $("#securityremarks").val().trim();
+	    if (!securityremarks) {
+	        $("#securityremarksError").show();
+	        return;
+	    } else {
+	        $("#securityremarksError").hide();
+	    }
 
-        // DC Ref & Received Qty validation
-        let invalidInput = false;
-        $("#tableID tbody tr").each(function () {
-            const dcRef = $(this).find("input[data-field='dcRef']").val().trim();
-            const geRcvdQty = Number($(this).find("input[data-field='geRcvdQty']").val());
-            const remaining = Number($(this).find("td:eq(5)").text());
+	    // ✅ Only rows with a checked checkbox count as "selected for receiving"
+	    const checkedRows = $("#tableID tbody tr").filter(function () {
+	        return $(this).find(".selectCheckbox").is(":checked");
+	    });
 
-            if (!dcRef || geRcvdQty <= 0 || geRcvdQty > remaining) {
-                invalidInput = true;
-                return false; // break loop
-            }
-        });
+	    if (checkedRows.length === 0) {
+	        showModalPopup("Please select at least one item to receive.");
+	        return;
+	    }
 
-        if (invalidInput) {
-            showModalPopup("Please fill valid DC Ref and Received Qty for all items.");
-            return;
-        }
+	    let invalidInput = false;
+	    checkedRows.each(function () {
+	        const dcRef = $(this).find("input[data-field='dcRef']").val().trim();
+	        const geRcvdQty = Number($(this).find("input[data-field='geRcvdQty']").val());
+	        const remaining = Number($(this).find("td:eq(5)").text());
 
-        // Remaining quantity check
-        let remainingQty = calculateRemainingQty();
-        if (remainingQty === 0) {
-            showModalPopup("No qty to receive!");
-            $("#gatepass_security").prop('disabled', true);
-            return;
-        }
+	        if (!dcRef || geRcvdQty <= 0 || geRcvdQty > remaining) {
+	            invalidInput = true;
+	            return false;
+	        }
+	    });
 
-        console.log("Main modal will show");
-        $("#exampleModalCenter73").modal("show");
-    });
+	    if (invalidInput) {
+	        showModalPopup("Please fill valid DC Ref and Received Qty for all selected items.");
+	        return;
+	    }
+
+	    let remainingQty = calculateRemainingQty();
+	    if (remainingQty === 0) {
+	        showModalPopup("No qty to receive!");
+	        $("#gatepass_security").prop('disabled', true);
+	        return;
+	    }
+
+	    console.log("Main modal will show");
+	    $("#exampleModalCenter73").modal("show");
+	});
 
     // Cancel button
     $("#cancelret").click(function () {
@@ -1052,7 +1046,7 @@ $(document).ready(function () {
             return;
         }
 
-        const selectedFactoryId = localStorage.getItem('selectedFactoryId');
+        const selectedFactoryId = sessionStorage.getItem('selectedFactoryId');
         console.log('selectedFactoryId:', selectedFactoryId);
 
         generateGpentryno(function (gpentry) {

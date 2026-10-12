@@ -4,9 +4,7 @@
   response.setHeader("Pragma","no-cache");
   response.setDateHeader("Expires",0);
 %>
-<%
-long ts = System.currentTimeMillis();
-%>
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -19,8 +17,9 @@ long ts = System.currentTimeMillis();
   <link href="vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
   <link href="css/ruang-admin.min.css" rel="stylesheet">
   <link rel="stylesheet" href="css/main.css">
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<!--   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"> -->
+
+  <script src="externalLibrary/code.jquery.com/jquery-3.6.0.min.js"></script>
   <script src="vendor/chart.js/Chart.min.js"></script>
   <script>
     var user_id = sessionStorage.getItem('user_id');
@@ -301,140 +300,8 @@ long ts = System.currentTimeMillis();
 .dash-canvas { display: none; }
   </style>
 </head>
-<script src="js/config.js"></script>
-<script>
-(function () {
-  var userId = sessionStorage.getItem('user_id');
-  var username = sessionStorage.getItem('username'); // used by the actions API
-  var moduleName = 'DO Time Sheet';
-  var pageName = 'DotimeSheetDashBoard.jsp'; // used for /api/page/actions
-  var currentPage = window.location.pathname.split("/").pop()+'.jsp';
 
-  if (!userId) {
-    window.location.href = 'newlogin.jsp';
-    return;
-  }
 
-  // --- Check 1: module/page permission ---
-  var permUrl = new URL('/api/user-permissions-module-details', baseUrl);
-  permUrl.searchParams.append('userId', userId);
-  permUrl.searchParams.append('moduleName', moduleName);
-
-  var permCheck = fetch(permUrl, { credentials: 'include' })
-    .then(function (res) { return res.json(); })
-    .then(function (data) {
-      if (!Array.isArray(data) || data.length === 0) return false;
-      return data.some(function (item) {
-        return (item.pageUrl || '').trim().toLowerCase() === currentPage.toLowerCase();
-      });
-    })
-    .catch(function (err) {
-      console.error('Permission check failed:', err);
-      return false;
-    });
-
-  // --- Check 2: action-level permission (must include "view") ---
-  var actionsUrl = baseUrl + '/api/page/actions?userId=' + encodeURIComponent(username) +
-                    '&pageName=' + encodeURIComponent(pageName);
-
-  var actionCheck = fetch(actionsUrl, { method: 'GET', credentials: 'include', headers: { 'Content-Type': 'application/json' } })
-    .then(function (res) {
-      if (!res.ok) throw new Error('Failed to fetch actions');
-      return res.json();
-    })
-    .then(function (allowedActions) {
-      if (!Array.isArray(allowedActions)) return false;
-      return allowedActions.some(function (action) {
-        return String(action).trim().toLowerCase() === 'view';
-      });
-    })
-    .catch(function (err) {
-      console.error('Action check failed:', err);
-      return false;
-    });
-
-  // --- Both must pass ---
-  Promise.all([permCheck, actionCheck]).then(function (results) {
-    var hasPagePermission = results[0];
-    var hasViewAction = results[1];
-
-    if (hasPagePermission && hasViewAction) {
-      grantAccess();
-    } else {
-      denyAccess();
-    }
-  });
-
-  function grantAccess() {
-    var canvas = document.querySelector('.dash-canvas');
-    if (canvas) canvas.style.display = 'flex';
-
-    if (typeof window.initTimesheetDashboard === 'function') {
-      window.initTimesheetDashboard();
-    }
-  }
-
-  function denyAccess() {
-    // .dash-canvas stays display:none (its default CSS) — nothing else happens
-  }
-})();
-</script>
-<!-- <script src="js/config.js"></script> -->
-
-<!-- <script>
-(function () {
-  var userId = sessionStorage.getItem('user_id');
-  var moduleName = 'DO Time Sheet';
-  var currentPage = window.location.pathname.split("/").pop()+'.jsp';
-  
-  if (!userId) {
-    window.location.href = 'newlogin.jsp';
-    return;
-  }
-
-  var url = new URL('/api/user-permissions-module-details', baseUrl);
-  url.searchParams.append('userId', userId);
-  url.searchParams.append('moduleName', moduleName);
-
-  fetch(url, { credentials: 'include' })
-    .then(function (res) { return res.json(); })
-    .then(function (data) {
-      if (!Array.isArray(data) || data.length === 0) {
-        denyAccess();
-        return;
-      }
-
-      var hasAccess = data.some(function (item) {
-        return (item.pageUrl || '').trim().toLowerCase() === currentPage.toLowerCase();
-      });
-
-      if (hasAccess) {
-        grantAccess();
-      } else {
-        denyAccess();
-      }
-    })
-    .catch(function (err) {
-      console.error('Permission check failed:', err);
-      denyAccess();
-    });
-
-  function grantAccess() {
-    var canvas = document.querySelector('.dash-canvas');
-    if (canvas) canvas.style.display = 'flex'; // matches its original CSS display value
-
-    // only now is it safe to fire the dashboard's data-loading APIs
-    if (typeof window.initTimesheetDashboard === 'function') {
-      window.initTimesheetDashboard();
-    }
-  }
-
-  function denyAccess() {
-    // .dash-canvas stays display:none (its default CSS) — nothing else happens,
-    // and initTimesheetDashboard() is never called, so no dashboard APIs fire
-  }
-})();
-</script> -->
 <body id="page-top">
 <div id="wrapper">
   <%@ include file="DrawingSideBar.jsp" %>
@@ -598,15 +465,93 @@ long ts = System.currentTimeMillis();
 </div>
 
 <a class="scroll-to-top rounded" href="#page-top"><i class="fas fa-angle-up"></i></a>
-
-
 <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
 <script src="vendor/jquery-easing/jquery.easing.min.js"></script>
-<script src="js/ruang-admin.min.js"></script>
-<script src="js/username.js"></script>
-<script src="js/logout.js"></script>
-<script src="js/Sessionfilter.js"></script>
-<script src="js/doTimeSheetDashboard.js?v=<%=ts%>"></script>
+<script src="js/config.js?v=<%=jsVersion%>"></script>
+<script>
+(function () {
+  var userId = sessionStorage.getItem('user_id');
+  var username = sessionStorage.getItem('username'); // used by the actions API
+  var moduleName = 'DO Time Sheet';
+  var pageName = 'DotimeSheetDashBoard.jsp'; // used for /api/page/actions
+  var currentPage = window.location.pathname.split("/").pop()+'.jsp';
+
+  if (!userId) {
+    window.location.href = 'newlogin.jsp';
+    return;
+  }
+
+  // --- Check 1: module/page permission ---
+  var permUrl = new URL('/api/user-permissions-module-details', baseUrl);
+  permUrl.searchParams.append('userId', userId);
+  permUrl.searchParams.append('moduleName', moduleName);
+
+  var permCheck = fetch(permUrl, { credentials: 'include' })
+    .then(function (res) { return res.json(); })
+    .then(function (data) {
+      if (!Array.isArray(data) || data.length === 0) return false;
+      return data.some(function (item) {
+        return (item.pageUrl || '').trim().toLowerCase() === currentPage.toLowerCase();
+      });
+    })
+    .catch(function (err) {
+      console.error('Permission check failed:', err);
+      return false;
+    });
+
+  // --- Check 2: action-level permission (must include "view") ---
+  var actionsUrl = baseUrl + '/api/page/actions?userId=' + encodeURIComponent(username) +
+                    '&pageName=' + encodeURIComponent(pageName);
+
+  var actionCheck = fetch(actionsUrl, { method: 'GET', credentials: 'include', headers: { 'Content-Type': 'application/json' } })
+    .then(function (res) {
+      if (!res.ok) throw new Error('Failed to fetch actions');
+      return res.json();
+    })
+    .then(function (allowedActions) {
+      if (!Array.isArray(allowedActions)) return false;
+      return allowedActions.some(function (action) {
+        return String(action).trim().toLowerCase() === 'view';
+      });
+    })
+    .catch(function (err) {
+      console.error('Action check failed:', err);
+      return false;
+    });
+
+  // --- Both must pass ---
+  Promise.all([permCheck, actionCheck]).then(function (results) {
+    var hasPagePermission = results[0];
+    var hasViewAction = results[1];
+
+    if (hasPagePermission && hasViewAction) {
+      grantAccess();
+    } else {
+      denyAccess();
+    }
+  });
+
+  function grantAccess() {
+    var canvas = document.querySelector('.dash-canvas');
+    if (canvas) canvas.style.display = 'flex';
+
+    if (typeof window.initTimesheetDashboard === 'function') {
+      window.initTimesheetDashboard();
+    }
+  }
+
+  function denyAccess() {
+    
+  }
+})();
+</script>
+
+
+
+<script src="js/username.js?v=<%=jsVersion%>"></script>
+<script src="js/logout.js?v=<%=jsVersion%>"></script>
+<script src="js/Sessionfilter.js?v=<%=jsVersion%>"></script>
+<script src="js/doTimeSheetDashboard.js?v=<%=jsVersion%>"></script>
 
 </body>
 </html>

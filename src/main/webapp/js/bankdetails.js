@@ -41,8 +41,8 @@ document.getElementById("#modalScroll").addEventListener("click", function () {
 	$('#exampleModalScrollable').modal('show');
 });
 
-// Fetch selectedFactoryId from localStorage
-const selectedFactoryId = localStorage.getItem('selectedFactoryId');
+// Fetch selectedFactoryId from sessionStorage
+const selectedFactoryId = sessionStorage.getItem('selectedFactoryId');
 console.log('selectedFactoryId:', selectedFactoryId);
 
 document.addEventListener("DOMContentLoaded", function () {
@@ -52,7 +52,7 @@ document.addEventListener("DOMContentLoaded", function () {
 if (selectedFactoryId) {
 	fetchUserList();
 } else {
-	console.error('No factory ID found in localStorage.');
+	console.error('No factory ID found in sessionStorage.');
 }
 
 // Function to fetch the list of users/vendors based on the selected factory ID
@@ -133,11 +133,11 @@ async function fetchUserList() {
 
 // get the factory_id
 document.addEventListener("DOMContentLoaded", function() {
-	const selectedFactoryId = localStorage.getItem("selectedFactoryId"); // Get factory_id from localStorage
+	const selectedFactoryId = sessionStorage.getItem("selectedFactoryId"); // Get factory_id from sessionStorage
 	if (selectedFactoryId) {
 		fetchSaleOrderTypes();
 	} else {
-		console.error("No factory ID found in localStorage.");
+		console.error("No factory ID found in sessionStorage.");
 	}
 });
 
@@ -186,11 +186,11 @@ async function fetchSaleOrderTypes() {
 
 // get the factory_id
 document.addEventListener("DOMContentLoaded", function() {
-	const selectedFactoryId = localStorage.getItem("selectedFactoryId"); // Get factory_id from localStorage
+	const selectedFactoryId = sessionStorage.getItem("selectedFactoryId"); // Get factory_id from sessionStorage
 	if (selectedFactoryId) {
 		fetchSaleOrderUpdateTypes();
 	} else {
-		console.error("No factory ID found in localStorage.");
+		console.error("No factory ID found in sessionStorage.");
 	}
 });
 
@@ -238,11 +238,11 @@ async function fetchSaleOrderUpdateTypes() {
 }
 
 document.addEventListener("DOMContentLoaded", function() {
-	const selectedFactoryId = localStorage.getItem("selectedFactoryId"); // Get factory_id from localStorage
+	const selectedFactoryId = sessionStorage.getItem("selectedFactoryId"); // Get factory_id from sessionStorage
 	if (selectedFactoryId) {
 		fetchSaleOrderTypes1();
 	} else {
-		console.error("No factory ID found in localStorage.");
+		console.error("No factory ID found in sessionStorage.");
 	}
 });
 
@@ -290,11 +290,11 @@ async function fetchSaleOrderTypes1() {
 }
 
 document.addEventListener("DOMContentLoaded", function() {
-	const selectedFactoryId = localStorage.getItem("selectedFactoryId"); // Get factory_id from localStorage
+	const selectedFactoryId = sessionStorage.getItem("selectedFactoryId"); // Get factory_id from sessionStorage
 	if (selectedFactoryId) {
 		fetchSaleOrderTypesupdateCountry1();
 	} else {
-		console.error("No factory ID found in localStorage.");
+		console.error("No factory ID found in sessionStorage.");
 	}
 });
 
@@ -343,11 +343,11 @@ async function fetchSaleOrderTypesupdateCountry1() {
 
 
 document.addEventListener("DOMContentLoaded", function() {
-	const selectedFactoryId = localStorage.getItem("selectedFactoryId"); // Get factory_id from localStorage
+	const selectedFactoryId = sessionStorage.getItem("selectedFactoryId"); // Get factory_id from sessionStorage
 	if (selectedFactoryId) {
 		fetchSaleOrderTypesState1();
 	} else {
-		console.error("No factory ID found in localStorage.");
+		console.error("No factory ID found in sessionStorage.");
 	}
 });
 // fetching the drop down list from sate
@@ -394,11 +394,11 @@ async function fetchSaleOrderTypesState1() {
 }
 
 document.addEventListener("DOMContentLoaded", function() {
-	const selectedFactoryId = localStorage.getItem("selectedFactoryId"); // Get factory_id from localStorage
+	const selectedFactoryId = sessionStorage.getItem("selectedFactoryId"); // Get factory_id from sessionStorage
 	if (selectedFactoryId) {
 		fetchStateUpdate1();
 	} else {
-		console.error("No factory ID found in localStorage.");
+		console.error("No factory ID found in sessionStorage.");
 	}
 });
 // fetching the drop down list from sate

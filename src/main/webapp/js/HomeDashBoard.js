@@ -1,10 +1,18 @@
-document.addEventListener('DOMContentLoaded', () => {
+function initHomeDashboard() {
     let today = new Date().toISOString().split('T')[0];
     $("#dateFrom").val(today);
     $("#dateTo").val(today);
-    loadContracts('All');
-});
 
+    const uid = sessionStorage.getItem('username') || sessionStorage.getItem('user_id') || 'User';
+    const el  = document.getElementById('usernameDisplay');
+    if (el) el.textContent = uid;
+
+    loadContracts('All').then(() => {
+        buildAll();
+    });
+}
+
+window.initHomeDashboard = initHomeDashboard;
 async function loadContracts(factory) {
     try {
         const url = new URL(

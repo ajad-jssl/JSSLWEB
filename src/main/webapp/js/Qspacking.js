@@ -68,7 +68,7 @@ document.addEventListener("DOMContentLoaded", function () {
     // Populate the dropdowns for the first row
     fetchuom(1);
     fetctype(1);
-	const factoryId = localStorage.getItem("selectedFactoryId");
+	const factoryId = sessionStorage.getItem("selectedFactoryId");
 	if (factoryId) {
 	    fetchUserList(factoryId);
 	}
@@ -202,9 +202,9 @@ function removeRow(rowId) {
 // Fetch UOM data and populate the UOM dropdown for a specific row
 async function fetchuom(rowId) {
     try {
-        const selectedFactoryId = localStorage.getItem("selectedFactoryId");
+        const selectedFactoryId = sessionStorage.getItem("selectedFactoryId");
         if (!selectedFactoryId) {
-            console.error("No factory ID found in localStorage.");
+            console.error("No factory ID found in sessionStorage.");
             return;
         }
 
@@ -242,6 +242,7 @@ async function fetchuom(rowId) {
                 uomSelect.appendChild(option);
             }
         });
+		initSelect2(`uom-${rowId}`, 'exampleModalScrollable123', 'Select Uom');
     } catch (error) {
         console.error("Error fetching UOM data:", error);
     }
@@ -250,9 +251,9 @@ async function fetchuom(rowId) {
 // Fetch Type data and populate the Type dropdown for a specific row
 async function fetctype(rowId) {
     try {
-        const selectedFactoryId = localStorage.getItem("selectedFactoryId");
+        const selectedFactoryId = sessionStorage.getItem("selectedFactoryId");
         if (!selectedFactoryId) {
-            console.error("No factory ID found in localStorage.");
+            console.error("No factory ID found in sessionStorage.");
             return;
         }
 
@@ -290,6 +291,7 @@ async function fetctype(rowId) {
                 typeSelect.appendChild(option);
             }
         });
+		initSelect2(`type-${rowId}`, 'exampleModalScrollable123', 'Select Type'); // ADD
     } catch (error) {
         console.error("Error fetching Type data:", error);
     }
@@ -298,11 +300,11 @@ async function fetctype(rowId) {
     
 // Get the factory_id
 document.addEventListener("DOMContentLoaded", function() {
-    const selectedFactoryId = localStorage.getItem("selectedFactoryId"); // Get factory_id from localStorage
+    const selectedFactoryId = sessionStorage.getItem("selectedFactoryId"); // Get factory_id from sessionStorage
     if (selectedFactoryId) {
         fetchcont(selectedFactoryId);  // Fetch contractors initially
     } else {
-        console.error("No factory ID found in localStorage.");
+        console.error("No factory ID found in sessionStorage.");
     }
 });
 
@@ -567,7 +569,7 @@ let currentFactoryIdQSPacking = null;
 function fetchUserList(selectedFactoryId) {
 
     currentFactoryIdQSPacking = selectedFactoryId ||
-                                localStorage.getItem("selectedFactoryId");
+                                sessionStorage.getItem("selectedFactoryId");
 
     // Destroy existing DataTable
     if ($.fn.DataTable.isDataTable('#tableID')) {
@@ -908,8 +910,8 @@ function openModalAdd() {
     $('#exampleModalCenter66').modal('show'); // Show the next modal (Ensure this modal exists)
 }
 
-// Fetch selectedFactoryId from localStorage
-const selectedFactoryId = localStorage.getItem('selectedFactoryId');
+// Fetch selectedFactoryId from sessionStorage
+const selectedFactoryId = sessionStorage.getItem('selectedFactoryId');
 console.log('selectedFactoryId:', selectedFactoryId);
 
 function addevent() {
@@ -1163,7 +1165,10 @@ function addRowEdit() {
     `;
 
     // Append the new row to the container
-    container.appendChild(newRow);
+	container.appendChild(newRow);
+
+	initSelect2(`uom_new_${rowIndex}`, 'exampleModalScrollable123update', 'Select uom');   // ADD
+	initSelect2(`type_new_${rowIndex}`, 'exampleModalScrollable123update', 'Select type'); // ADD
 }
 
 function editRecord(pn_id) {
@@ -1265,12 +1270,14 @@ function editRecord(pn_id) {
                     const uomSelect = newRow.querySelector(`#uom_${index}`);
                     if (uomSelect) {
                         uomSelect.value = record.uom_id || "";
+						initSelect2(`uom_${index}`, 'exampleModalScrollable123update', 'Select uom'); // ADD
                     }
                     
                     // Set the default selected value for the Type dropdown.
                     const typeSelect = newRow.querySelector(`#type_${index}`);
                     if (typeSelect) {
                         typeSelect.value = record.type_id || "";
+						initSelect2(`type_${index}`, 'exampleModalScrollable123update', 'Select type'); // ADD
                     }
                 });
 				updateGrandTotal();
@@ -1480,12 +1487,12 @@ let typeOptionsHTML = "";
 
 // When the DOM is loaded, fetch dropdown options based on the factory ID.
 document.addEventListener("DOMContentLoaded", function() {
-    const selectedFactoryId = localStorage.getItem("selectedFactoryId"); // Get factory_id from localStorage
+    const selectedFactoryId = sessionStorage.getItem("selectedFactoryId"); // Get factory_id from sessionStorage
     if (selectedFactoryId) {
         fetchuomEdit();
         fetchtypeEdit();
     } else {
-        console.error("No factory ID found in localStorage.");
+        console.error("No factory ID found in sessionStorage.");
     }
 });
 
@@ -1494,20 +1501,16 @@ async function fetchuomEdit() {
     try {
         const url = new URL(`/jssl/master/listunitmeasurementmasternew`, baseUrl);
        // url.searchParams.append("factory_id", factoryId);
-
 	   const response = await fetch(url,{
 	   				           method: "GET",
 	   				           credentials: "include"   // ✅ Always send JSESSIONID cookie
 	   				       });
         if (!response.ok) throw new Error("Failed to fetch Uom options");
-
         const json = await response.json();
-
         if (json.status !== "yes" || !json.Data.length) {
             console.warn("No Uom options found.");
             return;
         }
-
         // Build options HTML
         let options = `<option value="">Select uom</option>`;
         json.Data.forEach((item) => {
@@ -1516,7 +1519,6 @@ async function fetchuomEdit() {
             }
         });
         uomOptionsHTML = options;
-
         // If any dynamic rows already exist, update their dropdown
         document.querySelectorAll("select[id^='uom_new_']").forEach(select => {
             select.innerHTML = options;
@@ -1854,6 +1856,17 @@ document.getElementById('eyeIconBtnview').addEventListener('click', function() {
     }
 });
 
-
+function initSelect2(selectId, modalId, placeholder) {
+    var $el = $('#' + selectId);
+    if ($el.hasClass('select2-hidden-accessible')) {
+        $el.select2('destroy'); // rebuild so newly fetched options are picked up
+    }
+    $el.select2({
+        dropdownParent: $('#' + modalId), // required so it renders correctly inside a Bootstrap modal
+        width: '100%',
+        placeholder: placeholder,
+        allowClear: false
+    });
+}
 
 

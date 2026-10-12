@@ -4,9 +4,7 @@
   response.setHeader("Pragma", "no-cache");
   response.setDateHeader("Expires", 0);
 %>
-<%
-long ts = System.currentTimeMillis();
-%>
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -24,11 +22,29 @@ long ts = System.currentTimeMillis();
 <link href="vendor/datatables/dataTables.bootstrap4.min.css"
 	rel="stylesheet">
 <link rel="stylesheet"
-	href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css" />
+	href="externalLibrary/cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css" />
 <link href="css/ruang-admin.min.css" rel="stylesheet">
 <link rel="stylesheet" href="css/main.css">
+<link
+	href="externalLibrary/cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css"
+	rel="stylesheet">
+<link
+	href="externalLibrary/cdn.jsdelivr.net/npm/@ttskch/select2-bootstrap4-theme@1.5.2/dist/select2-bootstrap4.min.css"
+	rel="stylesheet">
 
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<style>
+.select2-container .select2-selection--single {
+	height: calc(1.5em + .5rem + 2px) !important;
+	padding: .25rem .5rem;
+}
+.select2-container--bootstrap4 .select2-selection--single .select2-selection__rendered {
+	line-height: 1.5 !important;
+}
+.select2-container--bootstrap4 .select2-selection--single .select2-selection__arrow {
+	height: calc(1.5em + .5rem) !important;
+}
+</style>
+
 
 <style>
 .card-custom {
@@ -83,7 +99,7 @@ div.dt-buttons .dt-button {
 	padding: 5px 10px;
 }
 
-/* ── Radio / Tab pill bar (matching DrawingMaster style) ── */
+/* ââ Radio / Tab pill bar (matching DrawingMaster style) ââ */
 .form-check-input[type="radio"] {
 	display: none;
 }
@@ -169,7 +185,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 
 <body>
 	<div id="wrapper">
-		<%@ include file="sidebar.jsp"%>
+		<%@ include file="useraccess_sidebar.jsp"%>
 
 		<div id="content-wrapper" class="d-flex flex-column">
 			<div id="content">
@@ -210,12 +226,12 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 						class="d-sm-flex align-items-center justify-content-between mb-4">
 						<h1 class="h3 mb-0 text-gray-800">SubCon / G2 User Assign</h1>
 						<ol class="breadcrumb">
-							<li class="breadcrumb-item"><a href="Dashboard.jsp">Home</a></li>
+							<li class="breadcrumb-item"><a href="useraccess_Dashboard.jsp">Home</a></li>
 							<li class="breadcrumb-item active">SubCon / G2 User Assign</li>
 						</ol>
 					</div>
 
-					<!-- ── Tab pill bar (DrawingMaster style: radio inputs + labels) ── -->
+		
 					<div class="container mt-5">
 
 						<div class="d-flex justify-content-center mb-4">
@@ -259,9 +275,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 						</div>
 					</div>
 
-					<!-- ══════════════════════════════════════════
-				     G2 User Assign Table
-				══════════════════════════════════════════ -->
+					
 					<div class="row mb-3" id="g2AssignSection" style="display: none;">
 						<div class="table-responsive p-3">
 							<div
@@ -287,9 +301,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 					</div>
 
 
-					<!-- ══════════════════════════════════════════
-				     MODAL: Create SubCon Assign
-				══════════════════════════════════════════ -->
+				
 					<div class="modal fade" id="subContractModal" tabindex="-1"
 						role="dialog">
 						<div class="modal-dialog" style="max-width: 800px;"
@@ -343,9 +355,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 						</div>
 					</div>
 
-					<!-- ══════════════════════════════════════════
-				     MODAL: Update SubCon Assign
-				══════════════════════════════════════════ -->
+				
 					<div class="modal fade" id="subContractModalUP" tabindex="-1"
 						role="dialog">
 						<div class="modal-dialog" style="max-width: 800px;"
@@ -392,9 +402,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 						</div>
 					</div>
 
-					<!-- ══════════════════════════════════════════
-				     MODAL: Confirm Update SubCon (DrawingMaster style)
-				══════════════════════════════════════════ -->
+				
 					<div class="modal fade" id="exampleModalCenterupdate" tabindex="-1"
 						role="dialog" aria-labelledby="exampleModalCenterTitle"
 						aria-hidden="true">
@@ -415,9 +423,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 						</div>
 					</div>
 
-					<!-- ══════════════════════════════════════════
-				     MODAL: Create G2 User Assign
-				══════════════════════════════════════════ -->
+				
 					<div class="modal fade" id="g2assignmodal" tabindex="-1"
 						role="dialog">
 						<div class="modal-dialog" style="max-width: 800px;"
@@ -481,9 +487,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 						</div>
 					</div>
 
-					<!-- ══════════════════════════════════════════
-				     MODAL: Confirm Create G2 (DrawingMaster style)
-				══════════════════════════════════════════ -->
+			
 					<div class="modal fade" id="confirmG2CreateModal" tabindex="-1"
 						role="dialog" aria-labelledby="confirmG2CreateTitle"
 						aria-hidden="true">
@@ -504,9 +508,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 						</div>
 					</div>
 
-					<!-- ══════════════════════════════════════════
-				     MODAL: Confirm Create SubCon (DrawingMaster style)
-				══════════════════════════════════════════ -->
+				
 					<div class="modal fade" id="confirmSubConCreateModal" tabindex="-1"
 						role="dialog" aria-labelledby="confirmSubConCreateTitle"
 						aria-hidden="true">
@@ -624,26 +626,23 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 	<!-- Scripts -->
 	<script src="vendor/datatables/jquery.dataTables.min.js"></script>
 	<script src="vendor/datatables/dataTables.bootstrap4.min.js"></script>
+<script
+		src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
 	<script
-		src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
+		src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
 	<script
-		src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+		src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
 	<script
-		src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
-	<script
-		src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
-	<script
-		src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
-	<script
-		src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
+		src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
 	<script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
 	<script src="vendor/jquery-easing/jquery.easing.min.js"></script>
-	<script src="js/ruang-admin.min.js"></script>
-	<script src="js/config.js"></script>
-	<script src="js/logout.js"></script>
-	<script src="js/username.js"></script>
 
-	<!-- ── Radio-based tab switching (DrawingMaster pattern) ── -->
+	<script src="js/config.js?v=<%=jsVersion%>"></script>
+	<script src="js/logout.js?v=<%=jsVersion%>"></script>
+	<script src="js/username.js?v=<%=jsVersion%>"></script>
+
+	
 	<script>
 		document.addEventListener("DOMContentLoaded", function() {
 
@@ -688,8 +687,12 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 	</script>
 
 	<!-- YOUR FILE LAST -->
-	<script src="js/subconassign.js?v=<%=ts%>"></script>
-	<script src="js/Sessionfilter.js"></script>
-	<script src="js/createdby.js"></script>
+	
+	
+	<script src="js/subconassign.js?v=<%=jsVersion%>"></script>
+	<script
+		src="externalLibrary/cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+	<script src="js/Sessionfilter.js?v=<%=jsVersion%>"></script>
+	<script src="js/createdby.js?v=<%=jsVersion%>"></script>
 </body>
 </html>

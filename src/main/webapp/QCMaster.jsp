@@ -4,9 +4,7 @@
     response.setHeader("Pragma", "no-cache"); // HTTP 1.0
     response.setDateHeader("Expires", 0); // Proxies
 %>
-<%
-long ts = System.currentTimeMillis();
-%>
+
 <!DOCTYPE html>
 <html lang="en">
 
@@ -22,8 +20,8 @@ long ts = System.currentTimeMillis();
   <link href="css/ruang-admin.min.css" rel="stylesheet">
   <link href="css/main.css" rel="stylesheet">
   <link href="css/masterpage.css" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"/>
-     <script src="js/sidebar.js"></script>
+  <link rel="stylesheet" href="externalLibrary/cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css" />
+     
 
 <style>
   .card-grid {
@@ -103,7 +101,7 @@ long ts = System.currentTimeMillis();
 
           <div class="px-0">
             <div class="card-grid">
-              <%-- Card Template --%>
+              
               <%
                 String[] titles = {"Fabricator ID/Name", "Welder ID/Name", "Revision", "Position", "Process"};
                 String[] ids = {"fabricatorCount", "welderCount", "revisionCount", "positionCount", "processCount"};
@@ -140,17 +138,17 @@ long ts = System.currentTimeMillis();
   </a>
 
   <!-- Scripts -->
-  <script src="js/config.js"></script>
+  <script src="js/config.js?v=<%=jsVersion%>"></script>
   <script src="vendor/jquery/jquery.min.js"></script>
       <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
       <script src="vendor/jquery-easing/jquery.easing.min.js"></script>
-      <script src="js/ruang-admin.min.js"></script>
-      <!-- Page level plugins -->
-  <script src="js/QCMaster.js?v=<%=ts%>"></script>
-  <script src="js/logout.js"></script>
-  <script src="js/username.js"></script>
-  <script src="js/permissions.js"></script>
-   <script src="js/Sessionfilter.js"></script>
+ 
+    
+  <script src="js/QCMaster.js?v=<%=jsVersion%>"></script>
+  <script src="js/logout.js?v=<%=jsVersion%>"></script>
+  <script src="js/username.js?v=<%=jsVersion%>"></script>
+  <script src="js/permissions.js?v=<%=jsVersion%>"></script>
+   <script src="js/Sessionfilter.js?v=<%=jsVersion%>"></script>
    
 <script>
 function openPage(title) {
@@ -160,7 +158,7 @@ function openPage(title) {
         "Welder ID/Name": "welder",
         "Revision": "revision",
         "Position": "position",
-        "Process": "process"   // ✅ lowercase
+        "Process": "process"   //  lowercase
     };
 
     const type = typeMap[title];

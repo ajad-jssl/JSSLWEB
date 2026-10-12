@@ -1,5 +1,8 @@
-<script src="js/sidebar.js"></script>
- <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+	
+	<%@ include file="version.jsp" %>
+	<script src="externalLibrary/code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="js/sidebar.js?v=<%=jsVersion%>"></script>
+ 
 <ul class="navbar-nav sidebar sidebar-light accordion" id="accordionSidebar">
     <a class="sidebar-brand d-flex align-items-center justify-content-center mb-3 mt-3" href="Dashboard.jsp" style="background-color: white;">
         <div class="sidebar-brand-icon">
@@ -19,41 +22,7 @@
 
     <hr class="sidebar-divider">
     </ul>
-<!--     <div class="sidebar-heading">Features</div>
- -->
-   <!--  <li class="nav-item" id="qs-package">
-        <a class="nav-link" href="VMSMaster.jsp">
-            <i class="fas fa-clipboard-check" style="color: #007bff;"></i>
-            <span>General Master</span>
-        </a>
-    </li> -->
-    
-<!--     <li class="nav-item" id="qs-package">
-        <a class="nav-link" href="VMSEntry.jsp">
-            <i class="fas fa-box-open" style="color: #007bff;"></i>
-            <span>VMS Entry</span>
-        </a>
-    </li>
 
-  <li class="nav-item" id="invoice-module">
-        <a class="nav-link" href="VMSOut.jsp">
-            <i class="far fa-file-alt" style="color: #007bff;"></i>
-            <span>VMS Out</span>
-        </a>
-    </li> -->
-    <!--  <li class="nav-item" id="invoice-module">
-        <a class="nav-link" href="GPMSSecurity.jsp">
-            <i class="far fa-file-alt" style="color: #007bff;"></i>
-            <span>GPMS Security</span>
-        </a>
-    </li>
-    <li class="nav-item" id="scrap-module">
-        <a class="nav-link" href="GPMSReport.jsp">
-            <i class="fas fa-recycle" style="color: #dc3545;"></i>
-            <span>GPMS Report</span>
-        </a>
-    </li> -->
-<!-- </ul> -->
 <script>
 if (!window.sidebarInitialized) {
   window.sidebarInitialized = true;
@@ -62,8 +31,7 @@ if (!window.sidebarInitialized) {
     const userId = sessionStorage.getItem("user_id");
     const moduleName = sessionStorage.getItem("selectedModule");
 
-    console.log("Sidebar: userId =", userId, ", moduleName =", moduleName);
-
+   
     if (!userId || !moduleName) {
       console.warn("Missing user_id or selectedModule in storage");
       renderNoAccess();
@@ -74,13 +42,13 @@ if (!window.sidebarInitialized) {
     url.searchParams.append("userId", userId);
     url.searchParams.append("moduleName", moduleName);
 
-    console.log("Sidebar: Fetching permissions from URL:", url.toString());
+  
 
     fetch(url, { credentials: "include" })
       .then(res => res.json())
       .then(data => {
 		let pages={};
-        console.log("Sidebar: API data received:", data);
+    
         if (!Array.isArray(data) || data.length === 0) {
           renderNoAccess();
           return;
@@ -91,10 +59,10 @@ if (!window.sidebarInitialized) {
               .filter(pageUrl => pageUrl.length > 0)
         )];
 
-        console.log("Sidebar: Unique pages:", uniquePages);
+     
         const filteredPages = uniquePages.filter(pageUrl => pageUrl.length > 0);
 
-        console.log("Unique pages after filter:", filteredPages);
+   
         renderSidebarLinks(data);
       })
       .catch(err => {
@@ -109,7 +77,7 @@ if (!window.sidebarInitialized) {
 	    return;
 	  }
 
-	  console.log("Rendering pages:", pages);
+	
 
 	  const sidebarUl = document.getElementById("accordionSidebar");
 	  if (!sidebarUl) return;

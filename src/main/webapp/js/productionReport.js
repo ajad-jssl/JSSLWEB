@@ -1,3 +1,7 @@
+
+
+
+
 let currentPage = 1;
 const rowsPerPage = 10;
 
@@ -28,6 +32,67 @@ function fmtTotal(val) {
   return n.toFixed(2);
 }
 
+
+const currentPage1 = window.location.pathname.split("/").pop() + '.jsp';
+const UserId = sessionStorage.getItem('username');
+let allowedActions = [];
+
+async function loadActions() {
+    try {
+        const response = await fetch(
+            `${baseUrl}/api/page/actions?userId=${encodeURIComponent(UserId)}&pageName=${encodeURIComponent(currentPage1)}`,
+            {
+                method: "GET",
+                credentials: "include",
+                headers: { "Content-Type": "application/json" }
+            }
+        );
+
+        if (!response.ok) throw new Error("Failed to fetch actions");
+
+        allowedActions = await response.json();
+
+    } catch (error) {
+        console.error("Error:", error);
+    }
+}
+
+document.addEventListener("DOMContentLoaded", async function () {
+    await loadActions();
+    if (!allowedActions.includes("view")) {
+        blockUI();
+        return;
+    }
+});
+
+// ✅ blockUI — same as VMS
+function blockUI() {
+  const container = document.getElementById("container-wrapper");
+  if (!container) return;
+
+  container.style.pointerEvents = "none";
+  container.style.userSelect = "none";
+  container.style.opacity = "0.5";
+  container.style.position = "relative";
+
+  const overlay = document.createElement("div");
+  overlay.id = "contentBlockOverlay";
+  overlay.style.cssText = `
+    position: absolute; top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.6); z-index: 999;
+    display: flex; justify-content: center;
+    align-items: center; color: white;
+    font-size: 22px; text-align: center;
+  `;
+  overlay.innerHTML = `
+    <div>
+      🚫 Access Denied <br>
+      <small>You don't have permission to view this page</small>
+    </div>
+  `;
+  container.appendChild(overlay);
+}
 /*
    VALIDATION
 */

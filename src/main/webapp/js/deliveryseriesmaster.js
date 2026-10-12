@@ -41,13 +41,13 @@ document.getElementById("#modalScroll").addEventListener("click", function () {
 	$('#addDeliveryModal').modal('show');
 });
 
-/*const selectedFactoryId = localStorage.getItem('selectedFactoryId');
+/*const selectedFactoryId = sessionStorage.getItem('selectedFactoryId');
 console.log('selectedFactoryId:', selectedFactoryId);
 */
 /*const baseUrl = 'http://localhost:8004';*/
 document.getElementById("DeliveryenddateAdd").setAttribute("min", new Date().toISOString().split('T')[0]);
 
-const selectedFactoryId = localStorage.getItem('selectedFactoryId');
+const selectedFactoryId = sessionStorage.getItem('selectedFactoryId');
 console.log('selectedFactoryId:', selectedFactoryId);
 
 document.addEventListener("DOMContentLoaded", function () {
@@ -58,7 +58,7 @@ if (selectedFactoryId) {
     fetchdelivery();
 	fetchAllDeliverySeries();
 } else {
-    console.error('No factory ID found in localStorage.');
+    console.error('No factory ID found in sessionStorage.');
 }
 
 

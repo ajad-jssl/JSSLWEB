@@ -65,7 +65,7 @@ async function populateDispatchModes() {
     });
 }
 
-const selectedFactoryId = localStorage.getItem('selectedFactoryId');
+const selectedFactoryId = sessionStorage.getItem('selectedFactoryId');
 const factory_Id        = selectedFactoryId;
 //const createdById       = sessionStorage.getItem('userId') || sessionStorage.getItem('createdById') || UserId;
 // ✅ Correct key
@@ -178,7 +178,7 @@ async function loadActions() {
 // ============================================================
 // FACTORY PREFIX MAP
 // Fill in your actual factory IDs (whatever gets stored in
-// localStorage 'selectedFactoryId') mapped to their GP prefix letter.
+// sessionStorage 'selectedFactoryId') mapped to their GP prefix letter.
 // ============================================================
 // ============================================================
 // FACTORY PREFIX MAP
@@ -262,11 +262,13 @@ document.addEventListener('DOMContentLoaded', async function () {
     await loadActions();
 	await loadUserList();   
 	await loadFactoryList();
+	await loadContractList(); 
+	loadRgpPrNoDropdown();
+	loadNgpRgpPrNoDropdown(); 
 
     // Run all independent dropdown fetches in parallel
     await Promise.allSettled([
-        populateGatepass(),
-        populateDeptname(),
+     
         populateUsers('requested1',    'department'),
         populateUsers('requestednon1', 'department6'),
         populateUsers('requested1up',  'department6up'),
@@ -299,23 +301,7 @@ document.addEventListener('DOMContentLoaded', async function () {
 // DROPDOWN POPULATION HELPERS
 // ============================================================
 
-async function populateGatepass() {
-    try {
-        const res  = await fetch(new URL('/api/gatepass/all', baseUrl1), { credentials: 'include' });
-        const data = await res.json();
-        ['gatepass', 'gatepassno'].forEach(id => {
-            const el = document.getElementById(id);
-            if (!el) return;
-            el.innerHTML = '<option value="">Select</option>';
-            data.forEach(gp => {
-                const o = document.createElement('option');
-                o.value = gp.gpid;
-                o.textContent = gp.gp_no;
-                el.appendChild(o);
-            });
-        });
-    } catch (e) { console.error('populateGatepass error:', e); }
-}
+
 
 async function populateDeptname() {
     try {
@@ -333,40 +319,6 @@ async function populateDeptname() {
     } catch (e) { console.error('populateDeptname error:', e); }
 }
 
-/*async function populateUsers(selectId, departmentInputId) {
-    try {
-        const res  = await fetch(new URL('/jssl/user/listuser', baseUrl1), { credentials: 'include' });
-        const data = await res.json();
-        const sel  = document.getElementById(selectId);
-        const dep  = document.getElementById(departmentInputId);
-        if (!sel) return;
-
-        if (data && Array.isArray(data.Data)) {
-            sel.innerHTML = '<option value="">Select employee</option>';
-            data.Data.forEach(user => {
-                const o = document.createElement('option');
-                o.value = user.id;
-                o.textContent = user.username;
-                sel.appendChild(o);
-            });
-            if (window.jQuery && $.fn.select2) {
-                $(`#${selectId}`).select2({ placeholder: 'Select an employee', allowClear: true });
-            }
-        }
-
-        if (dep) {
-            sel.addEventListener('change', async function () {
-                const uid = this.value;
-                if (!uid) { dep.value = ''; return; }
-                try {
-                    const r = await fetch(new URL(`/jssl/user/search?id=${uid}`, baseUrl1), { credentials: 'include' });
-                    const u = await r.json();
-                    dep.value = (u && u.Data && u.Data.dept1) ? u.Data.dept1 : '';
-                } catch (err) { dep.value = ''; }
-            });
-        }
-    } catch (e) { console.error(`populateUsers(${selectId}) error:`, e); }
-}*/
 
 
 async function populateUsers(selectId, departmentInputId) {
@@ -391,13 +343,13 @@ async function populateUsers(selectId, departmentInputId) {
         // while what actually gets submitted on save is the dept_id
         // (read again from userMapCache at submit time — see clientaddevent /
         // addngpevent). This change only fixes what's *displayed* here.
-        sel.addEventListener('change', function () {
-            const uid = this.value;
-            if (!uid) { dep.value = ''; return; }
-            const userInfo = userMapCache[String(uid)];
-            const deptId   = userInfo ? userInfo.department : '';
-            dep.value = getDepartmentName(deptId);
-        });
+		sel.addEventListener('change', function () {
+		    const uid = this.value;
+		    if (!uid) { dep.value = ''; return; }
+		    const userInfo = userMapCache[String(uid)];
+		    const deptId   = userInfo ? userInfo.department : '';
+		    dep.value = getDepartmentName(deptId);  // already correct
+		});
     }
 }
 
@@ -570,8 +522,8 @@ async function getitemdetails(rowNumber) {
 
 function _buildRowHtml(rowCount, deleteFunc, tableId) {
     const trashBtn = ['TableID', 'updateTableID', 'TableIDnon', 'TableID1non'].includes(tableId)
-        ? `<td class="text-center"><i class="bi bi-trash text-danger" style="cursor:pointer;font-size:16px;" onclick="${deleteFunc}(this)" title="Delete"></i></td>`
-        : `<td><button type="button" class="btn btn-sm btn-danger" onclick="${deleteFunc}(this)">Delete</button></td>`;
+        ? `<td class="text-center updatedelted"><i class="bi bi-trash text-danger" style="cursor:pointer;font-size:16px;" onclick="${deleteFunc}(this)" title="Delete"></i></td>`
+        : `<td><button type="button" class="btn btn-sm btn-danger updatedelted" onclick="${deleteFunc}(this)">Delete</button></td>`;
 
     return `
         <tr>
@@ -641,7 +593,7 @@ function deleteRow3(button, index) {
 
 function deleteRownon1Btn(button) { _deleteRow(button, '#TableID1non tbody'); }
 
-function deleteRownon1(button, index) {
+/*function deleteRownon1(button, index) {
     const gpdid    = button.closest('tr').querySelector('input[type="hidden"]')?.value;
     const rowIndex = rowsToDelete.indexOf(gpdid);
     if (rowIndex === -1) {
@@ -651,7 +603,7 @@ function deleteRownon1(button, index) {
         rowsToDelete.splice(rowIndex, 1);
     }
     _adjustSlNos('#TableID1non tbody');
-}
+}*/
 
 // ============================================================
 // ROW VALIDATION HELPER
@@ -675,11 +627,7 @@ function _validateRows(selector) {
         const price    = rows[i].querySelector(`#price${n}`)?.value?.trim();
         const unit     = rows[i].querySelector(`#unit${n}`)?.value?.trim();
         const itmRem   = rows[i].querySelector(`#remarks${n}`)?.value?.trim();
-
-        if (!itemId || !qty || qty <= 0 || !unit || !price || !itmRem) {
-            showPopup('Please fill Item, Quantity, Unit, Price and Remarks for all line items!');
-            return null;
-        }
+        
         items.push({ item: itemId, qty, itmPrice: price, itmRemarks: itmRem, unit });   // ← item ID stored, not display text
     }
     return items;
@@ -693,6 +641,8 @@ function validateclienFields() {
     let isValid = true;
     $('.error-message').hide();
     const dispatch    = $('#dispatch').val();
+	const transportname    = $('#transportname').val();
+	const vehicleno    = $('#vehicleno').val();
     const requestdby  = $('#requested1').val();
     const returndate  = $('#returndatee').val();
     const sentType    = $('#selectvendor').val();
@@ -701,6 +651,8 @@ function validateclienFields() {
     const fordispatch = $('#fordispatch').val();
 
     if (!dispatch)    { $('#dispatchError').show();    isValid = false; }
+	if (!transportname) { $('#transportnameError').show();    isValid = false; }
+	if (!vehicleno)    { $('#vehiclenoError').show();    isValid = false; }
     if (!requestdby)  { $('#requested1Error').show();  isValid = false; }
     if (!returndate)  { $('#returndateeError').show();  isValid = false; }
     if (!sentType)    { $('#selectvendorError').show(); isValid = false; }
@@ -713,36 +665,40 @@ function validateclienFields() {
 function clientaddevent() {
     if (!validateclienFields()) return;
 
-    const items = _validateRows('#TableID');
-    if (!items) return;
-
     const rows = document.querySelectorAll('#TableID tbody tr');
+    if (rows.length === 0) { alert('Please add at least one line item.'); return; }
 
-    // dept saved to DB must be the dept_id, not the display name.
-    // #department holds whatever populateUsers wrote into it (currently the
-    // department NAME for display) — so resolve the id straight from the
-    // selected employee via userMapCache instead of trusting that field's value.
     const selectedRequestedBy = $('#requested1').val();
     const requestedByDeptId   = (userMapCache[String(selectedRequestedBy)] || {}).department || '';
+
+    // ── NEW: capture PR_No from the RGP dropdown ──
+    //const selectedPrNo = $('#regpr option:selected').text().trim();
 
     generateGpNo(function (gpNo) {
         const now = getIndianDateTimeFormat(new Date());
         const requestData = {
             gp_no: gpNo, gp_type: 1,
-            requestedby:     parseInt($('#requested1').val(), 10),
-            dept:            requestedByDeptId,
-            sent_type:       $('#selectvendor').val(),
-            sentToClient:    $('#tovendor').val(),
-            sentToemployee:  $('#employee').val(),
-            sentThrough:     $('#dispatch').val(),
-            returnDate:      $('#returndatee').val(),
-            note:            $('#fordispatch').val(),
-            remarks:         $('#remarks5').val(),
-            encl:            $('#Enclosure3').val(),
-			createdby:       parseInt(createdById, 10),
-            createddate:     now,
-            project:         $('#contractno').val(),
-            factory_id:      selectedFactoryId
+            requestedby:      parseInt($('#requested1').val(), 10),
+            dept:             requestedByDeptId,
+            sent_type:        $('#selectvendor').val(),
+            sentToClient:     $('#tovendor').val(),
+            sentToemployee:   $('#employee').val(),
+            employeeLocation: $('#empaddress').val()      || null,
+            employeeAddress:  $('#employeeaddress').val() || null,
+            sentThrough:      $('#dispatch').val(),
+            returnDate:       $('#returndatee').val(),
+            note:             $('#fordispatch').val(),
+            remarks:          $('#remarks5').val(),
+            encl:             $('#Enclosure3').val(),
+            createdby:        parseInt(createdById, 10),
+            createddate:      now,
+            project:          $('#contractno').val(),
+            factory_id:       selectedFactoryId,
+			transportName:    $('#transportname').val(),   
+			vehicleNo:        $('#vehicleno').val(),        
+            // ── NEW fields ──
+            request_Id:       $("#regpr").val() || null,
+			itemRequestIds: itemrequest_id
         };
 
         $.ajax({
@@ -753,26 +709,24 @@ function clientaddevent() {
                 if (response.status !== 'Success') { alert('GP header insertion failed.'); return; }
                 let done = 0;
                 rows.forEach((row, i) => {
-                    const n = i + 1;
-					const itemSelect = row.querySelector(`#itemno${n}`);
-					const itemId = itemSelect.value; // ITEM ID — stored in DB
+                    const n      = i + 1;
+                    const itemId = row.getAttribute('data-item-id');
 
-					const itemData = {
-					    gp_no: gpNo,
-					    item:       itemId,  // ← item ID, not display text
-					    unit:       row.querySelector(`#unit${n}`).value,
-					    itmPrice:   row.querySelector(`#price${n}`).value,
-					    itmRemarks: row.querySelector(`#remarks${n}`).value,
-					    qty:        row.querySelector(`#quantity${n}`).value,
-					    created_by: parseInt(createdById, 10), created_date: now, factory_id: selectedFactoryId
-					};
+                    const itemData = {
+                        gp_no: gpNo,
+                        item:       itemId,
+						itemRequestId: itemrequest_id[i],
+                        unit:       row.querySelector(`#unit${n}`).value,
+                        itmPrice:   row.querySelector(`#price${n}`).value,
+                        itmRemarks: row.querySelector(`#remarks${n}`).value,
+                        qty:        row.querySelector(`#quantity${n}`).value,
+                        created_by: parseInt(createdById, 10), created_date: now, factory_id: selectedFactoryId
+                    };
                     $.ajax({
                         url: new URL('/api/returnableitems', baseUrl1),
                         type: 'POST', xhrFields: { withCredentials: true },
                         contentType: 'application/json', data: JSON.stringify(itemData), dataType: 'json',
-                        success: function () { if (++done === rows.length) 
-							 showPopup('Inserted Successfully!', 'Returnable.jsp');
-						 },
+                        success: function () { if (++done === rows.length) showPopup('Inserted Successfully!', 'Returnable.jsp'); },
                         error: function () { alert('Error inserting line items.'); }
                     });
                 });
@@ -791,21 +745,34 @@ function validatengpFields() {
     $('.error-message').hide();
     const requestdby  = $('#requestednon1').val();
     const dispatch    = $('#despatchmode').val();
+	const transportname    = $('#ngptransportname').val();
+	const vehicleno    = $('#ngpvehicleno').val();
+    const sentType    = $('#selectvendornon').val();
     const tovendor    = $('#vendor').val();
+    const employee    = $('#employeenon').val();
     const fordispatch = $('#fordispatch1').val();
 
-    if (!dispatch)    { $('#despatchmodeError').show();  isValid = false; }
-    if (!requestdby)  { $('#requested1Error').show();    isValid = false; }
-    if (!tovendor)    { $('#vendorError').show();         isValid = false; }
-    if (!fordispatch) { $('#fordispatch1Error').show();   isValid = false; }
+    if (!dispatch)    { $('#despatchmodeError').show();     isValid = false; }
+	if (!transportname)    { $('#ngptransportnameError').show();     isValid = false; }
+	if (!vehicleno)    { $('#ngpvehiclenoError').show();     isValid = false; }
+    if (!requestdby)  { $('#requested1Error').show();       isValid = false; }
+    if (!sentType)    { $('#selectvendornonError').show();  isValid = false; }
+    else if (sentType === '1' && !tovendor)   { $('#vendorError').show();       isValid = false; }
+    else if (sentType === '2' && !employee)   { $('#employeenonError').show();  isValid = false; }
+    if (!fordispatch) { $('#fordispatch1Error').show();     isValid = false; }
     return isValid;
 }
 
-function addngpevent() {
-    const items = _validateRows('#TableIDnon');
-    if (!items) return;
 
-    // dept saved to DB must be the dept_id (resolve via userMapCache, same as clientaddevent).
+
+
+
+
+function addngpevent() {
+    // Validate rows exist (same guard as before)
+    const rows = document.querySelectorAll('#TableIDnon tbody tr');
+    if (rows.length === 0) { alert('Please add at least one line item.'); return; }
+
     const selectedRequestedBy = $('#requestednon1').val();
     const requestedByDeptId   = (userMapCache[String(selectedRequestedBy)] || {}).department || '';
 
@@ -815,7 +782,11 @@ function addngpevent() {
             gp_no: NgpNo, gp_type: 2,
             requestedby: $('#requestednon1').val(),
             dept:        requestedByDeptId,
-            sentToClient: $('#vendor').val(),
+            sent_type:        $('#selectvendornon').val(),
+            sentToClient:     $('#vendor').val(),
+            sentToemployee:   $('#employeenon').val(),
+            employeeLocation: $('#empaddressnon').val()       || null,
+            employeeAddress:  $('#employeeaddressnon').val()  || null,
             sentThrough:  $('#despatchmode').val(),
             note:         $('#fordispatch1').val(),
             remarks:      $('#remarks6').val(),
@@ -823,7 +794,14 @@ function addngpevent() {
             createdby:    createdById,
             createddate:  now,
             project:      $('#contract6').val(),
-            factory_id:   selectedFactoryId
+            factory_id:   selectedFactoryId,
+			transportName: $('#ngptransportname').val(),   
+			vehicleNo:     $('#ngpvehicleno').val(),  
+			itemRequestIds: itemrnreqeust_id , 
+            request_Id:   $("#regprnon").val() || null,
+			
+			
+			
         };
 
         $.ajax({
@@ -833,22 +811,30 @@ function addngpevent() {
             success: function (response) {
                 if (response.status !== 'Success') { alert('Header not inserted. Please try again.'); return; }
                 let done = 0;
-                items.forEach(itemData => {
-                    const finalItemData = {
-                        gp_no: NgpNo, item: itemData.item, qty: itemData.qty,
-                        itmPrice: itemData.itmPrice, itmRemarks: itemData.itmRemarks,
-                        created_by: createdById, created_date: now, factory_id: selectedFactoryId
+                rows.forEach((row, i) => {
+                    const n      = i + 1;
+                    const itemId = row.getAttribute('data-item-id');
+
+                    const itemData = {
+                        gp_no: NgpNo,
+                        item:       itemId,
+						itemRequestId: itemrnreqeust_id[i],
+                        unit:       row.querySelector(`#unit${n}`).value,
+                        itmPrice:   row.querySelector(`#price${n}`).value,
+                        itmRemarks: row.querySelector(`#remarks${n}`).value,
+                        qty:        row.querySelector(`#quantity${n}`).value,
+                        created_by: parseInt(createdById, 10), created_date: now, factory_id: selectedFactoryId
                     };
                     $.ajax({
                         url: new URL('/api/returnableitems', baseUrl1),
                         type: 'POST', xhrFields: { withCredentials: true },
-                        contentType: 'application/json', data: JSON.stringify(finalItemData), dataType: 'json',
-                        success: function () { if (++done === items.length) showPopup('Inserted Successfully!', 'NonReturnable.jsp'); },
-                        error: function (xhr, status, error) { alert('Error inserting line items: ' + error); }
+                        contentType: 'application/json', data: JSON.stringify(itemData), dataType: 'json',
+                        success: function () { if (++done === rows.length) showPopup('Inserted Successfully!', 'NonReturnable.jsp'); },
+                        error: function () { alert('Error inserting line items.'); }
                     });
                 });
             },
-            error: function (xhr, status, error) { alert('Error inserting header: ' + error); }
+            error: function () { alert('Error inserting header: '); }
         });
     });
 }
@@ -952,6 +938,7 @@ async function fetchReturnables() {
 
         let tableRows = '';
         returnables.forEach((item, index) => {
+			if (item.cancelstatus == 1) return;   // ← skip cancelled GPs entirely
             const requestedByName = userMap[String(item.requestedby).trim()]?.username || item.requestedby;
             let sentToDisplay = '';
             if (item.sentToemployee && item.sentToemployee !== 0)
@@ -1005,32 +992,69 @@ async function fetchReturnables() {
 // CANCEL RETURNABLE
 // ============================================================
 
-async function cancelReturnable(gpid, gp_no) {
+/*async function cancelReturnable(gpid, gp_no) {
     if (!allowedActions.includes('Cancel')) { alert('You do not have permission to Cancel.'); return; }
-
     try {
         await loadUserList();
-        const [gpData, itemsData, itemsList] = await Promise.all([
-            fetch(new URL(`/api/returnable/${gpid}`, baseUrl1), { credentials: 'include' }).then(r => r.json()),
+        const locMap = await loadFactoryLocationMap();
+
+        // Fetch gpData FIRST — we need its Request_Id before calling the rgp endpoint
+        const gpData = await fetch(new URL(`/api/returnable/${gpid}`, baseUrl1), { credentials: 'include' }).then(r => r.json());
+
+        const requestId = gpData.Request_Id ?? gpData.request_Id ?? gpData.requestId ?? null;
+
+        const [rgpData, itemsData, itemsList, clients] = await Promise.all([
+            requestId
+                ? fetch(new URL(`/api/rgp/edit/${requestId}`, baseUrl), { credentials: 'include' }).then(r => r.json())
+                : Promise.resolve(null),
             fetch(new URL(`/jssl/contracts/jims/gpnoitemdetails?gp_no=${gp_no}`, baseUrl1), { credentials: 'include' }).then(r => r.json()),
-            fetch(new URL('/api/items/all', baseUrl1), { credentials: 'include' }).then(r => r.json())
+            fetch(new URL('/api/items/all', baseUrl1), { credentials: 'include' }).then(r => r.json()),
+            fetch(new URL('/api/clients', baseUrl1), { credentials: 'include' }).then(r => r.json())
         ]);
+
+        const clientMap = {};
+        clients.forEach(c => { clientMap[String(c.cid).trim()] = `${c.client_number}-${c.name}`; });
 
         const reqName = userMapCache[String(gpData.requestedby).trim()]?.username || gpData.requestedby;
         $('#requestedby1').val(reqName || '');
-        $('#department5').val(getDepartmentName(gpData.dept)); // display NAME; gpData.dept itself stays the id
-        //$('#despatch').val(gpData.sentThrough || '');
-		$('#despatch').val(getShipmentModeName(gpData.sentThrough) || '');
-        $('#vendor').val(gpData.sentToClient || '');
+        $('#department5').val(getDepartmentName(gpData.dept));
+        $('#despatch').val(getShipmentModeName(gpData.sentThrough) || '');
+		$('#transportnamecl').val(gpData.transportName || '');
+		$('#vehiclenocl').val(gpData.vehicleNo || '');
+
+        // ── Sent To Vendor/Employee — show NAME instead of raw id ──
+        let sentToDisplay = '';
+        if (gpData.sentToemployee && gpData.sentToemployee !== 0 && gpData.sentToemployee !== '') {
+            sentToDisplay = userMapCache[String(gpData.sentToemployee).trim()]?.username || gpData.sentToemployee;
+        } else if (gpData.sentToClient && gpData.sentToClient !== 0 && gpData.sentToClient !== '') {
+            sentToDisplay = clientMap[String(gpData.sentToClient).trim()] || gpData.sentToClient;
+        }
+        $('#vendor').val(sentToDisplay);
+
         $('#date').val(formatDate(gpData.createddate));
         $('#expected').val(formatDate(gpData.returnDate));
         $('#reason').val(gpData.note || '');
         $('#remark').val(gpData.remarks || '');
         $('#enclosure').val(gpData.encl || '');
+
+        // ── Employee Location / Address — now sourced from rgpData ──
+        const header = Array.isArray(rgpData) ? rgpData[0] : rgpData;
+        if (header) {
+            const locId = header.Employee_Sender_Location;
+            const locName = (locId === 'OTHER')
+                ? 'Others'
+                : (locMap[String(locId)] || locId || '');
+            $('#empaddress1').val(locName);
+            $('#employeeaddress1').val(header.Employee_Address || '');
+        } else {
+            $('#empaddress1').val('');
+            $('#employeeaddress1').val('');
+        }
+
         selectedgid = gpid;
 
         let itemRows = '';
-		const unitMap = {};
+        const unitMap = {};
         itemsList.forEach(u => {
             if (u.uid)  unitMap[String(u.uid).trim()]            = u.unit;
             if (u.unit) unitMap[u.unit.trim().toUpperCase()]      = u.unit;
@@ -1053,9 +1077,107 @@ async function cancelReturnable(gpid, gp_no) {
         $('#exampleModalScrollable125').modal('show');
 
     } catch (e) { console.error('cancelReturnable error:', e); }
+}*/
+
+
+async function cancelReturnable(gpid, gp_no) {
+    if (!allowedActions.includes('Cancel')) { alert('You do not have permission to Cancel.'); return; }
+    try {
+        await loadUserList();
+        const locMap = await loadFactoryLocationMap();
+
+        const gpData = await fetch(new URL(`/api/returnable/${gpid}`, baseUrl1), { credentials: 'include' }).then(r => r.json());
+
+        const requestId = gpData.Request_Id ?? gpData.request_Id ?? gpData.requestId ?? null;
+
+        const [rgpData, itemsData, itemsList, clients] = await Promise.all([
+            requestId
+                ? fetch(new URL(`/api/rgp/edit/${requestId}`, baseUrl), { credentials: 'include' }).then(r => r.json())
+                : Promise.resolve(null),
+            fetch(new URL(`/jssl/contracts/jims/gpnoitemdetails?gp_no=${gp_no}`, baseUrl1), { credentials: 'include' }).then(r => r.json()),
+            fetch(new URL('/api/items/all', baseUrl1), { credentials: 'include' }).then(r => r.json()),
+            fetch(new URL('/api/clients', baseUrl1), { credentials: 'include' }).then(r => r.json())
+        ]);
+
+        const clientMap = {};
+        clients.forEach(c => { clientMap[String(c.cid).trim()] = `${c.client_number}-${c.name}`; });
+
+        const reqName = userMapCache[String(gpData.requestedby).trim()]?.username || gpData.requestedby;
+        $('#requestedby1').val(reqName || '');
+        $('#department5').val(getDepartmentName(gpData.dept));
+        $('#despatch').val(getShipmentModeName(gpData.sentThrough) || '');
+        $('#transportnamecl').val(gpData.transportName || '');
+        $('#vehiclenocl').val(gpData.vehicleNo || '');
+
+        // ── Sent To Vendor/Employee — show NAME instead of raw id ──
+        let sentToDisplay = '';
+        const isVendorGp = !!(gpData.sentToClient && gpData.sentToClient !== 0 && gpData.sentToClient !== '');
+
+        if (gpData.sentToemployee && gpData.sentToemployee !== 0 && gpData.sentToemployee !== '') {
+            sentToDisplay = userMapCache[String(gpData.sentToemployee).trim()]?.username || gpData.sentToemployee;
+        } else if (isVendorGp) {
+            sentToDisplay = clientMap[String(gpData.sentToClient).trim()] || gpData.sentToClient;
+        }
+        $('#vendor').val(sentToDisplay);
+
+        $('#date').val(formatDate(gpData.createddate));
+        $('#expected').val(formatDate(gpData.returnDate));
+        $('#reason').val(gpData.note || '');
+        $('#remark').val(gpData.remarks || '');
+        $('#enclosure').val(gpData.encl || '');
+
+        const header = Array.isArray(rgpData) ? rgpData[0] : rgpData;
+        if (header) {
+            const locId = header.Employee_Sender_Location;
+            const locName = (locId === 'OTHER')
+                ? 'Others'
+                : (locMap[String(locId)] || locId || '');
+            $('#empaddress1').val(locName);
+            $('#employeeaddress1').val(header.Employee_Address || '');
+        } else {
+            $('#empaddress1').val('');
+            $('#employeeaddress1').val('');
+        }
+
+        selectedgid = gpid;
+
+        // ── NEW: keep this cancel run's context available to canceladd() ──
+        window.cancelIsVendorGp        = isVendorGp;
+        window.cancelItemRequestIds    = [];
+
+        let itemRows = '';
+        const unitMap = {};
+        itemsList.forEach(u => {
+            if (u.uid)  unitMap[String(u.uid).trim()]            = u.unit;
+            if (u.unit) unitMap[u.unit.trim().toUpperCase()]      = u.unit;
+        });
+        itemsData.forEach((item, i) => {
+            const rawUm    = item.UM ?? item.um ?? '';
+            const unitName = unitMap[String(rawUm).trim().toUpperCase()] || unitMap[String(rawUm).trim()] || (rawUm && String(rawUm) !== '0' ? rawUm : '');
+
+            // ── NEW: collect itemrequestId for the vendor-branch cancel update ──
+            if (item.itemrequestId !== undefined && item.itemrequestId !== null && item.itemrequestId !== '') {
+                window.cancelItemRequestIds.push(parseInt(item.itemrequestId, 10));
+            }
+
+            itemRows += `<tr data-item-request-id="${item.itemrequestId || ''}">
+                <td>${i+1}</td>
+                <td><select class="form-control form-control-sm" disabled><option value="${item.itemId}" selected>${item.ItemNo}</option></select></td>
+                <td><input type="text" class="form-control form-control-sm" value="${unitName}" readonly></td>
+                <td><input type="text" class="form-control form-control-sm" value="${item.itmDescription1 || ''}" readonly></td>
+                <td><input type="text" class="form-control form-control-sm" value="${item.itmDescription2 || ''}" readonly></td>
+                <td><input type="text" class="form-control form-control-sm" value="${item.qty || ''}" readonly></td>
+                <td><input type="text" class="form-control form-control-sm" value="${item.itmPrice || ''}" readonly></td>
+                <td><input type="text" class="form-control form-control-sm" value="${item.itmRemarks || ''}" readonly></td>
+            </tr>`;
+        });
+        $('#Table2 tbody').html(itemRows);
+        $('#exampleModalScrollable125').modal('show');
+
+    } catch (e) { console.error('cancelReturnable error:', e); }
 }
 
-function canceladd(gpid) {
+/*function canceladd(gpid) {
     const returnableremarks = $('#cancelremarks').val().trim();
     if (!returnableremarks) { alert('Please enter remarks.'); return; }
 
@@ -1079,8 +1201,90 @@ function canceladd(gpid) {
         }
     })
     .catch(e => { console.error('canceladd error:', e); alert('An error occurred. Please try again later.'); });
+}*/
+
+
+function canceladd(gpid) {
+    const returnableremarks = $('#cancelremarks').val().trim();
+    if (!returnableremarks) { alert('Please enter remarks.'); return; }
+
+    const data = {
+        cancelreason: returnableremarks,
+        updatedBy: createdById,
+        updatedDate: getIndianDateTimeFormat(new Date()),
+        itemRequestIds: window.cancelIsVendorGp ? (window.cancelItemRequestIds || []) : []
+    };
+
+    fetch(`${baseUrl1}/api/returnable/cancelgatepass/${gpid}`, {
+        method: 'PUT', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    })
+    .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
+    .then(data => {
+        if (data.status === 'Success') {
+            showPopup('Cancelled Successfully!', 'Returnable.jsp');
+            updatestorerecieveqtyintable();
+        } else {
+            alert('Not updated. Please try again.');
+        }
+    })
+    .catch(e => { console.error('canceladd error:', e); alert('An error occurred. Please try again later.'); });
 }
 
+/*function canceladdngp(gpid) {
+    const returnableremarks = $('#cancelremarks').val().trim();
+    if (!returnableremarks) { alert('Please enter remarks.'); return; }
+
+    const data = {
+        cancelreason: returnableremarks, cancelstatus: 1,
+        updatedBy: createdById, updatedDate: getIndianDateTimeFormat(new Date())
+    };
+
+    fetch(`${baseUrl1}/api/returnable/${gpid}`, {
+        method: 'PUT', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    })
+    .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
+    .then(data => {
+        if (data.status === 'Success') {
+            showPopup('Cancelled Successfully!', 'NonReturnable.jsp');
+            updatestorerecieveqtyintable();
+        } else {
+            alert('Not updated. Please try again.');
+        }
+    })
+    .catch(e => { console.error('canceladd error:', e); alert('An error occurred. Please try again later.'); });
+}*/
+
+function canceladdngp(gpid) {
+    const returnableremarks = $('#cancelremarks').val().trim();
+    if (!returnableremarks) { alert('Please enter remarks.'); return; }
+
+    const data = {
+        cancelreason: returnableremarks,
+        updatedBy: createdById,
+        updatedDate: getIndianDateTimeFormat(new Date()),
+        itemRequestIds: window.cancelIsVendorGp ? (window.cancelItemRequestIds || []) : []
+    };
+
+    fetch(`${baseUrl1}/api/returnable/cancelgatepass/${gpid}`, {
+        method: 'PUT', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    })
+    .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
+    .then(data => {
+        if (data.status === 'Success') {
+            showPopup('Cancelled Successfully!', 'NonReturnable.jsp');
+            updatestorerecieveqtyintable();
+        } else {
+            alert('Not updated. Please try again.');
+        }
+    })
+    .catch(e => { console.error('canceladdngp error:', e); alert('An error occurred. Please try again later.'); });
+}
 // ============================================================
 // EDIT RETURNABLE
 // ============================================================
@@ -1089,47 +1293,64 @@ async function editReturnable(gpid, gp_no) {
     if (!allowedActions.includes('Edit')) { alert('You do not have permission to edit.'); return; }
 
     try {
+		
+		
+		$(".updatedelted").hide();
         await loadUserList();
+        await loadShipmentDelivery();
+        const locMap = await loadFactoryLocationMap();
 
-        const [gpData, itemsData, itemsList, unitsList, clients] = await Promise.all([
-            fetch(new URL(`/api/returnable/${gpid}`, baseUrl1), { credentials: 'include' }).then(r => r.json()),
+        // Fetch gpData FIRST — we need its Request_Id before calling the rgp endpoint
+        const gpData = await fetch(new URL(`/api/returnable/${gpid}`, baseUrl1), { credentials: 'include' }).then(r => r.json());
+        console.log('DEBUG gpData:', gpData);
+        console.log('DEBUG gpData.Request_Id:', gpData.Request_Id, 'gpData.request_Id:', gpData.request_Id);
+
+        // Try both casings defensively until we confirm which one the API actually returns
+        const requestId = gpData.Request_Id ?? gpData.request_Id ?? gpData.requestId ?? null;
+        console.log('DEBUG resolved requestId:', requestId);
+
+        const [rgpData, itemsData, itemsList, unitsList, clients] = await Promise.all([
+            requestId
+                ? fetch(new URL(`/api/rgp/edit/${requestId}`, baseUrl), { credentials: 'include' }).then(r => r.json())
+                : Promise.resolve(null),
             fetch(new URL(`/jssl/contracts/jims/gpnoitemdetails?gp_no=${gp_no}`, baseUrl1), { credentials: 'include' }).then(r => r.json()),
             fetch(new URL('/api/items', baseUrl1), { credentials: 'include' }).then(r => r.json()),
             fetch(new URL('/api/items/all', baseUrl1), { credentials: 'include' }).then(r => r.json()),
             fetch(new URL('/api/clients', baseUrl1), { credentials: 'include' }).then(r => r.json())
         ]);
 
-        // sentToClient / sentToemployee: keep the RAW id as the source of
-        // truth for save (originalReturnableData + module-level tracking
-        // vars below). #tovendorup / #employeeup only ever show a value for
-        // DISPLAY — never read back from those fields on save.
-        const rawSentToClient   = String(gpData.sentToClient || '').trim();
-        const rawSentToEmployee = String(gpData.sentToemployee || '').trim();
+        console.log('DEBUG rgpData:', rgpData);
 
         originalReturnableData = {
             requestedby: String(gpData.requestedby || '').trim(),
             dept: String(gpData.dept || '').trim(),
-            sentToClient: rawSentToClient,
-            sentToemployee: rawSentToEmployee,
-            sent_type: String(gpData.sent_type || '').trim(),
+            sentToClient: String(gpData.sentToClient || '').trim(),
             sentThrough: String(gpData.sentThrough || '').trim(),
+			transport_name: String(gpData.transportName || '').trim(),   
+			vehicle_no: String(gpData.vehicleNo || '').trim(),   
             returnDate: String(gpData.returnDate || '').trim(),
             contract: String(gpData.project || '').trim(),
             note: String(gpData.note || '').trim(),
             remarks: String(gpData.remarks || '').trim(),
             encl: String(gpData.encl || '').trim()
         };
-        // Raw ids also tracked on module-level vars so updateaddevent() can
-        // fall back to them if the user doesn't touch the vendor/employee
-        // selector at all during this edit.
-        selectedReturnableSentToClient   = rawSentToClient;
-        selectedReturnableSentToEmployee = rawSentToEmployee;
 
-        $('#requested1up').val(gpData.requestedby);
-        $('#selectvendorup').val(gpData.sent_type);
-        $('#dispatchup').val(gpData.sentThrough);
+        const clientMap = {};
+        clients.forEach(c => { clientMap[String(c.cid).trim()] = `${c.client_number}-${c.name}`; });
+
+        const requestedByName = userMapCache[String(gpData.requestedby).trim()]?.username || gpData.requestedby;
+        $('#requested1up').val(requestedByName);
+        if (!$('#requested1upId').length) {
+            $('#requested1up').after('<input type="hidden" id="requested1upId">');
+        }
+        $('#requested1upId').val(gpData.requestedby);
+
+        $('#departmentup').val(getDepartmentName(gpData.dept));
+        $('#dispatchup').val(getShipmentModeName(gpData.sentThrough));
         $('#returndateup').val(gpData.returnDate);
         $('#contractnoup').val(gpData.project);
+		$('#transportnameup').val(gpData.transportName || '');
+		$('#vehiclenoup').val(gpData.vehicleNo || '');
         $('#fordispatchup').val(gpData.note);
         $('#remarks5up').val(gpData.remarks);
         $('#Enclosure3up').val(gpData.encl);
@@ -1137,62 +1358,81 @@ async function editReturnable(gpid, gp_no) {
         returnrowsToUpdate = [];
         returnrowsToDelete = [];
 
-        const userMap = userMapCache; // id -> { username, department }
-        const clientMap = {};
-        clients.forEach(c => { clientMap[String(c.cid).trim()] = `${c.client_number}-${c.name}`; });
+        const sentToEmp    = gpData.sentToemployee;
+        const sentToClient = gpData.sentToClient;
+        selectedReturnableSentToClient   = '';
+        selectedReturnableSentToEmployee = '';
 
-        // Department NAME for display — gpData.dept holds the dept_id;
-        // resolve through the shared deptMapCache (from /api/websmartuser/getAll).
-        $('#departmentup').val(getDepartmentName(gpData.dept));
-
-        // #tovendorup / #employeeup are DISPLAY ONLY (readonly fields in the
-        // modal). They show a name when available, falling back to the raw
-        // id — but the raw id itself lives in selectedReturnableSentToClient /
-        // selectedReturnableSentToEmployee above, which is what gets saved.
-        if (rawSentToEmployee && rawSentToEmployee !== '0') {
-            $('#employeeup').val(userMap[rawSentToEmployee]?.username || rawSentToEmployee);
+        if (sentToEmp && sentToEmp !== 0 && sentToEmp !== '') {
+            $('#selectvendorup').val('2');
+            $('#employeeup').val(userMapCache[String(sentToEmp).trim()]?.username || sentToEmp);
             $('#tovendorup').val('');
-        } else if (rawSentToClient && rawSentToClient !== '0') {
-            $('#tovendorup').val(clientMap[rawSentToClient] || rawSentToClient);
+            selectedReturnableSentToEmployee = sentToEmp;
+            $('#selectvendorupDisplay').val('Employee');
+        } else if (sentToClient && sentToClient !== 0 && sentToClient !== '') {
+            $('#selectvendorup').val('1');
+            $('#tovendorup').val(clientMap[String(sentToClient).trim()] || sentToClient);
             $('#employeeup').val('');
+            selectedReturnableSentToClient = sentToClient;
+            $('#selectvendorupDisplay').val('Vendor');
+        }
+
+        // ── Employee Location / Address ──
+        const header = Array.isArray(rgpData) ? rgpData[0] : rgpData;
+        console.log('DEBUG header:', header);
+        if (header) {
+            console.log('DEBUG header.Employee_Sender_Location:', header.Employee_Sender_Location);
+            console.log('DEBUG header.Employee_Address:', header.Employee_Address);
+        }
+
+        if (header) {
+            const locId = header.Employee_Sender_Location;
+            const locName = (locId === 'OTHER')
+                ? 'Others'
+                : (locMap[String(locId)] || locId || '');
+
+            $('#empaddressup').val(locName);
+            $('#employeeaddressup').val(header.Employee_Address || '');
+        } else {
+            $('#empaddressup').val('');
+            $('#employeeaddressup').val('');
+        }
+
+        if ($('#selectvendorup').val() === '2') {
+            $('#empLocationRowup').show();
+        } else {
+            $('#empLocationRowup').hide();
         }
 
         const unitsMap = {};
         unitsList.forEach(u => { unitsMap[u.uid] = u.unit; });
-
-        // Item dropdown rebuilt with the FULL item list, with the row's stored
-        // item id pre-selected. Editing a line item now reads/selects strictly
-        // by the stored item id (item.item), not by parsing display text.
-        const itemOptionsFor = (selectedItemId) => itemsList.map(opt => {
-            const isSelected = String(opt.itemid) === String(selectedItemId);
-            const desc1 = opt.itmDescription1 ? ` | ${opt.itmDescription1}` : '';
-            const desc2 = opt.itmDescription2 ? ` | ${opt.itmDescription2}` : '';
-            return `<option value="${opt.itemid}" ${isSelected ? 'selected' : ''}>${opt.itemNo || ''}${desc1}${desc2}</option>`;
-        }).join('');
+        const itemListMap = {};
+        itemsList.forEach(item => { itemListMap[item.itemid] = item; });
 
         const tbody = $('#updateTableID tbody');
         tbody.empty();
         itemsData.forEach((item, i) => {
             const n    = i + 1;
+            const cur  = itemListMap[item.item];
             const unit = unitsMap[item.UM] || item.UM || '';
             tbody.append(`
                 <tr>
                     <td>${n}</td>
                     <td><select class="form-control form-control-sm" id="itemno${n}" disabled>
-                        ${itemOptionsFor(item.item)}</select></td>
+                        <option selected>${cur ? cur.itemNo : item.item}</option></select></td>
                     <td><input type="text" class="form-control form-control-sm" id="unit${n}" value="${unit}" readonly></td>
                     <td><input type="text" class="form-control form-control-sm" id="description1${n}" value="${item.itmDescription1 || ''}" readonly></td>
                     <td><input type="text" class="form-control form-control-sm" id="description2${n}" value="${item.itmDescription2 || ''}" readonly></td>
-                    <td><input type="text" class="form-control form-control-sm" onkeydown="return allowOnlyPositive(event)" id="quantity${n}" value="${item.qty || ''}"></td>
+                    <td><input type="text" class="form-control form-control-sm" id="quantity${n}" value="${item.qty || ''}" readonly></td>
                     <td><input type="text" class="form-control form-control-sm" onkeydown="return allowOnlyPositive(event)" id="price${n}" value="${item.itmPrice || ''}"></td>
-                    <td><input type="text" class="form-control form-control-sm" id="remarks${n}" value="${item.itmRemarks || ''}"></td>
-                    <td class="text-center">
-                        <input type="hidden" id="gpdid${n}" value="${item.gpdid}">
-                        <i class="bi bi-trash text-danger" style="cursor:pointer;font-size:16px;"
-                           onclick="deleteRow3(this, ${n})" title="Delete"></i>
-                    </td>
+                    <td><input type="text" class="form-control form-control-sm" id="remarks${n}" value="${item.itmRemarks || ''}" readonly></td>
                 </tr>`);
         });
+
+        $('#requested1up, #departmentup, #selectvendorup, #tovendorup, #employeeup, ' +
+          '#dispatchup, #returndateup, #contractnoup, #fordispatchup, #remarks5up, ' +
+          '#empaddressup, #employeeaddressup').prop('readonly', true).prop('disabled', true);
+        $('#Enclosure3up').prop('readonly', false).prop('disabled', false);
 
         $('#exampleModalScrollable12').modal('show');
 
@@ -1251,34 +1491,23 @@ function validateUpdateFields() {
 
 
 function updateaddevent(gpid) {
-
     const now = getIndianDateTimeFormat(new Date());
 
-    // dept must be saved as dept_id. #departmentup currently DISPLAYS the
-    // department NAME (read-only, derived from the selected requester), so
-    // resolve the id from userMapCache via the selected requester instead of
-    // trusting the displayed text. (Dept logic unchanged — do not modify.)
-    const selectedRequestedBy = $('#requested1up').val();
+    const selectedRequestedBy = $('#requested1upId').val() || originalReturnableData.requestedby;
     const requestedByDeptId   = (userMapCache[String(selectedRequestedBy)] || {}).department
                                   || originalReturnableData.dept || '';
 
-    // sent_type ('1' = Vendor, '2' = Employee) lives in #selectvendorup.
-    // The ACTUAL vendor/employee id must come from the raw ids captured at
-    // edit-open time (selectedReturnableSentToClient / ...SentToEmployee),
-    // never from #tovendorup / #employeeup themselves — those are
-    // display-only readonly fields and may contain a joined display name.
     const sentType = String($('#selectvendorup').val() || '').trim();
     let sentToClientVal   = '';
     let sentToEmployeeVal = '';
     if (sentType === '2') {
         sentToEmployeeVal = selectedReturnableSentToEmployee || '';
     } else {
-        // default / sentType === '1' (Vendor)
         sentToClientVal = selectedReturnableSentToClient || '';
     }
 
     const currentData = {
-        requestedby: String($('#requested1up').val() || '').trim(),
+        requestedby: String(selectedRequestedBy || '').trim(),
         dept: String(requestedByDeptId || '').trim(),
         sentToClient: String(sentToClientVal || '').trim(),
         sentToemployee: String(sentToEmployeeVal || '').trim(),
@@ -1290,51 +1519,38 @@ function updateaddevent(gpid) {
         remarks: String($('#remarks5up').val() || '').trim(),
         encl: String($('#Enclosure3up').val() || '').trim()
     };
-	const headerChanged = Object.keys(currentData).some(k =>
-	    String(originalReturnableData[k] || '').trim() !== currentData[k]
-	);
 
-	if (!headerChanged && returnrowsToUpdate.length === 0) {
-	    showPopup('No Fields Changed!'); return;
-	}
+    const headerChanged = Object.keys(currentData).some(k =>
+        String(originalReturnableData[k] || '').trim() !== currentData[k]
+    );
+
+    if (!headerChanged && returnrowsToUpdate.length === 0) {
+        showPopup('No Fields Changed!'); return;
+    }
 
     fetch(new URL(`/api/returnable/${gpid}`, baseUrl1), {
         method: 'PUT',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            ...currentData,
-            updatedBy: createdById,
-            updatedDate: now
-        })
+        body: JSON.stringify({ ...currentData, updatedBy: createdById, updatedDate: now })
     })
-    .then(r => {
-        if (!r.ok) throw new Error('Header update failed');
-        return r.json();
-    })
+    .then(r => { if (!r.ok) throw new Error('Header update failed'); return r.json(); })
     .then(async () => {
-
         if (returnrowsToUpdate.length > 0) {
-
             await Promise.all(
                 returnrowsToUpdate.map(item =>
-                    fetch(
-                        new URL(`/api/returnableitems/${item.gpdid}`, baseUrl1),
-                        {
-                            method: 'POST',
-                            credentials: 'include',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify({
-                                itmPrice: item.price,
-                                qty: item.qty,
-                                itmRemarks: item.remarks,
-                                modified_by: createdById,
-                                modified_date: now
-                            })
-                        }
-                    )
+                    fetch(new URL(`/api/returnableitems/${item.gpdid}`, baseUrl1), {
+                        method: 'POST',
+                        credentials: 'include',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            itmPrice: item.price,
+                            qty: item.qty,
+                            itmRemarks: item.remarks,
+                            modified_by: createdById,
+                            modified_date: now
+                        })
+                    })
                 )
             );
         }
@@ -1384,12 +1600,13 @@ async function fetchNgpReturnables() {
 
         let tableRows = '';
         returnables.forEach((item, index) => {
+			if (item.cancelstatus == 1) return;   // ← skip cancelled GPs entirely
             const requestedByName = userMap[String(item.requestedby).trim()]?.username || item.requestedby;
-            let sentToDisplay = '';
-            if (item.sentToClient && item.sentToClient !== 0)
-                sentToDisplay = clientMap[String(item.sentToClient).trim()] || item.sentToClient;
-            else if (item.sentToemployee && item.sentToemployee !== 0)
-                sentToDisplay = item.sentToemployee;
+			let sentToDisplay = '';
+			if (item.sentToemployee && item.sentToemployee !== 0)
+			    sentToDisplay = userMap[String(item.sentToemployee).trim()]?.username || item.sentToemployee;
+			else if (item.sentToClient && item.sentToClient !== 0)
+			    sentToDisplay = clientMap[String(item.sentToClient).trim()] || item.sentToClient;
 
             // item.dept is the stored dept_id; resolve display name via deptMapCache.
             const departmentName = getDepartmentName(item.dept);
@@ -1424,48 +1641,192 @@ async function fetchNgpReturnables() {
     } catch (e) { console.error('fetchNgpReturnables error:', e); }
 }
 
+/*async function CancelNoReturnable(gpid, gp_no) {
+    if (!allowedActions.includes('Cancel')) { alert('You do not have permission to Cancel.'); return; }
+
+    try {
+        await loadUserList();
+        await loadContractList();      // ← added
+        const locMap = await loadFactoryLocationMap();
+
+        const gpData = await fetch(new URL(`/api/returnable/${gpid}`, baseUrl1), { credentials: 'include' }).then(r => r.json());
+        const requestId = gpData.Request_Id ?? gpData.request_Id ?? gpData.requestId ?? null;
+
+        const [rgpData, itemsData, itemsList, clients] = await Promise.all([
+            requestId
+                ? fetch(new URL(`/api/rgp/edit/${requestId}`, baseUrl), { credentials: 'include' }).then(r => r.json())
+                : Promise.resolve(null),
+            fetch(new URL(`/jssl/contracts/jims/gpnoitemdetails?gp_no=${gp_no}`, baseUrl1), { credentials: 'include' }).then(r => r.json()),
+            fetch(new URL('/api/items/all', baseUrl1), { credentials: 'include' }).then(r => r.json()),
+            fetch(new URL('/api/clients', baseUrl1), { credentials: 'include' }).then(r => r.json())
+        ]);
+
+        const clientMap = {};
+        clients.forEach(c => { clientMap[String(c.cid).trim()] = `${c.client_number} - ${c.name}`; });
+        const unitMap = {};
+        itemsList.forEach(u => {
+            if (u.uid)  unitMap[String(u.uid).trim()]           = u.unit;
+            if (u.unit) unitMap[u.unit.trim().toUpperCase()]     = u.unit;
+        });
+        const itemListMap = {};
+        itemsList.forEach(it => { itemListMap[String(it.itemid).trim()] = it; });
+
+        const reqName = userMapCache[String(gpData.requestedby).trim()]?.username || gpData.requestedby;
+        $('#requestedby1').val(reqName || '');
+        $('#department5').val(getDepartmentName(gpData.dept));
+        $('#despatch').val(getShipmentModeName(gpData.sentThrough) || '');
+		$('#ngptransportnamecl').val(getShipmentModeName(gpData.transportName));
+		$('#ngpvehiclenocl').val(getShipmentModeName(gpData.vehicleNo));
+
+        let sentToDisplay = '';
+        if (gpData.sentToemployee && gpData.sentToemployee !== 0 && gpData.sentToemployee !== '') {
+            sentToDisplay = userMapCache[String(gpData.sentToemployee).trim()]?.username || gpData.sentToemployee;
+        } else if (gpData.sentToClient && gpData.sentToClient !== 0 && gpData.sentToClient !== '') {
+            sentToDisplay = clientMap[String(gpData.sentToClient).trim()] || gpData.sentToClient;
+        }
+        $('#vendor1').val(sentToDisplay);
+
+        $('#date').val(formatDate(gpData.createddate));
+        $('#reason').val(gpData.note || '');
+        $('#remark').val(gpData.remarks || '');
+        $('#enclosure').val(gpData.encl || '');
+        // ── contract name, if this modal shows a contract field, e.g. #contract1 ──
+        $('#contract1').val(getContractName(gpData.project));   // add/rename selector to match your modal's actual field id
+
+        const header = Array.isArray(rgpData) ? rgpData[0] : rgpData;
+        if (header) {
+            const locId = header.Employee_Sender_Location;
+            const locName = (locId === 'OTHER')
+                ? 'Others'
+                : (locMap[String(locId)] || locId || '');
+            $('#empaddress1non').val(locName);
+            $('#employeeaddress1non').val(header.Employee_Address || '');
+        } else {
+            $('#empaddress1non').val('');
+            $('#employeeaddress1non').val('');
+        }
+
+        selectedgpid = gpid;
+
+        let itemRows = '';
+        if (!Array.isArray(itemsData) || itemsData.length === 0) {
+            console.warn('CancelNoReturnable: no item rows for gp_no=', gp_no);
+        }
+        itemsData.forEach((item, i) => {
+            const rawUm    = item.UM ?? item.um ?? '';
+            const unitName = unitMap[String(rawUm).trim().toUpperCase()] || unitMap[String(rawUm).trim()] || (rawUm && String(rawUm) !== '0' ? rawUm : '');
+            const curItem  = itemListMap[String(item.item ?? item.itemId).trim()];
+            const itemLabel = item.ItemNo || (curItem ? curItem.itemNo : item.item);
+
+            itemRows += `<tr>
+                <td>${i+1}</td>
+                <td><select class="form-control form-control-sm" disabled><option value="${item.itemId ?? item.item}" selected>${itemLabel}</option></select></td>
+                <td><input type="text" class="form-control form-control-sm" value="${unitName}" readonly></td>
+                <td><input type="text" class="form-control form-control-sm" value="${item.itmDescription1 || ''}" readonly></td>
+                <td><input type="text" class="form-control form-control-sm" value="${item.itmDescription2 || ''}" readonly></td>
+                <td><input type="text" class="form-control form-control-sm" value="${item.qty || ''}" readonly></td>
+                <td><input type="text" class="form-control form-control-sm" value="${item.itmPrice || ''}" readonly></td>
+                <td><input type="text" class="form-control form-control-sm" value="${item.itmRemarks || ''}" readonly></td>
+            </tr>`;
+        });
+        $('#Table3 tbody').html(itemRows);
+        $('#exampleModalScrollable126').modal('show');
+
+    } catch (e) { console.error('CancelNoReturnable error:', e); }
+}*/
+
 async function CancelNoReturnable(gpid, gp_no) {
     if (!allowedActions.includes('Cancel')) { alert('You do not have permission to Cancel.'); return; }
 
     try {
         await loadUserList();
-        const [clients, gpData, itemsData, units] = await Promise.all([
-            fetch(new URL('/api/clients', baseUrl1), { credentials: 'include' }).then(r => r.json()),
-            fetch(new URL(`/api/returnable/${gpid}`, baseUrl1), { credentials: 'include' }).then(r => r.json()),
+        await loadContractList();      // ← added
+        const locMap = await loadFactoryLocationMap();
+
+        const gpData = await fetch(new URL(`/api/returnable/${gpid}`, baseUrl1), { credentials: 'include' }).then(r => r.json());
+        const requestId = gpData.Request_Id ?? gpData.request_Id ?? gpData.requestId ?? null;
+
+        const [rgpData, itemsData, itemsList, clients] = await Promise.all([
+            requestId
+                ? fetch(new URL(`/api/rgp/edit/${requestId}`, baseUrl), { credentials: 'include' }).then(r => r.json())
+                : Promise.resolve(null),
             fetch(new URL(`/jssl/contracts/jims/gpnoitemdetails?gp_no=${gp_no}`, baseUrl1), { credentials: 'include' }).then(r => r.json()),
-            fetch(new URL('/api/items/all', baseUrl1), { credentials: 'include' }).then(r => r.json())
+            fetch(new URL('/api/items/all', baseUrl1), { credentials: 'include' }).then(r => r.json()),
+            fetch(new URL('/api/clients', baseUrl1), { credentials: 'include' }).then(r => r.json())
         ]);
 
-        const userMap = userMapCache;
         const clientMap = {};
         clients.forEach(c => { clientMap[String(c.cid).trim()] = `${c.client_number} - ${c.name}`; });
         const unitMap = {};
-        units.forEach(u => {
+        itemsList.forEach(u => {
             if (u.uid)  unitMap[String(u.uid).trim()]           = u.unit;
             if (u.unit) unitMap[u.unit.trim().toUpperCase()]     = u.unit;
         });
+        const itemListMap = {};
+        itemsList.forEach(it => { itemListMap[String(it.itemid).trim()] = it; });
 
-        const reqName      = userMap[String(gpData.requestedby).trim()]?.username || gpData.requestedby;
-        const clientName   = clientMap[String(gpData.sentToClient).trim()] || gpData.sentToClient;
+        const reqName = userMapCache[String(gpData.requestedby).trim()]?.username || gpData.requestedby;
         $('#requestedby1').val(reqName || '');
         $('#department5').val(getDepartmentName(gpData.dept));
-        //$('#despatch').val(gpData.sentThrough || '');
-		$('#despatch').val(getShipmentModeName(gpData.sentThrough) || '');
-        $('#vendor1').val(clientName || '');
+        $('#despatch').val(getShipmentModeName(gpData.sentThrough) || '');
+        $('#ngptransportnamecl').val(getShipmentModeName(gpData.transportName));
+        $('#ngpvehiclenocl').val(getShipmentModeName(gpData.vehicleNo));
+
+        // ── Sent To Vendor/Employee — mirrors cancelReturnable's isVendorGp logic ──
+        let sentToDisplay = '';
+        const isVendorGp = !!(gpData.sentToClient && gpData.sentToClient !== 0 && gpData.sentToClient !== '');
+
+        if (gpData.sentToemployee && gpData.sentToemployee !== 0 && gpData.sentToemployee !== '') {
+            sentToDisplay = userMapCache[String(gpData.sentToemployee).trim()]?.username || gpData.sentToemployee;
+        } else if (isVendorGp) {
+            sentToDisplay = clientMap[String(gpData.sentToClient).trim()] || gpData.sentToClient;
+        }
+        $('#vendor1').val(sentToDisplay);
+
         $('#date').val(formatDate(gpData.createddate));
-        $('#expected').val(gpData.returnDate || '');
         $('#reason').val(gpData.note || '');
         $('#remark').val(gpData.remarks || '');
         $('#enclosure').val(gpData.encl || '');
-        selectedgid = gpid;
+        // ── contract name, if this modal shows a contract field, e.g. #contract1 ──
+        $('#contract1').val(getContractName(gpData.project));   // add/rename selector to match your modal's actual field id
+
+        const header = Array.isArray(rgpData) ? rgpData[0] : rgpData;
+        if (header) {
+            const locId = header.Employee_Sender_Location;
+            const locName = (locId === 'OTHER')
+                ? 'Others'
+                : (locMap[String(locId)] || locId || '');
+            $('#empaddress1non').val(locName);
+            $('#employeeaddress1non').val(header.Employee_Address || '');
+        } else {
+            $('#empaddress1non').val('');
+            $('#employeeaddress1non').val('');
+        }
+
+        selectedgpid = gpid;
+
+        // ── NEW: keep this cancel run's context available to canceladdngp() ──
+        window.cancelIsVendorGp     = isVendorGp;
+        window.cancelItemRequestIds = [];
 
         let itemRows = '';
+        if (!Array.isArray(itemsData) || itemsData.length === 0) {
+            console.warn('CancelNoReturnable: no item rows for gp_no=', gp_no);
+        }
         itemsData.forEach((item, i) => {
             const rawUm    = item.UM ?? item.um ?? '';
             const unitName = unitMap[String(rawUm).trim().toUpperCase()] || unitMap[String(rawUm).trim()] || (rawUm && String(rawUm) !== '0' ? rawUm : '');
-            itemRows += `<tr>
+            const curItem  = itemListMap[String(item.item ?? item.itemId).trim()];
+            const itemLabel = item.ItemNo || (curItem ? curItem.itemNo : item.item);
+
+            // ── NEW: collect itemrequestId for the vendor-branch cancel update ──
+            if (item.itemrequestId !== undefined && item.itemrequestId !== null && item.itemrequestId !== '') {
+                window.cancelItemRequestIds.push(parseInt(item.itemrequestId, 10));
+            }
+
+            itemRows += `<tr data-item-request-id="${item.itemrequestId || ''}">
                 <td>${i+1}</td>
-                <td><select class="form-control form-control-sm" disabled><option value="${item.itemId}">${item.ItemNo}</option></select></td>
+                <td><select class="form-control form-control-sm" disabled><option value="${item.itemId ?? item.item}" selected>${itemLabel}</option></select></td>
                 <td><input type="text" class="form-control form-control-sm" value="${unitName}" readonly></td>
                 <td><input type="text" class="form-control form-control-sm" value="${item.itmDescription1 || ''}" readonly></td>
                 <td><input type="text" class="form-control form-control-sm" value="${item.itmDescription2 || ''}" readonly></td>
@@ -1485,12 +1846,21 @@ async function editNoReturnable(gpid, gp_no) {
 
     try {
         await loadUserList();
+        await loadShipmentDelivery();
+        await loadContractList();               // ← added
+        const locMap = await loadFactoryLocationMap();
 
-        const [gpData, itemsData, itemsList, unitsList] = await Promise.all([
-            fetch(new URL(`/api/returnable/${gpid}`, baseUrl1), { credentials: 'include' }).then(r => r.json()),
+        const gpData = await fetch(new URL(`/api/returnable/${gpid}`, baseUrl1), { credentials: 'include' }).then(r => r.json());
+        const requestId = gpData.Request_Id ?? gpData.request_Id ?? gpData.requestId ?? null;
+
+        const [rgpData, itemsData, itemsList, unitsList, clients] = await Promise.all([
+            requestId
+                ? fetch(new URL(`/api/rgp/edit/${requestId}`, baseUrl), { credentials: 'include' }).then(r => r.json())
+                : Promise.resolve(null),
             fetch(new URL(`/jssl/contracts/jims/gpnoitemdetails?gp_no=${gp_no}`, baseUrl1), { credentials: 'include' }).then(r => r.json()),
             fetch(new URL('/api/items', baseUrl1), { credentials: 'include' }).then(r => r.json()),
-            fetch(new URL('/api/items/all', baseUrl1), { credentials: 'include' }).then(r => r.json())
+            fetch(new URL('/api/items/all', baseUrl1), { credentials: 'include' }).then(r => r.json()),
+            fetch(new URL('/api/clients', baseUrl1), { credentials: 'include' }).then(r => r.json())
         ]);
 
         originalNonReturnableData = {
@@ -1498,6 +1868,8 @@ async function editNoReturnable(gpid, gp_no) {
             dept:         String(gpData.dept || '').trim(),
             sentToClient: String(gpData.sentToClient || '').trim(),
             sentThrough:  String(gpData.sentThrough || '').trim(),
+			transport_name: String(gpData.ngptransportname || '').trim(),   
+			vehicle_no: String(gpData.ngpvehicleno || '').trim(),        
             returnDate:   String(gpData.returnDate || '').trim(),
             contract:     String(gpData.project || '').trim(),
             note:         String(gpData.note || '').trim(),
@@ -1505,63 +1877,125 @@ async function editNoReturnable(gpid, gp_no) {
             encl:         String(gpData.encl || '').trim()
         };
 
-        $('#requested1up').val(originalNonReturnableData.requestedby);
-        // Display NAME for department; underlying stored value remains the id
-        // in originalNonReturnableData.dept (used for change-detection / payload).
-        $('#department6up').val(getDepartmentName(originalNonReturnableData.dept));
-        $('#tovendor').val(originalNonReturnableData.sentToClient);
-        $('#despatchmodeup').val(originalNonReturnableData.sentThrough);
-        $('#returndateup').val(originalNonReturnableData.returnDate);
-        $('#contract6up').val(originalNonReturnableData.contract);
-        $('#fordispatch1up').val(originalNonReturnableData.note);
-        $('#remarks6up').val(originalNonReturnableData.remarks);
-        $('#enclosure5up').val(originalNonReturnableData.encl);
+        const clientMap = {};
+        clients.forEach(c => { clientMap[String(c.cid).trim()] = `${c.client_number}-${c.name}`; });
+
+        const requestedByName = userMapCache[String(gpData.requestedby).trim()]?.username || gpData.requestedby;
+        $('#requested1up').val(requestedByName);
+        $('#requested1upIdnon').val(gpData.requestedby);
+        $('#department6up').val(getDepartmentName(gpData.dept));
+        $('#despatchmodeup').val(getShipmentModeName(gpData.sentThrough));
+		$('#ngptransportnameup').val(getShipmentModeName(gpData.transportName));
+		$('#ngpvehiclenoup').val(getShipmentModeName(gpData.vehicleNo));
+
+        // ── Contract: show NAME, not raw id ──
+        $('#contract6up').val(gpData.project);                       // keep raw id for submit logic if needed elsewhere
+        $('#contract6upDisplay').val(getContractName(gpData.project)); // ← FIXED: display name
+
+        $('#fordispatch1up').val(gpData.note);
+        $('#remarks6up').val(gpData.remarks);
+        $('#enclosure5up').val(gpData.encl);
         selectedgpid = gpid;
         rowsToUpdate = [];
         rowsToDelete = [];
 
+        const sentToEmp    = gpData.sentToemployee;
+        const sentToClient = gpData.sentToClient;
+        selectedNonReturnableSentToClient   = '';
+        selectedNonReturnableSentToEmployee = '';
+
+        if (sentToEmp && sentToEmp !== 0 && sentToEmp !== '') {
+            $('#selectvendorupnon').val('2');
+            $('#employeeupnon').val(userMapCache[String(sentToEmp).trim()]?.username || sentToEmp);
+            $('#tovendorup').val('');
+            selectedNonReturnableSentToEmployee = sentToEmp;
+            $('#selectvendorupDisplaynon').val('Employee');
+        } else if (sentToClient && sentToClient !== 0 && sentToClient !== '') {
+            $('#selectvendorupnon').val('1');
+            $('#tovendorup').val(clientMap[String(sentToClient).trim()] || sentToClient);
+            $('#employeeupnon').val('');
+            selectedNonReturnableSentToClient = sentToClient;
+            $('#selectvendorupDisplaynon').val('Vendor');
+        }
+
+        // ── Employee Location / Address ──
+        const header = Array.isArray(rgpData) ? rgpData[0] : rgpData;
+        if (header) {
+            const locId = header.Employee_Sender_Location;
+            const locName = (locId === 'OTHER')
+                ? 'Others'
+                : (locMap[String(locId)] || locId || '');
+            $('#empaddressupnon').val(locName);
+            $('#employeeaddressupnon').val(header.Employee_Address || '');
+        } else {
+            $('#empaddressupnon').val('');
+            $('#employeeaddressupnon').val('');
+        }
+
+        if ($('#selectvendorupnon').val() === '2') {
+            $('#empLocationRowupnon').show();
+        } else {
+            $('#empLocationRowupnon').hide();
+        }
+
+        // ── FIX: item name + unit resolution mirrors editReturnable exactly ──
         const unitsMap = {};
-        unitsList.forEach(u => { unitsMap[String(u.uid).trim()] = u.unit; });
+        unitsList.forEach(u => {
+            if (u.uid)  unitsMap[String(u.uid).trim()]           = u.unit;
+            if (u.unit) unitsMap[u.unit.trim().toUpperCase()]     = u.unit;
+        });
+        const itemListMap = {};
+        itemsList.forEach(item => { itemListMap[String(item.itemid).trim()] = item; });
 
         const tbody = $('#TableID1non tbody');
         tbody.empty();
+
+        if (!Array.isArray(itemsData) || itemsData.length === 0) {
+            console.warn('editNoReturnable: no item rows returned for gp_no=', gp_no);
+        }
+
         itemsData.forEach((item, i) => {
-            const n        = i + 1;
-            const unitName = unitsMap[String(item.UM).trim()] || item.UM || '';
-            // Selection driven strictly by stored item id (item.item) vs each
-            // candidate's itemid — robust string comparison either way.
-            const options  = itemsList.map(opt =>
-                `<option value="${opt.itemid}" ${String(opt.itemid) === String(item.item) ? 'selected' : ''}>${opt.itemNo}</option>`
-            ).join('');
+            const n    = i + 1;
+            const cur  = itemListMap[String(item.item).trim()];   // ← FIXED key lookup (trim + string match)
+            const rawUm = item.UM ?? item.um ?? '';
+            const unit  = unitsMap[String(rawUm).trim().toUpperCase()] || unitsMap[String(rawUm).trim()] || rawUm || '';
+
             tbody.append(`
                 <tr>
                     <td>${n}</td>
-                    <td><select class="form-control form-control-sm" id="itemno${n}" disabled>${options}</select></td>
-                    <td><input class="form-control form-control-sm" value="${unitName}" readonly></td>
-                    <td><input class="form-control form-control-sm" value="${item.itmDescription1 || ''}" readonly></td>
-                    <td><input class="form-control form-control-sm" value="${item.itmDescription2 || ''}" readonly></td>
-                    <td><input class="form-control form-control-sm" onkeydown="return allowOnlyPositive(event)" id="quantity${n}" value="${item.qty || 0}"></td>
-                    <td><input class="form-control form-control-sm" onkeydown="return allowOnlyPositive(event)" id="price${n}" value="${item.itmPrice || 0}"></td>
-                    <td><input class="form-control form-control-sm" id="remarks${n}" value="${item.itmRemarks || ''}"></td>
-                    <td class="text-center">
-                        <input type="hidden" id="gpdid${n}" value="${item.gpdid}">
-                        <i class="bi bi-trash text-danger" style="cursor:pointer;font-size:16px;"
-                           onclick="deleteRownon1(this, ${n})" title="Delete"></i>
-                    </td>
+                    <td><select class="form-control form-control-sm" id="itemno${n}" disabled>
+                        <option selected>${cur ? cur.itemNo : (item.ItemNo || item.item)}</option></select></td>
+                    <td><input type="text" class="form-control form-control-sm" id="unit${n}" value="${unit}" readonly></td>
+                    <td><input type="text" class="form-control form-control-sm" id="description1${n}" value="${item.itmDescription1 || ''}" readonly></td>
+                    <td><input type="text" class="form-control form-control-sm" id="description2${n}" value="${item.itmDescription2 || ''}" readonly></td>
+                    <td><input type="text" class="form-control form-control-sm" id="quantity${n}" value="${item.qty || ''}" readonly></td>
+                    <td><input type="text" class="form-control form-control-sm" onkeydown="return allowOnlyPositive(event)" id="price${n}" value="${item.itmPrice || ''}"></td>
+                    <td><input type="text" class="form-control form-control-sm" id="remarks${n}" value="${item.itmRemarks || ''}" readonly></td>
                 </tr>`);
         });
+
+        $('#requested1up, #department6up, #despatchmodeup, #tovendorup, #employeeupnon, ' +
+          '#contract6upDisplay, #fordispatch1up, #remarks6up, ' +
+          '#empaddressupnon, #employeeaddressupnon').prop('readonly', true).prop('disabled', true);
+        $('#enclosure5up').prop('readonly', false).prop('disabled', false);
+
         $('#exampleModalScrollable15').modal('show');
 
-    } catch (e) { console.error('editNoReturnable error:', e); alert('Failed to load data.'); }
+    } catch (e) {
+        console.error('editNoReturnable error:', e);
+        alert('Failed to load data.');
+    }
 }
 
 function validatengpUpdateFields() {
     let isValid = true;
     $('.error-message').hide();
-    if (!$('#requested1up').val())    { $('#requested1uperror').show();   isValid = false; }
-    if (!$('#despatchmodeup').val())  { $('#despatchmodeuperror').show(); isValid = false; }
-    if (!$('#tovendor').val())        { $('#tovendorerror').show();        isValid = false; }
-    if (!$('#fordispatch1up').val())  { $('#fordispatch1uperror').show();  isValid = false; }
+
+    if (!$('#requested1up').val())     { $('#requested1uperror').show();     isValid = false; }
+    if (!$('#despatchmodeup').val())   { $('#despatchmodeuperror').show();   isValid = false; }
+    if (!$('#selectvendorupnon').val()){ $('#selectvendorupnonError').show(); isValid = false; }
+    if (!$('#fordispatch1up').val())   { $('#fordispatch1uperror').show();   isValid = false; }
+
     return isValid;
 }
 
@@ -1601,22 +2035,28 @@ function validatengpUpdateFields() {
 }*/
 
 function updatenonaddevent(gpid) {
-
     const now = getIndianDateTimeFormat(new Date());
 
-    // dept must be saved as dept_id, not the displayed name.
-    // Resolve through userMapCache via the selected requester; fall back to
-    // the originally loaded id if the requester hasn't changed selection.
-    const selectedRequestedBy = $('#requested1up').val();
+    const selectedRequestedBy = $('#requested1upIdnon').val() || originalNonReturnableData.requestedby;
     const requestedByDeptId   = (userMapCache[String(selectedRequestedBy)] || {}).department
                                   || originalNonReturnableData.dept || '';
 
+    const sentType = String($('#selectvendorupnon').val() || '').trim();
+    let sentToClientVal   = '';
+    let sentToEmployeeVal = '';
+    if (sentType === '2') {
+        sentToEmployeeVal = selectedNonReturnableSentToEmployee || '';
+    } else {
+        sentToClientVal = selectedNonReturnableSentToClient || '';
+    }
+
     const updatedData = {
-        requestedby: String($('#requested1up').val() || '').trim(),
+        requestedby: String(selectedRequestedBy || '').trim(),
         dept: String(requestedByDeptId || '').trim(),
-        sentToClient: String($('#tovendor').val() || '').trim(),
+        sentToClient: String(sentToClientVal || '').trim(),
+        sentToemployee: String(sentToEmployeeVal || '').trim(),
+        sent_type: sentType,
         sentThrough: String($('#despatchmodeup').val() || '').trim(),
-        returnDate: String($('#returndateup').val() || '').trim(),
         contract: String($('#contract6up').val() || '').trim(),
         note: String($('#fordispatch1up').val() || '').trim(),
         remarks: String($('#remarks6up').val() || '').trim(),
@@ -1640,33 +2080,23 @@ function updatenonaddevent(gpid) {
         credentials: 'include',
         body: JSON.stringify(updatedData)
     })
-    .then(r => {
-        if (!r.ok) throw new Error('Header update failed');
-        return r.json();
-    })
+    .then(r => { if (!r.ok) throw new Error('Header update failed'); return r.json(); })
     .then(async () => {
-
         if (rowsToUpdate.length > 0) {
-
             await Promise.all(
                 rowsToUpdate.map(item =>
-                    fetch(
-                        new URL(`/api/returnableitems/${item.gpdid}`, baseUrl1),
-                        {
-                            method: 'POST',
-                            credentials: 'include',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify({
-                                itmPrice: item.price,
-                                qty: item.qty,
-                                itmRemarks: item.remarks,
-                                modified_by: createdById,
-                                modified_date: now
-                            })
-                        }
-                    )
+                    fetch(new URL(`/api/returnableitems/${item.gpdid}`, baseUrl1), {
+                        method: 'POST',
+                        credentials: 'include',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            itmPrice: item.price,
+                            qty: item.qty,
+                            itmRemarks: item.remarks,
+                            modified_by: createdById,
+                            modified_date: now
+                        })
+                    })
                 )
             );
         }
@@ -1674,7 +2104,7 @@ function updatenonaddevent(gpid) {
     .then(() => {
         showPopup('Updated successfully!', 'NonReturnable.jsp');
         $('#container1Update').modal('hide');
-        fetchReturnables();
+        fetchNgpReturnables();
     })
     .catch(e => {
         console.error(e);
@@ -1736,13 +2166,13 @@ $(document).ready(function () {
         else alert('Client ID not found.');
     });
 
-    // ----- Cancel Non-Returnable -----
-    $('#cancelnon').click(function () { $('#exampleModalCenter70').modal('show'); });
-    $('#confirmngpcancel').click(function () {
-        $('#exampleModalCenter70').modal('hide');
-        if (selectedgid) canceladd(selectedgid);
-        else alert('Client ID not found.');
-    });
+	// ----- Cancel Non-Returnable -----
+	$('#cancelnon').click(function () { $('#exampleModalCenter70').modal('show'); });
+	$('#confirmngpcancel').click(function () {
+	    $('#exampleModalCenter70').modal('hide');
+	    if (selectedgpid) canceladdngp(selectedgpid);   // ✅ correct variable
+	    else alert('Client ID not found.');
+	});
 
     // ----- Update Returnable -----
     $('#updateButton').click(function () {
@@ -1754,15 +2184,15 @@ $(document).ready(function () {
         else alert('gpid not found.');
     });
 
-    // ----- Update Non-Returnable -----
-    $('#updatenonreturn').click(function () {
-        if (validatengpUpdateFields()) $('#exampleModalCenter60').modal('show');
-    });
-    $('#confirmupdYess').click(function () {
-        $('#exampleModalCenter60').modal('hide');
-        if (selectedgpid) updatenonaddevent(selectedgpid);
-        else alert('gpid not found.');
-    });
+	// ----- Update Non-Returnable -----
+	$('#updatenonreturn').click(function () {
+	    if (validatengpUpdateFields()) $('#exampleModalCenter60').modal('show');
+	});
+	$('#confirmupdYess').click(function () {
+	    $('#exampleModalCenter60').modal('hide');
+	    if (selectedgpid) updatenonaddevent(selectedgpid);   // this was already correct
+	    else alert('gpid not found.');
+	});
 
     // ----- Error modal OK -----
     $(document).on('click', '#modalokk', function () {
@@ -1774,3 +2204,493 @@ $(document).ready(function () {
         $(this).closest('.modal').modal('hide');
     });
 });
+
+/*function loadRgpPrNoDropdown() {
+    const factoryId = sessionStorage.getItem("selectedFactoryId");
+    if (!factoryId) return;
+
+    $.ajax({
+        url       : new URL("/api/rgp/" + factoryId, baseUrl),
+        type      : "GET",
+        xhrFields : { withCredentials: true },
+        success: function (response) {
+            const $dd = $("#regpr").empty()
+                            .append('<option value="">Select RGPPr No</option>');
+
+            if (!response || response.length === 0) return;
+
+            // Fetch already-used Request_Ids from the returnable GP table
+            $.ajax({
+                url       : new URL("/jssl/contracts/jims/gptype_updatetables?gp_type=1&factory_id=" + factoryId, baseUrl1),
+                type      : "GET",
+                xhrFields : { withCredentials: true },
+                success: function (usedGps) {
+					const usedRequestIds = new Set(
+					    (usedGps || [])
+					        .filter(g => g.cancelstatus != 1)   // ← skip cancelled GPs, they don't count as "used"
+					        .map(g => g.request_Id ?? g.Request_Id)
+					        .filter(id => id !== null && id !== undefined && id !== '')
+					        .map(id => String(id).trim())
+					);
+
+                    response.forEach(function (row) {
+						if (row.Cancel == 1) return; 
+                        const reqId = String(row.Request_Id).trim();
+                        if (usedRequestIds.has(reqId)) return; // skip already-used PR No
+
+                        $dd.append(
+                            $("<option>", {
+                                value: row.Request_Id,
+                                text : row.PR_No
+                            })
+                        );
+                    });
+                },
+                error: function (xhr) {
+                    console.error("Failed to load used RGP request list", xhr);
+                    // fallback: show all if the used-list fetch fails
+                    response.forEach(function (row) {
+						if (row.Cancel == 1) return;
+                        $dd.append(
+                            $("<option>", {
+                                value: row.Request_Id,
+                                text : row.PR_No
+                            })
+                        );
+                    });
+                }
+            });
+        },
+        error: function (xhr) {
+            console.error("Failed to load RGP PR No list", xhr);
+        }
+    });
+}*/
+
+
+
+function loadRgpPrNoDropdown() {
+    const factoryId = sessionStorage.getItem("selectedFactoryId");
+    if (!factoryId) return;
+
+    $.ajax({
+        url       : new URL("/api/dropdown/rgp/" + factoryId, baseUrl),
+        type      : "GET",
+        xhrFields : { withCredentials: true },
+        success: function (response) {
+            const $dd = $("#regpr").empty()
+                            .append('<option value="">Select RGPPr No</option>');
+
+            if (!response || response.length === 0) return;
+
+            response.forEach(function (row) {
+                $dd.append(
+                    $("<option>", {
+                        value: row.requestId,
+                        text : row.prNo
+                    })
+                );
+            });
+        },
+        error: function (xhr) {
+            console.error("Failed to load RGP PR No list", xhr);
+        }
+    });
+}
+
+// ============================================================
+// POPULATE RETURNABLE CREATE MODAL FROM A SELECTED RGP REQUEST
+// ============================================================
+
+let itemrequest_id = [];
+async function populateReturnableFromRgp(requestId) {
+    try {
+        await loadUserList();
+
+        const [response, itemsList, unitsList] = await Promise.all([
+            fetch(new URL(`/api/rgpVendor/edit/${requestId}`, baseUrl), { credentials: 'include' }).then(r => r.json()),
+            fetch(new URL('/api/items', baseUrl1), { credentials: 'include' }).then(r => r.json()),
+            fetch(new URL('/api/items/all', baseUrl1), { credentials: 'include' }).then(r => r.json()),
+			fetch(new URL('/api/websmartuser/getAll', baseUrl), { credentials: 'include' }).then(r => r.json())
+        ]);
+
+        if (!response || response.length === 0) return;
+        const header = response[0];
+
+        // ── Requested By / Department ─────────────────────────────
+        // (falls back gracefully if not present).
+        /*const requesterId = header.RequestBy || header.Requested_By || header.CreatedBy || '';
+        if (requesterId) {
+            $('#requested1').val(String(requesterId));
+            const info = userMapCache[String(requesterId)];
+            $('#department').val(getDepartmentName(info ? info.department : ''));
+        }*/
+		const requesterId = header.Request_User || '';
+		if (requesterId) {
+		    const info = userMapCache[String(requesterId)];
+		    const nameOpt = new Option(info ? info.username : requesterId, requesterId, true, true);
+		    $('#requested1').empty().append(nameOpt);
+		    $('#department').val(info ? getDepartmentName(info.department) : '');  // ← wrap with getDepartmentName
+		}
+
+        // ── Vendor / Employee ──────────────────────────────────────
+        if (header.Vendor_Name && String(header.Vendor_Name) !== 'null') {
+            $('#selectvendor').val('1');
+            $('#tovendor').val(String(header.Vendor_Name));
+            $('#employee').val('');
+            $('#empLocationRow').hide();
+            $('#empaddress').val('');
+            $('#employeeaddress').val('');
+            } else if (header.Employee_Name && String(header.Employee_Name) !== 'null') {
+			    $('#selectvendor').val('2');
+			    $('#employee').val(String(header.Employee_Name));
+			    $('#tovendor').val('');
+			    $('#empLocationRow').show();
+
+			    const locId = header.Employee_Sender_Location;
+			    const locMap = await loadFactoryLocationMap();
+			    const locName = (locId === 'OTHER')
+			        ? 'Others'
+			        : (locMap[String(locId)] || locId || '');
+
+			    $('#empaddress').val(locName);
+			    $('#employeeaddress').val(header.Employee_Address || '');
+			} else {
+            $('#selectvendor').val('');
+            $('#empLocationRow').hide();
+        }
+
+        // ── Return date / contract / remarks ────────────────────────
+        const rd = header.Expected_Return_Date ? header.Expected_Return_Date.toString().split('T')[0] : '';
+        $('#returndatee').val(rd);
+        $('#contractno').val(header.Contract_No ? String(header.Contract_No) : '');
+        $('#remarks5').val(header.Remarks || '');
+		$('#fordispatch').val(header.reasondisptach || '');
+
+        // ── Lock all header fields — sourced from RGP, not manual entry ──
+		$('#requested1, #selectvendor, #employee, #returndatee, #contractno, #remarks5, #fordispatch,#tovendor')
+		    .prop('disabled', true);
+
+		// Keep Vendor editable
+		$('#tovendor').prop('disabled', true).prop('readonly', true);
+        $('#empaddress, #employeeaddress').prop('readonly', true);
+
+        // ── Line items (readonly, driven by the RGP request rows) ──────
+        const unitMap = {};
+        unitsList.forEach(u => {
+            if (u.uid)  unitMap[String(u.uid).trim()]            = u.unit;
+            if (u.unit) unitMap[u.unit.trim().toUpperCase()]      = u.unit;
+        });
+        const itemMap = {};
+        itemsList.forEach(it => { itemMap[String(it.itemid)] = it; });
+
+        $('#TableID tbody').empty();
+        let n = 0;
+		itemrequest_id = [];
+        response.forEach(row => {
+			
+            if (!row.Item_Id) return;
+			itemrequest_id.push(row.ItemRequest_Id);
+            n++;
+            const item = itemMap[String(row.Item_Id)] || {};
+            const unitName = unitMap[String(item.um).trim().toUpperCase()] || unitMap[String(item.um).trim()] || '';
+
+            $('#TableID tbody').append(`
+                <tr id="row${n}" data-item-id="${row.Item_Id}">
+                    <td>${n}</td>
+                    <td><input type="text" class="form-control form-control-sm"
+                          value="${(item.itemNo || '') + ' - ' + (item.itmDescription1 || '')}" readonly></td>
+                    <td><input type="text" class="form-control form-control-sm" id="unit${n}" value="${unitName}" readonly></td>
+                    <td><input type="text" class="form-control form-control-sm" id="description1${n}" value="${item.itmDescription1 || ''}" readonly></td>
+                    <td><input type="text" class="form-control form-control-sm" id="description2${n}" value="${item.itmDescription2 || ''}" readonly></td>
+                    <td><input type="text" class="form-control form-control-sm" id="quantity${n}" value="${row.Quantity || ''}" readonly></td>
+                    <td><input type="text" class="form-control form-control-sm" id="price${n}" value="${row.Price || ''}"></td>
+                    <td><input type="text" class="form-control form-control-sm" id="remarks${n}" value="${row.Item_Remarks || ''}" readonly></td>
+                </tr>`);
+        });
+
+    } catch (e) {
+        console.error('populateReturnableFromRgp error:', e);
+        alert('Failed to load the selected RGP request.');
+    }
+}
+
+function resetReturnableFields() {
+    $('#requested1, #selectvendor, #employee, #returndatee, #contractno, #remarks5')
+        .prop('disabled', false).val('');
+
+    $('#tovendor').prop('disabled', false).prop('readonly', false).val('');
+
+    $('#empaddress, #employeeaddress')
+        .prop('readonly', false).val('');
+
+    $('#empLocationRow').hide();
+    $('#TableID tbody').empty();
+}
+
+let factoryLocationMapCache = null;
+
+async function loadFactoryLocationMap() {
+    if (factoryLocationMapCache) return factoryLocationMapCache;
+    try {
+        const res  = await fetch(new URL('/api/allfactory', baseUrl), { credentials: 'include' });
+        const data = await res.json();
+        factoryLocationMapCache = {};
+        (data || []).forEach(f => { factoryLocationMapCache[String(f.id)] = f.factory_name; });
+    } catch (e) {
+        console.error('loadFactoryLocationMap error:', e);
+        factoryLocationMapCache = {};
+    }
+    return factoryLocationMapCache;
+}
+
+// ============================================================
+// NRGP dropdown state (mirrors Returnable's selected*Returnable* vars)
+// ============================================================
+let selectedNonReturnableSentToClient   = '';
+let selectedNonReturnableSentToEmployee = '';
+//let originalNonReturnableData = {}; // already declared above — keep single declaration
+
+// ============================================================
+// LOAD NRGP PR NO DROPDOWN — pulls from NRGP source, not RGP
+// ============================================================
+/*function loadNgpRgpPrNoDropdown() {
+    const factoryId = sessionStorage.getItem("selectedFactoryId");
+    if (!factoryId) return;
+
+    $.ajax({
+        url       : new URL("/api/ngpb/" + factoryId, baseUrl),   // ← NRGP source (adjust if your route differs)
+        type      : "GET",
+        xhrFields : { withCredentials: true },
+        success: function (response) {
+            const $dd = $("#regprnon").empty()
+                            .append('<option value="">Select NRGPPr No</option>');
+
+            if (!response || response.length === 0) return;
+
+            // Exclude PR Nos already consumed by an existing Non-Returnable GP
+            $.ajax({
+                url       : new URL("/jssl/contracts/jims/gptype_updatetables?gp_type=2&factory_id=" + factoryId, baseUrl1),
+                type      : "GET",
+                xhrFields : { withCredentials: true },
+                success: function (usedGps) {
+                    const usedRequestIds = new Set(
+                        (usedGps || [])
+						    .filter(g => g.cancelstatus != 1)   // ← skip cancelled GPs, they don't count as "used"
+                            .map(g => g.request_Id ?? g.Request_Id)
+                            .filter(id => id !== null && id !== undefined && id !== '')
+                            .map(id => String(id).trim())
+                    );
+
+                    response.forEach(function (row) {
+						if (row.Cancel == 1) return; 
+                        const reqId = String(row.Request_Id).trim();
+                        if (usedRequestIds.has(reqId)) return;
+
+                        $dd.append($("<option>", { value: row.Request_Id, text: row.PR_No }));
+                    });
+                },
+                error: function (xhr) {
+                    console.error("Failed to load used NRGP request list", xhr);
+                    response.forEach(function (row) {
+						if (row.Cancel == 1) return; 
+                        $dd.append($("<option>", { value: row.Request_Id, text: row.PR_No }));
+                    });
+                }
+            });
+        },
+        error: function (xhr) {
+            console.error("Failed to load NRGP PR No list", xhr);
+        }
+    });
+}*/
+
+
+function loadNgpRgpPrNoDropdown() {
+    const factoryId = sessionStorage.getItem("selectedFactoryId");
+    if (!factoryId) return;
+
+    $.ajax({
+        url       : new URL("/api/dropdown/nrgp/" + factoryId, baseUrl),
+        type      : "GET",
+        xhrFields : { withCredentials: true },
+        success: function (response) {
+            const $dd = $("#regprnon").empty()
+                            .append('<option value="">Select NRGPPr No</option>');
+
+            if (!response || response.length === 0) return;
+
+            response.forEach(function (row) {
+                $dd.append(
+                    $("<option>", {
+                        value: row.requestId,
+                        text : row.prNo
+                    })
+                );
+            });
+        },
+        error: function (xhr) {
+            console.error("Failed to load RGP PR No list", xhr);
+        }
+    });
+}
+
+// ============================================================
+// POPULATE NON-RETURNABLE CREATE MODAL FROM A SELECTED NRGP REQUEST
+// Mirrors populateReturnableFromRgp() exactly.
+// ============================================================
+
+let itemrnreqeust_id = [];
+async function populateNonReturnableFromRgp(requestId) {
+    try {
+        await loadUserList();
+
+        const [response, itemsList, unitsList] = await Promise.all([
+            fetch(new URL(`/api/rgpVendor/edit/${requestId}`, baseUrl), { credentials: 'include' }).then(r => r.json()),  // ← NRGP source
+            fetch(new URL('/api/items', baseUrl1), { credentials: 'include' }).then(r => r.json()),
+            fetch(new URL('/api/items/all', baseUrl1), { credentials: 'include' }).then(r => r.json()),
+			fetch(new URL('/api/websmartuser/getAll', baseUrl), { credentials: 'include' }).then(r => r.json())
+        ]);
+
+        if (!response || response.length === 0) return;
+        const header = response[0];
+
+        // ── Requested By / Department ──
+        const requesterId = header.Request_User || '';
+        if (requesterId) {
+            const info = userMapCache[String(requesterId)];
+            const nameOpt = new Option(info ? info.username : requesterId, requesterId, true, true);
+            $('#requestednon1').empty().append(nameOpt);
+            $('#department6').val(info ? getDepartmentName(info.department) : '');
+        }
+
+		// ── Vendor / Employee ──
+		if (header.Vendor_Name && String(header.Vendor_Name) !== 'null') {
+		    $('#selectvendornon').val('1');
+		    $('#vendor').val(String(header.Vendor_Name));
+		    $('#employeenon').empty().val('');
+		    $('#empLocationRownon').hide();
+		    $('#empaddressnon').val('');
+		    $('#employeeaddressnon').val('');
+		} else if (header.Employee_Id || (header.Employee_Name && String(header.Employee_Name) !== 'null')) {
+		    $('#selectvendornon').val('2');
+
+		    const empId = header.Employee_Id || header.Employee_Name;
+		    const empInfo = userMapCache[String(empId)];
+		    const empDisplayName = empInfo ? empInfo.username : empId;
+
+		    const empOpt = new Option(String(empDisplayName), empId, true, true);
+		    $('#employeenon').empty().append(empOpt);
+
+		    $('#vendor').val('');
+		    $('#empLocationRownon').show();
+
+		    const locId = header.Employee_Sender_Location;
+		    const locMap = await loadFactoryLocationMap();
+		    const locName = (locId === 'OTHER')
+		        ? 'Others'
+		        : (locMap[String(locId)] || locId || '');
+
+		    $('#empaddressnon').val(locName);
+		    $('#employeeaddressnon').val(header.Employee_Address || '');
+		} else {
+		    $('#selectvendornon').val('');
+		    $('#empLocationRownon').hide();
+		}
+
+        // Trigger the enable/disable toggle to match the selection made above
+        $('#selectvendornon').trigger('change');
+
+        // ── Dispatch mode / Contract / Remarks / Reason ──
+        if (header.Mode_Of_Dispatch) $('#despatchmode').val(header.Mode_Of_Dispatch);
+        $('#contract6').val(header.Contract_No ? String(header.Contract_No) : '');
+        $('#remarks6').val(header.Remarks || '');
+        $('#fordispatch1').val(header.reasondisptach || '');
+
+        // ── Lock header fields sourced from NRGP ──
+        $('#requestednon1, #vendor, #selectvendornon, #employeenon, #contract6, #remarks6, #fordispatch1')
+            .prop('disabled', true);
+
+        // Keep Vendor editable, same as Returnable's #tovendor
+        //$('#vendor').prop('disabled', false).prop('readonly', false);
+        $('#empaddressnon, #employeeaddressnon').prop('readonly', true);
+
+        // ── Line items ──
+        const unitMap = {};
+        unitsList.forEach(u => {
+            if (u.uid)  unitMap[String(u.uid).trim()]        = u.unit;
+            if (u.unit) unitMap[u.unit.trim().toUpperCase()] = u.unit;
+        });
+        const itemMap = {};
+        itemsList.forEach(it => { itemMap[String(it.itemid)] = it; });
+
+        $('#TableIDnon tbody').empty();
+        let n = 0;
+		itemrnreqeust_id = [];
+        response.forEach(row => {
+            if (!row.Item_Id) return;
+			itemrnreqeust_id.push(row.ItemRequest_Id);
+            n++;
+            const item = itemMap[String(row.Item_Id)] || {};
+            const unitName = unitMap[String(item.um).trim().toUpperCase()] || unitMap[String(item.um).trim()] || '';
+
+            $('#TableIDnon tbody').append(`
+                <tr id="rownon${n}" data-item-id="${row.Item_Id}">
+                    <td>${n}</td>
+                    <td><input type="text" class="form-control form-control-sm"
+                          value="${(item.itemNo || '') + ' - ' + (item.itmDescription1 || '')}" readonly></td>
+                    <td><input type="text" class="form-control form-control-sm" id="unit${n}" value="${unitName}" readonly></td>
+                    <td><input type="text" class="form-control form-control-sm" id="description1${n}" value="${item.itmDescription1 || ''}" readonly></td>
+                    <td><input type="text" class="form-control form-control-sm" id="description2${n}" value="${item.itmDescription2 || ''}" readonly></td>
+                    <td><input type="text" class="form-control form-control-sm" id="quantity${n}" value="${row.Quantity || ''}" readonly></td>
+                    <td><input type="text" class="form-control form-control-sm" id="price${n}" value="${row.Price || ''}"></td>
+                    <td><input type="text" class="form-control form-control-sm" id="remarks${n}" value="${row.Item_Remarks || ''}" readonly></td>
+                </tr>`);
+        });
+
+    } catch (e) {
+        console.error('populateNonReturnableFromRgp error:', e);
+        alert('Failed to load the selected NRGP request.');
+    }
+}
+
+function resetNonReturnableFields() {
+    $('#requestednon1, #selectvendornon, #employeenon, #contract6, #remarks6')
+        .prop('disabled', false).val('');
+
+    $('#vendor').prop('disabled', false).prop('readonly', false).val('');
+
+    $('#empaddressnon, #employeeaddressnon')
+        .prop('readonly', false).val('');
+
+    $('#empLocationRownon').hide();
+    $('#TableIDnon tbody').empty();
+}
+
+let contractListCache = null;
+let contractMapCache  = {}; // contract_id -> JobCode (name)
+
+async function loadContractList() {
+    if (contractListCache) return contractListCache;
+    try {
+        const url = new URL('/jssl/contracts/allContracts', baseUrl1);
+        url.searchParams.append('factory', selectedFactoryId);
+        const res  = await fetch(url, { credentials: 'include' });
+        const data = await res.json();
+        contractListCache = Array.isArray(data.contracts) ? data.contracts : [];
+        contractMapCache = {};
+        contractListCache.forEach(c => {
+            contractMapCache[String(c.contract_id).trim()] = c.JobCode || '';
+        });
+    } catch (e) {
+        console.error('loadContractList error:', e);
+        contractListCache = [];
+        contractMapCache  = {};
+    }
+    return contractListCache;
+}
+
+function getContractName(contractId) {
+    if (contractId === undefined || contractId === null || String(contractId).trim() === '') return '';
+    return contractMapCache[String(contractId).trim()] || contractId;
+}

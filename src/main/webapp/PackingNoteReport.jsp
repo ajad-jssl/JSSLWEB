@@ -1,9 +1,7 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8"
     pageEncoding="UTF-8"%>
     
-<%
-long ts = System.currentTimeMillis();
-%>
+
 
 <!DOCTYPE html>
 <html>
@@ -21,17 +19,17 @@ long ts = System.currentTimeMillis();
   <link rel="stylesheet" href="css/main.css">
 <!--   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" integrity="sha512-xxx" crossorigin="anonymous" /> -->
   <link href="css/masterpage.css" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/select2@4.0.13/dist/css/select2.min.css" rel="stylesheet" />
-  <script src="https://cdn.jsdelivr.net/npm/select2@4.0.13/dist/js/select2.min.js"></script>
+ <link href="externalLibrary/cdn.jsdelivr.net/npm/select2@4.0.13/dist/css/select2.min.css" rel="stylesheet" />
+  <script src="externalLibrary/cdn.jsdelivr.net/npm/select2@4.0.13/dist/js/select2.min.js"></script>
   
-  <!-- Include Bootstrap CSS -->
- <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet">
+  
+<!-- Include Bootstrap CSS -->
+ <link href="externalLibrary/stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet">
 
-<!-- Include jQuery -->
-<!-- <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script> -->
+
 
 <!-- Include Bootstrap JS -->
-<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.bundle.min.js"></script>
+<script src="externalLibrary/stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.bundle.min.js"></script>
 
 <script>
     const user_id = sessionStorage.getItem('user_id');
@@ -397,8 +395,8 @@ word-wrap: break-word;     /* ❌ Prevent line break */
           <div class="d-sm-flex align-items-center justify-content-between mb-4">
             <h1 class="h3 mb-0 text-gray-800">SubContract Report</h1>
             <ol class="breadcrumb">
-              <li class="breadcrumb-item"><a href="GPMSDashboard.jsp">Home</a></li>
-             <li class="breadcrumb-item"><a href="ItemsDeuReport.jsp">SubContract Report</a></li>
+              <li class="breadcrumb-item"><a href="SubConDashboard.jsp">Home</a></li>
+             <li class="breadcrumb-item"><a href="#">SubContract Report</a></li>
               
             </ol>
           </div>
@@ -882,7 +880,7 @@ word-wrap: break-word;     /* ❌ Prevent line break */
 <div id="errorMsg" style="color:red; font-size:13px;"></div>
 
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/xlsx/0.20.3/xlsx.full.min.js"></script>
 
 <script>
  function exportToExcelHistroy() {
@@ -998,27 +996,27 @@ function printContainer1() {
   });
 </script> -->  
 
- <script src="js/config.js"></script>
+ 
     <script src="vendor/jquery/jquery.min.js"></script>
     <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
     <script src="vendor/jquery-easing/jquery.easing.min.js"></script>
-    <script src="js/ruang-admin.min.js"></script>
-    <!-- Page level plugins -->
+    
     <script src="vendor/datatables/jquery.dataTables.min.js"></script>
     <script src="vendor/datatables/dataTables.bootstrap4.min.js"></script>
+    <script src="js/config.js?v=<%=jsVersion%>"></script>
     <!-- <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script> -->
-    <script src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
-    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
-    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script> 
-     <script src="js/PackingNoteReportLoadlist.js?v=<%=ts%>"></script>
-     <script src="js/username.js"></script>
-     <script src="js/logout.js"></script>
-      <script src="js/createdby.js"></script>
- 	<script src="js/modifiedby.js"></script>
- 	<script src="js/factoryid.js"></script>
+    <script src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
+    <script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
+    <script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
+    <script src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
+    <script src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script> 
+     <script src="js/PackingNoteReportLoadlist.js?v=<%=jsVersion%>"></script>
+     <script src="js/username.js?v=<%=jsVersion%>"></script>
+     <script src="js/logout.js?v=<%=jsVersion%>"></script>
+      <script src="js/createdby.js?v=<%=jsVersion%>"></script>
+ 	<script src="js/modifiedby.js?v=<%=jsVersion%>"></script>
+ 	<script src="js/factoryid.js?v=<%=jsVersion%>"></script>
  	
  	
  <script>

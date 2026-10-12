@@ -60,14 +60,14 @@ function loadAllowedActions() {
 }
 document.addEventListener("DOMContentLoaded", function() {
 	loadAllowedActions();
-    const selectedFactoryId = localStorage.getItem("selectedFactoryId"); // Get factory_id from localStorage
+    const selectedFactoryId = sessionStorage.getItem("selectedFactoryId"); // Get factory_id from sessionStorage
     if (selectedFactoryId) {
         fetchcont(selectedFactoryId); 
 		fetchtype() // Fetch contractors initially
 		fetchtype1()
 		fetchUserList(selectedFactoryId)
     } else {
-        console.error("No factory ID found in localStorage.");
+        console.error("No factory ID found in sessionStorage.");
     }
 });
 
@@ -201,7 +201,7 @@ async function fetchmile(factoryId, contractId) {
 
 function loadInvoices(con_id) {
 	
-	let factory_id = localStorage.getItem("selectedFactoryId");
+	let factory_id = sessionStorage.getItem("selectedFactoryId");
     const url = new URL("/jssl/searchconsolidatedinvoice", baseUrl);
     url.searchParams.append("con_id", con_id);
 	url.searchParams.append("factory_id", factory_id);
@@ -572,7 +572,7 @@ function openModalAdd()
 
 	async function addConsolidatedPacking() {
 
-	    const selectedFactoryId = localStorage.getItem("selectedFactoryId");
+	    const selectedFactoryId = sessionStorage.getItem("selectedFactoryId");
 	    const url = new URL("jssl/consolpackingmaster/addnew", baseUrl);
 	    const formData = new FormData();
 
@@ -756,7 +756,7 @@ let currentFactoryIdConsol = null;
 
 function fetchUserList(selectedFactoryId) {
 
-    currentFactoryIdConsol = selectedFactoryId || localStorage.getItem("selectedFactoryId");
+    currentFactoryIdConsol = selectedFactoryId || sessionStorage.getItem("selectedFactoryId");
 
     if ($.fn.DataTable.isDataTable('#tableID')) {
         $('#tableID').DataTable().clear().destroy();
@@ -1024,7 +1024,7 @@ function setupUpdateDropdown() {
 }
 
 function loadInvoicesUP(con_id, selectedInvoices = []) {
-	let factory_id = localStorage.getItem("selectedFactoryId");
+	let factory_id = sessionStorage.getItem("selectedFactoryId");
     const url = new URL("/jssl/searchconsolidatedinvoice", baseUrl);
     url.searchParams.append("con_id", con_id);
 	url.searchParams.append("factory_id", factory_id);
@@ -1353,7 +1353,7 @@ async function updateevent() {
             return;
         }
 
-        const selectedFactoryId = localStorage.getItem("selectedFactoryId");
+        const selectedFactoryId = sessionStorage.getItem("selectedFactoryId");
         const url = new URL("jssl/consolidatedupdatePacking", baseUrl);
 
         const formData = new FormData();

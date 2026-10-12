@@ -27,7 +27,7 @@
 <link rel="stylesheet" href="css/main.css">
 <link href="css/masterpage.css" rel="stylesheet">
 
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
 
 <style>
 body {
@@ -405,6 +405,7 @@ table.table-bordered th, table.table-bordered td {
 													<tr>
 														<th>SL.NO</th>
 														<th>Location</th>
+														<th>Empcode</th>
 														<th>Name</th>
 														<th>Total Hours</th>
 													</tr>
@@ -467,78 +468,38 @@ table.table-bordered th, table.table-bordered td {
 		class="fas fa-angle-up"></i>
 	</a>
 
-	<!-- ── Scripts (same order as AMS Report) ────────── -->
-	<script src="js/config.js"></script>
-	<script src="vendor/jquery/jquery.min.js"></script>
+		<script src="vendor/jquery/jquery.min.js"></script>
 	<script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
 	<script src="vendor/jquery-easing/jquery.easing.min.js"></script>
-	<script src="js/ruang-admin.min.js"></script>
+
 	<script src="vendor/datatables/jquery.dataTables.min.js"></script>
 	<script src="vendor/datatables/dataTables.bootstrap4.min.js"></script>
+	<script src="js/config.js?v=<%=jsVersion%>"></script>
+
+<script
+		src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
 	<script
-		src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
+		src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 	<script
-		src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+		src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
 	<script
-		src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
+		src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
 	<script
-		src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
+		src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
 	<script
-		src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
-	<script
-		src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
+		src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
 	<!-- SheetJS for Excel export -->
 	<script
-		src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
-	<!-- App scripts -->
-	<script src="js/DrawingReport.js"></script>
-	<script src="js/username.js"></script>
-	<script src="js/logout.js"></script>
-	<script
-		src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+		src="externalLibrary/cdn.sheetjs.com/0.20.3/xlsx.full.min.js"></script>
 
-	<!-- Inactivity logout -->
-	<script>
-    let inactivityTime = function () {
-      let timeout;
-      function resetTimer() {
-        clearTimeout(timeout);
-        timeout = setTimeout(triggerLogout, 900000);
-      }
-      window.onload   = resetTimer;
-      document.onmousemove = resetTimer;
-      document.onkeydown   = resetTimer;
-      document.onclick     = resetTimer;
-      document.onscroll    = resetTimer;
-      function triggerLogout() { logoutUser(new Event('logout')); }
-    };
-    inactivityTime();
+	<script src="js/DrawingReport.js?v=<%=jsVersion%>"></script>
+	<script src="js/username.js?v=<%=jsVersion%>"></script>
+	<script src="js/logout.js?v=<%=jsVersion%>"></script>
+	<script src="js/Sessionfilter.js?v=<%=jsVersion%>"></script>
+		<script
+		src="externalLibrary/cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
-    function logoutUser(event) {
-      if (event && event.preventDefault) event.preventDefault();
-      var user_id = sessionStorage.getItem('user_id');
-      if (!user_id) { alert("User ID not found. Please login first."); return; }
-      if (typeof baseUrl === 'undefined' || !baseUrl) { console.error("baseUrl is not defined."); return; }
-      var url = baseUrl.endsWith('/') ? baseUrl + 'jssl/user/userlogout' : baseUrl + '/jssl/user/userlogout';
-      $.ajax({
-        url: url, type: 'POST',
-        xhrFields: { withCredentials: true },
-        data: $.param({ user_id: user_id }),
-        contentType: 'application/x-www-form-urlencoded',
-        dataType: 'json', cache: false,
-        success: function (data) {
-          if (data.status === "yes" && data.message === "Logout Success") {
-            sessionStorage.removeItem("user_id");
-            sessionStorage.removeItem("username");
-            sessionStorage.removeItem("isLoggedIn");
-            localStorage.removeItem("selectedFactoryId");
-            window.location = "newlogin.jsp";
-          }
-        },
-        error: function (xhr) { alert("Error: " + (xhr.responseText || "An error occurred.")); }
-      });
-    }
-  </script>
+
 
 </body>
 </html>

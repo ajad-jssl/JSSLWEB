@@ -41,12 +41,12 @@ document.getElementById("#modalScroll").addEventListener("click", function () {
 	$('#exampleModalScrollable').modal('show');
 });
 
-/*const selectedFactoryId = localStorage.getItem('selectedFactoryId');
+/*const selectedFactoryId = sessionStorage.getItem('selectedFactoryId');
 console.log('selectedFactoryId:', selectedFactoryId);
 */
 document.getElementById("edate").setAttribute("min", new Date().toISOString().split('T')[0]);
 
-const selectedFactoryId = localStorage.getItem('selectedFactoryId');
+const selectedFactoryId = sessionStorage.getItem('selectedFactoryId');
 console.log('selectedFactoryId:', selectedFactoryId);
 
 document.addEventListener("DOMContentLoaded", function () {
@@ -57,7 +57,7 @@ if (selectedFactoryId) {
     fetchdelivery();
 	fetchAllGstSeries();
 } else {
-    console.error('No factory ID found in localStorage.');
+    console.error('No factory ID found in sessionStorage.');
 }
 
 

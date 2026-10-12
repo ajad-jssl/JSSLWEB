@@ -4,25 +4,25 @@ let lengthShipmentDelivery='';
 taxmaster();
 
 
-// Retrieve the selected factory ID from localStorage
-const selectedFactoryId = localStorage.getItem('selectedFactoryId');
+// Retrieve the selected factory ID from sessionStorage
+const selectedFactoryId = sessionStorage.getItem('selectedFactoryId');
 
 // Ensure the ID is available before making the API call
 if (selectedFactoryId) {
-    state();
-    shipmentdelivery();
-    typemaster();
-    workorder();
-    othertype();
-   milestone();
-   gstmaster();
-   uom();
-   servicecode();
+   // state();
+   // shipmentdelivery();
+   // typemaster();
+   // workorder();
+    //othertype();
+   //milestone();
+  // gstmaster();
+  // uom();
+  // servicecode();
     country();
-     organization();
-     bank();
+     //organization();
+     //bank();
     business();
-   openingbal();
+   //openingbal();
    //vendor(selectedFactoryId);
 gstseries(selectedFactoryId);
 advanceseries();
@@ -31,13 +31,13 @@ challan();
 payment();
 self();
 delivery();
-Contractorlist();
-shipmentdelivery();
+//Contractorlist();
+//shipmentdelivery();
 user();
 userroles();
-scrapitem();
-ScrapType();
-locations();
+//scrapitem();
+//ScrapType();
+//locations();
 fetchUserList();
 fetchVendor();
 fetchItem();
@@ -68,7 +68,7 @@ openingnew(selectedFactoryId);
 milenewtest();
 servicetestnew2();
 } else {
-    console.error('No factory ID found in localStorage.');
+    console.error('No factory ID found in sessionStorage.');
 }
 
 function Contractorlist(selectedFactoryId) {

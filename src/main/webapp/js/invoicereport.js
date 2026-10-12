@@ -72,7 +72,7 @@ const contractDropdown2 = document.getElementById("contract2");
 const fromDateInput = document.getElementById("date");
 const toDateInput = document.getElementById("todate");
 const container = document.getElementById("container1");
-const tbody = document.querySelector("#TableID tbody");
+const tbody = document.querySelector("#Table_ID tbody");
 
 // ================= INITIAL STATE =================
 fromDateInput.disabled = true;
@@ -531,4 +531,59 @@ function blockUI() {
     container.appendChild(overlay);
 }
 
+document.addEventListener("DOMContentLoaded", function () {
+    const btn = document.getElementById("btnExportInvoice");
 
+    if (!btn) {
+        console.error("Export button #btnExportInvoice not found in DOM");
+        return;
+    }
+
+    btn.addEventListener("click", function () {
+        exportInvoiceReportToExcel();
+    });
+});
+
+function exportInvoiceReportToExcel() {
+
+    const table = document.getElementById("Table_ID");
+
+    if (!table) {
+        console.error("Table #Table_ID not found in DOM");
+        return;
+    }
+
+    const tbody = table.querySelector("tbody");
+    if (!tbody || tbody.rows.length === 0) {
+        alert("No data to export. Please load the report first.");
+        return;
+    }
+
+    // Wrap the table HTML in a minimal Excel-flavored HTML document.
+    // Excel recognizes this MIME/header pair and opens it as a native worksheet.
+    const template =
+        '<html xmlns:o="urn:schemas-microsoft-com:office:office" ' +
+        'xmlns:x="urn:schemas-microsoft-com:office:excel" ' +
+        'xmlns="http://www.w3.org/TR/REC-html40">' +
+        '<head><meta charset="UTF-8">' +
+        '<!--[if gte mso 9]><xml>' +
+        '<x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet>' +
+        '<x:Name>Invoice Report</x:Name>' +
+        '<x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions>' +
+        '</x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook>' +
+        '</xml><![endif]-->' +
+        '</head><body>' +
+        table.outerHTML +
+        '</body></html>';
+
+    const blob = new Blob([template], { type: "application/vnd.ms-excel" });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "Invoice_Report.xls";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}

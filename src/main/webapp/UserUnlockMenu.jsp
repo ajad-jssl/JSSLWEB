@@ -17,7 +17,7 @@ long ts = System.currentTimeMillis();
 	  <link href="css/masterpage.css" rel="stylesheet">
 <link href="css/ruang-admin.min.css" rel="stylesheet">
 <link rel="stylesheet" href="css/main.css">
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
 <style>
 /* LEFT ALIGN TABS */
 .left-tabs {
@@ -71,7 +71,7 @@ long ts = System.currentTimeMillis();
 	<div id="wrapper">
 
 		<!-- Sidebar -->
-		<%-- <%@ include file="InVoiceSideBar.jsp"%> --%>
+		
 		
 		<%@ include file="useraccess_sidebar.jsp"%>
 		
@@ -119,7 +119,7 @@ long ts = System.currentTimeMillis();
 						class="d-sm-flex align-items-center justify-content-between mb-4">
 						<h1 class="h3 mb-0 text-gray-800">User Management</h1>
 						<ol class="breadcrumb">
-							<li class="breadcrumb-item"><a href="#">Home</a></li>
+							<li class="breadcrumb-item"><a href="useraccess_Dashboard.jsp">Home</a></li>
 							<li class="breadcrumb-item active">Unlock / Inactive</li>
 						</ol>
 					</div>
@@ -303,16 +303,16 @@ long ts = System.currentTimeMillis();
 		<!-- Scripts -->
 		<script src="vendor/jquery/jquery.min.js"></script>
 		<script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
-		<script src="js/ruang-admin.min.js"></script>
-		<script src="js/logout.js"></script>
-		<script src="js/UserUnlockMenu.js?v=<%=ts%>"></script>
-		<script src="js/username.js"></script>
-		 <script src="js/factoryid.js"></script>
-		  	  <script src="js/modifiedby.js"></script>
-   	  <script src="js/createdby.js"></script>
-   	   <script src="js/Sessionfilter.js"></script>
+   	    <script src="js/config.js?v=<%=jsVersion%>"></script>
+		<script src="js/logout.js?v=<%=jsVersion%>"></script>
+		<script src="js/UserUnlockMenu.js?v=<%=jsVersion%>"></script>
+		<script src="js/username.js?v=<%=jsVersion%>"></script>
+		 <script src="js/factoryid.js?v=<%=jsVersion%>"></script>
+		  	  <script src="js/modifiedby.js?v=<%=jsVersion%>"></script>
+   	  <script src="js/createdby.js?v=<%=jsVersion%>"></script>
+   	   <script src="js/Sessionfilter.js?v=<%=jsVersion%>"></script>
    	   
-   	    <script src="js/config.js"></script>
+
 
 		<script>
 			

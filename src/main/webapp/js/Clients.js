@@ -49,11 +49,11 @@ let rowCount = 0; // Counter to keep track of dynamic row IDs
 document.addEventListener("DOMContentLoaded", function () {
 	loadActions();
     // First, check if there's already an initial row
-    addRow(); // Initially add a row
+   
     // Populate the dropdowns for the first row
-    fetchuom(1);
-    fetctype(1);
-    fetchUserList(selectedFactoryId);
+   
+   
+  //  fetchUserList(selectedFactoryId);
 	
 });
 
@@ -61,26 +61,26 @@ $(document).ready(function () {
 	fetchStates();
     // Show confirmation modal when "Create" is clicked
 	$("#showclient").click(function () {
-	        console.log("Create clicked - Validating form");
+	      
 
 	        if (validateclientFields()) {
-	            console.log("Validation passed - Modal will show");
+	           
 	            $("#exampleModalCenter66").modal("show");
 	        } else {
-	            console.log("Validation failed - Modal will not show");
+	           
 	        }
 	    });
 
     // Handle "No" button click (close the modal without doing anything)
     $(".btn-secondary[data-dismiss='modal']").click(function () {
-        console.log("No clicked - Modal will hide");
+      
         $("#exampleModalCenter66").modal("hide");
     });
 
     // Use event delegation for "Yes" button
     // This ensures that even if the modal is dynamically rendered, it can capture the click event
     $(document).on("click", "#confirmYes", function () {
-        console.log("Yes clicked - Proceeding with creation");
+      
 
         // Hide the modal before proceeding
         $("#exampleModalCenter66").modal("hide");
@@ -155,7 +155,7 @@ function fetchAllCities() {
                 cityObj[city.cityId] = city.cityName;
             });
 
-            console.log("All Cities Loaded:", cityObj);
+           
 
             resolve();
         })
@@ -187,7 +187,7 @@ function fetchStates() {
                     `<option value="${state.stateId}">${state.stateName}</option>`;
             });
 
-            console.log("State Object Loaded:", stateObj);
+           
 
             resolve();   // 🔥 FIX: tell the system it's finished loading
         })
@@ -336,7 +336,7 @@ function clientaddevent()
                 "created_date": currentDateTimeString
             };
 
-            console.log('Sending data:', requestData);
+        
 
             // ===============================
             // STEP 3 : INSERT CLIENT
@@ -350,7 +350,7 @@ function clientaddevent()
                 dataType: 'json',
 
                 success: function (response) {
-                    console.log("Response:", response);
+                
 
                     if (response.body && response.body.status === "Success") {
                         var popup = $('<div class="popup">Inserted Successfully with Client Number: ' 
@@ -582,7 +582,7 @@ $(document).on('click', '#modalokk', function() {
 	// Function for editing client
 	function editClient(clientId) {
 		
-	    console.log('Editing client with ID:', clientId);
+	   
 		editClient(clientId)
 	    // Implement logic to open a modal or navigate to an edit page for this client
 	}

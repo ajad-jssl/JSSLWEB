@@ -7,9 +7,9 @@
   response.setHeader("Pragma", "no-cache"); // HTTP 1.0
   response.setDateHeader("Expires", 0); // Proxies
 %>
-<%
-long ts = System.currentTimeMillis();
-%>
+
+
+
      
 <!DOCTYPE html>
 <html>
@@ -25,10 +25,15 @@ long ts = System.currentTimeMillis();
       <link href="vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css" />
       <link href="css/ruang-admin.min.css" rel="stylesheet" />
       <link href="vendor/datatables/dataTables.bootstrap4.min.css" rel="stylesheet">
-      <!-- <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css" /> -->
-      <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css" />
+     
+     
+ <link rel="stylesheet" href="externalLibrary/cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css" />
+      
+      
+      
+      
       <link rel="stylesheet" href="css/main.css">
-       <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
     <script>
     const user_id = sessionStorage.getItem('user_id');
     if (!user_id) {
@@ -185,7 +190,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 <body >
    <div id="wrapper">
     <!-- Sidebar -->
-  <%@ include file="AmsSidebar.jsp" %>    <!-- Sidebar -->
+  <%@ include file="AmsSidebar.jsp" %>    
   
     <div id="content-wrapper" class="d-flex flex-column">
       <div id="content">
@@ -429,11 +434,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
              <div id="assettypeError" class="error-message" style="display: none;">Asset Type is required</div>
            
             
-           <!--  <div class="col-md-6">
-             <label for="vehicletype" class="form-label"><b>Vehicle Type:</b></label>
-             <input type="text" class="form-control form-control-sm" id="vehicletype" placeholder="Vehicle Type">
-             <div id="vehicletypeError" class="text-danger" style="display: none;">Vehicle Type is required</div>
-            </div> -->
+
           </div>
     </div>
 </form>
@@ -469,8 +470,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
             </div>
           </div>
           
-          <!-- jQuery -->
-      <script src="http://cdn.jsdelivr.net/npm/@popperjs/core@2.9.1/dist/umd/popper.min.js"></script>         
+           
 
 
 
@@ -556,8 +556,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 						</div>
 					</div>
 
-					<script src="http://cdn.jsdelivr.net/npm/@popperjs/core@2.9.1/dist/umd/popper.min.js"></script>         
- 
+					
          
           
           
@@ -621,7 +620,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
         
         
         
-       <script src="http://cdn.jsdelivr.net/npm/@popperjs/core@2.9.1/dist/umd/popper.min.js"></script>         
+   
 
         
         
@@ -764,7 +763,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
             </div>
           </div>
               
-              <script src="http://cdn.jsdelivr.net/npm/@popperjs/core@2.9.1/dist/umd/popper.min.js"></script>         
+             
         
           
       
@@ -811,10 +810,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
             <div class="modal-dialog modal-dialog-centered" role="document">
               <div class="modal-content" style="width: 54%;right: -22%;border-width: thick;border-color: #eaecf4;">
                  <div class="modal-header1"> 
-                   <!-- <h5 class="modal-title" id="exampleModalCenterTitle">Modal Vertically Centered</h5> --> 
-                   <!-- <button type="button" class="close" data-dismiss="modal" aria-label="Close" >
-                    <span aria-hidden="true">&times;</span>
-                  </button>  -->
+                  
                  </div>
                 <div class="modal-body">
                   <b>Are you sure you want to update?</b>
@@ -827,7 +823,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
             </div>
           </div>
               
-              <script src="http://cdn.jsdelivr.net/npm/@popperjs/core@2.9.1/dist/umd/popper.min.js"></script>         
+                
         
           
           
@@ -905,13 +901,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
             </div>
           </div>
               
-              <script src="http://cdn.jsdelivr.net/npm/@popperjs/core@2.9.1/dist/umd/popper.min.js"></script>         
-      
-              
-              
-              
-          
-          <!--  Update AssetOwner -->  
+             
           
           
           
@@ -969,7 +959,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
             </div>
           </div>
               
-              <script src="http://cdn.jsdelivr.net/npm/@popperjs/core@2.9.1/dist/umd/popper.min.js"></script>         
+          
      
               
               
@@ -1039,7 +1029,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
             </div>
           </div>
               
-              <script src="http://cdn.jsdelivr.net/npm/@popperjs/core@2.9.1/dist/umd/popper.min.js"></script>         
+            
        
           
           
@@ -1099,7 +1089,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
             </div>
           </div>
               
-              <script src="http://cdn.jsdelivr.net/npm/@popperjs/core@2.9.1/dist/umd/popper.min.js"></script>         
+                  
            
           
           <div class="modal fade" id="exampleModalCenter66" tabindex="-1" role="dialog"
@@ -1265,31 +1255,34 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
   <a class="scroll-to-top rounded" href="#page-top">
     <i class="fas fa-angle-up"></i>
   </a>
-  <script src="js/config.js"></script>
+  <script src="externalLibrary/cdn.jsdelivr.net/npm/@popperjs/core@2.9.1/dist/umd/popper.min.js"></script>  
   <script src="vendor/jquery/jquery.min.js"></script>
       <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
       <script src="vendor/jquery-easing/jquery.easing.min.js"></script>
-      <script src="js/ruang-admin.min.js"></script>
-      <!-- Page level plugins -->
- <!--  --><script src="vendor/datatables/jquery.dataTables.min.js"></script>
+  
+<script src="vendor/datatables/jquery.dataTables.min.js"></script>
       <script src="vendor/datatables/dataTables.bootstrap4.min.js"></script>
-    <!-- <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script> -->
+    <script src="js/config.js?v=<%=jsVersion%>"></script>
+   
+   
+   
     <script src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
     <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
     <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
-  <!-- <script src="js/AmsMasterRegister.js"></script> -->
+ 
+ 
   
-    <script src="js/AmsMasterRegister.js?v=<%=ts%>"></script>
-      <script src="js/logout.js"></script>
-  <script src="js/username.js"></script>
-  <script src="js/factoryid.js"></script>
-   	  <script src="js/modifiedby.js"></script>
-   	  <script src="js/createdby.js"></script>
-   	   <script src="js/Sessionfilter.js"></script>
-   	   <script type="js/Factory.js"></script>
+    <script src="js/AmsMasterRegister.js?v=<%=jsVersion%>"></script>
+      <script src="js/logout.js?v=<%=jsVersion%>"></script>
+  <script src="js/username.js?v=<%=jsVersion%>"></script>
+  <script src="js/factoryid.js?v=<%=jsVersion%>"></script>
+   	  <script src="js/modifiedby.js?v=<%=jsVersion%>"></script>
+   	  <script src="js/createdby.js?v=<%=jsVersion%>"></script>
+   	   <script src="js/Sessionfilter.js?v=<%=jsVersion%>"></script>
+   	   <script type="js/Factory.js?v=<%=jsVersion%>"></script>
    
    	     	  <script>
 /* const moduleId = localStorage.getItem("selectedModuleId"); */
@@ -1297,7 +1290,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
   window.actionElementMap = {
   };
 </script>
-   	    <script src="js/permissions.js"></script>
+   	    <script src="js/permissions.js?v=<%=jsVersion%>"></script>
 <script>
 function toggleTables() {
     // Hide all tables first

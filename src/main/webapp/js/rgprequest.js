@@ -1,3 +1,36 @@
+const MainPage = 'GPMSUserRequest.jsp';
+const UserId = sessionStorage.getItem('username');
+
+let allowedActions = [];
+
+async function loadActions() {
+    try {
+        const response = await fetch(
+            `${baseUrl}/api/page/actions?userId=${encodeURIComponent(UserId)}&pageName=${encodeURIComponent(MainPage)}`,
+            {
+                method: "GET",
+                credentials: "include", // 🔐 send cookies/session
+                headers: {
+                    "Content-Type": "application/json"
+                }
+            }
+        );
+
+        if (!response.ok) {
+            throw new Error("Failed to fetch actions");
+        }
+
+        allowedActions = await response.json();
+		
+		
+
+    } catch (error) {
+        console.error("Error:", error);
+    }
+}
+
+
+
 /* =====================================================================
    RGP REQUEST — rgprequest.js
    Depends on: baseUrl from js/config.js
@@ -6,6 +39,8 @@
 let itemMasterList = [];
 let rowCount       = 1;
 let upRowCount     = 1;
+
+
 
 
 function initSelect2(selector, modalId, placeholder) {
@@ -19,12 +54,20 @@ function initSelect2(selector, modalId, placeholder) {
 }
 // ── Open create modal ─────────────────────────────────────────────────
 $("#rgpcreate").click(function () {
-    console.log("rgp create clicked");
-    $("#exampleModalScrollable123").modal("show");
+	  const allowed =allowedActions || [];
+
+	if (!allowed.includes("Insert")) {
+	  alert(" You do not have permission to Insert.");
+	  $('#exampleModalScrollable123').modal('hide');
+	  return;
+	}
+	$('#exampleModalScrollable123').modal('show');
+
 });
 
 // ── Single document.ready ─────────────────────────────────────────────
 $(document).ready( async  function () {
+await	loadActions();
 
     // Date defaults
     const today = new Date().toISOString().split('T')[0];
@@ -89,19 +132,7 @@ $(document).ready( async  function () {
 	    }
 	});
 
-	// ── When factory location selected → fill address
-/*	$("#empaddress").on("change", function () {
-	    const selected = $(this).find("option:selected");
-	    const factoryId = selected.val();
 
-	    if (factoryId === "OTHER") {
-	        // Other selected → allow manual entry
-	        $("#employeeaddress").val("").prop("readonly", false);
-	    } else {
-	        // Auto-fill address and make readonly
-	        $("#employeeaddress").val(selected.data("address") || "").prop("readonly", true);
-	    }
-	});*/
 	
 	// ── When factory location selected → fill address
 	$("#empaddress").on("change", function () {
@@ -190,15 +221,7 @@ $(document).ready( async  function () {
 	    }
 	});
 
-	// Factory location change → fill address for update modal
-/*	$("#empaddressup").on("change", function () {
-	    const selected = $(this).find("option:selected");
-	    if (selected.val() === "OTHER") {
-	        $("#employeeaddressup").val("").prop("readonly", false);
-	    } else {
-	        $("#employeeaddressup").val(selected.data("address") || "").prop("readonly", true);
-	    }
-	});*/
+
 	
 	// Factory location change → fill address for update modal
 	$("#empaddressup").on("change", function () {
@@ -270,7 +293,7 @@ $(document).ready( async  function () {
             createdBy    : sessionStorage.getItem("id"),
 			requestBy :sessionStorage.getItem("Empcode"),
 			reasondisptach:$("#reasondispatch").val().trim()|| null,
-			selectfactoryId : localStorage.getItem("selectedFactoryId"),
+			selectfactoryId : sessionStorage.getItem("selectedFactoryId"),
             lineItems    : lineItems   // [{ itemid, quantity, price, remarks }]
         };
 
@@ -294,6 +317,19 @@ $(document).ready( async  function () {
                 alert("Failed to create RGP. Please try again.");
             }
         });
+    });
+
+
+	
+	
+	$("#submitVerifyButton").on("click", function () {
+	    $("#exampleModalCenterVerifyConfirm").modal("show");
+	});
+
+    // ── Confirmed YES → submit verification (API to be wired later) ───
+    $("#confirmVerifyYes").on("click", function () {
+        $("#exampleModalCenterVerifyConfirm").modal("hide");
+        submitVerification();
     });
 
 });
@@ -328,7 +364,7 @@ function loadUomMaster() {
 
 // ── PR Sequence ───────────────────────────────────────────────────────
 function loadPRSequence() {
-    const factoryId = localStorage.getItem("selectedFactoryId");
+    const factoryId = sessionStorage.getItem("selectedFactoryId");
     const prefix    = factoryId == "1" ? "RGPB-PR"
                     : factoryId == "2" ? "RGPG-PR" : "";
     $.ajax({
@@ -343,69 +379,18 @@ function loadPRSequence() {
 }
 
 
-/*function QSlist() {
-    const factoryId = localStorage.getItem("selectedFactoryId");
-    const EmpCode = sessionStorage.getItem("Empcode");
 
-    if (!factoryId) return;
-
-    $.ajax({
-        url: new URL("/api/rgp/" + factoryId, baseUrl),
-        type: "GET",
-        data: {
-            empCode: EmpCode
-        },
-        xhrFields: { withCredentials: true },
-        success: function (response) {
-            const $tbody = $("#tableID2 tbody").empty();
-
-            if (!response || response.length === 0) {
-                $tbody.append('<tr><td colspan="5" class="text-center">No records found</td></tr>');
-                return;
-            }
-
-            response.forEach(function (row, i) {
-                let sentTo = "";
-                if (row.Vendor_Name && row.Vendor_Name !== "NULL") {
-                    sentTo = vendorMap[String(row.Vendor_Name)] || "";
-                } else if (row.Employee_Name && row.Employee_Name !== "NULL") {
-                    sentTo = employeeMap[String(row.Employee_Name)] || "Employee #" + row.Employee_Name;
-                }
-
-                const returnDate = row.Expected_Return_Date
-                    ? row.Expected_Return_Date.toString().split("T")[0]
-                    : "";
-
-                $tbody.append(`
-                    <tr>
-                        <td>${i + 1}</td>
-                        <td>${row.PR_No || ""}</td>
-                        <td>${sentTo}</td>
-                        <td>${returnDate}</td>
-                        <td class="text-center">
-                            <i class="fa fa-pen"
-                               style="color:blue;cursor:pointer;"
-                               onclick="editRgp(${row.Request_Id})"
-                               title="Edit"></i>
-                        </td>
-                    </tr>`);
-            });
-        },
-        error: function (xhr) {
-            console.error("Failed to load RGP list", xhr);
-        }
-    });
-}*/
 
 let currentFactoryIdRGP;
 
 function QSlist() {
 
-    currentFactoryIdRGP = parseInt(localStorage.getItem("selectedFactoryId"), 10);
+    currentFactoryIdRGP = parseInt(sessionStorage.getItem("selectedFactoryId"), 10);
     const EmpCode = sessionStorage.getItem("Empcode");
+	const userId = sessionStorage.getItem("username");
 
     if (!currentFactoryIdRGP || isNaN(currentFactoryIdRGP)) {
-        console.warn("No valid factory ID in localStorage");
+        console.warn("No valid factory ID in sessionStorage");
         return;
     }
 
@@ -433,6 +418,7 @@ function QSlist() {
                     const EmpCode = sessionStorage.getItem("Empcode");
                     const url = new URL(`/api/rgp/pagging/${currentFactoryIdRGP}`, baseUrl);
                     url.searchParams.append('empCode', EmpCode);
+					url.searchParams.append('userId',userId);
                     url.searchParams.append('page', 0);
                     url.searchParams.append('size', 99999);
 
@@ -501,6 +487,7 @@ function QSlist() {
             { title: "Sent To"                         },
             { title: "Return Date"                     },
             { title: "Edit",        orderable: false  },
+            { title: "Verify",      orderable: false  },
             { title: "Cancel",      orderable: false  }
         ],
 
@@ -512,6 +499,7 @@ function QSlist() {
 
             const url = new URL(`/api/rgp/pagging/${currentFactoryIdRGP}`, baseUrl);
             url.searchParams.append('empCode', EmpCode);
+			url.searchParams.append('userId',userId);
             url.searchParams.append('page',    page);
             url.searchParams.append('size',    size);
             url.searchParams.append('search',  searchValue);
@@ -532,43 +520,54 @@ function QSlist() {
 
                     let slNo = data.start + 1;
 
-                    const rows = json.data.map(item => {
+					const rows = json.data.map(item => {
 
-                        let sentTo = "";
-                        if (item.vendor_Name && item.vendor_Name !== "NULL") {
-                            sentTo = vendorMap[String(item.vendor_Name)] || "";
-                        } else if (item.employee_Name && item.employee_Name !== "NULL") {
-                            sentTo = employeeMap[String(item.employee_Name)]
-                                     || "Employee #" + item.employee_Name;
-                        }
+					    let sentTo = "";
+					    if (item.vendor_Name && item.vendor_Name !== "NULL") {
+					        sentTo = vendorMap[String(item.vendor_Name)] || "";
+					    } else if (item.employee_Name && item.employee_Name !== "NULL") {
+					        sentTo = employeeMap[String(item.employee_Name)]
+					                 || "Employee #" + item.employee_Name;
+					    }
 
-                        const returnDate = item.expected_Return_Date
-                            ? item.expected_Return_Date.toString().split("T")[0]
-                            : "";
+					    const returnDate = item.expected_Return_Date
+					        ? item.expected_Return_Date.toString().split("T")[0]
+					        : "";
 
-                        const editIcon =
-                            `<i class="fa fa-pen"
-                                style="color:blue;cursor:pointer;"
-                                onclick="editRgp(${item.request_Id})"
-                                title="Edit"></i>`;
+					    const editIcon =
+					        `<i class="fa fa-pen"
+					            style="color:blue;cursor:pointer;"
+					            onclick="editRgp(${item.request_Id})"
+					            title="Edit"></i>`;
 
-                        const cancelIcon =
-                            `<i class="fa fa-times-circle"
-                                style="color:red;cursor:pointer;"
-                                onclick="cancelRgp(${item.request_Id})"
-                                title="Cancel"></i>`;
-								
-								
+					    // ── NEW: Verify is only active for vendor-type requests ──
+					    const isVendorType = item.vendor_Name && item.vendor_Name !== "NULL";
 
-                        return [
-                            slNo++,
-                            item.pr_No || "",
-                            sentTo,
-                            returnDate,
-                            editIcon,
-                            cancelIcon
-                        ];
-                    });
+					    const verifyIcon = isVendorType
+					        ? `<i class="fa fa-check-circle"
+					              style="color:green;cursor:pointer;"
+					              onclick="verifyRgp(${item.request_Id})"
+					              title="Verify"></i>`
+					        : `<i class="fa fa-check-circle"
+					              style="color:#ccc;cursor:not-allowed;"
+					              title="Verify not applicable for employee requests"></i>`;
+
+					    const cancelIcon =
+					        `<i class="fa fa-times-circle"
+					            style="color:red;cursor:pointer;"
+					            onclick="cancelRgp(${item.request_Id})"
+					            title="Cancel"></i>`;
+
+					    return [
+					        slNo++,
+					        item.pr_No || "",
+					        sentTo,
+					        returnDate,
+					        editIcon,
+					        verifyIcon,
+					        cancelIcon
+					    ];
+					});
 
                     callback({
                         draw:            data.draw,
@@ -594,6 +593,15 @@ function QSlist() {
 let pendingCancelRequestId = null;
 
 function cancelRgp(requestId) {
+	  const allowed =allowedActions || [];
+
+	if (!allowed.includes("Cancel")) {
+	  alert(" You do not have permission to Cancel.");
+	
+	  return;
+	}
+	
+	
     pendingCancelRequestId = requestId;
     $("#cancelRgpModal").modal("show");
 }
@@ -615,8 +623,8 @@ $("#confirmCancelRgp").on("click", function () {
         },
         error: function (xhr) {
             $("#cancelRgpModal").modal("hide");
-            if (xhr.status === 409 && xhr.responseText === "GATE_PASS_ALREADY_ISSUED") {
-                $("#modalMessage").text("This RGP already has a gate pass issued and can no longer be cancelled.");
+            if (xhr.status === 409 ) {
+                $("#modalMessage").text("Cancellation is not allowed because one or more line items have already been verified.");
                 $("#messageModal").modal("show");
                 return;
             }
@@ -627,8 +635,7 @@ $("#confirmCancelRgp").on("click", function () {
 
     pendingCancelRequestId = null;
 });
-// ── Vendors ───────────────────────────────────────────────────────────
-// ── Vendors ───────────────────────────────────────────────────────────
+
 
 
 let vendorMap  ={};
@@ -642,14 +649,17 @@ function loadVendors() {
             success: function (response) {
                 const $v  = $("#tovendor").empty().append('<option value="1">Select Vendor</option>');
                 const $vu = $("#tovendorup").empty().append('<option value="1">Select Vendor</option>');
+				const $vuv = $("#tovendorverify").empty().append('<option value="1">Select Vendor</option>');
 				response.forEach(function (c) {
 				                    vendorMap[String(c.cid)] = c.client_number + " - " + c.name;
 				                    const opt = $("<option>", { value: c.cid, text: c.client_number + " - " + c.name });
 				                    $v.append(opt.clone());
 				                    $vu.append(opt.clone());
+									$vuv.append(opt.clone());
 				                });
 				                $v.trigger("change");
 				                $vu.trigger("change");
+								$vuv.trigger("change");
 				                resolve();
                 
             },
@@ -686,7 +696,7 @@ function loadEmployees() {
 // ── Edit RGP → prefill Update modal ──────────────────────────────────
 let originalRgpSnapshot = {};   // ← add at top of file with other lets
 
-function editRgp(requestId) {
+/*function editRgp(requestId) {
     $.ajax({
         url       : new URL("/api/rgp/edit/" + requestId, baseUrl),
         type      : "GET",
@@ -695,19 +705,13 @@ function editRgp(requestId) {
             if (!response || response.length === 0) return;
 
             const header = response[0];
-
+			const hasVerifiedItem = response.some(row => row.Is_Verified === true || row.Is_Verified === 1);
             $("#updateModal_RequestId").val(header.Request_Id);
             $("#rgpcodeup").val(header.PR_No || "");
+			
+			
 
-            // ── Vendor / Employee ─────────────────────────────────
-      /*     if (header.Vendor_Name && String(header.Vendor_Name) !== "null") {
-                $("#selectvendorup").val("1");
-                $("#tovendorup").prop("disabled", false).val(String(header.Vendor_Name));
-                $("#employeeup").prop("disabled", true).val("");
-                $("#empaddressup").prop("disabled", true).val("");
-                $("#employeeaddressup").val("").prop("readonly", true);
-
-            } */
+    
 			if (header.Vendor_Name && String(header.Vendor_Name) !== "null") {
 			    $("#selectvendorup").val("1");
 			    $("#tovendorup")
@@ -749,47 +753,81 @@ function editRgp(requestId) {
 			
 			$("#reasondispatchup").val(header.reasondisptach || "");
 			
-			
+			if (hasVerifiedItem) {
+
+						    $("#selectvendorup").prop("disabled", true);
+						    $("#tovendorup").prop("disabled", true);
+						    $("#employeeup").prop("disabled", true);
+						    $("#empaddressup").prop("disabled", true);
+
+						    $("#employeeaddressup").prop("readonly", true);
+
+						    $("#returndateup").prop("readonly", true);
+
+						    $("#contractnoup").prop("disabled", true);   // if this is your contract dropdown
+
+						    $("#remarks5up").prop("readonly", true);
+						    $("#reasondispatchup").prop("readonly", true);
+
+						    // Hide Add Row button (change selector if needed)
+						   // $("#addnewrow3").hide();
+
+						    // Disable Save/Update button (change selector to your button id)
+						    $("#updateBtn").prop("disabled", true);
+						}
             // ── Line Items ────────────────────────────────────────
             $("#updateTableID tbody").empty();
             upRowCount = 0;
 
-            response.forEach(function (row) {
-                if (!row.Item_Id) return;
-                upRowCount++;
-                const n = upRowCount;
+			response.forEach(function (row) {
+			    if (!row.Item_Id) return;
+			    upRowCount++;
+			    const n = upRowCount;
 
-                // Store ItemRequest_Id as data attribute on <tr>
-				$("#updateTableID tbody").append(`
-				    <tr id="uprow${n}" data-item-request-id="${row.ItemRequest_Id || ''}">
-				        <td>${n}</td>
-				        <td>
-				            <select class="form-control form-control-sm"
-				                    id="upitemno${n}"
-				                    onchange="getUpdateItemDetails(${n})"></select>
-				        </td>
-				        <td><input type="text" class="form-control form-control-sm" id="upunit${n}" readonly></td>
-				        <td><input type="text" class="form-control form-control-sm" id="updescription1${n}" readonly></td>
-				        <td><input type="text" class="form-control form-control-sm" id="upquantity${n}"
-				                   onkeydown="return allowOnlyPositive(event)"></td>
-				        <td><input type="text" class="form-control form-control-sm" id="upprice${n}"
-				                   onkeydown="return allowOnlyPositive(event)"></td>
-				        <td><input type="text" class="form-control form-control-sm" id="upremarks${n}"></td>
-				        <td class="text-center">
-				            <i class="bi bi-trash text-danger" style="cursor:pointer;font-size:16px;"
-				               onclick="deleteRow3(this)" title="Delete"></i>
-				        </td>
-				    </tr>`);
+			    $("#updateTableID tbody").append(`
+			        <tr id="uprow${n}" data-item-request-id="${row.ItemRequest_Id || ''}">
+			            <td>${n}</td>
+			            <td>
+			                <select class="form-control form-control-sm"
+			                        id="upitemno${n}"
+			                        onchange="getUpdateItemDetails(${n})"></select>
+			            </td>
+			            <td><input type="text" class="form-control form-control-sm" id="upunit${n}" readonly></td>
+			            <td><input type="text" class="form-control form-control-sm" id="updescription1${n}" readonly></td>
+			            <td><input type="text" class="form-control form-control-sm" id="upquantity${n}"
+			                       onkeydown="return allowOnlyPositive(event)"></td>
+			            <td><input type="text" class="form-control form-control-sm" id="upprice${n}"
+			                       onkeydown="return allowOnlyPositive(event)"></td>
+			            <td><input type="text" class="form-control form-control-sm" id="upremarks${n}"></td>
+			            <td class="text-center">
+			                <i class="bi bi-trash text-danger" style="cursor:pointer;font-size:16px;"
+			                   onclick="deleteRow3(this)" title="Delete"></i>
+			            </td>
+			        </tr>`);
 
-                populateItemDropdown("upitemno" + n);
-				initSelect2("#upitemno" + n, "#exampleModalScrollable12", "-- Select Item --");
-				               $("#upitemno"   + n).val(String(row.Item_Id)).trigger("change");
-				               getUpdateItemDetails(n);
-                
-                $("#upquantity" + n).val(row.Quantity     || "");
-                $("#upprice"    + n).val(row.Price        || "");
-                $("#upremarks"  + n).val(row.Item_Remarks || "");
-            });
+			    populateItemDropdown("upitemno" + n);
+			    initSelect2("#upitemno" + n, "#exampleModalScrollable12", "-- Select Item --");
+			    $("#upitemno"   + n).val(String(row.Item_Id)).trigger("change");
+			    getUpdateItemDetails(n);
+
+			    $("#upquantity" + n).val(row.Quantity     || "");
+			    $("#upprice"    + n).val(row.Price        || "");
+			    $("#upremarks"  + n).val(row.Item_Remarks || "");
+
+			    // Lock only THIS row if THIS row is verified — not every row just because
+			    // some other row in the request happens to be verified.
+			    const isThisRowVerified = row.Is_Verified === true || row.Is_Verified === 1;
+
+			    if (isThisRowVerified) {
+			        $("#upitemno" + n).prop("disabled", true);
+			        $("#upquantity" + n).prop("readonly", true);
+			        $("#upprice" + n).prop("readonly", true);
+			        $("#upremarks" + n).prop("readonly", true);
+
+			        // Hide delete icon
+			        $("#uprow" + n).find(".bi-trash").hide();
+			    }
+			});
 
             if (upRowCount === 0) {
                 upRowCount = 1;
@@ -829,8 +867,202 @@ function editRgp(requestId) {
             alert("Failed to load record. Please try again.");
         }
     });
-}
+}*/
 
+
+
+function editRgp(requestId) {
+	  const allowed =allowedActions || [];
+
+	if (!allowed.includes("Edit")) {
+	  alert(" You do not have permission to Edit.");
+	 
+	  return;
+	}
+	
+	
+    $.ajax({
+        url       : new URL("/api/rgp/edit/" + requestId, baseUrl),
+        type      : "GET",
+        xhrFields : { withCredentials: true },
+        success: function (response) {
+            if (!response || response.length === 0) return;
+
+            const header = response[0];
+            const hasVerifiedItem = response.some(row => row.Is_Verified === true || row.Is_Verified === 1);
+
+            $("#updateModal_RequestId").val(header.Request_Id);
+            $("#rgpcodeup").val(header.PR_No || "");
+
+            // ── NEW: determine if this is a vendor-type request ──
+            const isVendorType = header.Vendor_Name && String(header.Vendor_Name) !== "null";
+           /* const headerVendorName = isVendorType
+                ? (vendorMap[String(header.Vendor_Name)] || header.Vendor_Name)
+                : "";*/
+
+            // Show/hide the Vendor column entirely based on type
+            if (isVendorType) {
+                $("#upVendorColHeader").show();
+            } else {
+                $("#upVendorColHeader").hide();
+            }
+
+            if (header.Vendor_Name && String(header.Vendor_Name) !== "null") {
+                $("#selectvendorup").val("1");
+                $("#tovendorup")
+                    .prop("disabled", false)
+                    .val(String(header.Vendor_Name))
+                    .trigger("change");
+                $("#employeeup").prop("disabled", true).val("").trigger("change");
+                $("#empaddressup").prop("disabled", true).val("");
+                $("#employeeaddressup").val("").prop("readonly", true);
+            }
+            else if (header.Employee_Name && String(header.Employee_Name) !== "null") {
+                $("#selectvendorup").val("2");
+                $("#employeeup").prop("disabled", false).val(String(header.Employee_Name));
+                $("#tovendorup").prop("disabled", true).val("");
+                $("#empaddressup").prop("disabled", false);
+                loadFactoryLocationsUp(
+                    header.Employee_Sender_Location || null,
+                    header.Employee_Address         || null
+                );
+            } else {
+                $("#selectvendorup").val("");
+                $("#tovendorup").prop("disabled", true).val("");
+                $("#employeeup").prop("disabled", true).val("");
+                $("#empaddressup").prop("disabled", true).val("");
+                $("#employeeaddressup").val("").prop("readonly", true);
+            }
+
+            const rd = header.Expected_Return_Date
+                ? header.Expected_Return_Date.toString().split("T")[0] : "";
+            $("#returndateup").val(rd);
+
+            loadContractsUp(header.Contract_No);
+            $("#remarks5up").val(header.Remarks || "");
+            $("#reasondispatchup").val(header.reasondisptach || "");
+
+            if (hasVerifiedItem) {
+                $("#selectvendorup").prop("disabled", true);
+                $("#tovendorup").prop("disabled", true);
+                $("#employeeup").prop("disabled", true);
+                $("#empaddressup").prop("disabled", true);
+                $("#employeeaddressup").prop("readonly", true);
+                $("#returndateup").prop("readonly", true);
+                $("#contractnoup").prop("disabled", true);
+                $("#remarks5up").prop("readonly", true);
+                $("#reasondispatchup").prop("readonly", true);
+                $("#updateBtn").prop("disabled", true);
+            }
+
+            $("#updateTableID tbody").empty();
+            upRowCount = 0;
+
+			response.forEach(function (row) {
+			    if (!row.Item_Id) return;
+			    upRowCount++;
+			    const n = upRowCount;
+
+			    // ── Per-row vendor: item_vendor takes priority, fallback to header vendor ──
+			    let vendorCellHtml = '';
+			    if (isVendorType) {
+			        const rowVendorId = (row.item_vendor !== null && row.item_vendor !== undefined && row.item_vendor !== '')
+			            ? row.item_vendor
+			            : header.Vendor_Name;
+
+			        const rowVendorName = vendorMap[String(rowVendorId)] || rowVendorId || '';
+
+			        vendorCellHtml = `<td><input type="text" class="form-control form-control-sm"
+			                             id="upvendor${n}" value="${rowVendorName}" readonly></td>`;
+			    } else {
+			        vendorCellHtml = `<td style="display:none;"><input type="text" class="form-control form-control-sm"
+			                             id="upvendor${n}" value="" readonly></td>`;
+			    }
+
+			    $("#updateTableID tbody").append(`
+			        <tr id="uprow${n}" data-item-request-id="${row.ItemRequest_Id || ''}">
+			            <td>${n}</td>
+			            <td>
+			                <select class="form-control form-control-sm"
+			                        id="upitemno${n}"
+			                        onchange="getUpdateItemDetails(${n})"></select>
+			            </td>
+			            <td><input type="text" class="form-control form-control-sm" id="upunit${n}" readonly></td>
+			            <td><input type="text" class="form-control form-control-sm" id="updescription1${n}" readonly></td>
+			            <td><input type="text" class="form-control form-control-sm" id="upquantity${n}"
+			                       onkeydown="return allowOnlyPositive(event)"></td>
+			            <td><input type="text" class="form-control form-control-sm" id="upprice${n}"
+			                       onkeydown="return allowOnlyPositive(event)"></td>
+			            <td><input type="text" class="form-control form-control-sm" id="upremarks${n}"></td>
+			            ${vendorCellHtml}
+			            <td class="text-center">
+			                <i class="bi bi-trash text-danger" style="cursor:pointer;font-size:16px;"
+			                   onclick="deleteRow3(this)" title="Delete"></i>
+			            </td>
+			        </tr>`);
+
+			    populateItemDropdown("upitemno" + n);
+			    initSelect2("#upitemno" + n, "#exampleModalScrollable12", "-- Select Item --");
+			    $("#upitemno"   + n).val(String(row.Item_Id)).trigger("change");
+			    getUpdateItemDetails(n);
+
+			    $("#upquantity" + n).val(row.Quantity     || "");
+			    $("#upprice"    + n).val(row.Price        || "");
+			    $("#upremarks"  + n).val(row.Item_Remarks || "");
+
+			    const isThisRowVerified = row.Is_Verified === true || row.Is_Verified === 1;
+
+			    if (isThisRowVerified) {
+			        $("#upitemno" + n).prop("disabled", true);
+			        $("#upquantity" + n).prop("readonly", true);
+			        $("#upprice" + n).prop("readonly", true);
+			        $("#upremarks" + n).prop("readonly", true);
+			        $("#uprow" + n).find(".bi-trash").hide();
+			    }
+			});
+
+            if (upRowCount === 0) {
+                upRowCount = 1;
+                const emptyVendorCellHtml = isVendorType
+                    ? `<td><input type="text" class="form-control form-control-sm" id="upvendor1" value="" readonly></td>`
+                    : `<td style="display:none;"><input type="text" class="form-control form-control-sm" id="upvendor1" value="" readonly></td>`;
+
+                $("#updateTableID tbody").append(`
+                    <tr id="uprow1" data-item-request-id="">
+                        <td>1</td>
+                        <td><select class="form-control form-control-sm" id="upitemno1"
+                                    onchange="getUpdateItemDetails(1)"></select></td>
+                        <td><input type="text" class="form-control form-control-sm" id="upunit1" readonly></td>
+                        <td><input type="text" class="form-control form-control-sm" id="updescription11" readonly></td>
+                        <td><input type="text" class="form-control form-control-sm" id="upquantity1"
+                                   onkeydown="return allowOnlyPositive(event)"></td>
+                        <td><input type="text" class="form-control form-control-sm" id="upprice1"
+                                   onkeydown="return allowOnlyPositive(event)"></td>
+                        <td><input type="text" class="form-control form-control-sm" id="upremarks1"></td>
+                        ${emptyVendorCellHtml}
+                        <td class="text-center">
+                            <i class="bi bi-trash text-danger" style="cursor:pointer;font-size:16px;"
+                               onclick="deleteRow3(this)" title="Delete"></i>
+                        </td>
+                    </tr>`);
+                populateItemDropdown("upitemno1");
+                initSelect2("#upitemno1", "#exampleModalScrollable12", "-- Select Item --");
+            }
+
+            setTimeout(function () {
+                originalRgpSnapshot = captureUpdateSnapshot();
+            }, 600);
+            $("#tovendorup").trigger("change.select2");
+            $("#employeeup").trigger("change.select2");
+
+            $("#exampleModalScrollable12").modal("show");
+        },
+        error: function (xhr) {
+            console.error("Failed to load RGP for edit", xhr);
+            alert("Failed to load record. Please try again.");
+        }
+    });
+}
 // ── Capture current state of the update modal ─────────────────────────
 function captureUpdateSnapshot() {
     return {
@@ -848,7 +1080,7 @@ function captureUpdateSnapshot() {
 }
 
 // ── Collect update line items ─────────────────────────────────────────
-// silentMode = true → skip validation alerts (used for snapshot)
+
 function collectUpdateLineItems(silentMode) {
     const lineItems = [];
     let   valid     = true;
@@ -981,7 +1213,7 @@ $("#updateButton").on("click", function () {
 		error: function (xhr) {
 		    if (xhr.status === 409 && xhr.responseText === "GATE_PASS_ALREADY_ISSUED") {
 		        $("#exampleModalScrollable12").modal("hide");
-		        $("#modalMessage").text("This RGP already has a gate pass issued and can no longer be edited.");
+		        $("#modalMessage").text("Gate Pass already issued. Editing is not allowed.");
 		        $("#messageModal").modal("show");
 		        return;
 		    }
@@ -993,7 +1225,7 @@ $("#updateButton").on("click", function () {
 
 // FIX: cast contract_id to String so .val() matches "15" == "15"
 function loadContractsUp(selectedContractId) {
-    const factoryId = localStorage.getItem("selectedFactoryId");
+    const factoryId = sessionStorage.getItem("selectedFactoryId");
     $.ajax({
         url       : new URL("/jssl/contracts/allContracts", baseUrl),
         type      : "GET",
@@ -1016,7 +1248,7 @@ function loadContractsUp(selectedContractId) {
 
 // FIX: accepts saved location + address to pre-fill after options load
 function loadFactoryLocationsUp(selectedLocationId, savedAddress) {
-    const currentFactoryId = localStorage.getItem("selectedFactoryId");
+    const currentFactoryId = sessionStorage.getItem("selectedFactoryId");
     $.ajax({
         url       : new URL("/api/allfactory", baseUrl),
         type      : "GET",
@@ -1068,7 +1300,7 @@ function loadFactoryLocationsUp(selectedLocationId, savedAddress) {
 
 // ── Contracts ─────────────────────────────────────────────────────────
 function loadContracts() {
-    const factoryId = localStorage.getItem("selectedFactoryId");
+    const factoryId = sessionStorage.getItem("selectedFactoryId");
     $.ajax({
         url       : new URL("/jssl/contracts/allContracts", baseUrl),
         type      : "GET",
@@ -1407,7 +1639,7 @@ function validateHeaderUp() {
 
 // ── Load Factory Locations (exclude current selected factory) ─────────
 function loadFactoryLocations() {
-    const currentFactoryId = localStorage.getItem("selectedFactoryId");
+    const currentFactoryId = sessionStorage.getItem("selectedFactoryId");
 
     $.ajax({
         url       : new URL("/api/allfactory", baseUrl),
@@ -1442,6 +1674,437 @@ function loadFactoryLocations() {
 }
 
 
+// ── Verify modal state ──────────────────────────────────────────────
+let verifyLineItemsData    = [];
+let vendorOptionsHtmlCache = "";
+let verifyHeaderVendorId   = null;   // header's vendor, used as default for unverified rows
+
+function verifyRgp(requestId) {
+	  const allowed =allowedActions || [];
+
+	if (!allowed.includes("Verify")) {
+	  alert(" You do not have permission to Verify.");
+	
+	  return;
+	}
+	
+	
+    $.ajax({
+        url       : new URL("/api/rgp/verify-details/" + requestId, baseUrl),
+        type      : "GET",
+        xhrFields : { withCredentials: true },
+        success: function (response) {
+            if (!response || response.length === 0) return;
+
+            const header = response[0];
+			
+			
+
+            $("#verifyModal_RequestId").val(header.Request_Id);
+            $("#rgpcodeverify").val(header.PR_No || "");
+
+            // ── Vendor / Employee (readonly display) ───────────────────
+			// ── Vendor / Employee ────────────────────────────────────────────────
+			$("#tovendorverifyError").hide();
+
+			const isVendorType = header.Vendor_Name && String(header.Vendor_Name) !== "null";
+
+			if (isVendorType) {
+			    // Vendor-type request → header Vendor select becomes editable.
+			    // #tovendorverify is already fully populated with the vendor list
+			    // (and the "1" = Select Vendor sentinel) by loadVendors() on page load.
+				
+				
+				
+				
+				
+			    verifyHeaderVendorId = String(header.Vendor_Name);
+				
+				
+				$("#selectvendorver").prop("disabled", true).val("1");
+
+			    $("#tovendorverify")
+			        .prop("disabled", true)
+			        .val(verifyHeaderVendorId);
+
+			    $("#employeeverify")
+			        .empty()
+			        .append('<option value="">-</option>')
+			        .prop("disabled", true);
+
+			} else if (header.Employee_Name && String(header.Employee_Name) !== "null") {
+			    // Employee-type request → stays fully readonly, as before.
+			    verifyHeaderVendorId = null;
+
+			    $("#tovendorverify")
+			        .prop("disabled", true)
+			        .val("1");
+
+			    $("#employeeverify")
+			        .empty()
+			        .append(
+			            `<option value="${header.Employee_Name}" selected>` +
+			            (employeeMap[String(header.Employee_Name)] || header.Employee_Name) +
+			            `</option>`
+			        )
+			        .prop("disabled", true);
+
+			} else {
+			    verifyHeaderVendorId = null;
+			    $("#tovendorverify").prop("disabled", true).val("1");
+			    $("#employeeverify").empty().append('<option value="">-</option>').prop("disabled", true);
+			}
+
+            // ── Location ────────────────────────────────────────────────
+            $("#empaddressverify").empty();
+            if (header.Employee_Sender_Location) {
+                $("#empaddressverify").append(
+                    `<option value="${header.Employee_Sender_Location}" selected>` +
+                    header.Employee_Sender_Location + `</option>`
+                );
+            } else {
+                $("#empaddressverify").append('<option value="">-</option>');
+            }
+            $("#employeeaddressverify").val(header.Employee_Address || "");
+
+            // ── Contract ────────────────────────────────────────────────
+            $("#contractnoverify").empty();
+            if (header.Contract_No) {
+                $("#contractnoverify").append(
+                    `<option value="${header.Contract_No}" selected>${header.Contract_No}</option>`
+                );
+            } else {
+                $("#contractnoverify").append('<option value="">-</option>');
+            }
+
+            const rd = header.Expected_Return_Date
+                ? header.Expected_Return_Date.toString().split("T")[0] : "";
+            $("#returndateverify").val(rd);
+            $("#reasondispatchverify").val(header.reasondisptach || "");
+            $("#remarks5verify").val(header.Remarks || "");
+
+            // ── Line items, carrying saved verify status + vendor ──────
+            verifyLineItemsData = [];
+            response.forEach(function (row) {
+                if (!row.Item_Id) return;
+                const itemMeta = itemMasterList.find(
+                    it => String(it.itemid) === String(row.Item_Id)
+                );
+           /*     verifyLineItemsData.push({
+                    itemRequestId : row.ItemRequest_Id || null,
+                    itemId        : row.Item_Id,
+                    itemLabel     : itemMeta
+                        ? (itemMeta.itemNo + " - " + (itemMeta.itmDescription1 || ""))
+                        : row.Item_Id,
+                    uom           : itemMeta ? (uomMap[itemMeta.um] || "") : "",
+                    description   : itemMeta ? (itemMeta.itmDescription1 || "") : "",
+                    quantity      : row.Quantity || "",
+                    price         : row.Price || "",
+                    remarks       : row.Item_Remarks || "",
+                    isVerified    : row.Is_Verified === 1 || row.Is_Verified === true,
+                    vendorId      : row.Vendor_Id || null
+                });*/
+				
+				verifyLineItemsData.push({
+				    itemRequestId : row.ItemRequest_Id || null,
+				    itemId        : row.Item_Id,
+				    itemLabel     : itemMeta
+				        ? (itemMeta.itemNo + " - " + (itemMeta.itmDescription1 || ""))
+				        : row.Item_Id,
+				    uom           : itemMeta ? (uomMap[itemMeta.um] || "") : "",
+				    description   : itemMeta ? (itemMeta.itmDescription1 || "") : "",
+				    quantity      : row.Quantity || "",
+				    price         : row.Price || "",
+				    remarks       : row.Item_Remarks || "",
+
+				    // Purely reflects saved verification status → drives checked state + vendor prefill.
+				    isVerified    : row.Is_Verified === 1 || row.Is_Verified === true,
+
+				    // Only lock (disable) the row when is_gatepass is true AND it's verified.
+				    // is_gatepass null/false → never locked, regardless of Is_Verified.
+				    isLocked      : (row.is_gatepass === true || row.is_gatepass === 1)
+				                        && (row.Is_Verified === 1 || row.Is_Verified === true),
+
+				    vendorId      : row.Vendor_Id || null
+				});
+            });
+
+            renderVerifyLineItems();
+
+            $("#exampleModalScrollableVerify").modal("show");
+        },
+        error: function (xhr) {
+            console.error("Failed to load RGP for verify", xhr);
+            alert("Failed to load record. Please try again.");
+        }
+    });
+}
+
+
+// ── Header vendor changed → push it down to every unverified line item ──
+$(document).on("change", "#tovendorverify", function () {
+    const newVendorId = $(this).val();
+
+    // "1" is the "Select Vendor" sentinel → treat as no vendor chosen
+    verifyHeaderVendorId = (newVendorId && newVendorId !== "1") ? newVendorId : null;
+
+    $("#verifyTableID tbody tr").each(function () {
+        const $tr        = $(this);
+        const idx        = $tr.attr("id").replace("verifyrow", "");
+        const $chk       = $("#verify_check_" + idx);
+        const $vendorSel = $("#verify_vendor_" + idx);
+
+        // Only rows that aren't verified yet follow the header vendor
+        if (!$chk.is(":checked")) {
+            $vendorSel.val(verifyHeaderVendorId || "1");
+        }
+    });
+
+    $("#tovendorverifyError").hide();
+});
+
+function buildVendorOptionsHtmlCache() {
+    vendorOptionsHtmlCache = "";
+    Object.keys(vendorMap).forEach(function (cid) {
+        vendorOptionsHtmlCache += `<option value="${cid}">${vendorMap[cid]}</option>`;
+    });
+}
+
+// Always renders the Vendor + Verify columns — no more Single/Partial branching.
+function renderVerifyLineItems() {
+    const $tbody = $("#verifyTableID tbody").empty();
+
+    if (!vendorOptionsHtmlCache) {
+        buildVendorOptionsHtmlCache();
+    }
+
+/*    verifyLineItemsData.forEach(function (item, i) {
+        const n = i + 1;
+
+        // Which vendor should be pre-selected in this row's dropdown?
+        // Verified row → its saved Vendor_Id.
+        // Unverified row → falls back to the header's vendor as the default.
+        const selectedVendor = item.isVerified
+            ? item.vendorId
+            : (item.vendorId || verifyHeaderVendorId);
+
+        let optsHtml = vendorOptionsHtmlCache;
+        if (selectedVendor) {
+            optsHtml = optsHtml.replace(
+                `value="${selectedVendor}"`,
+                `value="${selectedVendor}" selected`
+            );
+        }
+
+        // Locked (disabled) once the row is verified; editable otherwise.
+        const vendorDisabledAttr = item.isVerified ? "disabled" : "";
+
+        $tbody.append(`
+            <tr id="verifyrow${n}" data-item-request-id="${item.itemRequestId || ''}">
+                <td>${n}</td>
+                <td><input type="text" class="form-control form-control-sm" value="${item.itemLabel}" readonly></td>
+                <td><input type="text" class="form-control form-control-sm" value="${item.uom}" readonly></td>
+                <td><input type="text" class="form-control form-control-sm" value="${item.description}" readonly></td>
+                <td><input type="text" class="form-control form-control-sm" value="${item.quantity}" readonly></td>
+                <td><input type="text" class="form-control form-control-sm" id="verify_price_${n}"
+                           value="${item.price}"></td>
+                <td><input type="text" class="form-control form-control-sm" value="${item.remarks}" readonly></td>
+                <td>
+                    <select class="form-control form-control-sm" id="verify_vendor_${n}" ${vendorDisabledAttr}>
+                        <option value="">Select Vendor</option>
+                        ${optsHtml}
+                    </select>
+                </td>
+                <td class="text-center">
+                    <input type="checkbox" id="verify_check_${n}"
+                           style="width:16px;height:16px;" ${item.isVerified ? "checked" : ""}>
+                </td>
+            </tr>`);
+			
+			$tbody.append(`
+			    <tr id="verifyrow${n}" data-item-request-id="${item.itemRequestId || ''}">
+			        <td>${n}</td>
+			        <td><input type="text" class="form-control form-control-sm" value="${item.itemLabel}" readonly></td>
+			        <td><input type="text" class="form-control form-control-sm" value="${item.uom}" readonly></td>
+			        <td><input type="text" class="form-control form-control-sm" value="${item.description}" readonly></td>
+			        <td><input type="text" class="form-control form-control-sm" value="${item.quantity}" readonly></td>
+			        <td><input type="text" class="form-control form-control-sm" id="verify_price_${n}"
+			                   value="${item.price}"></td>
+			        <td><input type="text" class="form-control form-control-sm" value="${item.remarks}" readonly></td>
+			        <td>
+			            <select class="form-control form-control-sm" id="verify_vendor_${n}" ${vendorDisabledAttr}>
+			                <option value="">Select Vendor</option>
+			                ${optsHtml}
+			            </select>
+			        </td>
+			        <td class="text-center">
+			            <input type="checkbox" id="verify_check_${n}" class="verify-check-item"
+			                   style="width:16px;height:16px;"
+			                   ${item.isVerified ? "checked disabled" : ""}>
+			        </td>
+			    </tr>`);
+    });*/
+	verifyLineItemsData.forEach(function (item, i) {
+	    const n = i + 1;
+
+	    const selectedVendor = item.isVerified
+	        ? item.vendorId
+	        : (item.vendorId || verifyHeaderVendorId);
+
+	    let optsHtml = vendorOptionsHtmlCache;
+	    if (selectedVendor) {
+	        optsHtml = optsHtml.replace(
+	            `value="${selectedVendor}"`,
+	            `value="${selectedVendor}" selected`
+	        );
+	    }
+
+	    // Vendor locks whenever the row is already verified (checkbox pre-checked on load).
+	    const vendorDisabledAttr = item.isVerified ? "disabled" : "";
+
+	    // Price stays gated on isLocked (is_gatepass + verified) — unchanged.
+	    const priceReadonlyAttr  = item.isLocked ? "readonly" : "";
+
+	    $tbody.append(`
+	        <tr id="verifyrow${n}" data-item-request-id="${item.itemRequestId || ''}">
+	            <td>${n}</td>
+	            <td><input type="text" class="form-control form-control-sm" value="${item.itemLabel}" readonly></td>
+	            <td><input type="text" class="form-control form-control-sm" value="${item.uom}" readonly></td>
+	            <td><input type="text" class="form-control form-control-sm" value="${item.description}" readonly></td>
+	            <td><input type="text" class="form-control form-control-sm" value="${item.quantity}" readonly></td>
+	            <td><input type="text" class="form-control form-control-sm" id="verify_price_${n}"
+	                       value="${item.price}" ${priceReadonlyAttr}></td>
+	            <td><input type="text" class="form-control form-control-sm" value="${item.remarks}" readonly></td>
+	            <td>
+	                <select class="form-control form-control-sm" id="verify_vendor_${n}" ${vendorDisabledAttr}>
+	                    <option value="">Select Vendor</option>
+	                    ${optsHtml}
+	                </select>
+	            </td>
+	            <td class="text-center">
+	                <input type="checkbox" id="verify_check_${n}" class="verify-check-item"
+	                       style="width:16px;height:16px;"
+	                       ${item.isVerified ? "checked" : ""} ${item.isLocked ? "disabled" : ""}>
+	            </td>
+	        </tr>`);
+	});
+}
+
+// Toggling the checkbox locks/unlocks that row's Vendor select in real time.
+// Ticking a row now requires a real vendor to already be selected.
+$(document).on("change", "[id^='verify_check_']", function () {
+    const idx         = $(this).attr("id").replace("verify_check_", "");
+    const $vendorSel  = $("#verify_vendor_" + idx);
+    const $vendorErr  = $("#verify_vendor_" + idx + "_error");
+
+    if ($(this).is(":checked")) {
+        const vendorVal = $vendorSel.val();
+
+        if (!vendorVal || vendorVal === "1") {
+            // Block the check — no vendor picked yet
+            $(this).prop("checked", false);
+            $vendorErr.show();
+            $vendorSel.addClass("is-invalid");
+            return;
+        }
+
+        $vendorErr.hide();
+        $vendorSel.removeClass("is-invalid");
+        $vendorSel.prop("disabled", true);   // lock the vendor in
+
+    } else {
+        $vendorSel.prop("disabled", false);  // unlock so it can follow the header again
+    }
+});
+
+function submitVerification() {
+    const requestId     = $("#verifyModal_RequestId").val();
+    const items         = [];
+    let   hasVendorError = false;
+
+    $("#verifyTableID tbody tr").each(function () {
+        const $tr           = $(this);
+        const idx           = $tr.attr("id").replace("verifyrow", "");
+        const itemRequestId = $tr.data("item-request-id")
+                                ? parseInt($tr.data("item-request-id")) : null;
+        const price     = parseFloat($("#verify_price_" + idx).val());
+        const verified  = $("#verify_check_" + idx).is(":checked");
+        const vendorVal = $("#verify_vendor_" + idx).val();
+
+        if (verified && (!vendorVal || vendorVal === "1")) {
+            $("#verify_vendor_" + idx + "_error").show();
+            $("#verify_vendor_" + idx).addClass("is-invalid");
+            hasVendorError = true;
+        }
+
+        items.push({
+            itemRequestId,
+            price    : isNaN(price) ? 0 : price,
+            verified,
+            vendor   : (vendorVal && vendorVal !== "1") ? parseInt(vendorVal) : null
+        });
+    });
+
+    if (hasVendorError) {
+        alert("Vendor is mandatory. Please select the vendor before verify.");
+        return;
+    }
+
+   /* if (!items.some(i => i.verified)) {
+        alert("Please verify at least one line item before submitting.");
+        return;
+    }*/
+
+    // If the header vendor select is enabled (Vendor-type request), it must have a real value too
+    let headerVendor = null;
+    if ($("#tovendorverify").is(":enabled")) {
+        headerVendor = $("#tovendorverify").val();
+        if (!headerVendor || headerVendor === "1") {
+            $("#tovendorverifyError").show();
+            alert("Please select the vendor at header level before verify.");
+            return;
+        }
+    }
+
+    const payload = {
+        verifiedBy   : sessionStorage.getItem("id"),
+        headerVendor : headerVendor,   // null if header wasn't editable (Employee-type request)
+        items        : items
+    };
+
+    $.ajax({
+        url         : new URL("/api/rgp/verify/" + requestId, baseUrl),
+        type        : "PUT",
+        contentType : "application/json",
+        data        : JSON.stringify(payload),
+        xhrFields   : { withCredentials: true },
+        success: function (response) {
+            $("#exampleModalScrollableVerify").modal("hide");
+            if (response === "NO_ITEMS_VERIFIED") {
+                showPopup("Please verify at least one line item.", "RGPRequest.jsp");
+                return;
+            }
+            showPopup("RGP verified successfully!", "RGPRequest.jsp");
+        },
+        error: function (xhr) {
+            $("#exampleModalScrollableVerify").modal("hide");
+            if (xhr.status === 409 && xhr.responseText === "GATE_PASS_ALREADY_ISSUED") {
+                $("#modalMessage").text("This RGP already has a gate pass issued and can no longer be verified.");
+                $("#messageModal").modal("show");
+                return;
+            }
+			if (xhr.status === 400 ) {
+			          $("#modalMessage").text("No item has been verified.");
+			               $("#messageModal").modal("show");
+						   
+						  
+			               return;
+			   }
+            console.error("Verify RGP failed:", xhr);
+            alert("Failed to verify RGP. Please try again.");
+        }
+    });
+}
 
 
 function showPopup(message, redirectUrl) {

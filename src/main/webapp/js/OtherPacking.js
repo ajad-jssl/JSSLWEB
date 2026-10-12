@@ -63,7 +63,7 @@ document.getElementById("date").setAttribute("max", new Date().toISOString().spl
 document.getElementById("date1").setAttribute("max", new Date().toISOString().split('T')[0]);
 document.addEventListener("DOMContentLoaded", function () {
 	loadAllowedActions();
-	const selectedFactoryId = localStorage.getItem('selectedFactoryId');
+	const selectedFactoryId = sessionStorage.getItem('selectedFactoryId');
 	console.log('selectedFactoryId:', selectedFactoryId);
     // First, check if there's already an initial row
     addRow(); // Initially add a row
@@ -73,12 +73,12 @@ document.addEventListener("DOMContentLoaded", function () {
 /*    fetchUserList(selectedFactoryId);*/
  	fetchothersPackingNoteDetails(selectedFactoryId);
 	getothertypdetail();
-	// Fetch selectedFactoryId from localStorage
+	// Fetch selectedFactoryId from sessionStorage
 
 });
 let uomOptionsHTML = "";
 let typeOptionsHTML = "";
-const selectedFactoryId = localStorage.getItem('selectedFactoryId');
+const selectedFactoryId = sessionStorage.getItem('selectedFactoryId');
 console.log('selectedFactoryId:', selectedFactoryId);
 document.getElementById("type").addEventListener("change", function () {
 	document.getElementById("inputFieldsContainer").style.display = "block";
@@ -413,7 +413,7 @@ function updateGrandTotal() {
         // Construct the API URL properly
         const url = new URL(`/jssl/master/listinvoicetypenew`, baseUrl1);
 const selectedFactoryId=1
-		const selectedFactoryId = localStorage.getItem("selectedFactoryId");
+		const selectedFactoryId = sessionStorage.getItem("selectedFactoryId");
 
         // Fetch data from API
         const response = await fetch(url);
@@ -655,7 +655,7 @@ let currentFactoryIdOthers = null;
 
 function fetchothersPackingNoteDetails(selectedFactoryId) {
 
-    currentFactoryIdOthers = selectedFactoryId || localStorage.getItem("selectedFactoryId");
+    currentFactoryIdOthers = selectedFactoryId || sessionStorage.getItem("selectedFactoryId");
 
     // Destroy existing DataTable
     if ($.fn.DataTable.isDataTable('#tableID')) {
@@ -1130,7 +1130,7 @@ function editRecord(pn_id) {
 	  return;
 	}
 
-	localStorage.setItem("pn_id", pn_id);
+	sessionStorage.setItem("pn_id", pn_id);
   const url = new URL(`/jssl/otherspackingmastersearchnew`, baseUrl);
     var params = [['pn_id', pn_id]];
     url.search = new URLSearchParams(params).toString();
@@ -1246,7 +1246,7 @@ function editRecord1(pn_id) {
 		    $("#exampleModalScrollable123view").modal("hide");
 		  return;
 		}
-	localStorage.setItem("pn_id", pn_id);
+	sessionStorage.setItem("pn_id", pn_id);
   const url = new URL(`/jssl/otherspackingmastersearchnew`, baseUrl);
     var params = [['pn_id', pn_id]];
     url.search = new URLSearchParams(params).toString();
@@ -1348,12 +1348,12 @@ function editRecord1(pn_id) {
 }
 
 document.addEventListener("DOMContentLoaded", function() {
-    const selectedFactoryId = localStorage.getItem("selectedFactoryId"); // Get factory_id from localStorage
+    const selectedFactoryId = sessionStorage.getItem("selectedFactoryId"); // Get factory_id from sessionStorage
     if (selectedFactoryId) {
         fetchuomEdit();
         fetchtypeEdit();
     } else {
-        console.error("No factory ID found in localStorage.");
+        console.error("No factory ID found in sessionStorage.");
     }
 });
 
@@ -1664,7 +1664,7 @@ function updateevent() {
     if (fileInput.files.length > 0) {
         formData.append('file', fileInput.files[0]);
     }
-	const othPnNo = localStorage.getItem("pn_id");
+	const othPnNo = sessionStorage.getItem("pn_id");
     // Append all other parameters to the FormData object
     formData.append('transport_name', transedit.value);
     formData.append('modified_by', createdById);

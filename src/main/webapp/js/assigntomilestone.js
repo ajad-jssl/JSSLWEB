@@ -1,13 +1,13 @@
 
-const selectedFactoryId = localStorage.getItem('selectedFactoryId');
+const selectedFactoryId = sessionStorage.getItem('selectedFactoryId');
 console.log('selectedFactoryId:', selectedFactoryId);
 
 document.addEventListener("DOMContentLoaded", function () {
-    const selectedFactoryId = localStorage.getItem("selectedFactoryId"); // Get factory_id from localStorage
+    const selectedFactoryId = sessionStorage.getItem("selectedFactoryId"); // Get factory_id from sessionStorage
     if (selectedFactoryId) {
         fetchUserList(selectedFactoryId);
     } else {
-        console.error("No factory ID found in localStorage.");
+        console.error("No factory ID found in sessionStorage.");
     }
 });
 
@@ -97,11 +97,11 @@ async function fetchUserListupdate(factoryId) {
 }
 
 document.addEventListener("DOMContentLoaded", function () {
-    const selectedFactoryId = localStorage.getItem("selectedFactoryId"); // Get factory_id from localStorage
+    const selectedFactoryId = sessionStorage.getItem("selectedFactoryId"); // Get factory_id from sessionStorage
     if (selectedFactoryId) {
         fetchcont(selectedFactoryId);
     } else {
-        console.error("No factory ID found in localStorage.");
+        console.error("No factory ID found in sessionStorage.");
     }
 });
 
@@ -150,7 +150,7 @@ async function fetchcont() {
 
 document.getElementById('cont').addEventListener('change', function() {
     const selectedStateId = this.value; // Get the selected state ID
-/*    const selectedFactoryId = localStorage.getItem("selectedFactoryId"); // Get factory_id from localStorage*/
+/*    const selectedFactoryId = sessionStorage.getItem("selectedFactoryId"); // Get factory_id from sessionStorage*/
 	const selectedOption = this.options[this.selectedIndex];
 	   const factoryId = selectedOption.getAttribute("data-factory");
 
@@ -264,6 +264,8 @@ function openModalAdd() {
 
 function addevent() {
     // Validate role code and role description
+	
+	$("#exampleModalCenter66").modal("hide");
 	const selectedOption = document.getElementById("cont").selectedOptions[0];
 	const factoryId = selectedOption.getAttribute("data-factory");
     $.ajax({

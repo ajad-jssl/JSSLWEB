@@ -57,14 +57,14 @@ document.getElementById("#modalScroll").addEventListener("click", function () {
 	$('#exampleModalScrollable').modal('show');
 });
 
-// Fetch selectedFactoryId from localStorage
-const selectedFactoryId = localStorage.getItem('selectedFactoryId');
+// Fetch selectedFactoryId from sessionStorage
+const selectedFactoryId = sessionStorage.getItem('selectedFactoryId');
 console.log('selectedFactoryId:', selectedFactoryId);
 
 // Ensure the ID is available before making the API call
 $(document).ready(function () {
 	loadAllowedActions();
-    const factoryId = localStorage.getItem("selectedFactoryId");
+    const factoryId = sessionStorage.getItem("selectedFactoryId");
     if (factoryId) {
         fetchUserList(factoryId);
     }
@@ -210,7 +210,7 @@ let currentFactoryIdScrapInv = null;
 function fetchUserList(selectedFactoryId) {
 
     currentFactoryIdScrapInv = selectedFactoryId ||
-                               localStorage.getItem("selectedFactoryId");
+                               sessionStorage.getItem("selectedFactoryId");
 
     // 🔥 Destroy existing DataTable
     if ($.fn.DataTable.isDataTable('#tableID')) {
@@ -295,6 +295,7 @@ function fetchUserList(selectedFactoryId) {
             { title: "Edit Invoice", orderable: false },
             { title: "Verify",       orderable: false },
             { title: "View",         orderable: false },
+			{ title: "Release",      orderable: false },
             { title: "Cancel",       orderable: false },
             { title: "Print",        orderable: false }
         ],
@@ -335,6 +336,7 @@ function fetchUserList(selectedFactoryId) {
 
                         let editinvoice = '';
                         let editIcon    = '';
+						let releaseIcon = '';
                         let cancelIcon  = '';
                         let printIcon   = '';
 						let viewIcon   = '';
@@ -342,6 +344,7 @@ function fetchUserList(selectedFactoryId) {
                         if (item.verified_status === 'CANCELLED') {
                             editinvoice = `<i class="fa fa-edit text-muted"></i>`;
                             editIcon    = `<i class="fa fa-pen text-muted"></i>`;
+							releaseIcon = `<i class="fa fa-box-open text-muted"></i>`;
                             cancelIcon  = `<i class="fa fa-times-circle text-muted"></i>`;
                             printIcon   = `<i class="fa fa-print" style="color:green; cursor:pointer;" onclick="printRecord('${item.id}')"></i>`;
 							viewIcon    = `<i class="fa fa-eye" style="color:green;" onclick="editRecord11('${item.id}')"></i>`;
@@ -349,6 +352,7 @@ function fetchUserList(selectedFactoryId) {
                         } else if (item.verified_status === 'VERIFIED') {
                             editinvoice = `<i class="fa fa-edit text-muted"></i>`;
                             editIcon    = `<i class="fa fa-pen text-muted"></i>`;
+							releaseIcon = `<i class="fa fa-box-open" style="color:brown;" onclick="openModal('${item.id}','${item.scp_load}')"></i>`;
                             cancelIcon  = `<i class="fa fa-times-circle" style="color:red; cursor:pointer;" onclick="openModalcancel('${item.id}','${item.scp_load}')"></i>`;
                             printIcon   = `<i class="fa fa-print" style="color:green;" onclick="printRecord('${item.id}')"></i>`;
 							viewIcon    = `<i class="fa fa-eye" style="color:green;" onclick="editRecord11('${item.id}')"></i>`;
@@ -356,6 +360,7 @@ function fetchUserList(selectedFactoryId) {
                         } else if (item.verified_status === 'NOT VERIFIED') {
                             editinvoice = `<i class="fa fa-edit" style="color:blue;" onclick="editRecordInvoice('${item.id}')"></i>`;
                             editIcon    = `<i class="fa fa-pen" style="color:blue;" onclick="editRecord('${item.id}')"></i>`;
+							releaseIcon = `<i class="fa fa-box-open text-muted"></i>`;
                             cancelIcon  = `<i class="fa fa-times-circle text-muted"></i>`;
                             printIcon   = `<i class="fa fa-print text-muted"></i>`;
 							viewIcon   = `<i class="fa fa-eye text-muted"></i>`;
@@ -363,6 +368,7 @@ function fetchUserList(selectedFactoryId) {
                         } else {
                             editinvoice = `<i class="fa fa-edit text-muted"></i>`;
                             editIcon    = `<i class="fa fa-pen text-muted"></i>`;
+							releaseIcon = `<i class="fa fa-box-open text-muted"></i>`;
                             cancelIcon  = `<i class="fa fa-times-circle text-muted"></i>`;
                             printIcon   = `<i class="fa fa-print text-muted"></i>`;
 							viewIcon   = `<i class="fa fa-eye text-muted"></i>`;
@@ -377,6 +383,7 @@ function fetchUserList(selectedFactoryId) {
                             editinvoice,                         // col 5
                             editIcon,                            // col 6
                             viewIcon,                            // col 7
+							releaseIcon,
                             cancelIcon,                          // col 8
                             printIcon                            // col 9
                         ];
@@ -406,11 +413,11 @@ function fetchUserList(selectedFactoryId) {
 
 
 document.addEventListener("DOMContentLoaded", function () {
-    const selectedFactoryId = localStorage.getItem("selectedFactoryId"); // Get factory_id from localStorage
+    const selectedFactoryId = sessionStorage.getItem("selectedFactoryId"); // Get factory_id from sessionStorage
     if (selectedFactoryId) {
         fetchPackingnote(selectedFactoryId);
     } else {
-        console.error("No factory ID found in localStorage.");
+        console.error("No factory ID found in sessionStorage.");
     }
 });
 
@@ -457,12 +464,12 @@ async function fetchPackingnote(factoryId) {
 }
 
 document.addEventListener("DOMContentLoaded", function () {
-    const selectedFactoryId = localStorage.getItem("selectedFactoryId"); // Get factory_id from localStorage
+    const selectedFactoryId = sessionStorage.getItem("selectedFactoryId"); // Get factory_id from sessionStorage
     if (selectedFactoryId) {
         fetchShipping(selectedFactoryId);
         
     } else {
-        console.error("No factory ID found in localStorage.");
+        console.error("No factory ID found in sessionStorage.");
     }
 });
 
@@ -509,12 +516,12 @@ async function fetchShipping() {
 }
 
 document.addEventListener("DOMContentLoaded", function () {
-    const selectedFactoryId = localStorage.getItem("selectedFactoryId"); // Get factory_id from localStorage
+    const selectedFactoryId = sessionStorage.getItem("selectedFactoryId"); // Get factory_id from sessionStorage
     if (selectedFactoryId) {
         fetchShippingUp(selectedFactoryId);
         
     } else {
-        console.error("No factory ID found in localStorage.");
+        console.error("No factory ID found in sessionStorage.");
     }
 });
 
@@ -562,11 +569,11 @@ async function fetchShippingUp() {
 }
 
 document.addEventListener("DOMContentLoaded", function () {
-    const selectedFactoryId = localStorage.getItem("selectedFactoryId"); // Get factory_id from localStorage
+    const selectedFactoryId = sessionStorage.getItem("selectedFactoryId"); // Get factory_id from sessionStorage
     if (selectedFactoryId) {
         fetchdelivery(selectedFactoryId);
     } else {
-        console.error("No factory ID found in localStorage.");
+        console.error("No factory ID found in sessionStorage.");
     }
 });
 
@@ -613,11 +620,11 @@ async function fetchdelivery() {
 }
 
 document.addEventListener("DOMContentLoaded", function () {
-    const selectedFactoryId = localStorage.getItem("selectedFactoryId"); // Get factory_id from localStorage
+    const selectedFactoryId = sessionStorage.getItem("selectedFactoryId"); // Get factory_id from sessionStorage
     if (selectedFactoryId) {
         fetchdeliveryup(selectedFactoryId);
     } else {
-        console.error("No factory ID found in localStorage.");
+        console.error("No factory ID found in sessionStorage.");
     }
 });
 
@@ -664,11 +671,11 @@ async function fetchdeliveryup() {
 }
 
 document.addEventListener("DOMContentLoaded", function () {
-    const selectedFactoryId = localStorage.getItem("selectedFactoryId"); // Get factory_id from localStorage
+    const selectedFactoryId = sessionStorage.getItem("selectedFactoryId"); // Get factory_id from sessionStorage
     if (selectedFactoryId) {
         fetchservice(selectedFactoryId);
     } else {
-        console.error("No factory ID found in localStorage.");
+        console.error("No factory ID found in sessionStorage.");
     }
 });
 
@@ -715,11 +722,11 @@ async function fetchservice() {
 }
 
 document.addEventListener("DOMContentLoaded", function () {
-    const selectedFactoryId = localStorage.getItem("selectedFactoryId"); // Get factory_id from localStorage
+    const selectedFactoryId = sessionStorage.getItem("selectedFactoryId"); // Get factory_id from sessionStorage
     if (selectedFactoryId) {
         fetchserviceup(selectedFactoryId);
     } else {
-        console.error("No factory ID found in localStorage.");
+        console.error("No factory ID found in sessionStorage.");
     }
 });
 
@@ -766,11 +773,11 @@ async function fetchserviceup() {
 }
 
 document.addEventListener("DOMContentLoaded", function () {
-    const selectedFactoryId = localStorage.getItem("selectedFactoryId"); // Get factory_id from localStorage
+    const selectedFactoryId = sessionStorage.getItem("selectedFactoryId"); // Get factory_id from sessionStorage
     if (selectedFactoryId) {
         fetchWork(selectedFactoryId);
     } else {
-        console.error("No factory ID found in localStorage.");
+        console.error("No factory ID found in sessionStorage.");
     }
 });
 
@@ -817,11 +824,11 @@ async function fetchWork() {
 }
 
 document.addEventListener("DOMContentLoaded", function () {
-    const selectedFactoryId = localStorage.getItem("selectedFactoryId"); // Get factory_id from localStorage
+    const selectedFactoryId = sessionStorage.getItem("selectedFactoryId"); // Get factory_id from sessionStorage
     if (selectedFactoryId) {
         fetchhsn(selectedFactoryId);
     } else {
-        console.error("No factory ID found in localStorage.");
+        console.error("No factory ID found in sessionStorage.");
     }
 });
 
@@ -868,11 +875,11 @@ async function fetchhsn() {
 }
 
 document.addEventListener("DOMContentLoaded", function () {
-    const selectedFactoryId = localStorage.getItem("selectedFactoryId"); // Get factory_id from localStorage
+    const selectedFactoryId = sessionStorage.getItem("selectedFactoryId"); // Get factory_id from sessionStorage
     if (selectedFactoryId) {
         fetchhsnup(selectedFactoryId);
     } else {
-        console.error("No factory ID found in localStorage.");
+        console.error("No factory ID found in sessionStorage.");
     }
 });
 
@@ -919,11 +926,11 @@ async function fetchhsnup() {
 }
 
 document.addEventListener("DOMContentLoaded", function () {
-    const selectedFactoryId = localStorage.getItem("selectedFactoryId"); // Get factory_id from localStorage
+    const selectedFactoryId = sessionStorage.getItem("selectedFactoryId"); // Get factory_id from sessionStorage
     if (selectedFactoryId) {
         fetchinvoice(selectedFactoryId);
     } else {
-        console.error("No factory ID found in localStorage.");
+        console.error("No factory ID found in sessionStorage.");
     }
 });
 
@@ -969,11 +976,11 @@ async function fetchinvoice() {
     }
 }
 document.addEventListener("DOMContentLoaded", function () {
-    const selectedFactoryId = localStorage.getItem("selectedFactoryId"); // Get factory_id from localStorage
+    const selectedFactoryId = sessionStorage.getItem("selectedFactoryId"); // Get factory_id from sessionStorage
     if (selectedFactoryId) {
         fetchinvoiceup(selectedFactoryId);
     } else {
-        console.error("No factory ID found in localStorage.");
+        console.error("No factory ID found in sessionStorage.");
     }
 });
 
@@ -1019,7 +1026,7 @@ async function fetchinvoiceup(factoryId) {
 }
 
 document.addEventListener("DOMContentLoaded", function () {
-    const selectedFactoryId = localStorage.getItem("selectedFactoryId"); // Get factory_id from localStorage
+    const selectedFactoryId = sessionStorage.getItem("selectedFactoryId"); // Get factory_id from sessionStorage
     if (selectedFactoryId) {
         fetchbank(selectedFactoryId);
         fetchbankup(selectedFactoryId);
@@ -1027,7 +1034,7 @@ document.addEventListener("DOMContentLoaded", function () {
         fetchtax2();
         fetchtax3();
     } else {
-        console.error("No factory ID found in localStorage.");
+        console.error("No factory ID found in sessionStorage.");
     }
 });
 
@@ -1623,9 +1630,9 @@ function editRecord11(id) {
                 }
                 
                 if (response.ScrapInvoiceInfo) {
-                    $('#intaxV11').val(response.ScrapInvoiceInfo.tax1_desc);
-                    $('#intaxV111').val(response.ScrapInvoiceInfo.tax2_desc);
-                    $('#intaxV1211').val(response.ScrapInvoiceInfo.tax3_desc);
+                    $('#intaxV11').val(response.ScrapInvoiceInfo.tax1_name);
+                    $('#intaxV111').val(response.ScrapInvoiceInfo.tax2_name);
+                    $('#intaxV1211').val(response.ScrapInvoiceInfo.tax3_name);
                     $('#intaxVval11').val(response.ScrapInvoiceInfo.tax1_value);
                     $('#intaxVval111').val(response.ScrapInvoiceInfo.tax2_value);
                     $('#intaxVval1211').val(response.ScrapInvoiceInfo.tax3_value);
@@ -2055,17 +2062,28 @@ async function printRecord(id) {
 
         const reg_addresss = MumbaiAddress.address;
 
-        // ── Business Unit Address (comma-split — same logic as invoice print) ─
-        const address = billing_address
-            .split(',')
-            .slice(1)
-            .map(x => x.trim())
-            .filter(x => x !== "")
-            .join(', ');
+        /* ================= BUSINESS UNIT DETAILS =================
+           Bound dynamically straight from ScrapInvoiceInfo (the
+           BUSINESS_UNITS join in the query: bu.business_unit_name,
+           bu.gst_number, bu.pan_number, bu.location, bu.state_id AS
+           bu_state_code). Nothing here is hardcoded per business unit.
+        */
 
-        const factory_Address = address;
+        const bu_business_unit_name = ScrapInvoiceInfo.business_unit_name || "";
+        const bu_gst_number         = ScrapInvoiceInfo.gst_number || "";
+        const bu_pan_number         = ScrapInvoiceInfo.pan_number || "";
+        const bu_location           = ScrapInvoiceInfo.location || "";
+        const bu_state_code         = ScrapInvoiceInfo.bu_state_code || "";
+
+        // Strip any leading "JBU-<number>" style prefix (e.g. "JBU-4 ") — not needed on print
+        const cleanBusinessUnitName = bu_business_unit_name
+            .replace(/^JBU-?\s*\d+\s*/i, "")
+            .trim();
+
+        const factory_Address = bu_location;
         const state_Code      = bu_state_code;
-        const Gst_Code        = invoice_gst;
+        const Gst_Code        = bu_gst_number;
+        const Pan_Code        = bu_pan_number;
 
         // ── Date Formatting ───────────────────────────────────────────────────
         const currentDate = new Date().toLocaleDateString('en-GB', {
@@ -2283,12 +2301,12 @@ async function printRecord(id) {
                             <div class="company-logo">
                                 <img src="img/logo/download.png" alt="Company Logo" style="width:100px;">
                             </div>
-                            <strong>JSW Severfield Structures Limited</strong><br>
+                            <strong><span class="companyname"></span></strong><br>
                             <span class="facotry_address"></span>
                             <p>
                             <b>State Code:</b> <span class="state_code"></span><br>
                             <b>GSTIN:</b> <span class="gst_code"></span> &nbsp;
-                            <b>PAN:</b> AACCJ1473D<br>
+                            <b>PAN:</b> <span class="pan_code"></span><br>
                             <b>ICE No:</b> 0309033152 &nbsp; <b>CIN No:</b> U28112MH2009PLC191045<br>
                             <b>Email:</b> invoice@jssl.in &nbsp; <b>Website:</b> www.jssl.in<br>
                         </td>
@@ -2511,7 +2529,7 @@ async function printRecord(id) {
                                 <span>indirectly over and above what has been declared herein.</span><br>
                             </td>
                             <td colspan="4">
-                                <span>For JSW SEVERFIELD STRUCTURES LTD.</span><br>
+                                <span>For <span class="footercompanyname"></span></span><br>
                                 <span style="margin-top:20px; display:inline-block;">(Authorised signature)</span><br>
                             </td>
                         </tr>
@@ -2536,11 +2554,14 @@ async function printRecord(id) {
             if (!tax3_value || Number(tax3_value) === 0)
                 container.querySelectorAll('.hidetax3').forEach(el => el.style.display = 'none');
 
-            // COMPANY / FACTORY HEADER
-            container.querySelector('.reg_add').textContent        = reg_addresss;
-            container.querySelector('.gst_code').textContent       = Gst_Code;
-            container.querySelector('.state_code').textContent     = state_Code;
-            container.querySelector('.facotry_address').textContent = factory_Address;
+            // COMPANY / FACTORY HEADER — all dynamic from ScrapInvoiceInfo (BUSINESS_UNITS join)
+            container.querySelector('.reg_add').textContent          = reg_addresss;
+            container.querySelector('.companyname').textContent      = cleanBusinessUnitName;
+            container.querySelector('.footercompanyname').textContent = cleanBusinessUnitName;
+            container.querySelector('.gst_code').textContent         = Gst_Code;
+            container.querySelector('.pan_code').textContent         = Pan_Code;
+            container.querySelector('.state_code').textContent       = state_Code;
+            container.querySelector('.facotry_address').textContent  = factory_Address;
 
             // INVOICE HEADER
             container.querySelector('.invoiceNumber').textContent  = invoiceno;
@@ -2737,8 +2758,6 @@ async function printRecord(id) {
         console.error('Error generating scrap invoice PDF:', error);
     }
 }
-
-
 
 /*async function printRecordView(id) {
     try {
@@ -3342,6 +3361,66 @@ function cancelRecord() {
 
 }
 
+function openModal(id, scp_load) {
+	//  const allowed = window.allowedActions || [];
+
+	if (!allowed.includes("Release")) {
+	  alert(" You do not have permission to release.");
+	  console.warn("Blocked edit attempt. User lacks release permission.");
+	  return;
+	}
+
+
+	console.log(" release record with ID:", id);
+    // Open the modal
+    $('#exampleModalCenter1').modal('show');
+
+    // Store the id and pn_id in the modal's data attributes
+    $('#exampleModalCenter1').attr('data-id', id);
+    $('#exampleModalCenter1').attr('data-scp_load', scp_load);
+}
+
+function addeventrelease() {
+	$('#exampleModalCenter1').modal('hide');
+    // Retrieve the id and pn_id from the modal
+	var id = $('#exampleModalCenter1').attr('data-id');
+	var scp_Load = $('#exampleModalCenter1').attr('data-scp_load');
+
+    // Perform release action
+    $.ajax({
+        url: new URL('/jssl/scrapinvoice/releasebyidnew', baseUrl),
+        type: 'POST',
+		xhrFields: {
+			    withCredentials: true
+			},
+        dataType: 'json',
+        data: jQuery.param({
+            id: id, 
+            factory_id: selectedFactoryId, 
+            released_by: createdById, 
+            scp_load: scp_Load
+        }),
+        success: function (data) {
+            var result = data.message;
+
+            if (result === "Success") {
+                const popup = $('<div class="popup">Scrap Invoice Released Successfully!</div>')
+                    .appendTo('body').hide().fadeIn(400);
+
+                setTimeout(function () {
+                    popup.fadeOut(400, function () {
+                        $(this).remove();
+                        window.location = 'InvoiceSrap.jsp';
+                    });
+                }, 800);
+            } else {
+            }
+        },
+        error: function () {
+            console.error('Request failed.');
+        }
+    });
+}
 
 function formatAddress(address) {
     if (!address) return '';

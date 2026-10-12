@@ -41,7 +41,7 @@ document.getElementById("modalScroll").addEventListener("click", function () {
 	$('#exampleModalScrollableAddType').modal('show');
 });
 
-const selectedFactoryId = localStorage.getItem('selectedFactoryId');
+const selectedFactoryId = sessionStorage.getItem('selectedFactoryId');
 console.log('selectedFactoryId:', selectedFactoryId);
 
 document.addEventListener("DOMContentLoaded", function () {
@@ -51,7 +51,7 @@ document.addEventListener("DOMContentLoaded", function () {
 if (selectedFactoryId) {
     fetchUserList();
 } else {
-    console.error('No factory ID found in localStorage.');
+    console.error('No factory ID found in sessionStorage.');
 }
 
 function fetchUserList() {

@@ -19,28 +19,10 @@
   <link href="vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css">
   <link href="css/ruang-admin.min.css" rel="stylesheet">
   <link rel="stylesheet" href="css/main.css">
-  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>	
-         <script src="js/GPMSSidebar.js"></script>
+
    
 
-   <!-- <script type="text/javascript">
-    window.history.forward();
-
-    // Auth Guard
-    const loginStatus = sessionStorage.getItem('loginStatus');
-    if (loginStatus !== 'Success') {
-      logout();
-    }
-
-    function noBack() {
-      window.history.forward();
-    }
-
-    function logout() {
-      sessionStorage.removeItem('loginStatus');
-      window.location = "newlogin.jsp";
-    }
-  </script> -->
+  
  <script type="text/javascript">
  </script>
 </head>
@@ -48,7 +30,7 @@
 <body id="page-top">
   <div id="wrapper">
     <!-- Sidebar -->
-     <%@ include file="sidebar.jsp" %>
+     <%@ include file="InVoiceSideBar.jsp" %>
      
      
     <!-- Sidebar -->
@@ -60,7 +42,7 @@
                     <i class="fa fa-bars"></i>
                 </button>
                 <ul class="navbar-nav ml-auto">
-                    <button class="btn btn-link" onclick="window.location.href='GPMSLandingpage.jsp'" style="background-color: transparent; color: white; border: none;">
+                    <button class="btn btn-link" onclick="window.location.href='Landingpage.jsp'" style="background-color: transparent; color: white; border: none;">
                         <i class="fa fa-home"></i>
                     </button>
                     <div class="topbar-divider d-none d-sm-block"></div>
@@ -87,7 +69,7 @@
           <div class="d-sm-flex align-items-center justify-content-between mb-4">
             <h1 class="h3 mb-0 text-gray-800">Delivery Challan</h1>
             <ol class="breadcrumb">
-              <li class="breadcrumb-item"><a href="Dashboard.jsp">Home</a></li>
+              <li class="breadcrumb-item"><a href="InvoiceDashBoard.jsp">Home</a></li>
               <li class="breadcrumb-item active" aria-current="page">Delivery Challan</li>
               
             </ol>
@@ -125,19 +107,22 @@
   <a class="scroll-to-top rounded" href="#page-top">
     <i class="fas fa-angle-up"></i>
   </a>
-  <script src="js/config.js"></script>
+
   <script src="vendor/jquery/jquery.min.js"></script>
   <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
   <script src="vendor/jquery-easing/jquery.easing.min.js"></script>
   <script src="js/ruang-admin.min.js"></script>
   <script src="vendor/chart.js/Chart.min.js"></script>
   <script src="js/demo/chart-area-demo.js"></script>  
-  <script src="js/username.js"></script>
+  
+  
+    <script src="js/config.js?v=<%=jsVersion%>"></script>
+  <script src="js/username.js?v=<%=jsVersion%>"></script>
  
-<script src="js/logout.js"></script>
- <script src="js/Sessionfilter.js"></script>
+<script src="js/logout.js?v=<%=jsVersion%>"></script>
+ <script src="js/Sessionfilter.js?v=<%=jsVersion%>"></script>
 
-<!-- <script src="js/sessionLogout.js"></script> -->
+
 
  <script>
         $(document).ready(function() {

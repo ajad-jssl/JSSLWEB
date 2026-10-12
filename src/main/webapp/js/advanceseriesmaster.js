@@ -41,12 +41,12 @@ document.getElementById("#modalScroll").addEventListener("click", function () {
 	$('#exampleModalScrollable').modal('show');
 });
 
-/*const selectedFactoryId = localStorage.getItem('selectedFactoryId');
+/*const selectedFactoryId = sessionStorage.getItem('selectedFactoryId');
 console.log('selectedFactoryId:', selectedFactoryId);
 */
 document.getElementById("AdvanceenddateAdd").setAttribute("min", new Date().toISOString().split('T')[0]);
 
-const selectedFactoryId = localStorage.getItem('selectedFactoryId');
+const selectedFactoryId = sessionStorage.getItem('selectedFactoryId');
 console.log('selectedFactoryId:', selectedFactoryId);
 
 document.addEventListener("DOMContentLoaded", function () {
@@ -57,7 +57,7 @@ if (selectedFactoryId) {
 	fetchdelivery();
 	fetchAllAdvanceSeries();
 } else {
-	console.error('No factory ID found in localStorage.');
+	console.error('No factory ID found in sessionStorage.');
 }
 
 
@@ -246,7 +246,6 @@ function clearAdvanceTable() {
 }
 
 
-
 function openModalAdd() {
 
 	const stateSelect = document.getElementById('state');
@@ -254,7 +253,12 @@ function openModalAdd() {
 	const selectedOption = stateSelect.options[stateSelect.selectedIndex];
 
 	// ✅ Read stored state_id (same as GST)
-	const state_id = selectedOption?.dataset?.stateIds || '';
+	let state_id = selectedOption?.dataset?.stateIds || '';
+
+	// ✅ Normalize to 2 digits (e.g. "9" -> "09")
+	if (state_id && state_id.length === 1) {
+		state_id = state_id.padStart(2, '0');
+	}
 
 	const seriesNo = document.getElementById('AdvanceseriesAdd').value.trim();
 	const sdate = document.getElementById('AdvancestartdateAdd').value.trim();
@@ -290,7 +294,7 @@ function openModalAdd() {
 		document.getElementById('productCodeErrorcredit1').style.display = "none";
 	}
 
-	// 3️⃣ Series must start with selected state_id
+	// 3️⃣ Series must start with selected state_id (2-digit, zero-padded)
 	if (!showError && state_id) {
 		if (!seriesNo.startsWith(state_id)) {
 			document.getElementById('productCodeErrorcredit1').innerText =

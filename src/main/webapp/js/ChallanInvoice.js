@@ -45,6 +45,59 @@ function loadAllowedActions() {
         });
 }
 
+
+// ---------- Shared helper ----------
+function normalizeText(str) {
+    return (str || "").replace(/\s+/g, " ").trim().toLowerCase();
+}
+
+/**
+ * Dedupe a list of {id, label} records by normalized label text.
+ * If a duplicate is found, prefer the one whose id matches selectedId
+ * (so pre-selection still works correctly even if the backend has
+ * two different ids pointing to the same display text).
+ */
+function dedupeByLabel(records, selectedId) {
+    const map = new Map(); // key: normalized label -> record
+    records.forEach((rec) => {
+        const key = normalizeText(rec.label);
+        if (!key) return;
+        const existing = map.get(key);
+        if (!existing) {
+            map.set(key, rec);
+        } else if (selectedId && String(rec.id) === String(selectedId)) {
+            // incoming one is the actual selected record — prefer it
+            map.set(key, rec);
+        }
+        // else: keep the first one seen, drop this duplicate
+    });
+    return Array.from(map.values());
+}
+
+function populateSelect(selectElement, records, selectedId, placeholder, fallbackText) {
+    selectElement.innerHTML = `<option value="">${placeholder}</option>`;
+
+    let matched = false;
+    records.forEach((rec) => {
+        const option = document.createElement("option");
+        option.value = rec.id;
+        option.textContent = rec.label;
+        if (selectedId && String(rec.id) === String(selectedId)) {
+            option.selected = true;
+            matched = true;
+        }
+        selectElement.appendChild(option);
+    });
+
+    if (!matched && fallbackText) {
+        const fallbackOption = document.createElement("option");
+        fallbackOption.value = fallbackText;
+        fallbackOption.textContent = fallbackText;
+        fallbackOption.selected = true;
+        selectElement.insertBefore(fallbackOption, selectElement.children[1] || null);
+    }
+}
+
 document.getElementById("modalScroll1").addEventListener("click", function () {
     // show custom message instead of opening modal
 	 // const allowed = window.allowedActions || [];
@@ -59,18 +112,24 @@ document.getElementById("modalScroll1").addEventListener("click", function () {
 
 document.addEventListener("DOMContentLoaded", function() {
 	loadAllowedActions();
-    const selectedFactoryId = localStorage.getItem("selectedFactoryId"); // Get factory_id from localStorage
+	fetchHsnMasterList();      
+	fetchServiceMasterList();  
+	fetchBusinessUnitList();       
+	fetchInvoiceAddressList();     
+    fetchWorkOrderList();          
+	fetchConsigneeAddressList(); 
+    const selectedFactoryId = sessionStorage.getItem("selectedFactoryId"); // Get factory_id from sessionStorage
     if (selectedFactoryId) {
         fetchCont(selectedFactoryId); // Fetch contractor list on page loadTax Percentage
         fetchinvoicetype();
     } else {
-        console.error("No factory ID found in localStorage.");
+        console.error("No factory ID found in sessionStorage.");
     }
 
     // Add event listener for contractor dropdown change
     document.getElementById("cont").addEventListener("change", function() {
         const selectedContractorId = this.value; // Get selected contractor ID
-        const selectedFactoryId = localStorage.getItem("selectedFactoryId"); // Get factory ID again
+        const selectedFactoryId = sessionStorage.getItem("selectedFactoryId"); // Get factory ID again
 
         if (selectedContractorId) {
             fetchLoad(selectedFactoryId, selectedContractorId); // Fetch load dropdown
@@ -83,17 +142,50 @@ document.addEventListener("DOMContentLoaded", function() {
     });
 
     // Add event listener for load dropdown change
-    document.getElementById("load").addEventListener("change", function() {
-        const selectedContractorId = document.getElementById("cont").value; // Get selected contractor ID
-        const selectedLoadId = this.value; // Get selected load ID
+	document.getElementById("load").addEventListener("change", function () {
+	    const selectedContractorId = document.getElementById("cont").value;
+	    const selectedLoadId = this.value;
+	    const invoiceType = $("#invoice option:selected").text().trim().toUpperCase();
 
-        if (selectedContractorId && selectedLoadId) {
-            document.getElementById("inputFieldsContainer").style.display = "block"; // Show the input fields container
-            fetchQsPackingData(selectedContractorId, selectedLoadId); // Fetch the QsPacking data and populate the fields
-        } else {
-            document.getElementById("inputFieldsContainer").style.display = "none"; // Hide if not selected
-        }
-    });
+	    if (selectedLoadId) {
+
+	        if (invoiceType === "GP") {
+	            document.getElementById("inputFieldsContainergp").style.display = "block";
+	            document.getElementById("inputFieldsContainer").style.display = "none";
+
+	            // GP method
+	            fetchQsPackingDatagp(selectedLoadId);
+				fetchtaxadd1();
+				 fetchtaxadd2();
+				 fetchtaxadd3();
+				 fetchinvoice();
+			/*	 fetchSalebusunit(selectedFactoryId);*/
+				/*  fetchinvoiceto();*/
+				 /* fetchconname();*/
+				  fetchShipping();
+				  fetchdelivery();
+				  fetchSalebank();
+				/*  fetchSalework();*/
+				  fetchorg1();
+				  fetchservice();
+				  fetchhsn();
+				  fetchexptitle();
+				  fetchBgType();
+				  fetchBgType1();
+
+	        } else {
+	            document.getElementById("inputFieldsContainer").style.display = "block";
+	            document.getElementById("inputFieldsContainergp").style.display = "none";
+
+	            // Normal method
+	            fetchQsPackingData(selectedContractorId, selectedLoadId);
+	        }
+
+	    } else {
+	        document.getElementById("inputFieldsContainer").style.display = "none";
+	        document.getElementById("inputFieldsContainergp").style.display = "none";
+	    }
+	});
 });
 
 async function fetchinvoicetype() {
@@ -101,7 +193,7 @@ async function fetchinvoicetype() {
         // Construct the API URL properly
         const url = new URL(`/jssl/master/listinvoicetypenew`, baseUrl1);
 
-        const selectedFactoryId = localStorage.getItem("selectedFactoryId");
+        const selectedFactoryId = sessionStorage.getItem("selectedFactoryId");
 
         // Fetch data from API
         const response = await fetch(url, {
@@ -193,6 +285,15 @@ async function fetchCont(factoryId) {
 // Fetch the load list based on factoryId and selected contractorId (con_id)
 async function fetchLoad(factoryId, contractId) {
     try {
+		
+		var invoiceType = $("#invoice option:selected").text().trim().toUpperCase();
+
+		 // If invoice type is GP, use another API
+		 if (invoiceType === "GP") {
+		     await fetchGpLoad(factoryId); // Your GP API method
+		     return;
+		 }
+
         const url = new URL(`/jssl/getlistloadidforthatcontractorsfromqsdeliverypackingnew`, baseUrl);
         url.searchParams.append("factory_id", factoryId);
         url.searchParams.append("contract_id", contractId); // Pass selected contractor ID
@@ -226,14 +327,157 @@ async function fetchLoad(factoryId, contractId) {
     }
 }
 
+async function fetchGpLoad(factoryId) {
+    const url = new URL(`/jssl/getlistloadidforthatcontractorsfromqsdeliverypackingnewGP`, baseUrl);
+    url.searchParams.append("factory_id", factoryId);
+ 
+
+    const response = await fetch(url, {
+        method: "GET",
+        credentials: "include"
+    });
+
+    const json = await response.json();
+
+    const selectElement = document.getElementById("load");
+    selectElement.innerHTML = `<option value="">Select load</option>`;
+
+    if (json.status === "yes") {
+        json.DATA.forEach(item => {
+            const option = document.createElement("option");
+            option.value = item.load_id;
+            option.textContent = item.load_id;
+            selectElement.appendChild(option);
+        });
+    }
+}
+
+let hsnMasterList = [];
+let serviceMasterList = [];
+
+// was: async function fetchhsn() { ... hsnMasterList = json.Data; }
+async function fetchHsnMasterList() {
+    try {
+        const url = new URL(`/jssl/master/listHsncodemasternew`, baseUrl);
+        const response = await fetch(url, { method: "GET", credentials: "include" });
+        if (!response.ok) throw new Error("Failed to fetch hsn codes");
+        const json = await response.json();
+        if (json.status !== "yes" || !json.Data.length) { console.warn("No hsn codes found."); return; }
+        hsnMasterList = json.Data;
+    } catch (error) {
+        console.error("Error fetching hsn codes:", error);
+    }
+}
+
+// was: async function fetchservice() { ... serviceMasterList = json.Data; }
+async function fetchServiceMasterList() {
+    try {
+        const url = new URL(`/jssl/master/listservicecodemasternew`, baseUrl);
+        const response = await fetch(url, { method: "GET", credentials: "include" });
+        if (!response.ok) throw new Error("Failed to fetch service codes");
+        const json = await response.json();
+        if (json.status !== "yes" || !json.Data.length) { console.warn("No service codes found."); return; }
+        serviceMasterList = json.Data;
+    } catch (error) {
+        console.error("Error fetching service codes:", error);
+    }
+}
+
+async function fetchSalework(targetId = "work", currentValueText = null) {
+    try {
+        const url = new URL(`/jssl/contract/listworkordernew`, baseUrl);
+        const response = await fetch(url, { method: "GET", credentials: "include" });
+        if (!response.ok) throw new Error("Failed to fetch work orders");
+        const json = await response.json();
+        if (json.status !== "yes" || !json.Data.length) {
+            console.warn("No work orders found.");
+            return;
+        }
+
+        const selectElement = document.getElementById(targetId);
+        if (!selectElement) return;
+
+        const records = json.Data
+            .filter(t => t.work_id && t.workorder_no)
+            .map(t => ({ id: t.work_id, label: t.workorder_no }));
+
+        let matchedId = null;
+        const match = records.find(r => normalizeText(r.label) === normalizeText(currentValueText));
+        if (match) matchedId = match.id;
+
+        const deduped = dedupeByLabel(records, matchedId);
+        populateSelect(selectElement, deduped, matchedId, "Select work order", matchedId ? null : currentValueText);
+    } catch (error) {
+        console.error("Error fetching work orders:", error);
+    }
+}
+
+async function fetchinvoiceto(targetId = "into", currentValueText = null) {
+    try {
+        const url = new URL(`/jssl/invoiceConsigneeAddress/getInvoiceAddress`, baseUrl);
+        const response = await fetch(url, { method: "GET", credentials: "include" });
+        if (!response.ok) throw new Error("Failed to fetch invoice addresses");
+        const json = await response.json();
+        if (json.status !== "yes" || !json.InvoiceAddress?.length) {
+            console.warn("No invoice addresses found.");
+            return;
+        }
+
+        const selectElement = document.getElementById(targetId);
+        if (!selectElement) return;
+
+        const records = json.InvoiceAddress
+            .filter(t => t.is_verified == 1 && t.id && t.address)
+            .map(t => ({ id: t.id, label: t.address }));
+
+        // find id matching currentValueText by exact address text, if any
+        let matchedId = null;
+        const match = records.find(r => normalizeText(r.label) === normalizeText(currentValueText));
+        if (match) matchedId = match.id;
+
+        const deduped = dedupeByLabel(records, matchedId);
+        populateSelect(selectElement, deduped, matchedId, "Select invoice to", matchedId ? null : currentValueText);
+    } catch (error) {
+        console.error("Error fetching invoice addresses:", error);
+    }
+}
+
+async function fetchconname(targetId = "consig", currentValueText = null) {
+    try {
+        const url = new URL(`/jssl/invoiceConsigneeAddress/getConsigneeAddressNew`, baseUrl);
+        const response = await fetch(url, { method: "GET", credentials: "include" });
+        if (!response.ok) throw new Error("Failed to fetch consignee addresses");
+        const json = await response.json();
+        if (json.status !== "yes" || !json.ConsigneeAddress?.length) {
+            console.warn("No consignee addresses found.");
+            return;
+        }
+
+        const selectElement = document.getElementById(targetId);
+        if (!selectElement) return;
+
+        const records = json.ConsigneeAddress
+            .filter(t => t.is_verified == 1 && t.id && t.address)
+            .map(t => ({ id: t.id, label: t.address }));
+
+        let matchedId = null;
+        const match = records.find(r => normalizeText(r.label) === normalizeText(currentValueText));
+        if (match) matchedId = match.id;
+
+        const deduped = dedupeByLabel(records, matchedId);
+        populateSelect(selectElement, deduped, matchedId, "Select", matchedId ? null : currentValueText);
+    } catch (error) {
+        console.error("Error fetching consignee addresses:", error);
+    }
+}
 // Fetch the QsPacking data using contractor_id and load_id
 async function fetchQsPackingData(contractId, loadId) {
     try {
-        const selectedFactoryId = localStorage.getItem("selectedFactoryId"); // Get the factory_id from localStorage
+        const selectedFactoryId = sessionStorage.getItem("selectedFactoryId"); // Get the factory_id from sessionStorage
 
         // Ensure factory_id is available
         if (!selectedFactoryId) {
-            console.error("No factory ID found in localStorage.");
+            console.error("No factory ID found in sessionStorage.");
             return;
         }
 
@@ -251,6 +495,13 @@ async function fetchQsPackingData(contractId, loadId) {
         if (!response.ok) throw new Error("Failed to fetch QsPacking data");
 
         const json = await response.json();
+
+        // ✅ FIX: declare `contractor` at function scope so it's still
+        // accessible later in the QsPacking_Data block (previously it was
+        // declared with `const` inside the Contractor_Data `if` block only,
+        // which threw a ReferenceError when referenced later and silently
+        // killed the rest of the function via the outer try/catch).
+        let contractor = null;
 
         if (json.Grand_Total_value && json.Grand_Total_value.length > 0) {
             const Grand_Total_value = json.Grand_Total_value[0];
@@ -310,7 +561,7 @@ async function fetchQsPackingData(contractId, loadId) {
         // Check if Contractor_Data exists and contains items
         if (json.Contractor_Data && json.Contractor_Data.length > 0) {
             // Get the first item (or iterate if needed)
-            const contractor = json.Contractor_Data[0];
+            contractor = json.Contractor_Data[0]; // ✅ assign to the outer-scoped variable (no `const` here)
 
             // Set the bank name from the contractor data
             const bankDetailsIdValue = contractor.bank_details_id_value; // Assuming the bank details ID is inside this property
@@ -319,11 +570,13 @@ async function fetchQsPackingData(contractId, loadId) {
                 bankInput.value = bankDetailsIdValue; // Populate the bank name field
             }
             // Set the work order from the contractor data
-            const workIdValue = contractor.work_id_value; // Assuming the work order ID is inside this property
+        /*    const workIdValue = contractor.work_id_value; // Assuming the work order ID is inside this property
             const workInput = document.getElementById("work");
             if (workInput) {
                 workInput.value = workIdValue; // Populate the work order field
-            }
+            }*/
+			
+			fetchSalework("work", contractor.work_id_value);
             /* const InvoiceTypeCal = contractor.invoice_type_calculation; // Assuming the work order ID is inside this property
              const InvoiceTypeCalcu = document.getElementById("intypecal");
              if (InvoiceTypeCalcu) {
@@ -357,6 +610,7 @@ async function fetchQsPackingData(contractId, loadId) {
             if (ProDec) {
                 ProDec.value = ProductValue; // Populate the work order field
             }*/
+			fetchinvoiceto("ininto", contractor.invoice_to_id_value);
             const ProductValue = contractor.product_desc_id; // 1 or 2
             const ProDec = document.getElementById("prodesc");
             const ProDecDb = document.getElementById("prodesc_db");
@@ -413,6 +667,7 @@ async function fetchQsPackingData(contractId, loadId) {
             if (per) {
                 per.value = PercenValue; // Populate the work order field
             }
+			fetchconname("billing", contractor.consignee_id_value);
             const ConValue = contractor.consignee_id_value; // Assuming the work order ID is inside this property
             const conadd = document.getElementById("billing");
             if (conadd) {
@@ -468,21 +723,22 @@ async function fetchQsPackingData(contractId, loadId) {
             if (Hcode) {
                 Hcode.value = HsnValue; // Populate the work order field
             }
-            const BNameValue = contractor.businessUnitName; // Assuming the work order ID is inside this property
+			fetchSalebusunit("inbusunit", contractor.businessUnitName);
+      /*      const BNameValue = contractor.businessUnitName; // Assuming the work order ID is inside this property
             const Bname = document.getElementById("inbusunit");
             if (Bname) {
                 Bname.value = BNameValue; // Populate the work order field
-            }
-            const ScodeNameValue = contractor.s_code_value; // Assuming the work order ID is inside this property
+            }*/
+          /*  const ScodeNameValue = contractor.s_code_value; // Assuming the work order ID is inside this property
             const Scodename = document.getElementById("officeservice");
             if (Scodename) {
                 Scodename.value = ScodeNameValue; // Populate the work order field
-            }
-            const HcodeNameValue = contractor.h_code_value; // Assuming the work order ID is inside this property
+            }*/
+        /*    const HcodeNameValue = contractor.h_code_value; // Assuming the work order ID is inside this property
             const Hcodename = document.getElementById("officehsn");
             if (Hcodename) {
                 Hcodename.value = HcodeNameValue; // Populate the work order field
-            }
+            }*/
             const con_slnoValue = contractor.con_slno; // Assuming the work order ID is inside this property
             const con_slno = document.getElementById("id11con");
             if (con_slno) {
@@ -499,56 +755,89 @@ async function fetchQsPackingData(contractId, loadId) {
             const container = document.querySelector(".dynamic-row");
             container.innerHTML = "";   // clear only THIS panel
 
+            // ✅ `contractor` is now safely accessible here since it was
+            // declared with `let` at the top of the function.
+            const contractorServiceCode = contractor ? contractor.s_code_value : null;
+            const contractorHsnCode = contractor ? contractor.h_code_value : null;
+
             json.QsPacking_Data.forEach((item, index) => {
 
                 const showLabel = index === 0;
 
+                const serviceOptions = serviceMasterList.map(s => {
+                    const isMatch = contractorServiceCode && s.service_code === contractorServiceCode;
+                    return `
+                        <option value="${s.service_code}" ${isMatch ? 'selected' : ''}>
+                            ${s.service_code} - ${s.service_description}
+                        </option>`;
+                }).join("");
+
+                // Build HSN Code <option> list — pre-select the option
+                // that matches contractor.h_code_value, if it exists.
+                const hsnOptions = hsnMasterList.map(h => {
+                    const isMatch = contractorHsnCode && h.service_code === contractorHsnCode;
+                    return `
+                        <option value="${h.service_code}" ${isMatch ? 'selected' : ''}>
+                            ${h.service_code} - ${h.service_description}
+                        </option>`;
+                }).join("");
+
                 container.insertAdjacentHTML("beforeend", `
-		            <div class="row align-items-center mb-1">
+					<div class="form-row flex-nowrap">
 
-		                <div class="col-auto">
-		                    ${showLabel ? '<label class="small-label d-block">UOM</label>' : ''}
-		                    <input type="text" class="form-control form-control-sm small-input"
-		                           value="${item.uom_name}" readonly>
-		                </div>
+					<div class="form-group col-md-1 col-sm-12">
+							${showLabel ? '<label><b>UOM</b></label>' : ''}
+							<input type="text" value="${item.uom_name}" class="form-control form-control-sm" disabled>
+					</div>
 
-		                <div class="col-auto">
-		                    ${showLabel ? '<label class="small-label d-block">Quantity</label>' : ''}
-		                    <input type="text" class="form-control form-control-sm small-input text-right"
-		                           value="${Number(item.qty).toFixed(2)}" readonly>
-		                </div>
+					<div class="form-group col-md-1 col-sm-12">
+							${showLabel ? '<label><b>Quantity</b></label>' : ''}
+							<input type="number" value="${item.qty}" class="form-control form-control-sm text-right" disabled>
+					</div>
 
-		                <div class="col-auto">
-		                    ${showLabel ? '<label class="small-label d-block">Kg</label>' : ''}
-		                    <input type="text" class="form-control form-control-sm small-input text-right"
-		                           value="${Number(item.per_kgs).toFixed(2)}" readonly>
-		                </div>
+					<div class="form-group col-md-1 col-sm-12">
+							${showLabel ? '<label><b>Kg</b></label>' : ''}
+					<input type="number" value="${item.per_kgs}" class="form-control form-control-sm text-right" disabled>
+					</div>
 
-		                <div class="col-auto">
-		                    ${showLabel ? '<label class="small-label d-block">Unit Price</label>' : ''}
-		                    <input type="text" class="form-control form-control-sm small-input text-right"
-		                           value="${Number(item.unit_price).toFixed(2)}" readonly>
-		                </div>
+					<div class="form-group col-md-1 col-sm-12">
+						   ${showLabel ? '<label><b>Unit Price</b></label>' : ''}
+					<input type="number" value="${item.unit_price}" class="form-control form-control-sm text-right" disabled>
+					</div>
 
-		                <div class="col-auto">
-		                    ${showLabel ? '<label class="small-label d-block">Total</label>' : ''}
-		                    <input type="text" class="form-control form-control-sm small-input text-right"
-		                           value="${Number(item.total).toFixed(2)}" readonly>
-		                </div>
+					<div class="form-group col-md-1 col-sm-12">
+							${showLabel ? '<label><b>Total</b></label>' : ''}
+					<input type="number" value="${item.total}" class="form-control form-control-sm text-right" disabled>
+					</div>
 
-		                <div class="col-auto">
-		                    ${showLabel ? '<label class="small-label d-block">Invoice Type</label>' : ''}
-		                    <input type="text" class="form-control form-control-sm small-input"
-		                           value="${item.scrap_name_type_id}" readonly>
-		                </div>
+					<div class="form-group col-md-1 col-sm-12">
+							${showLabel ? '<label><b>Milestone</b></label>' : ''}
+					<input type="text" value="${item.milestone_name}" class="form-control form-control-sm" disabled>
+					</div>
 
-		                <div class="col-auto">
-		                    ${showLabel ? '<label class="small-label d-block">Milestone</label>' : ''}
-		                    <input type="text" class="form-control form-control-sm small-input"
-		                           value="${item.milestone_name}" readonly>
-		                </div>
+					 <div class="form-group col-md-1 col-sm-12">
+							${showLabel ? '<label><b>Invoice Type</b></label>' : ''}
+					<input type="text" value="${item.scrap_name_type_id}" class="form-control form-control-sm" disabled>
+					</div>
 
-		            </div>
+					<div class="form-group col-md-2 col-sm-12">
+					     ${showLabel ? '<label><b>Service Code</b></label>' : ''}
+					   <select class="form-control form-control-sm service-code-select" data-slno="${item.slno || ''}">
+					  <option value="" ${!contractorServiceCode ? 'selected' : ''}>Select Service Code</option>
+					      ${serviceOptions}
+					</select>
+					 <div class="error-message service-code-error"></div>
+					    </div>
+
+					  <div class="form-group col-md-2 col-sm-12">
+					     ${showLabel ? '<label><b>HSN Code</b></label>' : ''}
+					        <select class="form-control form-control-sm hsn-code-select" data-slno="${item.slno || ''}">
+					          <option value="" ${!contractorHsnCode ? 'selected' : ''}>Select HSN Code</option>
+					             ${hsnOptions}
+					      </select>
+					       </div>
+
+					</div>
 		            <hr style="width:100%;border-top:1px solid #ccc;">
 		        `);
             });
@@ -601,7 +890,7 @@ async function fetchQsPackingData(contractId, loadId) {
 }
 
 document.addEventListener("DOMContentLoaded", function() {
-    const selectedFactoryId = localStorage.getItem("selectedFactoryId"); // Get factory_id from localStorage
+    const selectedFactoryId = sessionStorage.getItem("selectedFactoryId"); // Get factory_id from sessionStorage
     if (selectedFactoryId) {
         fetchinvoice(selectedFactoryId);
         fetchBgType();
@@ -609,7 +898,7 @@ document.addEventListener("DOMContentLoaded", function() {
         fetchinvoiceEdit(selectedFactoryId);
         fetchBgTypeedit();
     } else {
-        console.error("No factory ID found in localStorage.");
+        console.error("No factory ID found in sessionStorage.");
     }
 });
 
@@ -758,7 +1047,7 @@ let currentFactoryIdDly = null;
 function fetchUserList111(selectedFactoryId) {
 
     currentFactoryIdDly = selectedFactoryId ||
-        localStorage.getItem("selectedFactoryId");
+        sessionStorage.getItem("selectedFactoryId");
 
     // 🔥 Destroy existing DataTable
     if ($.fn.DataTable.isDataTable('#tableID')) {
@@ -983,6 +1272,7 @@ async function fetchinvoice() {
 
         // Get the select element
         const selectElement = document.getElementById("intype444");
+		//const selectElement1 = document.getElementById("intype444gp");
 
         // Clear existing options
         selectElement.innerHTML = `<option value="">Select invoice type</option>`;
@@ -994,6 +1284,7 @@ async function fetchinvoice() {
                 option.value = type.slno; // Backend keeps saleorder_id
                 option.textContent = type.remarks_type; // Display saleorder_typename
                 selectElement.appendChild(option);
+				//selectElement1.appendChild(option);
             }
         });
     } catch (error) {
@@ -1125,6 +1416,61 @@ async function fetchBgTypeedit() {
     }
 }
 
+async function fetchSalebusunit(targetId = "bus", currentValueText = null) {
+    try {
+        const url = new URL(`/jssl/contract/listbusinessunitnew`, baseUrl);
+
+        const response = await fetch(url, {
+            method: "GET",
+            credentials: "include"
+        });
+        if (!response.ok) throw new Error("Failed to fetch sale order types");
+
+        const json = await response.json();
+
+        if (json.status !== "yes" || !json.Data.length) {
+            console.warn("No sale order types found.");
+            return;
+        }
+
+        const selectElement = document.getElementById(targetId);
+        if (!selectElement) return;
+
+        selectElement.innerHTML = `<option value="">Select Business Unit</option>`;
+
+        //let matchFound = false;
+
+		json.Data.forEach((type) => {
+		    if (type.business_unit_id && type.business_unit_name) {
+		        const bindaddress = type.business_unit_name + type.location + '(' + type.gst_number + ')';
+
+		        const option = document.createElement("option");
+		        option.value = type.business_unit_id;
+		        option.textContent = bindaddress;
+
+		        // Loosen the match — check if currentValueText starts with the business unit name
+		        if (currentValueText && currentValueText.startsWith(type.business_unit_name)) {
+		            option.selected = true;
+		            matchFound = true;
+		        }
+
+		        selectElement.appendChild(option);
+		    }
+		});
+
+        // Only add currentValueText as a fallback option if it wasn't found in the API list
+        /*if (currentValueText && !matchFound) {
+            const currentOption = document.createElement("option");
+            currentOption.value = currentValueText;
+            currentOption.textContent = currentValueText;
+            currentOption.selected = true;
+            selectElement.insertBefore(currentOption, selectElement.firstChild.nextSibling);
+        }*/
+    } catch (error) {
+        console.error("Error fetching sale order types:", error);
+    }
+}
+
 function openModalAdd() {
     var username = document.getElementById('intype444').value.trim();
     var prodes = document.getElementById('prodes').value.trim();
@@ -1168,17 +1514,117 @@ function openModalAdd() {
 	    document.getElementById('loterror').innerText = "";
 	    document.getElementById('loterror').style.display = "none";
 	}
-    // If no errors, proceed
-    if (!showError) {
-        $('#exampleModalCenter66').modal('show'); // Show the next modal (Ensure this modal exists)
-    }
-}
+	    // ============================================
+	    // HSN / SERVICE CODE
+	    // At least ONE is mandatory
+	    // ============================================
 
-// Fetch selectedFactoryId from localStorage
-const selectedFactoryId = localStorage.getItem('selectedFactoryId');
+	    const serviceSelects =
+	        document.querySelectorAll(".service-code-select");
+
+	    const hsnSelects =
+	        document.querySelectorAll(".hsn-code-select");
+
+	    console.log("Service selects:", serviceSelects.length);
+	    console.log("HSN selects:", hsnSelects.length);
+
+	    if (serviceSelects.length === 0 && hsnSelects.length === 0) {
+
+	        console.log("No HSN / Service Code fields found.");
+
+	    } else {
+
+	        const totalRows = Math.max(
+	            serviceSelects.length,
+	            hsnSelects.length
+	        );
+
+	        for (let i = 0; i < totalRows; i++) {
+
+	            const serviceVal =
+	                serviceSelects[i]
+	                    ? serviceSelects[i].value.trim()
+	                    : '';
+
+	            const hsnVal =
+	                hsnSelects[i]
+	                    ? hsnSelects[i].value.trim()
+	                    : '';
+
+	            console.log(
+	                "Row:",
+	                i,
+	                "Service:",
+	                serviceVal,
+	                "HSN:",
+	                hsnVal
+	            );
+
+	            // BOTH empty = error
+	            if (serviceVal === '' && hsnVal === '') {
+
+	                showError = true;
+
+	                // Find error div corresponding to service select
+	                if (serviceSelects[i]) {
+
+	                    const errorDiv =
+	                        serviceSelects[i]
+	                            .parentElement
+	                            .querySelector(".service-code-error");
+
+	                    if (errorDiv) {
+	                        errorDiv.innerText =
+	                            "Please select either HSN Code or Service Code.";
+
+	                        errorDiv.style.display = "inline-block";
+	                    }
+	                }
+
+	            } else {
+
+	                // At least one selected
+	                if (serviceSelects[i]) {
+
+	                    const errorDiv =
+	                        serviceSelects[i]
+	                            .parentElement
+	                            .querySelector(".service-code-error");
+
+	                    if (errorDiv) {
+	                        errorDiv.innerText = "";
+	                        errorDiv.style.display = "none";
+	                    }
+	                }
+	            }
+	        }
+	    }
+
+
+	    // ============================================
+	    // OPEN MODAL
+	    // ============================================
+
+	    console.log("showError =", showError);
+
+	    if (!showError) {
+
+	        console.log("Opening exampleModalCenter66...");
+
+	        $('#exampleModalCenter66').modal('show');
+
+	    } else {
+
+	        console.log("Modal NOT opened because validation failed.");
+
+	    }
+	}
+
+// Fetch selectedFactoryId from sessionStorage
+const selectedFactoryId = sessionStorage.getItem('selectedFactoryId');
 console.log('selectedFactoryId:', selectedFactoryId);
 
-function addevent() {
+async function addevent() {
 	$('#exampleModalCenter66').modal('hide');
     // Validate role code and role description
     const selectedCOnt = document.getElementById("cont").selectedOptions[0]; // Get the selected option
@@ -1186,7 +1632,10 @@ function addevent() {
     const contname = selectedCOnt ? selectedCOnt.textContent : ''; // Get the contract_name
 	const selectedlot_id = document.getElementById("lotnum").selectedOptions[0]; // Get the selected option
 	const lot_id = selectedlot_id ? selectedlot_id.value : ''; 
+	const lot_no = selectedlot_id ? selectedlot_id.text : ''; 
 
+	await saveServiceHsnSelections();
+	
     $.ajax({
         url: new URL('/jssl/invoice/addnewdly', baseUrl),
         type: 'POST',
@@ -1209,6 +1658,10 @@ function addevent() {
             reference_no: ref.value,
             lc_number: lc.value,
             supply_place: sup.value,
+			vendorname: vendorname.value,
+			vendorinvno: vendorinvno.value,
+			vendorqty: vendorqty.value,
+			vendorinvdate: vendordate.value,
             s_t_exempted: exe.value,
             lr_docketno: dock.value,
             bg_no: bgno.value,
@@ -1219,7 +1672,24 @@ function addevent() {
             factory_id: selectedFactoryId,
             type_id: intype444.value,
             pn_id: id11.value,
-			lot_id: lot_id
+			lot_id: lot_id,
+			lot_no: lot_no,
+			
+			// ---- Contract Details modal fields ----
+			      business_unit_id: document.getElementById("inbusunit").value,
+			      invoice_type_calculation: document.getElementById("intypecal").value,
+			      invoice_to_id: document.getElementById("ininto").value,
+			      product_desc_id: document.getElementById("prodesc").value,
+			      shipment_mode_id: document.getElementById("shipmode").value,
+			      work_id: document.getElementById("work").value,
+			      export: document.getElementById("expt").value,
+			      tax_ex_inc: document.getElementById("taxres").value,
+			      percentage_value: document.getElementById("percen").value,
+			      consignee_id: document.getElementById("billing").value,
+			      bank_details_id: document.getElementById("bank").value,
+			      delivery_condition_id: document.getElementById("delivery").value,
+			      regd_office_id: document.getElementById("office").value
+			
         }),
         success: function(data) {
             var result = data.message;
@@ -1253,6 +1723,55 @@ function setInputValue(selector, value) {
     $(selector).val(value ? value : ""); // Set value or empty string if undefined/null
 }
 
+let businessUnitList = [];
+let invoiceAddressList = [];
+let workOrderList = [];
+let consigneeAddressList = [];
+
+async function fetchBusinessUnitList() {
+    try {
+        const url = new URL(`/jssl/contract/listbusinessunitnew`, baseUrl);
+        const response = await fetch(url, { method: "GET", credentials: "include" });
+        const json = await response.json();
+        businessUnitList = (json.status === "yes" && json.Data) ? json.Data : [];
+    } catch (error) {
+        console.error("Error fetching business unit list:", error);
+    }
+}
+
+async function fetchInvoiceAddressList() {
+    try {
+        const url = new URL(`/jssl/invoiceConsigneeAddress/getInvoiceAddress`, baseUrl);
+        const response = await fetch(url, { method: "GET", credentials: "include" });
+        const json = await response.json();
+        invoiceAddressList = (json.status === "yes" && json.InvoiceAddress) ? json.InvoiceAddress : [];
+    } catch (error) {
+        console.error("Error fetching invoice address list:", error);
+    }
+}
+
+async function fetchWorkOrderList() {
+    try {
+        const url = new URL(`/jssl/contract/listworkordernew`, baseUrl);
+        const response = await fetch(url, { method: "GET", credentials: "include" });
+        const json = await response.json();
+        workOrderList = (json.status === "yes" && json.Data) ? json.Data : [];
+    } catch (error) {
+        console.error("Error fetching work order list:", error);
+    }
+}
+
+async function fetchConsigneeAddressList() {
+    try {
+        const url = new URL(`/jssl/invoiceConsigneeAddress/getConsigneeAddressNew`, baseUrl);
+        const response = await fetch(url, { method: "GET", credentials: "include" });
+        const json = await response.json();
+        consigneeAddressList = (json.status === "yes" && json.ConsigneeAddress) ? json.ConsigneeAddress : [];
+    } catch (error) {
+        console.error("Error fetching consignee address list:", error);
+    }
+}
+
 async function editRecord(id) {
 	 // const allowed = window.allowedActions || [];
 
@@ -1276,7 +1795,31 @@ async function editRecord(id) {
         const invoiceData = json.Invoice_Data || {};
         const GrandValue = json.Grand_Total_value || [];
         const ContData = json.Contractor_Data || [];
+		const ContractMasterData = json.InvoiceContractMaster || {};
+		const matchedBU = businessUnitList.find(b => String(b.business_unit_id) === String(ContractMasterData.bid));
+		     const buDisplay = matchedBU
+		         ? `${matchedBU.business_unit_name} ${matchedBU.orgName},${matchedBU.location},${matchedBU.stateName}(${matchedBU.gst_number})`
+		         : (ContData.length > 0 ? ContData[0].business_unit_name : "");
 
+		     const matchedInvoiceTo = invoiceAddressList.find(a => String(a.id) === String(ContractMasterData.invoice_to_id));
+		     const invoiceToDisplay = matchedInvoiceTo
+		         ? matchedInvoiceTo.address
+		         : (ContData.length > 0 ? ContData[0].invoice_to_id_value : "");
+
+		     const matchedWork = workOrderList.find(w => String(w.work_id) === String(ContractMasterData.work_id));
+		     const workDisplay = matchedWork
+		         ? matchedWork.workorder_no
+		         : (ContData.length > 0 ? ContData[0].work_id_value : "");
+
+		     const matchedConsignee = consigneeAddressList.find(c => String(c.id) === String(ContractMasterData.consignee_id));
+		     const consigneeDisplay = matchedConsignee
+		         ? matchedConsignee.address
+		         : (ContData.length > 0 ? ContData[0].consignee_id_value : "");
+
+		     setInputValue("#bunitv",     buDisplay);
+		     setInputValue("#intov",      invoiceToDisplay);
+		     setInputValue("#workorderv", workDisplay);
+		     setInputValue("#nandconv",   consigneeDisplay);
         $(".dynamic-row11, .dynamic-row122").empty(); // Clear previous content
 
         // Set values in form fields
@@ -1308,16 +1851,16 @@ async function editRecord(id) {
 
         // Set contractor data fields
         const contractorFields = {
-            "#bunitv": "business_unit_name",
+         /*   "#bunitv": "business_unit_name",*/
             //"#intypev": "invoice_type_calculation",
-            "#intov": "invoice_to_id_value",
+         /*   "#intov": "invoice_to_id_value",*/
             //"#prodesv": "product_desc_id",
             "#shipmodev": "shipment_mode_id_value",
-            "#workorderv": "work_id_value",
+            /*"#workorderv": "work_id_value",*/
             "#exptv": "export",
             //"#taxresv": "tax_payable",
             "#percenv": "percentage_value",
-            "#nandconv": "consignee_id_value",
+            /*"#nandconv": "consignee_id_value",*/
             "#banknamev": "bank_details_id_value",
             "#deliveryconv": "delivery_condition_id_value",
             "#officevv": "reg_office_id_value",
@@ -1417,7 +1960,12 @@ async function editRecord(id) {
         Object.keys(contractorFields).forEach(selector => {
             setInputValue(selector, ContData.length > 0 ? ContData[0][contractorFields[selector]] : "");
         });
-
+		// ---- FIX: vendor fields don't always live on ContData[0]; find the row that actually
+				setInputValue("#vendornamev", invoiceData.vendorname);
+				setInputValue("#vendorinvnov", invoiceData.vendorinvno);
+				setInputValue("#vendorqtyv", invoiceData.vendorqty);
+				setInputValue("#vendordatev", toDateInputValue(invoiceData.vendorinvdate));
+		        // ---- END vendor fields fix ----
         Object.keys(TaxFields).forEach(selector => {
             setInputValue(selector, taxData.length > 0 ? taxData[0][TaxFields[selector]] : "");
         });
@@ -1429,6 +1977,16 @@ async function editRecord(id) {
         packingData.forEach((item, index) => {
 
             const showLabel = index === 0;
+			const selectedService = serviceMasterList.find(s => s.service_code == item.scode);
+			      const selectedHsn = hsnMasterList.find(h => h.service_code == item.hsncode);
+
+			      const serviceDisplay = selectedService
+			          ? `${selectedService.service_code} - ${selectedService.service_description}`
+			          : (item.scode || "");
+
+			      const hsnDisplay = selectedHsn
+			          ? `${selectedHsn.service_code} - ${selectedHsn.service_description}`
+			          : (item.hsncode || "");
 
             $(".dynamic-row11").append(`
 		        <div class="row align-items-center mb-1">
@@ -1474,6 +2032,22 @@ async function editRecord(id) {
 		                <input type="text" class="form-control form-control-sm small-input"
 		                       value="${item.milestone_name}" readonly>
 		            </div>
+					
+					<div class="col-auto">
+					                 ${showLabel ? '<label class="small-label">Service Code</label>' : ''}
+					                 <input type="text"
+					                        class="form-control form-control-sm small-input"
+					                        value="${serviceDisplay}"
+					                        readonly>
+					             </div>
+
+					             <div class="col-auto">
+					                 ${showLabel ? '<label class="small-label">HSN Code</label>' : ''}
+					                 <input type="text"
+					                        class="form-control form-control-sm small-input"
+					                        value="${hsnDisplay}"
+					                        readonly>
+					             </div>
 
 		        </div>
 		        <hr style="width:100%;border-top:1px solid #ccc;">
@@ -1500,7 +2074,7 @@ async function editRecord(id) {
                 <hr style="width:120%;border-top:1px solid #ccc;">
             `);
         });
-
+		toggleSubcontractingFieldsVerify();
 		fetchLotnumberview(selectedFactoryId, contract_id, invoiceData.lot_id);
         // Show the modal
         $("#exampleModalScrollableVerify").modal("show");
@@ -1534,6 +2108,35 @@ async function editRecord11(id) {
         const invoiceData = json.Invoice_Data || {};
         const GrandValue = json.Grand_Total_value || [];
         const ContData = json.Contractor_Data || [];
+		
+		// ---- NEW: resolve Contract Details display text from InvoiceContractMaster, fallback to ContData ----
+		        const ContractMasterData = json.InvoiceContractMaster || {};
+
+				const matchedBU = businessUnitList.find(b => String(b.business_unit_id) === String(ContractMasterData.bid));
+				const buDisplay = matchedBU
+				    ? `${matchedBU.business_unit_name} ${matchedBU.orgName},${matchedBU.location},${matchedBU.stateName}(${matchedBU.gst_number})`
+				    : (ContData.length > 0 ? ContData[0].business_unit_name : "");
+
+				const matchedInvoiceTo = invoiceAddressList.find(a => String(a.id) === String(ContractMasterData.invoice_to_id));
+				const invoiceToDisplay = matchedInvoiceTo
+				    ? matchedInvoiceTo.address
+				    : (ContData.length > 0 ? ContData[0].invoice_to_id_value : "");
+
+				const matchedWork = workOrderList.find(w => String(w.work_id) === String(ContractMasterData.work_id));
+				const workDisplay = matchedWork
+				    ? matchedWork.workorder_no
+				    : (ContData.length > 0 ? ContData[0].work_id_value : "");
+
+				const matchedConsignee = consigneeAddressList.find(c => String(c.id) === String(ContractMasterData.consignee_id));
+				const consigneeDisplay = matchedConsignee
+				    ? matchedConsignee.address
+				    : (ContData.length > 0 ? ContData[0].consignee_id_value : "");
+
+				setInputValue("#bunitvv",     buDisplay);
+				setInputValue("#intovv",      invoiceToDisplay);
+				setInputValue("#workordervv", workDisplay);
+				setInputValue("#nandconvv",   consigneeDisplay);
+				// ---- END NEW ----
 
         $(".dynamic-row11test, .dynamic-row122test").empty(); // Clear previous content
 
@@ -1567,16 +2170,16 @@ async function editRecord11(id) {
 
         // Set contractor data fields
         const contractorFields = {
-            "#bunitvv": "business_unit_name",
+          /*  "#bunitvv": "business_unit_name",*/
             //"#intypevv": "invoice_type_calculation",
-            "#intovv": "invoice_to_id_value",
+          /*  "#intovv": "invoice_to_id_value",*/
             //"#prodesvv": "product_desc_id",
             "#shipmodevv": "shipment_mode_id_value",
-            "#workordervv": "work_id_value",
+            /*"#workordervv": "work_id_value",*/
             "#exptvv": "export",
             //"#taxresvv": "tax_payable",
             "#percenvv": "percentage_value",
-            "#nandconvv": "consignee_id_value",
+           /* "#nandconvv": "consignee_id_value",*/
             "#banknamevv": "bank_details_id_value",
             "#deliveryconvv": "delivery_condition_id_value",
             "#officevvv": "reg_office_id_value",
@@ -1678,6 +2281,12 @@ async function editRecord11(id) {
             setInputValue(selector, ContData.length > 0 ? ContData[0][contractorFields[selector]] : "");
         });
 
+		// ---- FIX: vendor fields don't always live on ContData[0]; find the row that actually
+		setInputValue("#vendornamevv", invoiceData.vendorname);
+		setInputValue("#vendorinvnovv", invoiceData.vendorinvno);
+		setInputValue("#vendorqtyvv", invoiceData.vendorqty);
+		setInputValue("#vendordatevv", toDateInputValue(invoiceData.vendorinvdate));
+				// ---- END vendor fields fix ----
         Object.keys(TaxFields).forEach(selector => {
             setInputValue(selector, taxData.length > 0 ? taxData[0][TaxFields[selector]] : "");
         });
@@ -1689,6 +2298,18 @@ async function editRecord11(id) {
         packingData.forEach((item, index) => {
 
             const showLabel = index === 0;
+			
+			const selectedService = serviceMasterList.find(s => s.service_code == item.scode);
+					const selectedHsn = hsnMasterList.find(h => h.service_code == item.hsncode);
+
+					const serviceDisplay = selectedService
+					    ? `${selectedService.service_code} - ${selectedService.service_description}`
+					    : (item.scode || "");
+
+					const hsnDisplay = selectedHsn
+					    ? `${selectedHsn.service_code} - ${selectedHsn.service_description}`
+					    : (item.hsncode || "");
+
 
             $(".dynamic-row11test").append(`
 		        <div class="row align-items-center mb-1">
@@ -1734,6 +2355,22 @@ async function editRecord11(id) {
 		                <input type="text" class="form-control form-control-sm small-input"
 		                       value="${item.milestone_name}" readonly>
 		            </div>
+					
+					<div class="col-auto">
+								    ${showLabel ? '<label class="small-label">Service Code</label>' : ''}
+								    <input type="text"
+								           class="form-control form-control-sm small-input"
+								           value="${serviceDisplay}"
+								           readonly>
+								</div>
+
+								<div class="col-auto">
+								    ${showLabel ? '<label class="small-label">HSN Code</label>' : ''}
+								    <input type="text"
+								           class="form-control form-control-sm small-input"
+								           value="${hsnDisplay}"
+								           readonly>
+								</div>
 
 		        </div>
 		        <hr style="width:100%;border-top:1px solid #ccc;">
@@ -1762,7 +2399,8 @@ async function editRecord11(id) {
         });
 
 		
-		
+		const invTypeName = packingData.length > 0 ? (packingData[0].invoice_remarks_type_name || "") : "";
+				$('#subcontractingFieldsView').toggle(invTypeName.toLowerCase() === "subcontracting");
 		fetchLotnumberverfied(selectedFactoryId, contract_id, invoiceData.lot_id);
         // Show the modal
         $("#exampleModalScrollableVerified").modal("show");
@@ -1770,6 +2408,11 @@ async function editRecord11(id) {
     } catch (error) {
         console.error('Error fetching invoice data:', error);
     }
+}
+
+function toDateInputValue(v) {
+    if (!v) return "";
+    return String(v).split(" ")[0]; // "2026-08-01 00:00:00.0" -> "2026-08-01"
 }
 
 async function editRecordInvoice(id) {
@@ -1796,7 +2439,25 @@ async function editRecordInvoice(id) {
         const invoiceData = json.Invoice_Data || {};
         const GrandValue = json.Grand_Total_value || [];
         const ContData = json.Contractor_Data || [];
+		const ContractMasterData = json.InvoiceContractMaster || {};
 
+		      setInputValue("#vconslnoupdate", ContractMasterData.con_slno || invoiceData.contract_slno || "");
+			  fetchSalebusunitEdit("bunitvup",ContractMasterData.bid,ContData.length > 0 ? ContData[0].business_unit_name : "",ContData.length > 0 ? ContractMasterData.verified_status : undefined);
+			  document.getElementById("intypevup").value = ContractMasterData.invoice_type_calculation || "2";
+			  //fetchinvoicetoEdit("intovup", ContractMasterData.invoice_to_id || (ContData.length > 0 ? ContData[0].invoice_to_id_value : ""));
+			  fetchinvoicetoEdit("intovup",ContractMasterData.invoice_to_id,ContData.length > 0 ? ContData[0].invoice_to_id_value : "");
+			  document.getElementById("prodesvup").value = ContractMasterData.product_desc_id || "1";
+			  setInputValue("#shipmodevup", ContData.length > 0 ? ContData[0].shipment_mode_id_value : "");
+			  //fetchSaleworkEdit("workordervup", ContractMasterData.work_id || (ContData.length > 0 ? ContData[0].work_id_value : ""));
+			  fetchSaleworkEdit("workordervup",ContractMasterData.work_id,ContData.length > 0 ? ContData[0].work_id_value : "");
+			  setInputValue("#exptvup", ContractMasterData.export);
+			  document.getElementById("taxresvup").value = ContractMasterData.tax_ex_inc || "0";
+			  setInputValue("#percenvup", ContractMasterData.percentage_value);
+			  //fetchconnameEdit("nandconvup", ContractMasterData.consignee_id || (ContData.length > 0 ? ContData[0].consignee_id_value : ""));
+			  fetchconnameEdit("nandconvup",ContractMasterData.consignee_id,ContData.length > 0 ? ContData[0].consignee_id_value : "");
+			  setInputValue("#banknamevup", ContData.length > 0 ? ContData[0].bank_details_id_value : "");
+			  setInputValue("#deliveryconvup", ContData.length > 0 ? ContData[0].delivery_condition_id_value : "");
+			  setInputValue("#officevvup", ContData.length > 0 ? ContData[0].reg_office_id_value : "");
         $(".dynamic-row11uptest, .dynamic-row122up").empty(); // Clear previous content
 
         // Set values in form fields
@@ -1940,6 +2601,14 @@ async function editRecordInvoice(id) {
         Object.keys(contractorFields).forEach(selector => {
             setInputValue(selector, ContData.length > 0 ? ContData[0][contractorFields[selector]] : "");
         });
+		
+		// ---- FIX: vendor fields don't always live on ContData[0]; find the row that actually
+				setInputValue("#vendornameup", invoiceData.vendorname);
+				setInputValue("#vendorinvnoup", invoiceData.vendorinvno);
+				setInputValue("#vendorqtyup", invoiceData.vendorqty);
+				setInputValue("#vendordateup", toDateInputValue(invoiceData.vendorinvdate));
+	   // ---- END vendor fields fix ----
+
 
         Object.keys(TaxFields).forEach(selector => {
             setInputValue(selector, taxData.length > 0 ? taxData[0][TaxFields[selector]] : "");
@@ -1952,6 +2621,20 @@ async function editRecordInvoice(id) {
         packingData.forEach((item, index) => {
 
             const showLabel = index === 0;
+			const serviceOptions = serviceMasterList.map(s => `
+			        <option value="${s.service_code}"
+			            ${item.scode == s.service_code ? "selected" : ""}>
+			            ${s.service_code} - ${s.service_description}
+			        </option>
+			    `).join("");
+
+			    const hsnOptions = hsnMasterList.map(h => `
+			        <option value="${h.service_code}"
+			            ${item.hsncode == h.service_code ? "selected" : ""}>
+			            ${h.service_code} - ${h.service_description}
+			        </option>
+			    `).join("");
+
 
             $(".dynamic-row11uptest").append(`
 		        <div class="row align-items-center mb-1">
@@ -1997,7 +2680,21 @@ async function editRecordInvoice(id) {
 		                <input type="text" class="form-control form-control-sm small-input"
 		                       value="${item.milestone_name}" readonly>
 		            </div>
-
+					<div class="form-group col-md-2 col-sm-12">
+						                ${showLabel ? '<label class="small-label">Service Code</label>' : ''}
+						                <select class="form-control form-control-sm service-code-select" data-slno="${item.slno}">
+						                    <option value="">Select Service Code</option>
+						                    ${serviceOptions}
+						                </select>
+										<div class="error-message service-code-error"></div>
+						            </div>
+						            <div class="form-group col-md-2 col-sm-12">
+						                ${showLabel ? '<label class="small-label">HSN Code</label>' : ''}
+						                <select class="form-control form-control-sm hsn-code-select" data-slno="${item.slno}">
+						                    <option value="">Select HSN Code</option>
+						                    ${hsnOptions}
+						                </select>
+						            </div>
 		        </div>
 		        <hr style="width:100%;border-top:1px solid #ccc;">
 		    `);
@@ -2026,7 +2723,7 @@ async function editRecordInvoice(id) {
 		
 		fetchLotnumberUpdate(selectedFactoryId, contract_id, invoiceData.lot_id);
 		console.log("teh lot no is this",invoiceData.lot_id);
-
+		toggleSubcontractingFieldsUp(); 
         // Show the modal
         $("#exampleModalScrollableEditUp").modal("show");
 
@@ -2035,6 +2732,107 @@ async function editRecordInvoice(id) {
     }
 }
 
+async function fetchSalebusunitEdit(targetId, selectedId, fallbackText, verified_status) {
+    const url = new URL(`/jssl/contract/listbusinessunitnew`, baseUrl);
+    const response = await fetch(url, { method: "GET", credentials: "include" });
+    const json = await response.json();
+    if (json.status !== "yes" || !json.Data.length) return;
+
+    const selectElement = document.getElementById(targetId);
+    selectElement.innerHTML = `<option value="">Select Business Unit</option>`;
+
+    let matched = false;
+    json.Data.forEach((type) => {
+        const bindaddress = type.business_unit_name + type.location + '(' + type.gst_number + ')';
+        const option = document.createElement("option");
+        option.value = type.business_unit_id;
+        option.textContent = bindaddress;
+        if (selectedId && String(type.business_unit_id) === String(selectedId)) {
+            option.selected = true;
+            matched = true;
+        }
+        selectElement.appendChild(option);
+    });
+
+    // Fallback: no ID match, but we have a display string from Contractor_Data
+    if (!matched && fallbackText) {
+        const fallbackOption = document.createElement("option");
+        fallbackOption.value = fallbackText;
+        fallbackOption.textContent = fallbackText;
+        fallbackOption.selected = true;
+        selectElement.insertBefore(fallbackOption, selectElement.firstChild.nextSibling);
+    }
+
+    // ✅ Make it read-only once verified
+    if (verified_status === "true" || verified_status === "1" || verified_status === 1) {
+        selectElement.setAttribute("disabled", "disabled");
+    } else {
+        selectElement.removeAttribute("disabled"); // reset in case it was disabled from a previous open
+    }
+}
+
+async function fetchinvoicetoEdit(targetId, selectedId, fallbackText) {
+    try {
+        const url = new URL(`/jssl/invoiceConsigneeAddress/getInvoiceAddress`, baseUrl);
+        const response = await fetch(url, { method: "GET", credentials: "include" });
+        const json = await response.json();
+        if (json.status !== "yes" || !json.InvoiceAddress?.length) return;
+
+        const selectElement = document.getElementById(targetId);
+        if (!selectElement) return;
+
+        const records = json.InvoiceAddress
+            .filter(t => t.is_verified == 1 && t.id)
+            .map(t => ({ id: t.id, label: t.address }));
+
+        const deduped = dedupeByLabel(records, selectedId);
+        populateSelect(selectElement, deduped, selectedId, "Select invoice to", fallbackText);
+    } catch (err) {
+        console.error("Error fetching invoice addresses:", err);
+    }
+}
+
+async function fetchSaleworkEdit(targetId, selectedId, fallbackText) {
+    try {
+        const url = new URL(`/jssl/contract/listworkordernew`, baseUrl);
+        const response = await fetch(url, { method: "GET", credentials: "include" });
+        const json = await response.json();
+        if (json.status !== "yes" || !json.Data.length) return;
+
+        const selectElement = document.getElementById(targetId);
+        if (!selectElement) return;
+
+        const records = json.Data
+            .filter(t => t.work_id)
+            .map(t => ({ id: t.work_id, label: t.workorder_no }));
+
+        const deduped = dedupeByLabel(records, selectedId);
+        populateSelect(selectElement, deduped, selectedId, "Select work order", fallbackText);
+    } catch (err) {
+        console.error("Error fetching work orders:", err);
+    }
+}
+
+async function fetchconnameEdit(targetId, selectedId, fallbackText) {
+    try {
+        const url = new URL(`/jssl/invoiceConsigneeAddress/getConsigneeAddressNew`, baseUrl);
+        const response = await fetch(url, { method: "GET", credentials: "include" });
+        const json = await response.json();
+        if (json.status !== "yes" || !json.ConsigneeAddress?.length) return;
+
+        const selectElement = document.getElementById(targetId);
+        if (!selectElement) return;
+
+        const records = json.ConsigneeAddress
+            .filter(t => t.is_verified == 1 && t.id)
+            .map(t => ({ id: t.id, label: t.address }));
+
+        const deduped = dedupeByLabel(records, selectedId);
+        populateSelect(selectElement, deduped, selectedId, "Select", fallbackText);
+    } catch (err) {
+        console.error("Error fetching consignee addresses:", err);
+    }
+}
 
 function openModalVerify() {
     var username = document.getElementById('remarkvvei').value.trim();
@@ -2177,7 +2975,35 @@ function openModalUpdate() {
 }
 
 function addeventudate() {
-	$('#exampleModalCenter66Editup').modal('hide');
+    $('#exampleModalCenter66Editup').modal('hide');
+
+    const slno = [];
+    const service_code_id = [];
+    const hsn_code_id = [];
+
+    // Scoped strictly to the Edit-Up modal's service/HSN rows,
+    // so rows from the Add modal (or any other modal) never get swept in.
+    $("#exampleModalScrollableEditUp .dynamic-row11uptest .service-code-select").each(function () {
+        const rowSlno = $(this).data("slno");
+
+        const hsn = $(this)
+            .closest(".row")
+            .find(".hsn-code-select")
+            .val();
+
+        // Skip rows with no slno - these are stray/unrelated selects that
+        // shouldn't be sent to the server at all.
+        if (rowSlno === undefined || rowSlno === null || rowSlno === "") {
+            return;
+        }
+
+        slno.push(rowSlno);
+        service_code_id.push($(this).val());
+        hsn_code_id.push(hsn);
+    });
+
+    console.log("Update payload -> slno:", slno, "service_code_id:", service_code_id, "hsn_code_id:", hsn_code_id);
+
     $.ajax({
         url: new URL('/jssl/invoice/updatdlyenew', baseUrl),
         type: 'POST',
@@ -2204,8 +3030,36 @@ function addeventudate() {
             date_of_ref: daterefvup.value,
             lc_issue_date: lcdatevup.value,
             id: vidverifyup.value,
-            type_id: intypeeditup.value
-        }),
+            type_id: intypeeditup.value,
+            slno: slno,
+            service_code_id: service_code_id,
+            hsn_code_id: hsn_code_id,
+
+            // ---- Vendor / subcontracting fields ----
+            vendorname: vendornameup.value,
+            vendorinvno: vendorinvnoup.value,
+            vendorqty: vendorqtyup.value,
+            vendorinvdate: vendordateup.value
+                ? vendordateup.value.replace(/-/g, '')
+                : '',
+
+            con_slno: document.getElementById("vconslnoupdate").value,
+            factory_id: selectedFactoryId,
+            business_unit_id: document.getElementById("bunitvup").value,
+            invoice_type_calculation: document.getElementById("intypevup").value,
+            invoice_to_id: document.getElementById("intovup").value,
+            product_desc_id: document.getElementById("prodesvup").value,
+            shipment_mode_id: document.getElementById("shipmodevup").value,
+            work_id: document.getElementById("workordervup").value,
+            export: document.getElementById("exptvup").value,
+            tax_ex_inc: document.getElementById("taxresvup").value,
+            percentage_value: document.getElementById("percenvup").value,
+            consignee_id: document.getElementById("nandconvup").value,
+            bank_details_id: document.getElementById("banknamevup").value,
+            delivery_condition_id: document.getElementById("deliveryconvup").value,
+            regd_office_id: document.getElementById("officevvup").value
+        }, true), // traditional=true -> slno=101&slno=102 instead of slno[]=101&slno[]=102
+
         success: function(data) {
             var result = data.message;
 
@@ -2220,12 +3074,11 @@ function addeventudate() {
                     });
                 }, 800);
             } else {
-                const errorMessage = data.message || 'Failed to create invoice.';
+                const errorMessage = data.message || 'Failed to update invoice.';
                 $('#errorMessage').text(errorMessage);
                 $('#exampleModalCenterDup').modal('show');
                 $('#exampleModalCenter66Editup').modal('hide');
                 $('#exampleModalScrollableEditUp').modal('hide');
-
             }
         },
         error: function() {
@@ -2258,7 +3111,7 @@ function addeventrelease() {
 
     // Perform release action
     $.ajax({
-        url: new URL('/jssl/invoice/advreleasebyidnew', baseUrl),
+        url: new URL('/jssl/invoice/dlyreleasebyidnew', baseUrl),
         type: 'POST',
         dataType: 'json',
         xhrFields: {
@@ -3466,7 +4319,38 @@ async function printRecord(id) {
         const QsPacking_Data    = json.QsPacking_Data;
         const tax               = json.tax;
         const Grand_Total_value = json.Grand_Total_value;
+		// ---- NEW: resolve Invoice To / Consignee / Work Order from InvoiceContractMaster, fallback to Contractor_Data ----
+		       const ContractMasterData = json.InvoiceContractMaster || {};
 
+		       const matchedInvoiceTo = invoiceAddressList.find(a => String(a.id) === String(ContractMasterData.invoice_to_id));
+		       const resolvedInvoiceTo = matchedInvoiceTo
+		           ? matchedInvoiceTo.address
+		           : Contractor_Data[0].invoice_to_id_value;
+
+		       const matchedConsignee = consigneeAddressList.find(c => String(c.id) === String(ContractMasterData.consignee_id));
+		       const resolvedConsignee = matchedConsignee
+		           ? matchedConsignee.address
+		           : Contractor_Data[0].consignee_id_value;
+
+		       const matchedWork = workOrderList.find(w => String(w.work_id) === String(ContractMasterData.work_id));
+		       const resolvedWork = matchedWork
+		           ? matchedWork.workorder_no
+		           : Contractor_Data[0].work_id_value;
+				
+				function cleanBusinessUnitAddress(name) {
+				    if (!name) return '';
+				    return name
+				        .replace(/^JBU-\d+\s*/i, '')                                    // remove "JBU-16 "
+				        .replace(/^JSW\s+Severfield\s+Structures\s+Limited\s*/i, '')    // remove company name
+				        .trim();
+				}
+
+				const matchedBU = businessUnitList.find(b => String(b.business_unit_id) === String(ContractMasterData.bid));
+				const resolvedbudisplay = matchedBU
+				    ? `${cleanBusinessUnitAddress(matchedBU.business_unit_name)},${matchedBU.district || ''}-${matchedBU.pinNo || ''}<br>${matchedBU.location || ''}`
+				    : (Contractor_Data.length > 0 ? cleanBusinessUnitAddress(Contractor_Data[0].business_unit_name) : "");
+		       // ---- END NEW ----
+			   
         const Grand_Total_tax       = Grand_Total_value[0].Grand_Total_tax;
         const Total_adv_tax_Taxable = Grand_Total_value[0].Total_adv_tax_Taxable;
         const Tax_Final_total       = Grand_Total_value[0].Tax_Final_total;
@@ -3498,7 +4382,8 @@ async function printRecord(id) {
 		            .filter(x => x !== "")
 		            .join(', ');
 
-		const factory_Address = address;
+		/*const factory_Address = address;*/
+		const bid =resolvedbudisplay;
 		       // const factory_Address = FactoryDataBasedById.address;
 			   // ── Business Unit State Code / GSTIN / PAN (pulled from Contractor_Data) ─
 		const state_Code     = Contractor_Data[0].businessStateName;
@@ -3506,7 +4391,7 @@ async function printRecord(id) {
 		const Pan_Code       = Contractor_Data[0].businesspanNumber;
 
         // ── Contractor / Invoice Fields ───────────────────────────────────────
-        const invoice_to_id_value         = Contractor_Data[0].invoice_to_id_value;
+        const invoice_to_id_value         = resolvedInvoiceTo;
         const tax_payable                 = Contractor_Data[0].tax_payable == 1 ? "No" : "Yes";
         const area_no                     = Contractor_Data[0].area_no;
         const lot_no                      = Contractor_Data[0].lot_no;
@@ -3514,8 +4399,8 @@ async function printRecord(id) {
         const epcgno                      = Contractor_Data[0].epcgno;
         const shipment_mode_id_value      = Contractor_Data[0].shipment_mode_id_value;
         const delivery_condition_id_value = Contractor_Data[0].delivery_condition_id_value;
-        const consignee_id_value          = Contractor_Data[0].consignee_id_value;
-        const work_id_value               = Contractor_Data[0].work_id_value;
+        const consignee_id_value          = resolvedConsignee;
+        const work_id_value               = resolvedWork;
         const invoiceStateName            = Contractor_Data[0].invoiceStateName;
         const consigneeStateName          = Contractor_Data[0].consigneeStateName;
         const invoiceStateCode            = Contractor_Data[0].invoiceStateCode;
@@ -3534,7 +4419,7 @@ async function printRecord(id) {
 
         const transport_name       = QsPacking_Data[0].transport_name;
         const vechile_no           = QsPacking_Data[0].vechile_no;
-        const con_code_with_lot_no = QsPacking_Data[0].con_code_with_lot_no;
+        const con_code_with_lot_no = Invoice_Data.con_code_with_lot_no;
 
         const freight     = tax[0].freight;
         const total_kgs   = tax[0].total_kgs;
@@ -3563,7 +4448,7 @@ async function printRecord(id) {
                 <tr class="product-row">
                     <td colspan="1" style="text-align:right;">${index + 1}</td>
                     <td colspan="4" class="desc-col descri">${item.scrap_name_type_id || ''}</td>
-                    <td colspan="1" style="text-align:right !important;">${item.serviceCode || ''}</td>
+					<td colspan="1" style="text-align:right !important; white-space: nowrap; font-size: 9px;">${[item.scode, item.hsncode].filter(Boolean).join('/')}</td>
                     <td colspan="1" style="text-align:left !important;">${item.uom_name || ''}</td>
                     <td colspan="1" class="qtys">${item.qty || ''}</td>
                     <td colspan="2" class="weits">${item.per_kgs || ''}</td>
@@ -3855,7 +4740,7 @@ async function printRecord(id) {
 					     <img src="img/logo/download.png" alt="Company Logo" style="width:100px;">
 					       </div>
 					        <strong>JSW Serverfiled Structures Limited</strong><br>
-					        <span class="facotry_address"></span>
+					        <span class="bid"></span>
 					          <p>
 					          <b>State Code:</b> <span class="state_code"></span><br>
 					           <b>GSTIN:</b> <span class="gst_code"></span> &nbsp; 
@@ -4075,7 +4960,7 @@ async function printRecord(id) {
 			container.querySelector(".gst_code").textContent   = Gst_Code;
 			container.querySelector(".state_code").textContent = state_Code;
 			container.querySelector(".pan_code").textContent   = Pan_Code;
-			container.querySelector('.facotry_address').textContent = factory_Address;
+			container.querySelector('.bid').innerHTML = bid;
 
             // INVOICE HEADER
             setContent('.datetime',      formattedDateTime);
@@ -4516,3 +5401,1041 @@ async function fetchLotnumberverfied(factoryId, contractId, selectedLotId) {
         console.error("Error fetching loads:", error);
     }
 }
+
+$(document).ready(function () {
+
+    $("#invoice").change(function () {
+
+        var invoiceType = $("#invoice option:selected").text().trim().toUpperCase();
+
+        // Reference to Load dropdown
+        const loadSelect = $("#load");
+
+        if (invoiceType === "GP") {
+
+            // Disable Contract
+            $("#cont").prop("disabled", true);
+
+            // Clear Load dropdown
+            loadSelect.empty().append('<option value="">Select Load</option>');
+
+            // Hide fields if required
+            inputFieldsContainer.style.display = "none";
+
+            // Fetch GP loads
+            fetchGpLoad(selectedFactoryId);
+
+        } else {
+
+            $("#cont").prop("disabled", false);
+
+            // Clear Load dropdown
+            loadSelect.empty().append('<option value="">Select Load</option>');
+
+            inputFieldsContainer.style.display = "none";
+
+            // Existing load API
+            fetchLoad(selectedFactoryId);
+        }
+
+    });
+
+});
+
+
+async function fetchQsPackingDatagp(loadId) {
+    try {
+        const selectedFactoryId = sessionStorage.getItem("selectedFactoryId"); // Get the factory_id from sessionStorage
+
+        // Ensure factory_id is available
+        if (!selectedFactoryId) {
+            console.error("No factory ID found in sessionStorage.");
+            return;
+        }
+
+        const url = new URL(`/jssl/invoice/getcontractdeliverychallanqspackingdetailsnewgp`, baseUrl);
+
+        // Append the parameters to the URL
+        url.searchParams.append("load_id", loadId);
+        url.searchParams.append("factory_id", selectedFactoryId); // Append factory_id as well
+
+        const response = await fetch(url, {
+            method: "GET",
+            credentials: "include"   // ✅ Always send JSESSIONID cookie
+        });
+        if (!response.ok) throw new Error("Failed to fetch QsPacking data");
+
+        const json = await response.json();
+
+
+        if (json.QsPacking_Data && json.QsPacking_Data.length > 0) {
+            const QsPacking = json.QsPacking_Data[0];
+
+            const freightValue = QsPacking.freight; // Assuming the bank details ID is inside this property
+            const frie = document.getElementById("freight");
+            if (frie) {
+                frie.value = freightValue; // Populate the bank name field
+            }
+
+            const pnidValue = QsPacking.OtherPnId; // Assuming the bank details ID is inside this property
+            const pnid = document.getElementById("id11");
+            if (pnid) {
+                pnid.value = pnidValue; // Populate the bank name field
+            }
+
+        } else {
+            console.warn("No qspacking Data found.");
+        }
+        // Check if QsPacking_Data exists and contains items
+        if (json.QsPacking_Data && json.QsPacking_Data.length > 0) {
+            const container = document.querySelector(".dynamic-rowgp"); // Find the container for dynamic rows
+            container.innerHTML = ""; // Clear any existing rows
+            let grandTotal = 0; // 🔹 Initialize sum
+            // Loop through QsPacking_Data and create input fields dynamically
+            json.QsPacking_Data.forEach((item, index) => {
+                const showLabel = index === 0;
+                const div = document.createElement("div");
+                div.classList.add("form-group-container", "col-md-12"); // Add classes to style the row
+
+                // Make sure total is numeric before adding
+                const rowTotal = parseFloat(item.total) || 0;
+                grandTotal += rowTotal; // 🔹 Add to running sum
+
+                // Create fields dynamically based on the data
+                div.innerHTML = `
+                       <div class="form-row">
+					   
+                           <div class="col-auto">
+                                ${showLabel ? '<label><b>UOM</b></label>' : ''}
+                               <input type="text" id="uom_${index}" value="${item.uom_name}" class="form-control form-control-sm small-input" disabled>
+                           </div>
+						   <div class="col-auto">
+                                ${showLabel ? '<label><b>Quantity</b></label>' : ''}
+                               <input type="number" id="qty_${index}" value="${item.qty}" class="form-control form-control-sm small-input text-right" disabled>
+                           </div>
+						   
+						   <div class="col-auto">
+                                ${showLabel ? '<label><b>Kg</b></label>' : ''}
+                               <input type="number" id="kg_${index}" value="${item.per_kgs}" class="form-control form-control-sm small-input text-right" disabled>
+                           </div>
+						   
+						   <div class="col-auto">
+                               ${showLabel ? '<label><b>Unit Price</b></label>' : ''}
+                               <input type="number" id="unit_price_${index}" value="${item.unit_price}" class="form-control form-control-sm small-input text-right" disabled>
+                           </div>
+						   
+						   <div class="col-auto">
+                              ${showLabel ? '<label><b>Total</b></label>' : ''}
+                               <input type="number" id="total_${index}" value="${item.total}" class="form-control form-control-sm small-input text-right" disabled>
+                           </div>
+						   
+						   <div class="col-auto">
+                               ${showLabel ? '<label><b>Invoice Type</b></label>' : ''}
+                               <input type="text" id="intype_${index}" value="${item.scrap_name_type_id}" class="form-control form-control-sm small-input" disabled>
+                           </div>
+                           
+                     </div>
+					 
+					 ${showLabel ? '<hr>' : ''}
+                   `;
+
+                container.appendChild(div); // Append the new dynamic row
+                // 🔹 After loop, show the grand total in a textbox
+                const grandTotalBox = document.getElementById("grandTotalgp");
+                if (grandTotalBox) {
+                    grandTotalBox.value = grandTotal.toFixed(2); // 2 decimals
+                    netAmountup.value = grandTotal.toFixed(2);
+                }
+            });
+        } else {
+            console.warn("No QsPacking data found.");
+        }
+        // Now, handle tax data and append it to .dynamic-row1
+        if (json.tax && json.tax.length > 0) {
+            const taxContainer = document.querySelector(".dynamic-row1"); // Find the container for dynamic tax rows
+            taxContainer.innerHTML = ""; // Clear any existing rows
+
+            // Loop through tax data and create dynamic rows
+            json.tax.forEach((tax, taxIndex) => {
+                const div = document.createElement("div");
+                div.classList.add("form-group", "col-md-12"); // Add classes to style the tax row
+
+                // Create fields dynamically based on tax data
+                div.innerHTML = `
+                       <div class="form-row">
+                           <div class="form-group col-md-3 col-sm-12">
+                               <label for="tax_name_${taxIndex}"><b>Tax Name</b></label>
+                               <input type="text" id="tax_name_${taxIndex}" value="${tax.tax_name}" class="form-group col-md-8 col-sm-12" disabled>
+                           </div>
+                           <div class="form-group col-md-3 col-sm-12">
+                               <label for="tax_per_${taxIndex}"><b>Tax Percentage</b></label>
+                               <input type="text" id="tax_per_${taxIndex}" value="${tax.tax_per}" class="form-group col-md-8 col-sm-12" disabled>
+                           </div>
+                           <div class="form-group col-md-3 col-sm-12">
+                               <label for="tax_per_${taxIndex}"><b>Tax Value</b></label>
+                               <input type="text" id="tax_per_${taxIndex}" value="${tax.tax_value}" class="form-group col-md-8 col-sm-12" disabled>
+                           </div>
+                       </div>
+                   `;
+
+                taxContainer.appendChild(div); // Append the new dynamic tax row
+            });
+        } else {
+            console.warn("No tax data found.");
+        }
+    } catch (error) {
+        console.error("Error fetching QsPacking data:", error);
+    }
+}
+
+async function fetchtaxadd1() {
+    try {
+        const url = new URL(`/jssl/taxmasters/list`, baseUrl);
+        const response = await fetch(url, {
+            method: "GET",
+            credentials: "include"   // ✅ Always send JSESSIONID cookie
+        });
+        if (!response.ok) throw new Error("Failed to fetch tax data");
+
+        const json = await response.json();
+        const taxData = json?.Data || [];
+
+        const selectElement = document.getElementById("tax1addup");
+        const taxInput = document.getElementById("tax11up");
+        const taxValueInput = document.getElementById("tax1valueup");
+        const totalNoInput = document.getElementById("grandTotalgp"); // Total Amount Field
+
+        if (!selectElement || !taxInput || !taxValueInput || !totalNoInput) {
+            console.error("Some required elements not found.");
+            return;
+        }
+
+        if (taxData.length === 0) {
+            console.warn("No tax records found.");
+            selectElement.innerHTML = `<option value="">No Tax Records Found</option>`;
+            return;
+        }
+
+        selectElement.innerHTML = `<option value="">Select Tax</option>`;
+
+        taxData.forEach((type) => {
+            if (type.tax_id && type.tax_name && type.tax_per !== undefined) {
+                const option = document.createElement("option");
+                option.value = type.tax_id;
+                option.dataset.taxPer = type.tax_per; // Store tax_per as a data attribute
+                option.textContent = type.tax_name;
+                selectElement.appendChild(option);
+            }
+        });
+
+        // Function to calculate and update tax value
+        function updateTaxValue() {
+            const taxPer = parseFloat(taxInput.value) || 0;
+            const totalNo = parseFloat(totalNoInput.value) || 0;
+            const taxAmount = (totalNo * taxPer) / 100;
+            taxValueInput.value = taxAmount.toFixed(2); // Show result with 2 decimal places
+            updateTotalTax();
+            updateGrandTotal();
+        }
+
+        // Event listener to update tax percentage and value
+        selectElement.addEventListener("change", function() {
+            const selectedOption = selectElement.options[selectElement.selectedIndex];
+            taxInput.value = selectedOption.dataset.taxPer || "";
+            updateTaxValue(); // Update tax value immediately after selection
+        });
+
+        // Recalculate tax value when totalNo changes
+        totalNoInput.addEventListener("input", updateTaxValue);
+
+    } catch (error) {
+        console.error("Error fetching tax data:", error);
+    }
+}
+
+async function fetchtaxadd2() {
+    try {
+        const url = new URL(`/jssl/taxmasters/list`, baseUrl);
+        const response = await fetch(url, {
+            method: "GET",
+            credentials: "include"   // ✅ Always send JSESSIONID cookie
+        });
+        if (!response.ok) throw new Error("Failed to fetch tax data");
+
+        const json = await response.json();
+        const taxData = json?.Data || [];
+
+        const selectElement = document.getElementById("tax2addup");
+        const taxInput = document.getElementById("tax12up");
+        const taxValueInput = document.getElementById("tax2valueup");
+        const totalNoInput = document.getElementById("grandTotalgp"); // Total Amount Field
+
+        if (!selectElement || !taxInput || !taxValueInput || !totalNoInput) {
+            console.error("Some required elements not found.");
+            return;
+        }
+
+        if (taxData.length === 0) {
+            console.warn("No tax records found.");
+            selectElement.innerHTML = `<option value="">No Tax Records Found</option>`;
+            return;
+        }
+
+        selectElement.innerHTML = `<option value="">Select Tax</option>`;
+
+        taxData.forEach((type) => {
+            if (type.tax_id && type.tax_name && type.tax_per !== undefined) {
+                const option = document.createElement("option");
+                option.value = type.tax_id;
+                option.dataset.taxPer = type.tax_per; // Store tax_per as a data attribute
+                option.textContent = type.tax_name;
+                selectElement.appendChild(option);
+            }
+        });
+
+        // Function to calculate and update tax value
+        function updateTaxValue() {
+            const taxPer = parseFloat(taxInput.value) || 0;
+            const totalNo = parseFloat(totalNoInput.value) || 0;
+            const taxAmount = (totalNo * taxPer) / 100;
+            taxValueInput.value = taxAmount.toFixed(2); // Show result with 2 decimal places
+            updateTotalTax();
+            updateGrandTotal();
+        }
+
+        // Event listener to update tax percentage and value
+        selectElement.addEventListener("change", function() {
+            const selectedOption = selectElement.options[selectElement.selectedIndex];
+            taxInput.value = selectedOption.dataset.taxPer || "";
+            updateTaxValue(); // Update tax value immediately after selection
+        });
+
+        // Recalculate tax value when totalNo changes
+        totalNoInput.addEventListener("input", updateTaxValue);
+
+    } catch (error) {
+        console.error("Error fetching tax data:", error);
+    }
+}
+
+async function fetchtaxadd3() {
+    try {
+        const url = new URL(`/jssl/taxmasters/list`, baseUrl);
+        const response = await fetch(url, {
+            method: "GET",
+            credentials: "include"   // ✅ Always send JSESSIONID cookie
+        });
+        if (!response.ok) throw new Error("Failed to fetch tax data");
+
+        const json = await response.json();
+        const taxData = json?.Data || [];
+
+        const selectElement = document.getElementById("tax3addup");
+        const taxInput = document.getElementById("tax13up");
+        const taxValueInput = document.getElementById("tax3valueup");
+        const totalNoInput = document.getElementById("grandTotalgp"); // Total Amount Field
+
+        if (!selectElement || !taxInput || !taxValueInput || !totalNoInput) {
+            console.error("Some required elements not found.");
+            return;
+        }
+
+        if (taxData.length === 0) {
+            console.warn("No tax records found.");
+            selectElement.innerHTML = `<option value="">No Tax Records Found</option>`;
+            return;
+        }
+
+        selectElement.innerHTML = `<option value="">Select Tax</option>`;
+
+        taxData.forEach((type) => {
+            if (type.tax_id && type.tax_name && type.tax_per !== undefined) {
+                const option = document.createElement("option");
+                option.value = type.tax_id;
+                option.dataset.taxPer = type.tax_per; // Store tax_per as a data attribute
+                option.textContent = type.tax_name;
+                selectElement.appendChild(option);
+            }
+        });
+
+        // Function to calculate and update tax value
+        function updateTaxValue() {
+            const taxPer = parseFloat(taxInput.value) || 0;
+            const totalNo = parseFloat(totalNoInput.value) || 0;
+            const taxAmount = (totalNo * taxPer) / 100;
+            taxValueInput.value = taxAmount.toFixed(2); // Show result with 2 decimal places
+            updateTotalTax();
+        }
+
+        // Event listener to update tax percentage and value
+        selectElement.addEventListener("change", function() {
+            const selectedOption = selectElement.options[selectElement.selectedIndex];
+            taxInput.value = selectedOption.dataset.taxPer || "";
+            updateTaxValue(); // Update tax value immediately after selection
+            updateGrandTotal();
+        });
+
+        // Recalculate tax value when totalNo changes
+        totalNoInput.addEventListener("input", updateTaxValue);
+
+    } catch (error) {
+        console.error("Error fetching tax data:", error);
+    }
+}
+
+function updateTotalTax() {
+    const tax1 = parseFloat(document.getElementById("tax1valueup").value) || 0;
+    const tax2 = parseFloat(document.getElementById("tax2valueup").value) || 0;
+    const tax3 = parseFloat(document.getElementById("tax3addup").value) || 0;
+    const totalTax = tax1 + tax2 + tax3;
+
+    document.getElementById("totalTaxup").value = totalTax.toFixed(2); // Show result with 2 decimal places
+}
+
+function updateGrandTotal() {
+    const totalTax = parseFloat(document.getElementById("totalTaxup").value) || 0;
+    const netAmount = parseFloat(document.getElementById("netAmountup").value) || 0;
+    const total = totalTax + netAmount;
+    document.getElementById("grandTotalup").value = total.toFixed(2);
+}
+
+/*async function fetchSalebusunit() {
+    try {
+
+        // Construct the API URL properly
+        const url = new URL(`/jssl/contract/listbusinessunitnew`, baseUrl);
+        // url.searchParams.append("factory_id", factoryId);
+
+        // Fetch data from API
+        const response = await fetch(url, {
+            method: "GET",
+            credentials: "include"   // ✅ Always send JSESSIONID cookie
+        });
+        if (!response.ok) throw new Error("Failed to fetch sale order types");
+
+        const json = await response.json();
+
+        // Check if the API response has valid data
+        if (json.status !== "yes" || !json.Data.length) {
+            console.warn("No sale order types found.");
+            return;
+        }
+
+        // Get the select element
+        const selectElement = document.getElementById("inbusunitgp");
+
+        // Clear existing options
+        selectElement.innerHTML = `<option value="">Select Business Unit</option>`;
+
+        // Populate dropdown options using SalesOrderTypeDetails array
+        json.Data.forEach((type) => {
+            if (type.business_unit_id && type.business_unit_name) { // Ensure both values exist
+                const option = document.createElement("option");
+                option.value = type.business_unit_id; // Backend keeps saleorder_id
+                option.textContent = type.business_unit_name; // Display saleorder_typename
+                selectElement.appendChild(option);
+            }
+        });
+    } catch (error) {
+        console.error("Error fetching sale order types:", error);
+    }
+}
+*/
+/*async function fetchinvoiceto() {
+    try {
+
+        // Construct the API URL properly
+        const url = new URL(`/jssl/invoiceConsigneeAddress/getInvoiceAddress`, baseUrl);
+        //  url.searchParams.append("factory_id", factoryId);
+
+        // Fetch data from API
+        const response = await fetch(url, {
+            method: "GET",
+            credentials: "include"   // ✅ Always send JSESSIONID cookie
+        });
+        if (!response.ok) throw new Error("Failed to fetch sale order types");
+
+        const json = await response.json();
+
+        // Check if the API response has valid data
+        if (json.status !== "yes" || !json.InvoiceAddress.length) {
+            console.warn("No sale order types found.");
+            return;
+        }
+
+        // Get the select element
+        const selectElement = document.getElementById("inintogp");
+
+        // Clear existing options
+        selectElement.innerHTML = `<option value="">Select invoice to</option>`;
+
+        // Populate dropdown options using SalesOrderTypeDetails array
+        json.InvoiceAddress.forEach((type) => {
+            if (type.id && type.address && type.is_verified == 1) { // Ensure both values exist
+                const option = document.createElement("option");
+                option.value = type.id; // Backend keeps saleorder_id
+                option.textContent = type.address; // Display saleorder_typename
+                selectElement.appendChild(option);
+            }
+        });
+    } catch (error) {
+        console.error("Error fetching sale order types:", error);
+    }
+}*/
+/*async function fetchconname() {
+    try {
+
+        // Construct the API URL properly
+        const url = new URL(`/jssl/invoiceConsigneeAddress/getConsigneeAddressNew`, baseUrl);
+        // url.searchParams.append("factory_id", factoryId);
+
+        // Fetch data from API
+        const response = await fetch(url, {
+            method: "GET",
+            credentials: "include"   // ✅ Always send JSESSIONID cookie
+        });
+        if (!response.ok) throw new Error("Failed to fetch sale order types");
+
+        const json = await response.json();
+
+        // Check if the API response has valid data
+        if (json.status !== "yes" || !json.ConsigneeAddress.length) {
+            console.warn("No sale order types found.");
+            return;
+        }
+
+        // Get the select element
+        const selectElement = document.getElementById("billinggp");
+
+        // Clear existing options
+        selectElement.innerHTML = `<option value="">Select</option>`;
+
+        // Populate dropdown options using SalesOrderTypeDetails array
+        json.ConsigneeAddress.forEach((type) => {
+            if (type.id && type.address && type.is_verified == 1) { // Ensure both values exist
+                const option = document.createElement("option");
+                option.value = type.id; // Backend keeps saleorder_id
+                option.textContent = type.address; // Display saleorder_typename
+                selectElement.appendChild(option);
+            }
+        });
+    } catch (error) {
+        console.error("Error fetching sale order types:", error);
+    }
+}*/
+async function fetchShipping() {
+    try {
+
+        // Construct the API URL properly
+        const url = new URL(`/jssl/master/listshipmentdeliverynew`, baseUrl);
+        // url.searchParams.append("factory_id", factoryId);
+
+        // Fetch data from API
+        const response = await fetch(url, {
+            method: "GET",
+            credentials: "include"   // ✅ Always send JSESSIONID cookie
+        });
+        if (!response.ok) throw new Error("Failed to fetch sale order types");
+
+        const json = await response.json();
+
+        // Check if the API response has valid data
+        if (json.status !== "yes" || !json.Data.length) {
+            console.warn("No sale order types found.");
+            return;
+        }
+
+        // Get the select element
+        const selectElement = document.getElementById("shipmodegp");
+
+        // Clear existing options
+        selectElement.innerHTML = `<option value="">Select shipment mode</option>`;
+
+        // Populate dropdown options using SalesOrderTypeDetails array
+        json.Data.forEach((type) => {
+            if (type.si_id && type.shipment_mode) { // Ensure both values exist
+                const option = document.createElement("option");
+                option.value = type.si_id; // Backend keeps saleorder_id
+                option.textContent = type.shipment_mode; // Display saleorder_typename
+                selectElement.appendChild(option);
+            }
+        });
+    } catch (error) {
+        console.error("Error fetching sale order types:", error);
+    }
+}
+
+async function fetchdelivery() {
+    try {
+
+        // Construct the API URL properly
+        const url = new URL(`/jssl/master/listshipmentdeliverynew`, baseUrl);
+        // url.searchParams.append("factory_id", factoryId);
+
+        // Fetch data from API
+        const response = await fetch(url, {
+            method: "GET",
+            credentials: "include"   // ✅ Always send JSESSIONID cookie
+        });
+        if (!response.ok) throw new Error("Failed to fetch sale order types");
+
+        const json = await response.json();
+
+        // Check if the API response has valid data
+        if (json.status !== "yes" || !json.Data.length) {
+            console.warn("No sale order types found.");
+            return;
+        }
+
+        // Get the select element
+        const selectElement = document.getElementById("deliverygp");
+
+        // Clear existing options
+        selectElement.innerHTML = `<option value="">Select delivery condition</option>`;
+
+        // Populate dropdown options using SalesOrderTypeDetails array
+        json.Data.forEach((type) => {
+            if (type.si_id && type.delivery_condition) { // Ensure both values exist
+                const option = document.createElement("option");
+                option.value = type.si_id; // Backend keeps saleorder_id
+                option.textContent = type.delivery_condition; // Display saleorder_typename
+                selectElement.appendChild(option);
+            }
+        });
+    } catch (error) {
+        console.error("Error fetching sale order types:", error);
+    }
+}
+
+async function fetchSalebank() {
+    try {
+
+        // Construct the API URL properly
+        const url = new URL(`/jssl/contract/listbanknamenew`, baseUrl);
+        // url.searchParams.append("factory_id", factoryId);
+
+        // Fetch data from API
+        const response = await fetch(url, {
+            method: "GET",
+            credentials: "include"   // ✅ Always send JSESSIONID cookie
+        });
+        if (!response.ok) throw new Error("Failed to fetch sale order types");
+
+        const json = await response.json();
+
+        // Check if the API response has valid data
+        if (json.status !== "yes" || !json.Data.length) {
+            console.warn("No sale order types found.");
+            return;
+        }
+
+        // Get the select element
+        const selectElement = document.getElementById("bankgp");
+
+        // Clear existing options
+        selectElement.innerHTML = `<option value="">Select bank</option>`;
+
+        // Populate dropdown options using SalesOrderTypeDetails array
+        json.Data.forEach((type) => {
+            if (type.account_id && type.bank_name) { // Ensure both values exist
+                const option = document.createElement("option");
+                option.value = type.account_id; // Backend keeps saleorder_id
+                option.textContent = type.bank_name; // Display saleorder_typename
+                selectElement.appendChild(option);
+            }
+        });
+    } catch (error) {
+        console.error("Error fetching sale order types:", error);
+    }
+}
+
+/*async function fetchSalework() {
+    try {
+
+        // Construct the API URL properly
+        const url = new URL(`/jssl/contract/listworkordernew`, baseUrl);
+        // url.searchParams.append("factory_id", factoryId);
+
+        // Fetch data from API
+        const response = await fetch(url, {
+            method: "GET",
+            credentials: "include"   // ✅ Always send JSESSIONID cookie
+        });
+        if (!response.ok) throw new Error("Failed to fetch sale order types");
+
+        const json = await response.json();
+
+        // Check if the API response has valid data
+        if (json.status !== "yes" || !json.Data.length) {
+            console.warn("No sale order types found.");
+            return;
+        }
+
+        // Get the select element
+        const selectElement = document.getElementById("workgp");
+
+        // Clear existing options
+        selectElement.innerHTML = `<option value="">Select work order</option>`;
+
+        // Populate dropdown options using SalesOrderTypeDetails array
+        json.Data.forEach((type) => {
+            if (type.work_id && type.workorder_no) { // Ensure both values exist
+                const option = document.createElement("option");
+                option.value = type.work_id; // Backend keeps saleorder_id
+                option.textContent = type.workorder_no; // Display saleorder_typename
+                selectElement.appendChild(option);
+            }
+        });
+    } catch (error) {
+        console.error("Error fetching sale order types:", error);
+    }
+}*/
+
+async function fetchorg1() {
+    try {
+
+        // Construct the API URL properly
+        const url = new URL(`/jssl/organization/listorganization`, baseUrl);
+        // url.searchParams.append("factory_id", factoryId);
+
+        // Fetch data from API
+        const response = await fetch(url, {
+            method: "GET",
+            credentials: "include"   // âœ… Always send JSESSIONID cookie
+        });
+        if (!response.ok) throw new Error("Failed to fetch sale order types");
+
+        const json = await response.json();
+
+        // Check if the API response has valid data
+        if (json.status !== "yes" || !json.Data.length) {
+            console.warn("No sale order types found.");
+            return;
+        }
+
+        // Get the select element
+        const selectElement = document.getElementById("officegp");
+
+        // Clear existing options
+        selectElement.innerHTML = `<option value="">Select</option>`;
+
+        // Populate dropdown options using SalesOrderTypeDetails array
+        json.Data.forEach((type) => {
+            if (type.org_id && type.org_name) { // Ensure both values exist
+                const option = document.createElement("option");
+                option.value = type.org_id; // Backend keeps saleorder_id
+                option.textContent = type.org_name; // Display saleorder_typename
+                selectElement.appendChild(option);
+            }
+        });
+    } catch (error) {
+        console.error("Error fetching sale order types:", error);
+    }
+}
+
+async function fetchservice() {
+    try {
+
+        // Construct the API URL properly
+        const url = new URL(`/jssl/master/listservicecodemasternew`, baseUrl);
+        //url.searchParams.append("factory_id", factoryId);
+
+        // Fetch data from API
+        const response = await fetch(url, {
+            method: "GET",
+            credentials: "include"   // ✅ Always send JSESSIONID cookie
+        });
+        if (!response.ok) throw new Error("Failed to fetch sale order types");
+
+        const json = await response.json();
+
+        // Check if the API response has valid data
+        if (json.status !== "yes" || !json.Data.length) {
+            console.warn("No sale order types found.");
+            return;
+        }
+
+        // Get the select element
+        const selectElement = document.getElementById("officeservicegp");
+
+        // Clear existing options
+        selectElement.innerHTML = `<option value="">Select service code</option>`;
+
+        // Populate dropdown options using SalesOrderTypeDetails array
+        json.Data.forEach((type) => {
+            if (type.servicecode_id && type.service_code) { // Ensure both values exist
+                const option = document.createElement("option");
+                option.value = type.servicecode_id; // Backend keeps saleorder_id
+                option.textContent = type.service_code; // Display saleorder_typename
+                selectElement.appendChild(option);
+            }
+        });
+    } catch (error) {
+        console.error("Error fetching sale order types:", error);
+    }
+}
+
+async function fetchhsn() {
+    try {
+
+        // Construct the API URL properly
+        const url = new URL(`/jssl/master/listHsncodemasternew`, baseUrl);
+        //url.searchParams.append("factory_id", factoryId);
+
+        // Fetch data from API
+        const response = await fetch(url, {
+            method: "GET",
+            credentials: "include"   // ✅ Always send JSESSIONID cookie
+        });
+        if (!response.ok) throw new Error("Failed to fetch sale order types");
+
+        const json = await response.json();
+
+        // Check if the API response has valid data
+        if (json.status !== "yes" || !json.Data.length) {
+            console.warn("No sale order types found.");
+            return;
+        }
+
+        // Get the select element
+        const selectElement = document.getElementById("officehsngp");
+
+        // Clear existing options
+        selectElement.innerHTML = `<option value="">Select hsn code</option>`;
+
+        // Populate dropdown options using SalesOrderTypeDetails array
+        json.Data.forEach((type) => {
+            if (type.servicecode_id && type.service_code) { // Ensure both values exist
+                const option = document.createElement("option");
+                option.value = type.servicecode_id; // Backend keeps saleorder_id
+                option.textContent = type.service_code; // Display saleorder_typename
+                selectElement.appendChild(option);
+            }
+        });
+    } catch (error) {
+        console.error("Error fetching sale order types:", error);
+    }
+}
+
+async function fetchexptitle() {
+    try {
+
+        // Construct the API URL properly
+        const url = new URL(`/jssl/master/allExportTitleList`, baseUrl);
+
+        // Fetch data from API
+        const response = await fetch(url, {
+            method: "GET",
+            credentials: "include"   // ✅ Always send JSESSIONID cookie
+        });
+        if (!response.ok) throw new Error("Failed to fetch sale order types");
+
+        const json = await response.json();
+
+        // Check if the API response has valid data
+        if (json.status !== "yes" || !json.ExportTitleDetails.length) {
+            console.warn("No sale order types found.");
+            return;
+        }
+
+        // Get the select element
+        const selectElement = document.getElementById("extitlegp");
+
+        // Clear existing options
+        selectElement.innerHTML = `<option value="">Select</option>`;
+
+        // Populate dropdown options using SalesOrderTypeDetails array
+        json.ExportTitleDetails.forEach((type) => {
+            if (type.id && type.export_title) { // Ensure both values exist
+                const option = document.createElement("option");
+                option.value = type.id; // Backend keeps saleorder_id
+                option.textContent = type.export_title; // Display saleorder_typename
+                selectElement.appendChild(option);
+            }
+        });
+    } catch (error) {
+        console.error("Error fetching sale order types:", error);
+    }
+}
+document.getElementById("exptgp").addEventListener("change", function() {
+    const expo = document.getElementById("exptgp");
+    const selectedexpo = expo.value;
+    if (selectedexpo === 'yes') {
+        $('#exportFieldsgp').show();
+    } else {
+        $('#exportFieldsgp').hide();
+    }
+});
+
+async function fetchBgType1() {
+    try {
+
+        // Construct the API URL properly
+        const url = new URL(`/jssl/master/listbgtypenew`, baseUrl);
+
+        // Fetch data from API
+        const response = await fetch(url, {
+            method: "GET",
+            credentials: "include"   // ✅ Always send JSESSIONID cookie
+        });
+        if (!response.ok) throw new Error("Failed to fetch sale order types");
+
+        const json = await response.json();
+
+        // Check if the API response has valid data
+        if (json.status !== "yes" || !json.BGTYPE.length) {
+            console.warn("No sale order types found.");
+            return;
+        }
+
+        // Get the select element
+        const selectElement = document.getElementById("bgvaerifyup");
+
+        // Clear existing options
+        selectElement.innerHTML = `<option value="">Select BG type</option>`;
+
+        // Populate dropdown options using SalesOrderTypeDetails array
+        json.BGTYPE.forEach((type) => {
+            if (type.bgid && type.description) { // Ensure both values exist
+                const option = document.createElement("option");
+                option.value = type.bgid; // Backend keeps saleorder_id
+                option.textContent = type.description; // Display saleorder_typename
+                selectElement.appendChild(option);
+            }
+        });
+    } catch (error) {
+        console.error("Error fetching sale order types:", error);
+    }
+}
+
+async function fetchBgType() {
+    try {
+
+        // Construct the API URL properly
+        const url = new URL(`/jssl/master/listbgtypenew`, baseUrl);
+
+        // Fetch data from API
+        const response = await fetch(url, {
+            method: "GET",
+            credentials: "include"   // ✅ Always send JSESSIONID cookie
+        });
+        if (!response.ok) throw new Error("Failed to fetch sale order types");
+
+        const json = await response.json();
+
+        // Check if the API response has valid data
+        if (json.status !== "yes" || !json.BGTYPE.length) {
+            console.warn("No sale order types found.");
+            return;
+        }
+
+        // Get the select element
+        const selectElement = document.getElementById("bggp");
+
+        // Clear existing options
+        selectElement.innerHTML = `<option value="">Select BG type</option>`;
+
+        // Populate dropdown options using SalesOrderTypeDetails array
+        json.BGTYPE.forEach((type) => {
+            if (type.bgid && type.description) { // Ensure both values exist
+                const option = document.createElement("option");
+                option.value = type.bgid; // Backend keeps saleorder_id
+                option.textContent = type.description; // Display saleorder_typename
+                selectElement.appendChild(option);
+            }
+        });
+    } catch (error) {
+        console.error("Error fetching sale order types:", error);
+    }
+}
+async function saveServiceHsnSelections() {
+
+	    const slnoList = [];
+	    const serviceCodeList = [];
+	    const hsnCodeList = [];
+
+	    const serviceSelects = document.querySelectorAll(".dynamic-row .service-code-select");
+
+	    console.log("Found Service Code dropdowns:", serviceSelects.length);
+
+	    serviceSelects.forEach(serviceSelect => {
+
+	        const slno = serviceSelect.getAttribute("data-slno");
+
+	        const row = serviceSelect.closest(".form-row");
+	        const hsnSelect = row ? row.querySelector(".hsn-code-select") : null;
+
+	        // Selected values
+	        const serviceCode = serviceSelect.value ? serviceSelect.value.trim() : "";
+	        const hsnCode = hsnSelect ? (hsnSelect.value || "").trim() : "";
+
+	        console.log(
+	            "Row ->",
+	            "SlNo:", slno,
+	            "| Service Code:", serviceCode,
+	            "| HSN Code:", hsnCode
+	        );
+
+	        // Save only rows having SlNo
+	        if (slno) {
+	            slnoList.push(slno);
+	            serviceCodeList.push(serviceCode);
+	            hsnCodeList.push(hsnCode);
+	        }
+
+	    });
+
+	    console.log("SlNo List:", slnoList);
+	    console.log("Service Code List:", serviceCodeList);
+	    console.log("HSN Code List:", hsnCodeList);
+
+	    if (slnoList.length === 0) {
+	        console.warn("No rows found to update.");
+	        return;
+	    }
+
+	    try {
+
+	        const url = new URL("/jssl/invoicemaster/updatedlyServiceHsnForItems", baseUrl);
+
+	        const params = new URLSearchParams();
+
+	        // Spring Boot expects repeated parameters
+	        slnoList.forEach(value => params.append("slno", value));
+	        serviceCodeList.forEach(value => params.append("service_code_id", value));
+	        hsnCodeList.forEach(value => params.append("hsn_code_id", value));
+
+	        params.append("modified_by", createdById);
+
+	        console.log("Request Payload:");
+	        console.log(params.toString());
+
+	        const response = await fetch(url, {
+	            method: "POST",
+	            credentials: "include",
+	            headers: {
+	                "Content-Type": "application/x-www-form-urlencoded"
+	            },
+	            body: params.toString()
+	        });
+
+	        const result = await response.json();
+
+	        console.log("Response:", result);
+
+	        if (result.status === "yes") {
+
+	            console.log("Successfully updated " + result.updatedCount + " rows.");
+
+	        } else {
+
+	            console.error("Update failed:", result.message);
+
+	        }
+
+	    } catch (err) {
+
+	        console.error("Error while saving Service/HSN Codes:", err);
+
+	    }
+	}

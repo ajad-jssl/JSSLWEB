@@ -1,9 +1,13 @@
+
 <%@ page language="java" contentType="text/html; charset=UTF-8"
 	pageEncoding="UTF-8"%>
-	
 <%
-long ts = System.currentTimeMillis();
+  response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate"); // HTTP 1.1
+  response.setHeader("Pragma", "no-cache"); // HTTP 1.0
+  response.setDateHeader("Expires", 0); // Proxies
 %>
+	
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -22,30 +26,23 @@ long ts = System.currentTimeMillis();
 <link href="css/ruang-admin.min.css" rel="stylesheet" />
 <link href="vendor/datatables/dataTables.bootstrap4.min.css"
 	rel="stylesheet">
-<!-- <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css" /> -->
-<link rel="stylesheet"
-	href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css" />
+
+
+	<link rel="stylesheet"
+	href="externalLibrary/cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css" />
 <link rel="stylesheet" href="css/main.css">
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="js/sidebar.js"></script>
+
+
 
 <link
-	href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css"
-	rel="stylesheet" />
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script
-	src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-
-
-<!-- Include jQuery -->
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-
-<!-- Include Select2 CSS & JS -->
-<link
-	href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css"
+	href="externalLibrary/cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css"
 	rel="stylesheet" />
 <script
-	src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+	src="externalLibrary/cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+
+
+
 
 <style>
 .error-message {
@@ -338,29 +335,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 
 
 
-						<!-- 		<div class="table-responsive p-3">
-									<table class="table table-striped table-bordered table-sm"
-										id="adminTable1" width="100%">
-										<thead>
-											<tr>
-												<th>SL NO</th>
-												<th>Pass No</th>
-												<th>Aadhar No</th>
-												<th>Employee Code</th>
-												<th>Employee Nmae</th>
-												<th>Enter</th>
-												<th>Edit</th>
-												<th>validityExtended</th>
-												<th>Status</th>
-											</tr>
-										</thead>
-										<tbody>
-											Dynamic rows will be inserted here
-										</tbody>
-									</table>
-								</div> -->
-								
-									<div class="table-responsive p-3">
+								<div class="table-responsive p-3">
 									<table class="table table-striped table-bordered table-sm"
 										id="adminTable1" width="100%">
 										<thead>
@@ -375,6 +350,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 												<th>Edit</th>
 												<th>validityExtended</th>
 												<th>Status</th>
+												<th>Delete</th>
 											</tr>
 										</thead>
 										<tbody>
@@ -1443,6 +1419,64 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 		</div>
 	</div>
 
+
+<!-- Delete Remarks Modal -->
+<div class="modal fade" id="deleteRemarksModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content"
+            style="width: 80%; right: -20%; border-width: thick; border-color: #eaecf4;">
+
+            <div class="modal-header">
+                <h5 class="modal-title">Delete Contract Gate Pass</h5>
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+            </div>
+
+            <div class="modal-body">
+
+                <div class="form-group">
+                    <label><b>Remarks</b></label>
+                    <textarea id="deleteRemarks" class="form-control" rows="3"
+                        placeholder="Enter remarks for deletion"></textarea>
+                    <small id="deleteRemarksError" class="text-danger" style="display: none;">
+                        Remarks are required
+                    </small>
+                </div>
+
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn btn-secondary btn-sm" data-dismiss="modal">No</button>
+                <button class="btn btn-info btn-sm" id="confirmDeleteRemarks">Yes</button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="exampleModalDeleteCenterUpdate" tabindex="-1"
+    role="dialog" aria-labelledby="exampleModalDeleteCenterUpdateTitle"
+    aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content"
+            style="width: 54%; border: thick solid #eaecf4;">
+            <div class="modal-header">
+                <!-- optional title -->
+            </div>
+            <div class="modal-body">
+                <b>Are you sure you want to Delete?</b>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-sm"
+                    data-dismiss="modal">NO</button>
+
+                <button type="button" class="btn btn-info btn-sm"
+                    id="confirmassetentrydeleteyes">YES</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 	<a class="scroll-to-top rounded" href="#page-top"> <i
 		class="fas fa-angle-up"></i>
 	</a>
@@ -1468,46 +1502,45 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 
 	
 
-
-	<script src="js/config.js"></script>
-	<script src="vendor/jquery/jquery.min.js"></script>
+<script src="vendor/jquery/jquery.min.js"></script>
 	<script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
 	<script src="vendor/jquery-easing/jquery.easing.min.js"></script>
-	<script src="js/ruang-admin.min.js"></script>
-	<!-- Page level plugins -->
+	<script src="js/config.js?v=<%=jsVersion%>"></script>
+	
+
+
 	<script src="vendor/datatables/jquery.dataTables.min.js"></script>
 	<script src="vendor/datatables/dataTables.bootstrap4.min.js"></script>
 	<!-- <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script> -->
 	<script
-		src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
+		src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
 	<script
-		src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+		src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 	<script
-		src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
+		src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
 	<script
-		src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
+		src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
 	<script
-		src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
+		src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
 	<script
-		src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
+		src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
 	<!--  <script src="js/ContractGP.js"></script>-->
 	<!-- <script src="js/AdminGP.js"></script> -->
-    <script src="js/AdminGP.js?v=<%=ts%>"></script>
-	<script src="js/config.js"></script>
-	<script src="js/logout.js"></script>
-	<script src="js/username.js"></script>
-	<script src="js/customertype.js"></script>
-	<script src="js/createdby.js"></script>
-	<script src="js/modifiedby.js"></script>
-	<script src="js/factoryid.js"></script>
-	<script src="js/Sessionfilter.js"></script>
+    <script src="js/AdminGP.js?v=<%=jsVersion%>"></script>
+	<script src="js/config.js?v=<%=jsVersion%>"></script>
+	<script src="js/logout.js?v=<%=jsVersion%>"></script>
+	<script src="js/username.js?v=<%=jsVersion%>"></script>
+	
+	<script src="js/createdby.js?v=<%=jsVersion%>"></script>
+	<script src="js/modifiedby.js?v=<%=jsVersion%>"></script>
+	<script src="js/factoryid.js?v=<%=jsVersion%>"></script>
+	<script src="js/Sessionfilter.js?v=<%=jsVersion%>"></script>
    	  <script>
-/* const moduleId = localStorage.getItem("selectedModuleId"); */
-  // This maps action names from the API to button IDs on this page
+
   window.actionElementMap = {
   };
 </script>
-  <script src="js/permissions.js"></script>
-	<!-- Page level custom scripts -->
+  <script src="js/permissions.js?v=<%=jsVersion%>"></script>
+
 </body>
 </html>

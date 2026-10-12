@@ -392,6 +392,7 @@ $(document).ready(function() {
     $("#confirmdrawingentry").click(function() {
 		$("#confimationDrawingEntry").modal("hide");
 
+
         const result = trackShiftTableData();
 
         console.log("the resul",result);
@@ -1669,20 +1670,19 @@ async function populateShiftTableFromDB(data) {
     tbody.find("tr:not(#shiftRowTemplate)").remove();
 
     // Get the first shift ID to populate the main dropdown
-    /* const firstShiftId = data[0]?.shiftId;
-   if (firstShiftId) {
+/*    const firstShiftId = data[0]?.shiftId;
+    if (firstShiftId) {
         $("#shiftSelect").val(firstShiftId);
-    }
-*/
+    }*/
+	
+	const firstShiftId = data[0]?.shiftId;
+	if (firstShiftId) {
+	    $("#shiftSelect")
+	        .val(firstShiftId)
+	        .prop("disabled", true)
+	        .addClass("readonly-select");
+	}
 
-
-const firstShiftId = data[0]?.shiftId;
-if (firstShiftId) {
-    $("#shiftSelect")
-        .val(firstShiftId)
-        .prop("disabled", true)
-        .addClass("readonly-select");
-}
     for (const item of data) {
         addShiftRow();
         const row = tbody.find("tr:not(#shiftRowTemplate)").last();
@@ -2006,7 +2006,7 @@ function displayMonthlyDetails(data, year, month) {
                 <td>${index + 1}</td>
                 <td>${entry.txtDate}/${year}</td>
                 <td>${entry.shiftCode || '-'}</td>
-                <td>${entry.jobCode || '-'}</td>
+              <td>${entry.jobCode === 'Stock' ? 'Indirect' : (entry.jobCode || '-')}</td>
             
               
                 <td>${entry.typeName || '-'}</td>
@@ -2148,7 +2148,7 @@ function displayYearlyDetails(data, year) {
                 <td>${index + 1}</td>
                 <td>${entry.txtDate}/${year}</td>
                 <td>${entry.shiftCode || '-'}</td>
-                <td>${entry.jobCode || '-'}</td>
+             <td>${entry.jobCode === 'Stock' ? 'Indirect' : (entry.jobCode || '-')}</td>
              
              
                 <td>${entry.typeName || '-'}</td>
@@ -2223,7 +2223,7 @@ function getIndianDateTimeFormat(date) {
 function showPopup(message, redirectUrl) {
     var popup = $('<div class="popup">' + message + '</div>').appendTo('body').hide().fadeIn(400);
     setTimeout(function() {
-        popup.fadeOut(400, function() {
+        popup.fadeOut(100, function() {
             $(this).remove();
             window.location = redirectUrl;
         });

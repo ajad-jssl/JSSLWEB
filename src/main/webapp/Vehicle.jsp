@@ -5,9 +5,7 @@
     response.setHeader("Pragma", "no-cache"); // HTTP 1.0
     response.setDateHeader("Expires", 0); // Proxies
 %>
-<%
-long ts = System.currentTimeMillis();
-%>
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -18,21 +16,21 @@ long ts = System.currentTimeMillis();
   <meta name="author" content="">
   <link href="img/logo/download.png" rel="icon">
   <title>JSSL</title>
-   <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+  <link href="externalLibrary/cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
    <link href="vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css" />
    <link href="vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css" />
    <link href="css/ruang-admin.min.css" rel="stylesheet" />
    <link href="vendor/datatables/dataTables.bootstrap4.min.css" rel="stylesheet">
-      <!-- <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css" /> -->
-   <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css" />
+    
+  <link rel="stylesheet" href="externalLibrary/cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css" />
    <link rel="stylesheet" href="css/main.css">
-       <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-       <script src="js/sidebar.js"></script>
+    
+     
        <link href="css/main.css?v=1.0" rel="stylesheet">
        <link href="css/masterpage.css?v=1.0" rel="stylesheet">
-<!--    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-KyZXEJjRkC9iY3NfJVzz6se99Nz05dfk03S8zNeS46E1H2nKfHlR9ltRf9TL7zG6" crossorigin="anonymous"> -->
-   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-   <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+
+  <script src="externalLibrary/code.jquery.com/jquery-3.6.0.min.js"></script>
+   <script src="externalLibrary/cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
    <script>
     const user_id = sessionStorage.getItem('user_id');
     if (!user_id) {
@@ -241,24 +239,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
     }
   </style>
   
-<!-- <script type="text/javascript">
-    window.history.forward();
 
-    // Auth Guard
-    const loginStatus = sessionStorage.getItem('loginStatus');
-    if (loginStatus !== 'Success') {
-      logout();
-    }
-
-    function noBack() {
-      window.history.forward();
-    }
-
-    function logout() {
-      sessionStorage.removeItem('loginStatus');
-      window.location = "newlogin.jsp";
-    }
-  </script> -->
 </head>
 
 <body >
@@ -669,8 +650,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
             </div>
           </div>
               
-              <script src="http://cdn.jsdelivr.net/npm/@popperjs/core@2.9.1/dist/umd/popper.min.js"></script>         
-              <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+           
          
          
      <div class="modal fade" id="exampleModalScrollable12" tabindex="-1" role="dialog" aria-labelledby="exampleModalScrollableTitle123" aria-hidden="true">
@@ -1005,9 +985,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
               </div>
             </div>
           </div>
-      <script src="http://cdn.jsdelivr.net/npm/@popperjs/core@2.9.1/dist/umd/popper.min.js"></script>         
-              <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-
+  
 </div>
 </div>
 </div>
@@ -1100,93 +1078,7 @@ $('#yourCloseButtonId').on('click', function () {
   $('#exampleModalScrollable12').modal('hide');
 });
 </script>
-<!--   <script>
-  const video = document.getElementById('videoElement');
-  const canvas = document.getElementById('canvas');
-  const capturedImage = document.getElementById('capturedImage');
-  const captureBtn = document.getElementById('capture');
-  const btnSubmit = document.getElementById('btnsubmit'); // "Create" button
-  const saveBtn = document.getElementById('save'); // New save button
 
-  // Access webcam
-  navigator.mediaDevices.getUserMedia({ video: true })
-    .then(stream => {
-      video.srcObject = stream;
-    })
-    .catch(err => {
-      console.error("Error accessing webcam: ", err);
-    });
-
-  // Capture button logic (can be used for capturing image if needed)
-  captureBtn.addEventListener('click', () => {
-    const context = canvas.getContext('2d');
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-
-    context.drawImage(video, 0, 0, canvas.width, canvas.height);
-    const imageData = canvas.toDataURL('image/png');
-    capturedImage.src = imageData;
-  });
-
-  // Create button logic (Capture and Save)
-  btnSubmit.addEventListener('click', () => {
-    // Capture image when "Create" button is clicked
-    const context = canvas.getContext('2d');
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-
-    context.drawImage(video, 0, 0, canvas.width, canvas.height);
-    const imageData = canvas.toDataURL('image/png');
-    capturedImage.src = imageData;
-
-    // Save image when the "Create" button is clicked
-    const link = document.createElement('a');
-    link.href = imageData;
-    link.download = 'captured-image.png'; // Name of the file to save
-    link.click();
-  });
-</script> -->
-
-<!-- <script>
-    const video = document.getElementById('videoElement');
-    const canvas = document.getElementById('canvas');
-    const capturedImage = document.getElementById('capturedImage');
-    const captureBtn = document.getElementById('capture');
-
-    // Start video stream from camera
-    navigator.mediaDevices.getUserMedia({ video: true })
-        .then(stream => {
-            video.srcObject = stream;
-        })
-        .catch(err => {
-            console.error("Error accessing camera: ", err);
-        });
-
-    captureBtn.addEventListener('click', () => {
-        // Draw video frame to canvas
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        canvas.getContext('2d').drawImage(video, 0, 0);
-
-        // Convert canvas to data URL
-        const imageData = canvas.toDataURL('image/png');
-
-        // Set image preview (optional)
-        capturedImage.src = imageData;
-
-        // Send image data to server
-        fetch('/upload', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ image: imageData })
-        })
-        .then(res => res.text())
-        .then(msg => console.log(msg))
-        .catch(err => console.error("Upload error: ", err));
-    });
-</script> -->
 
 <script>
     function loadJSPPage(value) {
@@ -1222,64 +1114,7 @@ $('#yourCloseButtonId').on('click', function () {
 
 
 
-<!-- <script>
-    // Function to add a new row
-    function addNewRow() {
-        // Get the table body
-        var tableBody = document.querySelector("#TableID tbody");
 
-        // Get the current number of rows in the table (excluding the header)
-        var rowCount = tableBody.rows.length + 1; // Start from 1
-
-        // Create a new row
-        var newRow = document.createElement("tr");
-
-        // Create cells for each column and append them to the row
-        newRow.innerHTML = `
-            <td>${rowCount}</td>
-            <td><select class="form-control form-control-sm" id="cname${rowCount}">            
-            </select></td>
-            <td><input type="text" class="form-control form-control-sm" id="clocation${rowCount}" readonly></td>
-            <td><input type="text" class="form-control form-control-sm" id="caddress${rowCount}" readonly></td>
-            <td><input type="text" class="form-control form-control-sm" id="ponum${rowCount}"></td>
-            <td><input type="date" class="form-control form-control-sm" id="podate${rowCount}"></td>
-            <td><input type="text" class="form-control form-control-sm" id="invoicenum${rowCount}"></td>
-            <td><input type="date" class="form-control form-control-sm" id="invoicedate${rowCount}"></td>
-            <td><input type="text" class="form-control form-control-sm" id="dcnum${rowCount}"></td>
-            <td><input type="date" class="form-control form-control-sm" id="dcdate${rowCount}"></td>
-            <td><input type="text" class="form-control form-control-sm" id="quantity${rowCount}"></td>
-            <td><input type="text" class="form-control form-control-sm" id="weight${rowCount}"></td>
-            <td><input type="text" class="form-control form-control-sm" id="description${rowCount}"></td>
-            <td><button type="button" class="btn btn-sm btn-danger" onclick="deleteRow(this)">Delete</button></td>
-        `;
-
-        // Append the new row to the table body
-        tableBody.appendChild(newRow);
-
-        // Re-adjust Sl.No for all rows after adding a new one
-        adjustSlNos();
-    }
-
-    // Function to delete a row
-    function deleteRow(button) {
-        // Get the row that the button is in (the <tr> element)
-        var row = button.closest("tr");
-
-        // Remove the row from the table
-        row.remove();
-
-        // Re-adjust the Sl.No for all rows after deletion
-        adjustSlNos();
-    }
-
-    // Function to adjust Sl.No for all rows
-    function adjustSlNos() {
-        var rows = document.querySelectorAll("#TableID tbody tr");
-        rows.forEach(function(row, index) {
-            row.cells[0].textContent = index + 1;  // Set Sl.No based on row index (starting from 1)
-        });
-    }
-</script> -->
 
 
 
@@ -1330,36 +1165,34 @@ $(document).ready(function () {
     });
 });
 </script>
-    <script src="js/config.js"></script>
+       <script src="externalLibrary/cdn.jsdelivr.net/npm/@popperjs/core@2.9.1/dist/umd/popper.min.js"></script>
   <script src="vendor/jquery/jquery.min.js"></script>
       <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
       <script src="vendor/jquery-easing/jquery.easing.min.js"></script>
-      <script src="js/ruang-admin.min.js"></script>
-      <!-- Page level plugins -->
+
       <script src="vendor/datatables/jquery.dataTables.min.js"></script>
       <script src="vendor/datatables/dataTables.bootstrap4.min.js"></script>
-    <!-- <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script> -->
-    <script src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
-    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
-    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>  
-  <script src="js/username.js"></script>
+     <script src="js/config.js?v=<%=jsVersion%>"></script>
+    <script src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
+    <script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+
+    <script src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
+    <script src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>   
+  <script src="js/username.js?v=<%=jsVersion%>"></script>
 <!--   <script src="js/Vehicle.js"></script> -->
-<script src="js/Vehicle.js?v=<%=ts%>"></script>
-   <script src="js/logout.js"></script>
-   <script src="js/createdby.js"></script>
- 	   <script src="js/modifiedby.js"></script>
- 	    <script src="js/Sessionfilter.js"></script>
- 	   	<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script src="js/Vehicle.js?v=<%=jsVersion%>"></script>
+   <script src="js/logout.js?v=<%=jsVersion%>"></script>
+   <script src="js/createdby.js?v=<%=jsVersion%>"></script>
+ 	   <script src="js/modifiedby.js?v=<%=jsVersion%>"></script>
+ 	    <script src="js/Sessionfilter.js?v=<%=jsVersion%>"></script>
+	   	<script src="externalLibrary/cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
  	<script>
-/* const moduleId = localStorage.getItem("selectedModuleId"); */
-  // This maps action names from the API to button IDs on this page
+
   window.actionElementMap = {
   };
 </script>
-<script src="js/permissions.js"></script>
+<script src="js/permissions.js?v=<%=jsVersion%>v"></script>
 
   <!-- Page level custom scripts -->
 </body>

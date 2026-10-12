@@ -1,9 +1,11 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8"
     pageEncoding="UTF-8"%>
-
-<%
-long ts = System.currentTimeMillis();
+     <%
+    response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate"); // HTTP 1.1
+    response.setHeader("Pragma", "no-cache"); // HTTP 1.0
+    response.setDateHeader("Expires", 0); // Proxies
 %>
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -18,15 +20,15 @@ long ts = System.currentTimeMillis();
    <link href="vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css" />
    <link href="css/ruang-admin.min.css" rel="stylesheet" />
    <link href="vendor/datatables/dataTables.bootstrap4.min.css" rel="stylesheet">
-      <!-- <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css" /> -->
-   <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css" />
+  
+   <link rel="stylesheet" href="externalLibrary/cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css" />
    <link rel="stylesheet" href="css/main.css">
-       <script src="js/sidebar.js"></script>
-   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-KyZXEJjRkC9iY3NfJVzz6se99Nz05dfk03S8zNeS46E1H2nKfHlR9ltRf9TL7zG6" crossorigin="anonymous">
+       
+<link href="externalLibrary/cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-KyZXEJjRkC9iY3NfJVzz6se99Nz05dfk03S8zNeS46E1H2nKfHlR9ltRf9TL7zG6" crossorigin="anonymous">
  
- <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+ <link href="externalLibrary/cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
  
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
 
   <script>
     const user_id = sessionStorage.getItem('user_id');
@@ -296,27 +298,10 @@ th, td {
   vertical-align: middle;
 }
 </style>
-<!-- <script type="text/javascript"> 
-    window.history.forward();
 
-    // Auth Guard
-    const loginStatus = sessionStorage.getItem('loginStatus');
-    if (loginStatus !== 'Success') {
-      logout();
-    }
-
-    function noBack() {
-      window.history.forward();
-    }
-
-    function logout() {
-      sessionStorage.removeItem('loginStatus');
-      window.location = "newlogin.jsp";
-    }
-  </script> --> 
 </head>
 
-<body onload="fetchUserList();">
+<body >
   <div id="wrapper">
     <!-- Sidebar -->
       <%@ include file="QCSidebar.jsp" %>
@@ -539,11 +524,7 @@ th, td {
               </div>
             </div>
           </div>
-          
-                 <!-- jQuery -->
-      <script src="http://cdn.jsdelivr.net/npm/@popperjs/core@2.9.1/dist/umd/popper.min.js"></script>         
-              <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-          
+     
           
        <div class="modal fade" id="exampleModalCenterQC" tabindex="-1" role="dialog"
             aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
@@ -675,80 +656,10 @@ th, td {
             </div>
           </div>
           
-           <!-- jQuery -->
-      <script src="http://cdn.jsdelivr.net/npm/@popperjs/core@2.9.1/dist/umd/popper.min.js"></script>         
-      <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+     
             
-<!--         <div id="container3" style="display: none;">
-         <div class="container mt-3" style="border: 2px solid black; border-radius: 10px; padding: 20px; background-color: white; width: 100%; max-width: 1700px;">
-        <h5 class="text-center mb-4" style="font-weight: bold; color: black; text-transform: uppercase; text-decoration: underline;">Loose Items Inspection Entry</h5>
-        
-        <div class="form-row dynamic-row">
-   <div class="table-responsive">
-  <table class="table table-striped table-bordered table-sm" id="TablelooseitemID" style="width: 100%;">
-    <thead>
-      <tr>
-        <th>Sl.no</th>
-        <th>Phase</th>
-        <th>Load</th>
-        <th>Description</th> 
-        <th>Mark</th>
-        <th>Qty(no)</th>               
-        <th>Inspected qty</th>
-        <th>Balanced qty</th>
-        <th>Section size</th>
-        <th>Dims</th>
-        <th>Dimensional Inspection</th>
-        <th>Visual Inspection</th>
-        <th>Result</th>
-        <th>Inspected by</th>
-        <th>Date & Time</th>        
-        <th>Status</th>
-        <th>Create</th>
-      </tr>
-    </thead>
-    <tbody> 
-    <tr> 
-    <td></td> 
-    <td></td> 
-    <td></td> 
-    <td></td> 
-    <td></td> 
-    <td></td> 
-    <td><input type="text" class="form-control form-control-sm" id="QTY"></td> 
-    <td></td> 
-    <td></td> 
-    <td></td> 
-    <td><select class="form-control form-control-sm" id="DIMENSIONAL" onchange="getitemdetails(1)">
-        <option value="1">Select</option>
-        <option value="1">None</option>
-        <option value="2">OK</option>
-        <option value="2">NA</option>       
-        </select></td> 
-    <td><select class="form-control form-control-sm" id="VISUAL" onchange="getitemdetails(1)">
-        <option value="1">Select</option>
-        <option value="1">Satisfactory</option>              
-        </select></td> 
-    <td></td> 
-    <td></td> 
-    <td></td> 
-    <td></td> 
-    <td><button type="button" class="btn btn-sm btn-secondary" onclick="SAVE()" style="display: none;">Save</button></td> 
-    <td><button type="button" class="btn btn-primary btn-sm" id="showlooseitemConfirmPopup" disabled>Create</button></td>
-    <td>
-    <i class="bi bi-check-circle-fill text-primary create-icon"
-      id="showlooseitemConfirmPopup"
-      title="Create"
-      style="cursor:pointer; font-size:18px; opacity:0.5; pointer-events:none;"></i>
-    </td> 
-    </tr> 
-   </tbody>
-  </table>
-</div>
-        </div>
-    </div> 
-            </div> 
- -->           </div>
+          </div>
        </div> 
    </div>
   </div>
@@ -774,8 +685,8 @@ th, td {
             </div>
           </div>
               
-              <script src="http://cdn.jsdelivr.net/npm/@popperjs/core@2.9.1/dist/umd/popper.min.js"></script>         
-              <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+            
+              
  
     <div class="modal fade" id="exampleModalScrollable123up" tabindex="-1" role="dialog" aria-labelledby="exampleModalScrollableTitle123" aria-hidden="true">
     <div class="modal-dialog modal-dialog-scrollable" style="max-width: 1750px;" role="document">
@@ -972,71 +883,7 @@ th, td {
     </div> 
  </div>
             
-<!--         <div id="container6" style="display: none;">
-         <div class="container mt-3" style="border: 2px solid black; border-radius: 10px; padding: 20px; background-color: white; width: 100%; max-width: 1700px;">
-        <h5 class="text-center mb-4" style="font-weight: bold; color: black; text-transform: uppercase; text-decoration: underline;">Update Loose Items Inspection Entry</h5>
-        
-        <div class="form-row dynamic-row">
-                  <form>      
- <div class="table-responsive" style="overflow-x: auto;">
-  <table class="table table-striped table-bordered table-sm" id="TableID" style="width: 100%; min-width: 1600px;">
-    <thead>
-      <tr>
-        <th>SL.NO</th>
-        <th>PHASE</th>
-        <th>LOAD</th>
-        <th>DESCRIPTION</th> 
-        <th>MARK</th>
-        <th>QTY(No)</th>               
-        <th>INSPECTED QTY</th>
-        <th>BALANCED QTY</th>
-        <th>SECTION SIZE</th>
-        <th>DIMS</th>
-        <th>DIMENSIONAL INSPECTION</th>
-        <th>VISUAL INSPECTION</th>
-        <th>RESULT</th>
-        <th>INSPECTED BY</th>
-        <th>DATE & TIME</th>        
-        <th>STATUS</th>
-        <th>SAVE</th>
-      </tr>
-    </thead>
-    <tbody> 
-    <tr> 
-    <td></td> 
-    <td></td> 
-    <td></td> 
-    <td></td> 
-    <td></td> 
-    <td></td> 
-    <td><input type="text" class="form-control form-control-sm" id="QTY1"></td> 
-    <td></td> 
-    <td></td> 
-    <td></td> 
-    <td><select class="form-control form-control-sm" id="DIMENSIONAL1" onchange="getitemdetails(1)">
-        <option value="1">Select</option>
-        <option value="1">None</option>
-        <option value="2">OK</option>
-        <option value="2">NA</option>       
-        </select></td> 
-    <td><select class="form-control form-control-sm" id="VISUAL1" onchange="getitemdetails(1)">
-        <option value="1">Select</option>
-        <option value="1">Satisfactory</option>              
-        </select></td> 
-    <td></td> 
-    <td></td> 
-    <td></td> 
-    <td></td> 
-    <td><button type="button" class="btn btn-sm btn-secondary" onclick="SAVE1()" style="display: none;">Save</button></td> 
-    </tr> 
-   </tbody>
-  </table>
-</div>
-      </form>
-        </div>
-    </div> 
-            </div> 
- -->           </div>
+         </div>
        </div> 
    </div>
   </div>
@@ -1048,16 +895,12 @@ th, td {
   <a class="scroll-to-top rounded" href="#page-top">
     <i class="fas fa-angle-up"></i>
   </a>
- <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+ 
 
-  <!-- Bootstrap JS and dependencies -->
+  
+<script src="externalLibrary/cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
 
 
-<!-- <script>
-  document.getElementById("btnnext").addEventListener("click", function () {
-    document.getElementById("container2").style.display = "block";
-  });
-</script> -->  
 
 
 <script>
@@ -1106,22 +949,7 @@ document.getElementById("REWORK").addEventListener("change", function () {
   });
 </script>
 
-<!-- <script>
-  document.addEventListener('DOMContentLoaded', function () {
-    const dropdown = document.getElementById('Joinee');
-    const container3 = document.getElementById('container3');
 
-    dropdown.addEventListener('change', function () {
-      const selectedText = dropdown.options[dropdown.selectedIndex].text;
-
-      if (selectedText === 'Loose Items Inspection') {
-        container3.style.display = 'block';
-      } else {
-        container3.style.display = 'none';
-      }
-    });
-  });
-</script> -->
 
 
 <script>
@@ -1158,22 +986,7 @@ document.getElementById("REWORK").addEventListener("change", function () {
   });
 </script>
 
-<!-- <script>
-  document.addEventListener('DOMContentLoaded', function () {
-    const dropdown = document.getElementById('Joinee1');
-    const container6 = document.getElementById('container6');
 
-    dropdown.addEventListener('change', function () {
-      const selectedText = dropdown.options[dropdown.selectedIndex].text;
-
-      if (selectedText === 'Loose Items Inspection') {
-        container6.style.display = 'block';
-      } else {
-        container6.style.display = 'none';
-      }
-    });
-  });
-</script> -->
 
 <script>
 function toggleOthers(select) {
@@ -1192,36 +1005,35 @@ function toggleOthers(select) {
 }
 </script>
 
-
-   <script src="js/config.js"></script>
-      <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+<script src="externalLibrary/cdn.jsdelivr.net/npm/@popperjs/core@2.9.1/dist/umd/popper.min.js"></script>     
+  <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
       <script src="vendor/jquery-easing/jquery.easing.min.js"></script>
-      <script src="js/ruang-admin.min.js"></script>
-      <!-- Page level plugins -->
+    
       <script src="vendor/datatables/jquery.dataTables.min.js"></script>
+   <script src="js/config.js?v=<%=jsVersion%>"></script>
+    
       <script src="vendor/datatables/dataTables.bootstrap4.min.js"></script>
-    <!-- <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script> -->
-    <script src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
-    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
-    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>  
-    <!-- <script src="js/QCEntry.js"></script> -->
-    <script src="js/QCEntry.js?v=<%=ts%>"></script>
-    <script src="js/logout.js"></script>
-    <script src="js/username.js"></script>
-    <script src="js/createdby.js"></script>
- 	<script src="js/modifiedby.js"></script>
- 	<script src="js/factoryid.js"></script>
+
+<script src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
+    <script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
+    <script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
+    <script src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
+    <script src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>  
+  
+    <script src="js/QCEntry.js?v=<%=jsVersion%>"></script>
+    <script src="js/logout.js?v=<%=jsVersion%>"></script>
+    <script src="js/username.js?v=<%=jsVersion%>"></script>
+    <script src="js/createdby.js?v=<%=jsVersion%>"></script>
+ 	<script src="js/modifiedby.js?v=<%=jsVersion%>"></script>
+ 	<script src="js/factoryid.js?v=<%=jsVersion%>"></script>
  	   	      	  <script>
-/* const moduleId = localStorage.getItem("selectedModuleId"); */
-  // This maps action names from the API to button IDs on this page
+
   window.actionElementMap = {
   };
 </script>
-  <script src="js/permissions.js"></script>
+  <script src="js/permissions.js?v=<%=jsVersion%>"></script>
 
-  <!-- Page level custom scripts -->
+ 
 </body>
 </html>

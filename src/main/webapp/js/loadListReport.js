@@ -1,3 +1,72 @@
+
+
+
+const currentPage1 = window.location.pathname.split("/").pop() + '.jsp';
+const UserId = sessionStorage.getItem('username');
+let allowedActions = [];
+
+async function loadActions() {
+    try {
+        const response = await fetch(
+            `${baseUrl}/api/page/actions?userId=${encodeURIComponent(UserId)}&pageName=${encodeURIComponent(currentPage1)}`,
+            {
+                method: "GET",
+                credentials: "include",
+                headers: { "Content-Type": "application/json" }
+            }
+        );
+
+        if (!response.ok) throw new Error("Failed to fetch actions");
+
+        allowedActions = await response.json();
+
+    } catch (error) {
+        console.error("Error:", error);
+    }
+}
+
+document.addEventListener("DOMContentLoaded", async function () {
+    await loadActions();
+    if (!allowedActions.includes("view")) {
+        blockUI();
+        return;
+    }
+});
+
+// ✅ blockUI — same as VMS
+function blockUI() {
+  const container = document.getElementById("container-wrapper");
+  if (!container) return;
+
+  container.style.pointerEvents = "none";
+  container.style.userSelect = "none";
+  container.style.opacity = "0.5";
+  container.style.position = "relative";
+
+  const overlay = document.createElement("div");
+  overlay.id = "contentBlockOverlay";
+  overlay.style.cssText = `
+    position: absolute; top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.6); z-index: 999;
+    display: flex; justify-content: center;
+    align-items: center; color: white;
+    font-size: 22px; text-align: center;
+  `;
+  overlay.innerHTML = `
+    <div>
+      🚫 Access Denied <br>
+      <small>You don't have permission to view this page</small>
+    </div>
+  `;
+  container.appendChild(overlay);
+}
+
+/* ═══════════════════════════════════════════════════════
+   G2 Load List Report — Factory -> Contract -> Phase -> Load -> Fetch -> Export
+   Phase filter is a multi-select checkbox dropdown (was a single <select>).
+═══════════════════════════════════════════════════════ */
+
 const G2_LIST_BASE_URL = "/jssl/g2/loadlistreport";
 
 let currentPage = 1;
@@ -9,7 +78,7 @@ let currentReportMeta = {}; // contract/phase/load/supplier labels for export he
 document.addEventListener("DOMContentLoaded", function () {
 
     const requiredIds = [
-        "factorySelect", "contractInput", "phaseInput", "loadInput",
+        "factorySelect", "contractInput", "phaseDropdownMenu", "loadInput",
         "fetchBtn", "exportBtn", "exportPdfBtn", "reportBody"
     ];
 
@@ -21,12 +90,36 @@ document.addEventListener("DOMContentLoaded", function () {
         );
     }
 
+    // ---- Phase checkbox dropdown open/close wiring ----
+    const phaseDropdown = document.getElementById("phaseDropdown");
+    const phaseToggle = document.getElementById("phaseDropdownToggle");
+    const phaseMenu = document.getElementById("phaseDropdownMenu");
+
+    if (phaseToggle) {
+        phaseToggle.addEventListener("click", function (e) {
+            e.stopPropagation();
+            const isOpening = !phaseMenu.classList.contains("show");
+            if (isOpening) {
+                const rect = phaseToggle.getBoundingClientRect();
+                phaseMenu.style.top = (rect.bottom + 2) + "px";
+                phaseMenu.style.left = rect.left + "px";
+                phaseMenu.style.width = rect.width + "px";
+            }
+            phaseMenu.classList.toggle("show");
+        });
+    }
+
+    document.addEventListener("click", function (e) {
+        if (phaseDropdown && !phaseDropdown.contains(e.target)) {
+            phaseMenu.classList.remove("show");
+        }
+    });
+
     const contractInput = document.getElementById("contractInput");
-    const phaseInput = document.getElementById("phaseInput");
     const loadInput = document.getElementById("loadInput");
 
     if (contractInput) resetDropdown(contractInput, "Select Contract");
-    if (phaseInput) resetDropdown(phaseInput, "Select Phase");
+    resetPhaseDropdown("Select contract first");
     if (loadInput) resetDropdown(loadInput, "Select Load");
     disableExportButtons();
 
@@ -37,7 +130,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
     if (factorySelect) factorySelect.addEventListener("change", onFactoryChange);
     if (contractInput) contractInput.addEventListener("change", onContractChange);
-    if (phaseInput) phaseInput.addEventListener("change", onPhaseChange);
     if (loadInput) loadInput.addEventListener("change", onLoadChange);
     if (fetchBtn) fetchBtn.addEventListener("click", fetchReport);
     if (exportBtn) exportBtn.addEventListener("click", exportToExcel);
@@ -72,10 +164,89 @@ function selectedText(selectId) {
     return el && el.selectedOptions.length ? el.selectedOptions[0].text : "";
 }
 
+/* ═══════════════════════════════════════════════════════
+   PHASE CHECKBOX DROPDOWN — helpers
+═══════════════════════════════════════════════════════ */
+function resetPhaseDropdown(message) {
+    const menu = document.getElementById("phaseDropdownMenu");
+    const label = document.getElementById("phaseDropdownLabel");
+    if (menu) menu.innerHTML = '<div class="checkbox-dropdown-empty">' + message + '</div>';
+    if (label) label.textContent = "Select Phase";
+    if (menu) menu.classList.remove("show");
+}
+
+function renderPhaseCheckboxes(phases) {
+    const menu = document.getElementById("phaseDropdownMenu");
+    menu.innerHTML = "";
+
+    if (!phases.length) {
+        menu.innerHTML = '<div class="checkbox-dropdown-empty">No phases found</div>';
+        updatePhaseLabel();
+        return;
+    }
+
+    // "Select All" row
+/*    const allRow = document.createElement("label");
+    allRow.className = "checkbox-dropdown-item select-all";
+    allRow.innerHTML = `<input type="checkbox" id="phaseSelectAll"> Select All`;
+    menu.appendChild(allRow);*/
+
+    phases.forEach(phase => {
+        const row = document.createElement("label");
+        row.className = "checkbox-dropdown-item";
+        row.innerHTML =
+            `<input type="checkbox" class="phaseCheckbox" value="${phase}"> ${phase}`;
+        menu.appendChild(row);
+    });
+
+    // Individual checkbox change
+    menu.querySelectorAll(".phaseCheckbox").forEach(cb => {
+        cb.addEventListener("change", function () {
+         /*   syncSelectAllState();*/
+            onPhaseChange();
+        });
+    });
+
+    // Select All toggle
+/*    document.getElementById("phaseSelectAll").addEventListener("change", function () {
+        const checked = this.checked;
+        menu.querySelectorAll(".phaseCheckbox").forEach(cb => cb.checked = checked);
+        onPhaseChange();
+    });*/
+
+    updatePhaseLabel();
+}
+
+function syncSelectAllState() {
+    const boxes = document.querySelectorAll(".phaseCheckbox");
+    const selectAll = document.getElementById("phaseSelectAll");
+    if (!selectAll) return;
+    selectAll.checked = boxes.length > 0 &&
+        Array.from(boxes).every(cb => cb.checked);
+}
+
+function getSelectedPhases() {
+    return Array.from(document.querySelectorAll(".phaseCheckbox:checked"))
+        .map(cb => cb.value);
+}
+
+function updatePhaseLabel() {
+    const label = document.getElementById("phaseDropdownLabel");
+    if (!label) return;
+    const selected = getSelectedPhases();
+    if (selected.length === 0) {
+        label.textContent = "Select Phase";
+    } else if (selected.length === 1) {
+        label.textContent = selected[0];
+    } else {
+        label.textContent = selected.length + " phases selected";
+    }
+}
+
 /* -------------------- STEP 1: FACTORY CHANGE -> LOAD CONTRACTS -------------------- */
 function onFactoryChange() {
     resetDropdown(document.getElementById("contractInput"), "Select Contract");
-    resetDropdown(document.getElementById("phaseInput"), "Select Phase");
+    resetPhaseDropdown("Select contract first");
     resetDropdown(document.getElementById("loadInput"), "Select Load");
     disableExportButtons();
 
@@ -121,12 +292,15 @@ function loadContracts(factory) {
 
 /* -------------------- STEP 2: CONTRACT CHANGE -> LOAD PHASES -------------------- */
 function onContractChange() {
-    resetDropdown(document.getElementById("phaseInput"), "Select Phase");
+    resetPhaseDropdown("Loading…");
     resetDropdown(document.getElementById("loadInput"), "Select Load");
     disableExportButtons();
 
     const contractId = document.getElementById("contractInput").value;
-    if (!contractId) return;
+    if (!contractId) {
+        resetPhaseDropdown("Select Phase");
+        return;
+    }
 
     loadPhases();
 }
@@ -134,6 +308,8 @@ function onContractChange() {
 function loadPhases() {
     const factory = document.getElementById("factorySelect").value;
     const contractId = document.getElementById("contractInput").value;
+
+    resetPhaseDropdown("Loading…");
 
     fetch(
         new URL(
@@ -146,39 +322,38 @@ function loadPhases() {
     .then(data => {
         if (data.error) {
             console.error(data.error);
+            resetPhaseDropdown("Select Phase");
             return;
         }
-        const phaseDDL = document.getElementById("phaseInput");
-        resetDropdown(phaseDDL, "Select Phase");
-        (data.Data || []).forEach(phase => {
-            const opt = document.createElement("option");
-            opt.value = phase;
-            opt.textContent = phase;
-            phaseDDL.appendChild(opt);
-        });
+        renderPhaseCheckboxes(data.Data || []);
     })
-    .catch(err => console.error("Failed to load phases", err));
+    .catch(err => {
+        console.error("Failed to load phases", err);
+        resetPhaseDropdown("Select Phase");
+    });
 }
 
 /* -------------------- STEP 3: PHASE CHANGE -> LOAD LOADS -------------------- */
 function onPhaseChange() {
+    updatePhaseLabel();
     resetDropdown(document.getElementById("loadInput"), "Select Load");
     disableExportButtons();
 
-    const phase = document.getElementById("phaseInput").value;
-    if (!phase) return;
+    const selectedPhases = getSelectedPhases();
+    if (selectedPhases.length === 0) return;
 
     loadLoads();
 }
 
-function loadLoads() {
+/*function loadLoads() {
     const factory = document.getElementById("factorySelect").value;
     const contractId = document.getElementById("contractInput").value;
-    const phase = document.getElementById("phaseInput").value;
+    const selectedPhases = getSelectedPhases();
+    const phaseParam = selectedPhases.map(p => encodeURIComponent(p)).join(",");
 
     fetch(
         new URL(
-            `${G2_LIST_BASE_URL}/loads?factory=${factory}&contractId=${contractId}&phase=${encodeURIComponent(phase)}`,
+            `${G2_LIST_BASE_URL}/loads?factory=${factory}&contractId=${contractId}&phase=${phaseParam}`,
             baseUrl1
         ),
         { method: "GET", credentials: "include" }
@@ -199,6 +374,38 @@ function loadLoads() {
         });
     })
     .catch(err => console.error("Failed to load loads", err));
+}*/
+
+
+function loadLoads() {
+    const factory = document.getElementById("factorySelect").value;
+    const contractId = document.getElementById("contractInput").value;
+    const selectedPhases = getSelectedPhases();
+    const phaseParam = selectedPhases.map(p => encodeURIComponent(p)).join(",");
+
+    fetch(
+        new URL(
+            `${G2_LIST_BASE_URL}/loads?factory=${factory}&contractId=${contractId}&phase=${phaseParam}`,
+            baseUrl1
+        ),
+        { method: "GET", credentials: "include" }
+    )
+    .then(res => res.json())
+    .then(data => {
+        if (data.error) {
+            console.error(data.error);
+            return;
+        }
+        const loadDDL = document.getElementById("loadInput");
+        resetDropdown(loadDDL, "All");   // ← was "Select Load"
+        (data.Data || []).forEach(item => {
+            const opt = document.createElement("option");
+            opt.value = item.load_id;
+            opt.textContent = item.pload;
+            loadDDL.appendChild(opt);
+        });
+    })
+    .catch(err => console.error("Failed to load loads", err));
 }
 
 /* -------------------- STEP 4: LOAD CHANGE -------------------- */
@@ -209,14 +416,15 @@ function onLoadChange() {
 /* ═══════════════════════════════════════════════════════
    FETCH REPORT
 ═══════════════════════════════════════════════════════ */
-function fetchReport() {
+/*function fetchReport() {
 
     const factory = document.getElementById("factorySelect").value;
     const contractId = document.getElementById("contractInput").value;
-    const phase = document.getElementById("phaseInput").value;
+    const selectedPhases = getSelectedPhases();
+    const phaseParam = selectedPhases.map(p => encodeURIComponent(p)).join(",");
     const loadId = document.getElementById("loadInput").value;
 
-    if (!factory || !contractId || !phase || !loadId) {
+    if (!factory || !contractId || selectedPhases.length === 0 || !loadId) {
         const reportBody = document.getElementById("reportBody");
         reportBody.innerHTML = '<div class="state-msg error">Please select Factory, Contract, Phase, and Load before fetching.</div>';
         return;
@@ -225,7 +433,7 @@ function fetchReport() {
     currentReportMeta = {
         factory: selectedText("factorySelect"),
         contract: selectedText("contractInput"),
-        phase: phase,
+        phase: selectedPhases.join(", "),
         load: selectedText("loadInput")
     };
 
@@ -238,7 +446,7 @@ function fetchReport() {
 
     fetch(
         new URL(
-            `${G2_LIST_BASE_URL}/fetch-report?factory=${factory}&contractId=${contractId}&phase=${encodeURIComponent(phase)}&loadId=${loadId}`,
+            `${G2_LIST_BASE_URL}/fetch-report?factory=${factory}&contractId=${contractId}&phase=${phaseParam}&loadId=${loadId}`,
             baseUrl1
         ),
         { method: "GET", credentials: "include" }
@@ -252,6 +460,73 @@ function fetchReport() {
 
         currentReportData = data.Data || [];
         currentPage = 1; // reset to first page on every new fetch
+
+        if (currentReportData.length === 0) {
+            reportBody.innerHTML = '<div class="state-msg">No records found for the selected filters.</div>';
+            return;
+        }
+
+        renderReportTable(currentReportData);
+        enableExportButtons();
+    })
+    .catch(err => {
+        console.error(err);
+        reportBody.innerHTML = '<div class="state-msg error">Failed to fetch report. Please try again.</div>';
+    })
+    .finally(() => {
+        fetchBtn.disabled = false;
+    });
+}*/
+
+
+function fetchReport() {
+
+    const factory = document.getElementById("factorySelect").value;
+    const contractId = document.getElementById("contractInput").value;
+    const selectedPhases = getSelectedPhases();
+    const phaseParam = selectedPhases.map(p => encodeURIComponent(p)).join(",");
+    const loadId = document.getElementById("loadInput").value;
+
+    if (!factory || !contractId || selectedPhases.length === 0) {   // loadId no longer required
+        const reportBody = document.getElementById("reportBody");
+        reportBody.innerHTML = '<div class="state-msg error">Please select Factory, Contract, and Phase before fetching.</div>';
+        return;
+    }
+
+    currentReportMeta = {
+        factory: selectedText("factorySelect"),
+        contract: selectedText("contractInput"),
+        phase: selectedPhases.join(", "),
+        load: loadId ? selectedText("loadInput") : "All"
+    };
+
+    const fetchBtn = document.getElementById("fetchBtn");
+    fetchBtn.disabled = true;
+    disableExportButtons();
+
+    const reportBody = document.getElementById("reportBody");
+    reportBody.innerHTML = '<div class="state-msg">Loading report…</div>';
+
+    let apiUrl = `${G2_LIST_BASE_URL}/fetch-report?factory=${factory}&contractId=${contractId}&phase=${phaseParam}`;
+
+    // Only append loadId when a specific load is chosen; omit for "All"
+    if (loadId) {
+        apiUrl += `&loadId=${encodeURIComponent(loadId)}`;
+    }
+
+    fetch(
+        new URL(apiUrl, baseUrl1),
+        { method: "GET", credentials: "include" }
+    )
+    .then(res => res.json())
+    .then(data => {
+        if (data.error) {
+            reportBody.innerHTML = '<div class="state-msg error">' + data.error + '</div>';
+            return;
+        }
+
+        currentReportData = data.Data || [];
+        currentPage = 1;
 
         if (currentReportData.length === 0) {
             reportBody.innerHTML = '<div class="state-msg">No records found for the selected filters.</div>';
@@ -282,9 +557,9 @@ const REPORT_COLUMNS = [
     { key: 'pload', label: 'Load' },
     { key: 'mark', label: 'Mark' },
     { key: 'pdescr', label: 'Piece Descr' },
-	{ key: 'pqty', label: 'Qty', numeric: true },
+    { key: 'pqty', label: 'Qty', numeric: true },
     { key: 'weight', label: 'Weight', numeric: true },
-	{ key: 'tweight', label: 'Total Weight', numeric: true },
+    { key: 'tweight', label: 'Total Weight', numeric: true },
     { key: 'area', label: 'Area', numeric: true },
     { key: 'tarea', label: 'Total Area', numeric: true },
 ];

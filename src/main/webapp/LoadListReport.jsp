@@ -7,6 +7,8 @@ response.setHeader("Pragma", "no-cache");
 response.setDateHeader("Expires", 0);
 %>
 
+
+
 <!DOCTYPE html>
 <html>
 
@@ -18,7 +20,9 @@ response.setDateHeader("Expires", 0);
 <link href="vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css">
 
 <!-- Bootstrap Icons -->
-<link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.5.0/font/bootstrap-icons.min.css" rel="stylesheet">
+<link
+	href="externalLibrary/cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.5.0/font/bootstrap-icons.min.css"
+	rel="stylesheet">
 
 <!-- Font Awesome -->
 <link href="vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
@@ -29,12 +33,10 @@ response.setDateHeader("Expires", 0);
 <!-- Main CSS -->
 <link rel="stylesheet" href="css/main.css">
 
-<script src="js/sidebar.js"></script>
 
-<!-- jsPDF + autoTable -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 
+    <script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/jspdf/4.2.1/jspdf.umd.min.js"></script>
+<script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/5.0.8/jspdf.plugin.autotable.min.js"></script>
 <style>
 /* ═══════════════════════════════════════════════════════
    BASE
@@ -167,6 +169,61 @@ body {
   .page-title { font-size: 18px; }
 }
 
+.checkbox-dropdown { position: relative; }
+
+.checkbox-dropdown-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  background: #fff;
+  text-align: left;
+}
+.checkbox-dropdown-toggle span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.checkbox-dropdown-menu {
+  display: none;
+  position: fixed;
+  z-index: 3000;
+  background: #fff;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  min-width: 180px;
+  max-height: 220px;
+  overflow-y: auto;
+  box-shadow: 0 4px 10px rgba(0,0,0,.12);
+  padding: 6px 0;
+}
+.checkbox-dropdown-menu.show { display: block; }
+
+.checkbox-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.checkbox-dropdown-item:hover { background: #f1f3f9; }
+.checkbox-dropdown-item input { cursor: pointer; margin: 0; }
+
+.checkbox-dropdown-item.select-all {
+  border-bottom: 1px solid #eee;
+  font-weight: 600;
+  padding-bottom: 8px;
+  margin-bottom: 4px;
+}
+
+.checkbox-dropdown-empty {
+  padding: 8px 12px;
+  font-size: 12px;
+  color: #999;
+}
+
 </style>
 </head>
 
@@ -174,7 +231,7 @@ body {
 <div id="wrapper">
 
   <!-- Sidebar -->
-  <%@ include file="GPMSSidebar.jsp"%>
+  <%@ include file="Homedashboardsidebar.jsp"%>
 
   <!-- Content Wrapper -->
   <div id="content-wrapper" class="d-flex flex-column">
@@ -209,7 +266,7 @@ body {
       </nav>
 
       <!-- Container -->
-      <div class="container-fluid">
+      <div class="container-fluid" id="container-wrapper">
 
         <!-- PAGE TITLE -->
         <div class="page-title">Load List Report</div>
@@ -244,7 +301,7 @@ body {
               </div>
 
               <!-- Phase -->
-              <div class="filter-item w-phase">
+           <!--    <div class="filter-item w-phase">
                 <div class="form-group mb-0">
                   <label>Phase</label>
                   <select id="phaseInput" class="form-control">
@@ -252,7 +309,23 @@ body {
                   </select>
                   <span id="phaseError" class="field-error">Required</span>
                 </div>
-              </div>
+              </div> -->
+              
+              <div class="filter-item w-phase">
+  <div class="form-group mb-0">
+    <label>Phase</label>
+    <div class="checkbox-dropdown" id="phaseDropdown">
+      <button type="button" class="form-control checkbox-dropdown-toggle" id="phaseDropdownToggle">
+        <span id="phaseDropdownLabel">Select Phase</span>
+        <i class="fas fa-caret-down" style="margin-left:6px;"></i>
+      </button>
+      <div class="checkbox-dropdown-menu" id="phaseDropdownMenu">
+        <div class="checkbox-dropdown-empty">Select contract first</div>
+      </div>
+    </div>
+    <span id="phaseError" class="field-error">Required</span>
+  </div>
+</div>
 
               <!-- Load -->
               <div class="filter-item w-load">
@@ -309,13 +382,13 @@ body {
 <script src="vendor/jquery/jquery.min.js"></script>
 <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
 <script src="vendor/jquery-easing/jquery.easing.min.js"></script>
-<script src="js/ruang-admin.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="js/config.js"></script>
-<script src="js/logout.js"></script>
-<script src="js/username.js"></script>
-<script src="js/Sessionfilter.js"></script>
-<script src="js/loadListReport.js"></script>
+
+<script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/xlsx/0.20.3/xlsx.full.min.js"></script>
+<script src="js/config.js?v=<%=jsVersion%>"></script>
+<script src="js/logout.js?v=<%=jsVersion%>"></script>
+<script src="js/username.js?v=<%=jsVersion%>"></script>
+<script src="js/Sessionfilter.js?v=<%=jsVersion%>"></script>
+<script src="js/loadListReport.js?v=<%=jsVersion%>"></script>
 
 <script>
 // ═══════════════════════════════════════════════════════
@@ -347,10 +420,12 @@ function validateFilters() {
     document.getElementById('phaseError').style.display = 'block';
     valid = false;
   }
-  if (!load.value) {
+ /*  if (!load.value) {
     document.getElementById('loadError').style.display = 'block';
     valid = false;
-  }
+  } */
+  
+  
 
   return valid;
 }

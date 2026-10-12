@@ -1,7 +1,7 @@
 
 
-// Retrieve the selected factory ID from localStorage
-const selectedFactoryId = localStorage.getItem('selectedFactoryId');
+// Retrieve the selected factory ID from sessionStorage
+const selectedFactoryId = sessionStorage.getItem('selectedFactoryId');
 if (selectedFactoryId) {
     fetchregisterMasterCount();
 	fetchvehicleMasterCount();
@@ -10,7 +10,7 @@ if (selectedFactoryId) {
 	fetchcompanyMasterCount();
 	fetchseleMasterCount();
 } else {
-    console.error('No factory ID found in localStorage.');
+    console.error('No factory ID found in sessionStorage...');
 }
 
 function fetchregisterMasterCount() {

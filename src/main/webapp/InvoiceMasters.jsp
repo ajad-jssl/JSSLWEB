@@ -6,9 +6,7 @@
   response.setHeader("Pragma", "no-cache"); // HTTP 1.0
   response.setDateHeader("Expires", 0); // Proxies
 %>
-<%
-long ts = System.currentTimeMillis();
-%>
+
 <!DOCTYPE html>
 <html>
 
@@ -24,13 +22,11 @@ long ts = System.currentTimeMillis();
   <link href="vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css">
   <link href="css/ruang-admin.min.css" rel="stylesheet">
   <link rel="stylesheet" href="css/main.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" integrity="sha512-xxx" crossorigin="anonymous" />
+       <link rel="stylesheet" href="externalLibrary/cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" integrity="sha512-xxx" crossorigin="anonymous" />
    <link href="css/newmasterfile.css" rel="stylesheet">
-   <link href="https://stackpath.bootstrapcdn.com/bootstrap/5.1.0/css/bootstrap.min.css" rel="stylesheet">
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
- <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
- <script src="js/sidebar.js"></script>
-   
+
+
+       
   <script>
     const user_id = sessionStorage.getItem('user_id');
     console.log(user_id);
@@ -44,24 +40,7 @@ long ts = System.currentTimeMillis();
  }
  </script>
 </head>
-<!-- <script type="text/javascript">
-    window.history.forward();
 
-    // Auth Guard
-    const loginStatus = sessionStorage.getItem('loginStatus');
-    if (loginStatus !== 'Success') {
-      logout();
-    }
-
-    function noBack() {
-      window.history.forward();
-    }
-
-    function logout() {
-      sessionStorage.removeItem('loginStatus');
-      window.location = "newlogin.jsp";
-    }
-  </script> -->
 
   
 <body>
@@ -79,36 +58,7 @@ long ts = System.currentTimeMillis();
             </button>
 
             <ul class="navbar-nav ml-auto">
-            <!--     <div class="dropdown-checkbox" style="position: relative; display: inline-block;">
-                    <button class="dropdown-toggle" style="
-                        background-color: white; 
-                        color: black; 
-                        border: none; 
-                        padding: 10px 20px; 
-                        border-radius: 5px; 
-                        font-size: 14px; 
-                        cursor: pointer; 
-                        margin-top: 14px;
-                        transition: background-color 0.3s ease;
-                    ">
-                        Select Factory
-                    </button>
-                    <div class="dropdown-menu" style="
-                        display: none; 
-                        position: absolute; 
-                        top: 100%; 
-                        left: 0; 
-                        border: 1px solid #ccc; 
-                        background: #fff; 
-                        z-index: 1000; 
-                        padding: 10px; 
-                        width: 200px; 
-                        max-height: 200px; 
-                        overflow-y: auto;
-                    ">
-                        Factory items will be dynamically added here
-                    </div>
-                </div> -->
+          
                 <!-- Home Button -->
                 <button class="btn btn-link" onclick="window.location.href='Landingpage.jsp'" style="background-color: transparent; color: white; border: none;">
                     <i class="fa fa-home"></i>
@@ -457,36 +407,7 @@ long ts = System.currentTimeMillis();
                   </div>
                 </div>
               </div> 
-               <!--    <div class="card h-100" onclick="window.location.href='user.jsp'">
-                <div class="card-body">
-                  <div class="row align-items-center">
-                     <div class="col mr-2">
-                    <i class="fas fa-user fa-2x" style="color: #3AC079;font-size:1.5rem;"></i>
-                     
-                    </div>
-                    <div class="col-auto">
-                      <div class="text-xs font-weight-bold text-uppercase mb-1">USERS</div>
-                      <div class="h5 mb-0 font-weight-bold text-gray-800 text-right" id="userlength"></div>
-                     </div>
-                 
-                  </div>
-                </div>
-              </div>  
-                 <div class="card h-100" onclick="window.location.href='userrole.jsp'">
-                <div class="card-body">
-                  <div class="row align-items-center">
-                     <div class="col mr-2">
-                    <i class="fas fa-clipboard-check fa-2x" style="color: #4ACCF7;font-size:1.5rem;"></i>
-                     
-                    </div>
-                    <div class="col-auto">
-                      <div class="text-xs font-weight-bold text-uppercase mb-1">USER ROLE</div>
-                      <div class="h5 mb-0 font-weight-bold text-gray-800 text-right" id="userrolelength"></div>
-                     </div>
-                 
-                  </div>
-                </div>
-              </div> -->
+               
                <div class="card h-100" onclick="window.location.href='openingbalence.jsp'">
                 <div class="card-body">
                   <div class="row align-items-center">
@@ -541,21 +462,7 @@ long ts = System.currentTimeMillis();
  
     <!-- Dropdown menu styled like cards -->
     <div class="dropdown-items">
-   <!-- <div class="card h-100"  onclick="window.location.href='vender.jsp'">
-                <div class="card-body">
-                  <div class="row align-items-center">
-                     <div class="col mr-2">
-                    <i class="fas fa-building fa-2x" style="color: #27ae60;font-size:1.5rem;"></i>
-                     
-                    </div>
-                    <div class="col-auto">
-                      <div class="text-xs font-weight-bold text-uppercase mb-1">VENDOR</div>
-                      <div class="h5 mb-0 font-weight-bold text-gray-800 text-right" id="vendorlenaa"></div>
-                     </div>
-                 
-                  </div>
-                </div>
-              </div> --> 
+   
               
               
                <div class="card h-100"  onclick="window.location.href='ScrapType.jsp'">
@@ -757,18 +664,19 @@ long ts = System.currentTimeMillis();
   <a class="scroll-to-top rounded" href="#page-top">
     <i class="fas fa-angle-up"></i>
   </a>
-   <script src="js/config.js"></script>
+   
  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
   <script src="vendor/jquery/jquery.min.js"></script>
   <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
   <script src="vendor/jquery-easing/jquery.easing.min.js"></script>
-  <script src="js/ruang-admin.min.js"></script>
-    <script src="js/newmaster.js?v=<%=ts%>"></script>
-  <script src="js/logout.js"></script>
-  <script src="js/username.js"></script>
-   <script src="js/Sessionfilter.js"></script>
+  <script src="js/config.js?v=<%=jsVersion%>"></script>
+ 
+    <script src="js/newmaster.js?v=<%=jsVersion%>"></script>
+  <script src="js/logout.js?v=<%=jsVersion%>"></script>
+  <script src="js/username.js?v=<%=jsVersion%>"></script>
+   <script src="js/Sessionfilter.js?v=<%=jsVersion%>"></script>
 
-  <!-- <script src="js/factoryid.js"></script> -->
+  
 
   
 <script>

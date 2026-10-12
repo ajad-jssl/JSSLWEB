@@ -67,7 +67,7 @@ document.getElementById("modalScroll1").addEventListener("click", function () {
 document.addEventListener("DOMContentLoaded", function() { 
 	loadActions();
 	loadUserMap();
-	const selectedFactoryId = localStorage.getItem('selectedFactoryId');
+	const selectedFactoryId = sessionStorage.getItem('selectedFactoryId');
   // Fetch the list of Vehicle IDs and populate the select dropdown
   fetch(new URL(`/api/invoiceexit/jims/vechileoutpending?factoryid=${selectedFactoryId}`,baseUrl1)  , {
       credentials: "include"

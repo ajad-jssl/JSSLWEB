@@ -317,7 +317,6 @@ function showPhoto(fileName) {
 
     const cleanFileName = fileName.trim();
 
-    // ✅ Build image URL
     const imageUrl = new URL(
         `/api/contractgatepass/viewImage?fileName=${encodeURIComponent(cleanFileName)}`,
         baseUrl1
@@ -325,14 +324,12 @@ function showPhoto(fileName) {
 
     console.log("Image URL:", imageUrl);
 
-    // ✅ Remove existing modal
     const existingModal = document.getElementById('photoModal');
     if (existingModal) {
         $('#photoModal').modal('hide');
         existingModal.remove();
     }
 
-    // ✅ Create modal with image — src set AFTER modal is shown
     const modal = `
         <div class="modal fade" id="photoModal"
              tabindex="-1" role="dialog" aria-hidden="true">
@@ -354,7 +351,6 @@ function showPhoto(fileName) {
                     <div class="modal-body text-center p-3"
                          style="min-height:200px;">
 
-                        <!-- Loading spinner -->
                         <div id="photoSpinner" class="my-3">
                             <div class="spinner-border text-primary"
                                  role="status">
@@ -365,7 +361,6 @@ function showPhoto(fileName) {
                             </p>
                         </div>
 
-                        <!-- Image — src set after modal shown -->
                         <img id="photoModalImg"
                              src=""
                              alt="Employee Photo"
@@ -375,7 +370,6 @@ function showPhoto(fileName) {
                                     border:1px solid #ddd;
                                     display:none;">
 
-                        <!-- Error message -->
                         <div id="photoErrorMsg"
                              class="text-danger mt-2"
                              style="display:none;">
@@ -387,13 +381,12 @@ function showPhoto(fileName) {
                     </div>
                     <div class="modal-footer"
                          style="padding:8px 15px;">
-                        <a id="photoFullSizeLink"
-                           href="${imageUrl}"
-                           target="_blank"
-                           class="btn btn-sm btn-info">
+                        <button type="button"
+                                id="photoFullSizeBtn"
+                                class="btn btn-sm btn-info">
                             <i class="fa fa-external-link-alt"></i>
                             Open Full Size
-                        </a>
+                        </button>
                         <button type="button"
                                 class="btn btn-sm btn-secondary"
                                 data-dismiss="modal">
@@ -406,42 +399,63 @@ function showPhoto(fileName) {
 
     document.body.insertAdjacentHTML('beforeend', modal);
 
-    // ✅ Show modal first, THEN load image
     $('#photoModal').modal('show');
 
-    // ✅ Set image src AFTER modal is fully shown
-    // This is the key fix — image loads after modal is visible
     $('#photoModal').on('shown.bs.modal', function () {
 
         const img = document.getElementById('photoModalImg');
         const spinner = document.getElementById('photoSpinner');
         const errorMsg = document.getElementById('photoErrorMsg');
+        const fullSizeBtn = document.getElementById('photoFullSizeBtn');
 
-        // ✅ Image loaded successfully
-        img.onload = function () {
-            spinner.style.display = 'none';
-            img.style.display     = 'block';
-            errorMsg.style.display = 'none';
-        };
+        let objectUrl = null;
 
-        // ✅ Image failed to load
-        img.onerror = function () {
-            spinner.style.display  = 'none';
-            img.style.display      = 'none';
-            errorMsg.style.display = 'block';
-            console.error("Image failed to load:", imageUrl);
-        };
+        authFetch(imageUrl)
+            .then(response => {
+                if (!response.ok) throw new Error("Photo fetch failed: " + response.status);
+                return response.blob();
+            })
+            .then(blob => {
+                objectUrl = URL.createObjectURL(blob);
+                spinner.style.display = 'none';
+                img.style.display = 'block';
+                errorMsg.style.display = 'none';
+                img.src = objectUrl;
 
-        // ✅ Set src here — triggers actual load
-        img.src = imageUrl;
+                // "Open Full Size" now opens the blob URL in a new tab
+                fullSizeBtn.onclick = function () {
+                    window.open(objectUrl, '_blank');
+                };
+            })
+            .catch(error => {
+                spinner.style.display = 'none';
+                img.style.display = 'none';
+                errorMsg.style.display = 'block';
+                console.error("Image failed to load:", imageUrl, error);
+            });
+
+        // Clean up the blob URL when modal closes
+        $('#photoModal').one('hidden.bs.modal', function () {
+            if (objectUrl) URL.revokeObjectURL(objectUrl);
+        });
     });
 
-    // ✅ Clean up modal after close
     $('#photoModal').on('hidden.bs.modal', function () {
-        const modal = document.getElementById('photoModal');
-        if (modal) modal.remove();
+        const modalEl = document.getElementById('photoModal');
+        if (modalEl) modalEl.remove();
     });
 }
+function authFetch(url, options = {}) {
+  return fetch(url, {
+    ...options,
+    credentials: "include",
+    headers: {
+      ...(options.headers || {}),
+      "X-Session-Id": sessionStorage.getItem("session_id") || ""
+    }
+  });
+}
+
 function downloadFile(filename) {
     if (!filename) {
         alert("Filename not found!");
@@ -451,8 +465,22 @@ function downloadFile(filename) {
     const url = new URL("/api/contractgatepass/downloadfile", baseUrl1);
     url.searchParams.append("filename", filename);
 
-    // Open directly — NO blob
-    window.open(url.toString(), "_blank");
+    authFetch(url)
+        .then(response => {
+            if (!response.ok) throw new Error("Download failed: " + response.status);
+            return response.blob();
+        })
+        .then(blob => {
+            const objectUrl = URL.createObjectURL(blob);
+            window.open(objectUrl, "_blank");
+
+            // Revoke after a delay to give the new tab time to load the blob
+            setTimeout(() => URL.revokeObjectURL(objectUrl), 60000);
+        })
+        .catch(error => {
+            console.error("Download error:", error);
+            alert("Failed to download file. Please try again.");
+        });
 }
 
 function blockUI() {
@@ -661,6 +689,7 @@ function fetchHistoryReport() {
                     "<td>" + (row.presentAdd ?? "") + "</td>" +
                     "<td>" + (row.factoryName ?? "") + "</td>" +
                   "<td>" + mapActiveStatus(row.active) + "</td>" +
+				  "<td>" + mapdeleteStatus(row.deleted) + "</td>" +
                     "<td>" + (row.statusDescription ?? "") + "</td>" +
                     "<td>" + (row.rejoinDate ?? "") + "</td>" +
                     "<td>" + (row.performedBy ?? "") + "</td>" +
@@ -708,6 +737,17 @@ function mapActiveStatus(active) {
         return "Inactive";
     }
     return ""; // handles null/undefined/unexpected values
+}
+
+
+function mapdeleteStatus(active) {
+    if (active === 0 || active === "0") {
+        return "No";
+    }
+    if (active === 1 || active === "1") {
+        return "Yes";
+    }
+    return "No"; // handles null/undefined/unexpected values
 }
 
 var deptLookup = {};

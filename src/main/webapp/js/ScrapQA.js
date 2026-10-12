@@ -58,12 +58,12 @@ document.getElementById("modalScroll1").addEventListener("click", function () {
 });
 
 
-const selectedFactoryId = localStorage.getItem('selectedFactoryId');
+const selectedFactoryId = sessionStorage.getItem('selectedFactoryId');
 console.log('selectedFactoryId:', selectedFactoryId);
 
 // Ensure the ID is available before making the API call
 $(document).ready(function () {
-    const factoryId = localStorage.getItem("selectedFactoryId");
+    const factoryId = sessionStorage.getItem("selectedFactoryId");
     if (factoryId) {
         fetchUserList(factoryId);
     }
@@ -183,7 +183,7 @@ let currentFactoryIdScrapPN = null;
 function fetchUserList(selectedFactoryId) {
 
     currentFactoryIdScrapPN = selectedFactoryId ||
-                              localStorage.getItem("selectedFactoryId");
+                              sessionStorage.getItem("selectedFactoryId");
 
     // 🔥 Destroy existing DataTable
     if ($.fn.DataTable.isDataTable('#tableID')) {
@@ -365,11 +365,11 @@ function fetchUserList(selectedFactoryId) {
 
 document.addEventListener("DOMContentLoaded", function () {
 	loadAllowedActions();
-    const selectedFactoryId = localStorage.getItem("selectedFactoryId"); // Get factory_id from localStorage
+    const selectedFactoryId = sessionStorage.getItem("selectedFactoryId"); // Get factory_id from sessionStorage
     if (selectedFactoryId) {
         fetchSaleOrderTypes(selectedFactoryId);
     } else {
-        console.error("No factory ID found in localStorage.");
+        console.error("No factory ID found in sessionStorage.");
     }
 });
 

@@ -5,6 +5,7 @@
   response.setHeader("Pragma", "no-cache"); // HTTP 1.0
   response.setDateHeader("Expires", 0); // Proxies
 %>
+<%@ include file="version.jsp" %>
 <!DOCTYPE html>
 <html>
 <head>
@@ -41,10 +42,7 @@ body {
 	transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-/* .form_container:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 16px 40px rgba(0,0,0,0.15);
-}
+
  */
 /* ---------- HEADER ---------- */
 .form_container h2 {
@@ -222,117 +220,42 @@ body {
 <link href="css/ruang-admin.min.css" rel="stylesheet" />
 <link href="vendor/datatables/dataTables.bootstrap4.min.css"
 	rel="stylesheet">
-<!-- <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css" /> -->
-<link rel="stylesheet"
-	href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css" />
+
+	
+	
+	<link rel="stylesheet"
+	href="externalLibrary/cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css" />
+	
 <link rel="stylesheet" href="css/main.css">
 <script src="js/config.js"></script>
 <script src="vendor/jquery/jquery.min.js"></script>
 <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
 <script src="vendor/jquery-easing/jquery.easing.min.js"></script>
-<script src="js/ruang-admin.min.js"></script>
-<!-- Page level plugins -->
+
+
 <script src="vendor/datatables/jquery.dataTables.min.js"></script>
 <script src="vendor/datatables/dataTables.bootstrap4.min.js"></script>
-<!-- <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script> -->
 <script
-	src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
+	src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
 <script
-	src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+	src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script
-	src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
+	src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
 <script
-	src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
+	src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
 <script
-	src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
+	src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
 <script
-	src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
-<script src="js/reset.js"></script>
-<script src="js/createdby.js"></script>
+	src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
+<script src="js/reset.js?v=<%=jsVersion%>"></script>
+
+
 <script type="text/javascript">
 	function noBack() {
 		window.history.forward();
 	}
 </script>
-<script>
-	// Track user activity and logout after 2 minutes (120000 ms)
-	let inactivityTime = function() {
-		let timeout;
 
-		// Reset timer on any user activity
-		function resetTimer() {
-			clearTimeout(timeout);
-			timeout = setTimeout(triggerLogout, 900000); // 15 minutes
-		}
-
-		// Event listener for activity
-		window.onload = resetTimer;
-		document.onmousemove = resetTimer;
-		document.onkeydown = resetTimer;
-		document.onclick = resetTimer;
-		document.onscroll = resetTimer;
-
-		function triggerLogout() {
-			// Create a dummy event to pass to logoutUser
-			let dummyEvent = new Event('logout');
-			logoutUser(dummyEvent);
-		}
-	};
-
-	inactivityTime();
-
-	function logoutUser(event) {
-		if (event && event.preventDefault) {
-			event.preventDefault();
-		}
-
-		var user_id = sessionStorage.getItem('user_id');
-		if (!user_id) {
-			alert("User ID not found. Please login first.");
-			return;
-		}
-
-		if (typeof baseUrl === 'undefined' || !baseUrl) {
-			console.error("baseUrl is not defined or is empty.");
-			return;
-		}
-
-		const url = baseUrl.endsWith('/') ? baseUrl + 'jssl/user/userlogout'
-				: baseUrl + '/jssl/user/userlogout';
-
-		$
-				.ajax({
-					url : url,
-					type : 'POST',
-					data : $.param({
-						user_id : user_id
-					}),
-					contentType : 'application/x-www-form-urlencoded',
-					dataType : 'json',
-					cache : false,
-					success : function(data) {
-						console.log("Server response:", data);
-
-						if (data.status === "yes"
-								&& data.message === "Logout Success") {
-							sessionStorage.removeItem("user_id");
-							sessionStorage.removeItem("username");
-							sessionStorage.removeItem("isLoggedIn");
-							localStorage.removeItem("selectedFactoryId");
-							window.location = "newlogin.jsp";
-						} else {
-							console.error("Logout failed.");
-						}
-					},
-					error : function(xhr, status, error) {
-						console.error("AJAX error:", error);
-						console.error("Response text:", xhr.responseText);
-						alert("Error: "
-								+ (xhr.responseText || "An error occurred."));
-					}
-				});
-	}
-</script>
 </head>
 <body>
 
@@ -353,7 +276,7 @@ body {
 					placeholder="Enter the Email">
 				<div id="productCodeErrorcreditss4" class="error-message"></div>
 			</div>
-			<!-- OLD PASSWORD -->
+			
 			<div class="input_container password-wrapper">
 				<label class="input_label" for="old_password">Old Password</label> <input
 					type="password" id="old_password" name="old_password"
@@ -368,7 +291,7 @@ body {
 			</div>
 
 
-			<!-- NEW PASSWORD -->
+			
 			<div class="input_container password-wrapper">
 				<label class="input_label" for="new_password">New Password</label> <input
 					type="password" id="new_password" name="new_password"
@@ -410,10 +333,7 @@ body {
 			<div class="modal-content"
 				style="width: 54%; right: -22%; border-width: thick; border-color: #eaecf4;">
 				<div class="modal-header1">
-					<!-- <h5 class="modal-title" id="exampleModalCenterTitle">Modal Vertically Centered</h5> -->
-					<!-- <button type="button" class="close" data-dismiss="modal" aria-label="Close" >
-                    <span aria-hidden="true">&times;</span>
-                  </button>  -->
+				
 				</div>
 				<div class="modal-body">
 					<b>Are You Sure You Want reset the password?</b>
@@ -434,10 +354,7 @@ body {
 			<div class="modal-content"
 				style="width: 70%; right: -22%; border-width: thick; border-color: #eaecf4;">
 				<div class="modal-header1">
-					<!-- <h5 class="modal-title" id="exampleModalCenterTitle">Modal Vertically Centered</h5> -->
-					<!-- <button type="button" class="close" data-dismiss="modal" aria-label="Close" >
-                    <span aria-hidden="true">&times;</span>
-                  </button>  -->
+			
 				</div>
 				<div class="modal-body">
 					<b id="errorMessageup"></b>

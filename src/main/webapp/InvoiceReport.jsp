@@ -454,7 +454,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
   <h5 class="text-center report-header">Invoice Report</h5>
  <div class="form-row dynamic-row">
   <div class="table-responsive">
-    <table class="table table-bordered table-sm" id="TableID">
+    <table class="table table-bordered table-sm" id="Table_ID">
       <thead>
         <tr>
           <th>SL.NO</th>
@@ -507,7 +507,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
     </table>
   </div>
  </div>
-  <button class="btn btn-success btn-sm my-3" onclick="exportToExcelInvoice()">Export to Excel</button>
+ <button type="button" id="btnExportInvoice" class="btn btn-success btn-sm my-3">Export to Excel</button>
 </div>
 </div>
 </form>
@@ -945,7 +945,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
   <h5 class="text-center report-header">Summary Of Sale Order</h5>
  <div class="form-row dynamic-row">
   <div class="table-responsive">
-    <table class="table table-bordered table-sm" id="Table_ID">
+    <table class="table table-bordered table-sm" id="TableIDD">
       <thead>
         <tr>
           <th>SL.NO</th>
@@ -1059,7 +1059,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 </div>
 
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.20.3/xlsx.full.min.js"></script>
 
 <script>
 function toggleReportContainer() {
@@ -1079,13 +1079,13 @@ document.getElementById("type1").addEventListener("change", toggleReportContaine
 document.getElementById("contract2").addEventListener("change", toggleReportContainer);
 </script>
 
-<script>
+<!-- <script>
  function exportToExcelInvoice() {
-  var table = document.getElementById("TableID");
+  var table = document.getElementById("Table_ID");
   var workbook = XLSX.utils.table_to_book(table, {sheet: "Invoice Report"});
   XLSX.writeFile(workbook, 'Invoice_Report.xlsx');
  }
-</script>
+</script> -->
 
 <script>
  function exportToExcel() {
@@ -1122,7 +1122,7 @@ document.getElementById("contract2").addEventListener("change", toggleReportCont
 
 <script>
  function exportToExcel() {
-  var table = document.getElementById("Table_ID");
+  var table = document.getElementById("TableIDD");
   var workbook = XLSX.utils.table_to_book(table, {sheet: "Summary Of Sale Order"});
   XLSX.writeFile(workbook, 'Summary_Of_Sale_Order.xlsx');
  }

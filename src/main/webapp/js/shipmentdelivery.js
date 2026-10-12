@@ -40,8 +40,8 @@ document.getElementById("#modalScroll").addEventListener("click", function () {
 	}
 	$('#exampleModalScrollable').modal('show');
 });
-// Fetch selectedFactoryId from localStorage
-const selectedFactoryId = localStorage.getItem('selectedFactoryId');
+// Fetch selectedFactoryId from sessionStorage
+const selectedFactoryId = sessionStorage.getItem('selectedFactoryId');
 console.log('selectedFactoryId:', selectedFactoryId);
 
 document.addEventListener("DOMContentLoaded", function () {
@@ -52,7 +52,7 @@ document.addEventListener("DOMContentLoaded", function () {
 if (selectedFactoryId) {
     fetchUserList();
 } else {
-    console.error('No factory ID found in localStorage.');
+    console.error('No factory ID found in sessionStorage.');
 }
 
 // Function to fetch the list of users/vendors based on the selected factory ID

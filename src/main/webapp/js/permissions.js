@@ -1,11 +1,11 @@
-console.log("permissions.js script is running");
+
 
 (function () {
     const userId = sessionStorage.getItem("user_id");
     const moduleId = localStorage.getItem("selectedModuleId");
     const actionElementMap = window.actionElementMap;
 
-    console.log("Permissions debug ->", { userId, moduleId, actionElementMap, baseUrl1 });
+  
 
     if (!userId || !moduleId || !actionElementMap) {
         console.warn("Permission system not initialized properly.");
@@ -59,7 +59,7 @@ console.log("permissions.js script is running");
         });
 
 		function blockAllActions(reason = "") {
-		  console.log("Blocking all actions. Reason:", reason);
+		
 		  Object.values(actionElementMap).forEach(id => {
 		    const el = document.getElementById(id);
 		    if (el) {

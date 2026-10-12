@@ -1,8 +1,9 @@
- <script src="js/sidebar.js"></script>
- <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+	<%@ include file="version.jsp" %>
+	<script src="externalLibrary/code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="js/sidebar.js?v=<%=jsVersion%>"></script>
 <ul class="navbar-nav sidebar sidebar-light accordion" id="accordionSidebar">
   <!-- Logo -->
-  <a class="sidebar-brand d-flex align-items-center justify-content-center mb-3 mt-3" href="Dashboard.jsp" style="background-color: white;">
+  <a class="sidebar-brand d-flex align-items-center justify-content-center mb-3 mt-3" href="MaintenanceDashBorad.jsp" style="background-color: white;">
     <div class="sidebar-brand-icon">
       <img src="img/logo/download.png" style="max-height: 4.3rem;">
     </div>
@@ -27,7 +28,6 @@ if (!window.sidebarInitialized) {
 
   $(document).ready(function () {
     const userId = sessionStorage.getItem("user_id");
- const Id = sessionStorage.getItem('id');
     const moduleName = sessionStorage.getItem("selectedModule");
 
     console.log("Sidebar: userId =", userId, ", moduleName =", moduleName);
@@ -96,14 +96,28 @@ if (!window.sidebarInitialized) {
 	  sidebarUl.appendChild(heading);
 
 	  // Remove duplicate pageUrls
-	  const uniquePages = [
+	 /*  const uniquePages = [
 	    ...new Map(
 	      pages.map(item => [item.pageUrl, item])
 	    ).values()
 	  ];
 
-	  uniquePages.forEach(item => {
+	  uniquePages.forEach(item => { */
 
+		// Remove items whose displayName ends with "Dashboard" (case-insensitive)
+		  const filteredByDashboard = pages.filter(item => {
+		      const name = (item.displayName || "").trim().toLowerCase();
+		      return !name.endsWith("dashboard");
+		  });
+
+		  // Remove duplicate pageUrls
+		  const uniquePages = [
+		      ...new Map(
+		        filteredByDashboard.map(item => [item.pageUrl, item])
+		      ).values()
+		  ];
+
+		  uniquePages.forEach(item => {
 	    const pageUrl = item.pageUrl;
 	    const displayName = item.displayName;
 

@@ -60,7 +60,7 @@ function loadAllowedActions() {
 
 document.addEventListener("DOMContentLoaded", function() {
 	loadAllowedActions();
-    const selectedFactoryId = localStorage.getItem("selectedFactoryId");
+    const selectedFactoryId = sessionStorage.getItem("selectedFactoryId");
     fetchLoad(selectedFactoryId);
     fetchtaxadd1();
     fetchtaxadd2();
@@ -122,7 +122,7 @@ async function fetchTaxData(selectId, taxPercentId, taxValueId) {
                 taxMap[tax_id] = tax_per;
                 const option = document.createElement("option");
                 option.value = tax_id;
-                option.textContent = tax_name;
+                option.textContent = tax_name+ '-'+tax_per;
                 selectElement.appendChild(option);
             }
         });
@@ -197,13 +197,64 @@ document.getElementById("load").addEventListener("change", function() {
 });
 
 
+let hsnMasterList = [];
+let serviceMasterList = [];
+
+async function fetchhsn() {
+    try {
+        const url = new URL(`/jssl/master/listHsncodemasternew`, baseUrl);
+        const response = await fetch(url, {
+            method: "GET",
+            credentials: "include"
+        });
+        if (!response.ok) throw new Error("Failed to fetch hsn codes");
+
+        const json = await response.json();
+
+        if (json.status !== "yes" || !json.Data.length) {
+            console.warn("No hsn codes found.");
+            return;
+        }
+
+        // Cache globally for per-row dropdowns
+        hsnMasterList = json.Data;
+
+    } catch (error) {
+        console.error("Error fetching hsn codes:", error);
+    }
+}
+
+async function fetchservice() {
+    try {
+        const url = new URL(`/jssl/master/listservicecodemasternew`, baseUrl);
+        const response = await fetch(url, {
+            method: "GET",
+            credentials: "include"
+        });
+        if (!response.ok) throw new Error("Failed to fetch service codes");
+
+        const json = await response.json();
+
+        if (json.status !== "yes" || !json.Data.length) {
+            console.warn("No service codes found.");
+            return;
+        }
+
+        // Cache globally for per-row dropdowns
+        serviceMasterList = json.Data;
+
+    } catch (error) {
+        console.error("Error fetching service codes:", error);
+    }
+}
+
 async function fetchQsPackingData(loadId) {
     try {
-        const selectedFactoryId = localStorage.getItem("selectedFactoryId"); // Get the factory_id from localStorage
+        const selectedFactoryId = sessionStorage.getItem("selectedFactoryId"); // Get the factory_id from sessionStorage
 
         // Ensure factory_id is available
         if (!selectedFactoryId) {
-            console.error("No factory ID found in localStorage.");
+            console.error("No factory ID found in sessionStorage.");
             return;
         }
 
@@ -249,6 +300,23 @@ async function fetchQsPackingData(loadId) {
             json.QsPacking_Data.forEach((item, index) => {
                 const showLabel = index === 0;
                 const div = document.createElement("div");
+				
+				// Build Service Code <option> list
+										const serviceOptions = serviceMasterList.map(s => {
+										    return `
+										        <option value="${s.service_code}">
+										            ${s.service_code} - ${s.service_description}
+										        </option>`;
+										}).join("");
+
+										// Build HSN Code <option> list
+										const hsnOptions = hsnMasterList.map(h => {
+										    return `
+										        <option value="${h.service_code}">
+										            ${h.service_code} - ${h.service_description}
+										        </option>`;
+										}).join("");
+				
                 div.classList.add("form-group-container", "col-md-12"); // Add classes to style the row
 
                 // Make sure total is numeric before adding
@@ -287,6 +355,22 @@ async function fetchQsPackingData(loadId) {
                                ${showLabel ? '<label><b>Invoice Type</b></label>' : ''}
                                <input type="text" id="intype_${index}" value="${item.scrapNameTypeId}" class="form-control form-control-sm small-input" disabled>
                            </div>
+						   
+						   <div class="form-group col-md-2 col-sm-12">
+						   				                    ${showLabel ? '<label><b>Service Code</b></label>' : ''}
+															<select class="form-control form-control-sm service-code-select" data-slno="${item.other_pn_items_id || ''}">
+															    <option value="" selected>Select Service Code</option>
+															    ${serviceOptions}
+															</select>
+						   				                </div>
+
+						   				                <div class="form-group col-md-2 col-sm-12">
+						   				                    ${showLabel ? '<label><b>HSN Code</b></label>' : ''}
+															<select class="form-control form-control-sm hsn-code-select" data-slno="${item.other_pn_items_id || ''}">
+															    <option value="" selected>Select HSN Code</option>
+															    ${hsnOptions}
+															</select>
+						   				                </div>
                            
                      </div>
 					 
@@ -377,7 +461,7 @@ async function fetchtaxadd1() {
                 const option = document.createElement("option");
                 option.value = type.tax_id;
                 option.dataset.taxPer = type.tax_per; // Store tax_per as a data attribute
-                option.textContent = type.tax_name;
+                option.textContent = type.tax_name+ '-'+type.tax_per;
                 selectElement.appendChild(option);
             }
         });
@@ -444,7 +528,7 @@ async function fetchtaxadd2() {
                 const option = document.createElement("option");
                 option.value = type.tax_id;
                 option.dataset.taxPer = type.tax_per; // Store tax_per as a data attribute
-                option.textContent = type.tax_name;
+                option.textContent = type.tax_name+ '-'+type.tax_per;
                 selectElement.appendChild(option);
             }
         });
@@ -509,7 +593,7 @@ async function fetchtaxadd3() {
                 const option = document.createElement("option");
                 option.value = type.tax_id;
                 option.dataset.taxPer = type.tax_per; // Store tax_per as a data attribute
-                option.textContent = type.tax_name;
+                option.textContent = type.tax_name+ '-'+type.tax_per;
                 selectElement.appendChild(option);
             }
         });
@@ -972,90 +1056,6 @@ async function fetchorg1() {
     }
 }
 
-async function fetchservice() {
-    try {
-
-        // Construct the API URL properly
-        const url = new URL(`/jssl/master/listservicecodemasternew`, baseUrl);
-        //url.searchParams.append("factory_id", factoryId);
-
-        // Fetch data from API
-        const response = await fetch(url, {
-            method: "GET",
-            credentials: "include"   // ✅ Always send JSESSIONID cookie
-        });
-        if (!response.ok) throw new Error("Failed to fetch sale order types");
-
-        const json = await response.json();
-
-        // Check if the API response has valid data
-        if (json.status !== "yes" || !json.Data.length) {
-            console.warn("No sale order types found.");
-            return;
-        }
-
-        // Get the select element
-        const selectElement = document.getElementById("officeservice");
-
-        // Clear existing options
-        selectElement.innerHTML = `<option value="">Select service code</option>`;
-
-        // Populate dropdown options using SalesOrderTypeDetails array
-        json.Data.forEach((type) => {
-            if (type.servicecode_id && type.service_code) { // Ensure both values exist
-                const option = document.createElement("option");
-                option.value = type.servicecode_id; // Backend keeps saleorder_id
-                option.textContent = type.service_code; // Display saleorder_typename
-                selectElement.appendChild(option);
-            }
-        });
-    } catch (error) {
-        console.error("Error fetching sale order types:", error);
-    }
-}
-
-async function fetchhsn() {
-    try {
-
-        // Construct the API URL properly
-        const url = new URL(`/jssl/master/listHsncodemasternew`, baseUrl);
-        //url.searchParams.append("factory_id", factoryId);
-
-        // Fetch data from API
-        const response = await fetch(url, {
-            method: "GET",
-            credentials: "include"   // ✅ Always send JSESSIONID cookie
-        });
-        if (!response.ok) throw new Error("Failed to fetch sale order types");
-
-        const json = await response.json();
-
-        // Check if the API response has valid data
-        if (json.status !== "yes" || !json.Data.length) {
-            console.warn("No sale order types found.");
-            return;
-        }
-
-        // Get the select element
-        const selectElement = document.getElementById("officehsn");
-
-        // Clear existing options
-        selectElement.innerHTML = `<option value="">Select hsn code</option>`;
-
-        // Populate dropdown options using SalesOrderTypeDetails array
-        json.Data.forEach((type) => {
-            if (type.servicecode_id && type.service_code) { // Ensure both values exist
-                const option = document.createElement("option");
-                option.value = type.servicecode_id; // Backend keeps saleorder_id
-                option.textContent = type.service_code; // Display saleorder_typename
-                selectElement.appendChild(option);
-            }
-        });
-    } catch (error) {
-        console.error("Error fetching sale order types:", error);
-    }
-}
-
 async function fetchexptitle() {
     try {
 
@@ -1202,8 +1202,8 @@ function openModalAdd() {
     var bank = document.getElementById('bank').value.trim();
     var deliv = document.getElementById('delivery').value.trim();
     var regoffice = document.getElementById('office').value.trim();
-    var sercode = document.getElementById('officeservice').value.trim();
-    var hsncode = document.getElementById('officehsn').value.trim();
+/*    var sercode = document.getElementById('officeservice').value.trim();
+    var hsncode = document.getElementById('officehsn').value.trim();*/
     var prodes = document.getElementById('prodes').value.trim();
     var prodesc = document.getElementById('prodesc').value.trim();
     var remark = document.getElementById('remark').value.trim();
@@ -1235,8 +1235,8 @@ function openModalAdd() {
     validateField(bank, "bankError", "Please select bank.");
     validateField(deliv, "deliveryError", "Please select delivery condition.");
     validateField(regoffice, "officeError", "Please select registered office.");
-    validateField(sercode, "officeserviceError", "Please select service code.");
-    validateField(hsncode, "officehsnError", "Please select HSN code.");
+/*    validateField(sercode, "officeserviceError", "Please select service code.");
+    validateField(hsncode, "officehsnError", "Please select HSN code.");*/
     validateField(prodesc, "prodescError", "Please enter product description.");
     validateField(remark, "productCodeError4", "Please enter remarks.");
 
@@ -1249,15 +1249,16 @@ function openModalAdd() {
     }
 }
 
-// Fetch selectedFactoryId from localStorage
-const selectedFactoryId = localStorage.getItem('selectedFactoryId');
+// Fetch selectedFactoryId from sessionStorage
+const selectedFactoryId = sessionStorage.getItem('selectedFactoryId');
 console.log('selectedFactoryId:', selectedFactoryId);
 
-function addevent() {
+async function addevent() {
     // Validate role code and role description
-    const selectedloadid = document.getElementById("load").selectedOptions[0]; // Get the selected option
+    const selectedloadid = document.getElementById("load").selectedOptions[0];
+    const loadname = selectedloadid ? selectedloadid.textContent : '';
 
-    const loadname = selectedloadid ? selectedloadid.textContent : ''; // Get the contract_name
+    await saveOthersServiceHsnSelections();   // <-- NEW: persist Service/HSN selections first
 
     $.ajax({
         url: new URL('/jssl/invoice/addnewothers', baseUrl),
@@ -1298,8 +1299,6 @@ function addevent() {
             bank_id: bank.value,
             deliverycondition_id: delivery.value,
             registered_office_id: office.value,
-            servicecode_id: officeservice.value,
-            hsncode_id: officehsn.value,
             prod_desc: prodesc.value,
             con_slno: id11con.value,
             product_desc: prodes.value,
@@ -1355,7 +1354,7 @@ let currentFactoryIdOthersInvoice = null;
 
 function fetchUserList111(selectedFactoryId) {
 
-    currentFactoryIdOthersInvoice = selectedFactoryId || localStorage.getItem("selectedFactoryId");
+    currentFactoryIdOthersInvoice = selectedFactoryId || sessionStorage.getItem("selectedFactoryId");
 
     // 🔥 Destroy existing DataTable
     if ($.fn.DataTable.isDataTable('#tableID')) {
@@ -1535,6 +1534,138 @@ function fetchUserList111(selectedFactoryId) {
         }
     });
 }
+async function fetchSalebusunitEdit(targetId, selectedId, fallbackText, verified_status) {
+    const url = new URL(`/jssl/contract/listbusinessunitnew`, baseUrl);
+    const response = await fetch(url, { method: "GET", credentials: "include" });
+    const json = await response.json();
+    if (json.status !== "yes" || !json.Data.length) return;
+
+    const selectElement = document.getElementById(targetId);
+    selectElement.innerHTML = `<option value="">Select Business Unit</option>`;
+
+    let matched = false;
+    json.Data.forEach((type) => {
+        const bindaddress = type.business_unit_name + type.location + '(' + type.gst_number + ')';
+        const option = document.createElement("option");
+        option.value = type.business_unit_id;
+        option.textContent = bindaddress;
+        if (selectedId && String(type.business_unit_id) === String(selectedId)) {
+            option.selected = true;
+            matched = true;
+        }
+        selectElement.appendChild(option);
+    });
+
+    // Fallback: no ID match, but we have a display string from Contractor_Data
+    if (!matched && fallbackText) {
+        const fallbackOption = document.createElement("option");
+        fallbackOption.value = fallbackText;
+        fallbackOption.textContent = fallbackText;
+        fallbackOption.selected = true;
+        selectElement.insertBefore(fallbackOption, selectElement.firstChild.nextSibling);
+    }
+
+    // ✅ Make it read-only once verified
+    if (verified_status === "true" || verified_status === "1" || verified_status === 1) {
+        selectElement.setAttribute("disabled", "disabled");
+    } else {
+        selectElement.removeAttribute("disabled"); // reset in case it was disabled from a previous open
+    }
+}
+
+async function fetchinvoicetoEdit(targetId, selectedId, fallbackText) {
+    const url = new URL(`/jssl/invoiceConsigneeAddress/getInvoiceAddress`, baseUrl);
+    const response = await fetch(url, { method: "GET", credentials: "include" });
+    const json = await response.json();
+    if (json.status !== "yes" || !json.InvoiceAddress?.length) return;
+
+    const selectElement = document.getElementById(targetId);
+    selectElement.innerHTML = `<option value="">Select invoice to</option>`;
+
+    let matched = false;
+    json.InvoiceAddress.forEach((type) => {
+        if (type.is_verified == 1) {
+            const option = document.createElement("option");
+            option.value = type.id;
+            option.textContent = type.address;
+            if (selectedId && String(type.id) === String(selectedId)) {
+                option.selected = true;
+                matched = true;
+            }
+            selectElement.appendChild(option);
+        }
+    });
+
+    if (!matched && fallbackText) {
+        const fallbackOption = document.createElement("option");
+        fallbackOption.value = fallbackText;
+        fallbackOption.textContent = fallbackText;
+        fallbackOption.selected = true;
+        selectElement.insertBefore(fallbackOption, selectElement.firstChild.nextSibling);
+    }
+}
+
+async function fetchSaleworkEdit(targetId, selectedId, fallbackText) {
+    const url = new URL(`/jssl/contract/listworkordernew`, baseUrl);
+    const response = await fetch(url, { method: "GET", credentials: "include" });
+    const json = await response.json();
+    if (json.status !== "yes" || !json.Data.length) return;
+
+    const selectElement = document.getElementById(targetId);
+    selectElement.innerHTML = `<option value="">Select work order</option>`;
+
+    let matched = false;
+    json.Data.forEach((type) => {
+        const option = document.createElement("option");
+        option.value = type.work_id;
+        option.textContent = type.workorder_no;
+        if (selectedId && String(type.work_id) === String(selectedId)) {
+            option.selected = true;
+            matched = true;
+        }
+        selectElement.appendChild(option);
+    });
+
+    if (!matched && fallbackText) {
+        const fallbackOption = document.createElement("option");
+        fallbackOption.value = fallbackText;
+        fallbackOption.textContent = fallbackText;
+        fallbackOption.selected = true;
+        selectElement.insertBefore(fallbackOption, selectElement.firstChild.nextSibling);
+    }
+}
+
+async function fetchconnameEdit(targetId, selectedId, fallbackText) {
+    const url = new URL(`/jssl/invoiceConsigneeAddress/getConsigneeAddressNew`, baseUrl);
+    const response = await fetch(url, { method: "GET", credentials: "include" });
+    const json = await response.json();
+    if (json.status !== "yes" || !json.ConsigneeAddress?.length) return;
+
+    const selectElement = document.getElementById(targetId);
+    selectElement.innerHTML = `<option value="">Select</option>`;
+
+    let matched = false;
+    json.ConsigneeAddress.forEach((type) => {
+        if (type.is_verified == 1) {
+            const option = document.createElement("option");
+            option.value = type.id;
+            option.textContent = type.address;
+            if (selectedId && String(type.id) === String(selectedId)) {
+                option.selected = true;
+                matched = true;
+            }
+            selectElement.appendChild(option);
+        }
+    });
+
+    if (!matched && fallbackText) {
+        const fallbackOption = document.createElement("option");
+        fallbackOption.value = fallbackText;
+        fallbackOption.textContent = fallbackText;
+        fallbackOption.selected = true;
+        selectElement.insertBefore(fallbackOption, selectElement.firstChild.nextSibling);
+    }
+}
 
 async function editRecordInvoice(id) {
 				 // const allowed = window.allowedActions || [];
@@ -1558,6 +1689,27 @@ async function editRecordInvoice(id) {
         const taxData = json.tax || [];
         const invoiceData = json.Invoice_Data[0] || {};
         /*      const GrandValue = json.Grand_Total_value || [];*/
+		const ContData = json.Contractor_Data || [];
+
+		      setInputValue("#vconslnoupdate", invoiceData.con_slno || invoiceData.contract_slno || "");
+
+			//fetchSalebusunitEdit("bunitvup", ContractMasterData.bid || (ContData.length > 0 ? ContData[0].business_unit_name : ""));
+			fetchSalebusunitEdit("bunitvup",invoiceData.business_Unit_id,ContData.length > 0 ? ContData[0].business_unit_name : "",ContData.length > 0 ? invoiceData[0].verified_status : undefined);
+			document.getElementById("intypevup").value = invoiceData.invoice_type_calculation || "2";
+			//fetchinvoicetoEdit("intovup", ContractMasterData.invoice_to_id || (ContData.length > 0 ? ContData[0].invoice_to_id_value : ""));
+			fetchinvoicetoEdit("intovup",invoiceData.invoice_to_id,ContData.length > 0 ? ContData[0].invoice_to_id_value : "");
+			document.getElementById("prodesvup").value = invoiceData.product_desc_id || "1";
+			setInputValue("#shipmodevup", ContData.length > 0 ? ContData[0].shipment_mode_id_value : "");
+			//fetchSaleworkEdit("workordervup", ContractMasterData.work_id || (ContData.length > 0 ? ContData[0].work_id_value : ""));
+			fetchSaleworkEdit("workordervup",invoiceData.workorder_id,ContData.length > 0 ? ContData[0].work_id_value : "");
+			setInputValue("#exptvup", invoiceData.export);
+			document.getElementById("taxresvup").value = invoiceData.tax_ex_inc || "0";
+			setInputValue("#percenvup", invoiceData.percentage_value);
+			//fetchconnameEdit("nandconvup", ContractMasterData.consignee_id || (ContData.length > 0 ? ContData[0].consignee_id_value : ""));
+			fetchconnameEdit("nandconvup",invoiceData.consignee_id,ContData.length > 0 ? ContData[0].consignee_id_value : "");
+			setInputValue("#banknamevup", ContData.length > 0 ? ContData[0].bank_details_id_value : "");
+			setInputValue("#deliveryconvup", ContData.length > 0 ? ContData[0].delivery_condition_id_value : "");
+			setInputValue("#officevvup", ContData.length > 0 ? ContData[0].reg_office_id_value : "");
 
         $(".dynamic-row11uptest, .dynamic-row122up").empty(); // Clear previous content
 
@@ -1612,8 +1764,8 @@ async function editRecordInvoice(id) {
             "#connumvup": "containter_no",
             "#epogvup": "epcgno",
             "#exptitlevup": "export_title",
-            "#newhcode": "h_code_value",
-            "#newscode": "s_code_value",
+            //"#newhcode": "h_code_value",
+            //"#newscode": "s_code_value",
             "#totalTaxupp": "total_tax",
             '#tax1addupp': "tax1",
             '#tax11upp': "tax1_per",
@@ -1650,6 +1802,20 @@ async function editRecordInvoice(id) {
         // Append packing data
         packingData.forEach((item, index) => {
             const showLabel = index === 0;
+			const serviceOptions = serviceMasterList.map(s => `
+			    <option value="${s.service_code}"
+			        ${item.scode == s.service_code ? "selected" : ""}>
+			        ${s.service_code} - ${s.service_description}
+			    </option>
+			`).join("");
+
+			const hsnOptions = hsnMasterList.map(h => `
+			    <option value="${h.service_code}"
+			        ${item.hsncode == h.service_code ? "selected" : ""}>
+			        ${h.service_code} - ${h.service_description}
+			    </option>
+			`).join("");
+			
             $(".dynamic-row11uptest").append(`
                 <div class="row align-items-center mb-1">
                     <div class="col-auto">
@@ -1680,14 +1846,20 @@ async function editRecordInvoice(id) {
 					${showLabel ? '<label class="small-label">Invoice Type</label>' : ''}
                         <input type="text" class="form-control form-control-sm small-input" value="${item.scrapNameTypeId}" readonly>
                     </div>
-                  <!--   <div class="col-auto">
-				  <label class="small-label">Service Code</label>
-                        <input type="text" class="form-control form-control-sm small-input" value="${item.scode}" readonly>
-                    </div>
-                    <div class="col-auto">
-					<label class="small-label">HSN Code</label>
-                        <input type="text" class="form-control form-control-sm small-input" value="${item.hcode}" readonly>
-                    </div> -->
+					<div class="form-group col-md-2 col-sm-12">
+					            ${showLabel ? '<label class="small-label">Service Code</label>' : ''}
+					            <select class="form-control form-control-sm service-code-select" data-slno="${item.other_pn_items_id}">
+					                <option value="">Select Service Code</option>
+					                ${serviceOptions}
+					            </select>
+					        </div>
+					        <div class="form-group col-md-2 col-sm-12">
+					            ${showLabel ? '<label class="small-label">HSN Code</label>' : ''}
+					            <select class="form-control form-control-sm hsn-code-select" data-slno="${item.other_pn_items_id}">
+					                <option value="">Select HSN Code</option>
+					                ${hsnOptions}
+					            </select>
+					        </div>
                 </div>
             
 				${showLabel ? '<hr">' : ''}
@@ -1763,13 +1935,82 @@ function openModalUpdate() {
     }
 }
 
+async function saveOthersServiceHsnSelections() {
+
+    const slnoList = [];
+    const serviceCodeList = [];
+    const hsnCodeList = [];
+
+    document.querySelectorAll(".dynamic-row .service-code-select").forEach(serviceSelect => {
+        const slno = serviceSelect.getAttribute("data-slno"); // this is other_pn_items_id
+        const row = serviceSelect.closest(".form-row");
+        const hsnSelect = row ? row.querySelector(".hsn-code-select") : null;
+
+        const serviceCode = serviceSelect.value ? serviceSelect.value.trim() : "";
+        const hsnCode = hsnSelect ? (hsnSelect.value || "").trim() : "";
+
+        console.log("Others row ->", "other_pn_items_id:", slno, "| Service:", serviceCode, "| HSN:", hsnCode);
+
+        if (slno) {
+            slnoList.push(slno);
+            serviceCodeList.push(serviceCode);
+            hsnCodeList.push(hsnCode);
+        }
+    });
+
+    if (slnoList.length === 0) {
+        console.warn("No Others packing rows found to update.");
+        return;
+    }
+
+    try {
+        const url = new URL("/jssl/invoicemaster/updateOthersServiceHsnForItems", baseUrl);
+        const params = new URLSearchParams();
+
+        slnoList.forEach(v => params.append("slno", v));
+        serviceCodeList.forEach(v => params.append("service_code_id", v));
+        hsnCodeList.forEach(v => params.append("hsn_code_id", v));
+        params.append("modified_by", createdById);
+
+        const response = await fetch(url, {
+            method: "POST",
+            credentials: "include",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: params.toString()
+        });
+
+        const result = await response.json();
+        console.log("Others Service/HSN save result:", result);
+
+        if (result.status !== "yes") {
+            console.error("Others Service/HSN update failed:", result.message);
+        }
+    } catch (err) {
+        console.error("Error saving Others Service/HSN Codes:", err);
+    }
+}
+
 function addeventudate() {
+    let slnoArr = [];
+    let serviceCodeArr = [];
+    let hsnCodeArr = [];
+
+    $(".dynamic-row11uptest .row").each(function () {
+        const $serviceSel = $(this).find(".service-code-select");
+        const $hsnSel = $(this).find(".hsn-code-select");
+        const slno = $serviceSel.data("slno");
+
+        if (slno) {
+            slnoArr.push(slno);
+            serviceCodeArr.push($serviceSel.val() || "");
+            hsnCodeArr.push($hsnSel.val() || "");
+        }
+    });
+
     $.ajax({
         url: new URL('/jssl/invoice/otherupdateadvnew', baseUrl),
         type: 'POST',
-        xhrFields: {
-            withCredentials: true
-        },
+        xhrFields: { withCredentials: true },
         dataType: 'json',
         data: jQuery.param({
             modified_by: createdById,
@@ -1802,14 +2043,19 @@ function addeventudate() {
             tax3_per: tax13upp.value,
             tax3_value: tax3valueupp.value,
             total_tax: totalTaxupp.value,
-        }),
+			bunitvup: bunitvup.value,
+			intovup: intovup.value,
+			workordervup: workordervup.value,
+			nandconvup: nandconvup.value,
+            service_code_id: serviceCodeArr,
+            hsn_code_id: hsnCodeArr,
+            slno: slnoArr
+        }, true),   // <-- CRITICAL FIX: traditional=true so arrays serialize as slno=1&slno=2 not slno[]=1&slno[]=2
         success: function(data) {
             var result = data.message;
-
             if (result === "Success") {
                 const popup = $('<div class="popup"> Others Invoice updated Successfully!</div>')
                     .appendTo('body').hide().fadeIn(400);
-
                 setTimeout(function() {
                     popup.fadeOut(400, function() {
                         $(this).remove();
@@ -1822,7 +2068,6 @@ function addeventudate() {
                 $('#exampleModalCenterDup').modal('show');
                 $('#exampleModalCenter66Editup').modal('hide');
                 $('#exampleModalScrollableEditUp').modal('hide');
-
             }
         },
         error: function() {
@@ -1906,7 +2151,6 @@ async function editRecord(id) {
 
         const invoiceData = json.Invoice_Data[0] || {};
 
-
         $(".dynamic-row11 ").empty(); // Clear previous content
 
         // Set values in form fields
@@ -1966,14 +2210,14 @@ async function editRecord(id) {
                                  "#newscode1": "s_code_value",
                                  "#newhcode1": "h_code_value",*/
             "#bunitv": "business_unit_name",
-            "#intov": "invoice_to_id_value",
+            "#intov": "consignee_id_value",
             "#prodesv": "prod_desc",
             "#shipmodev": "shipment_mode_id_value",
             "#workorderv": "work_id_value",
             "#exptv": "export",
             "#taxresv": "tax_onpayable_rev",
             "#percenv": "percentage",
-            "#nandconv": "consignee_id_value",
+            "#nandconv": "invoice_to_id_value",
             "#banknamev": "bank_details_id_value",
             "#deliveryconv": "delivery_condition_id_value",
             "#officevv": "reg_office_id_value",
@@ -2022,6 +2266,16 @@ async function editRecord(id) {
         // Append packing data
         packingData.forEach((item, index) => {
             const showLabel = index === 0;   // true only for first item
+			const selectedService = serviceMasterList.find(s => s.service_code == item.scode);
+			          const selectedHsn = hsnMasterList.find(h => h.service_code == item.hsncode);
+
+			          const serviceDisplay = selectedService
+			              ? `${selectedService.service_code} - ${selectedService.service_description}`
+			              : (item.scode || "");
+
+			          const hsnDisplay = selectedHsn
+			              ? `${selectedHsn.service_code} - ${selectedHsn.service_description}`
+			              : (item.hsncode || "");
             $(".dynamic-row11").append(`
 			        <div class="row align-items-center mb-1">
 			            <div class="col-auto">
@@ -2060,6 +2314,21 @@ async function editRecord(id) {
 						<label class="small-label">HSN Code</label>
 			                <input type="text" class="form-control form-control-sm small-input" value="${item.hcode}" readonly>
 			            </div> -->
+						<div class="col-auto">
+						                  ${showLabel ? '<label class="small-label">Service Code</label>' : ''}
+						                  <input type="text"
+						                         class="form-control form-control-sm small-input"
+						                         value="${serviceDisplay}"
+						                         readonly>
+						              </div>
+
+						              <div class="col-auto">
+						                  ${showLabel ? '<label class="small-label">HSN Code</label>' : ''}
+						                  <input type="text"
+						                         class="form-control form-control-sm small-input"
+						                         value="${hsnDisplay}"
+						                         readonly>
+						              </div>
 			        </div>
 			        <hr>
 			    `);
@@ -2255,14 +2524,14 @@ async function editRecord11(id) {
         const contractorFields = {
 
             "#bunitvv": "business_unit_name",
-            "#intovv": "invoice_to_id_value",
+            "#intovv": "consignee_id_value",
             "#prodesvv": "prod_desc",
             "#shipmodevv": "shipment_mode_id_value",
             "#workordervv": "work_id_value",
             "#exptvv": "export",
             "#taxresvv": "tax_onpayable_rev",
             "#percenvv": "percentage",
-            "#nandconvv": "consignee_id_value",
+            "#nandconvv": "invoice_to_id_value",
             "#banknamevv": "bank_details_id_value",
             "#deliveryconvv": "delivery_condition_id_value",
             "#officevvv": "reg_office_id_value",
@@ -2306,6 +2575,16 @@ async function editRecord11(id) {
         // Append packing data
         packingData.forEach((item, index) => {
             const showLabel = index === 0;   // true only for first item
+			const selectedService = serviceMasterList.find(s => s.service_code == item.scode);
+						const selectedHsn = hsnMasterList.find(h => h.service_code == item.hsncode);
+
+						const serviceDisplay = selectedService
+						    ? `${selectedService.service_code} - ${selectedService.service_description}`
+						    : (item.scode || "");
+
+						const hsnDisplay = selectedHsn
+						    ? `${selectedHsn.service_code} - ${selectedHsn.service_description}`
+						    : (item.hsncode || "");
             $(".dynamic-row11test").append(`
 				        <div class="row align-items-center mb-1">
 				            <div class="col-auto">
@@ -2336,14 +2615,21 @@ async function editRecord11(id) {
 							${showLabel ? '<label class="small-label">Invoice Type</label>' : ''}
 				                <input type="text" class="form-control form-control-sm small-input" value="${item.scrapNameTypeId}" readonly>
 				            </div>
-				          <!--   <div class="col-auto">
-						  <label class="small-label">Service Code</label>
-				                <input type="text" class="form-control form-control-sm small-input" value="${item.scode}" readonly>
-				            </div>
-				            <div class="col-auto">
-							<label class="small-label">HSN Code</label>
-				                <input type="text" class="form-control form-control-sm small-input" value="${item.hcode}" readonly>
-				            </div> -->
+							<div class="col-auto">
+											    ${showLabel ? '<label class="small-label">Service Code</label>' : ''}
+											    <input type="text"
+											           class="form-control form-control-sm small-input"
+											           value="${serviceDisplay}"
+											           readonly>
+											</div>
+
+											<div class="col-auto">
+											    ${showLabel ? '<label class="small-label">HSN Code</label>' : ''}
+											    <input type="text"
+											           class="form-control form-control-sm small-input"
+											           value="${hsnDisplay}"
+											           readonly>
+											</div>
 				        </div>
  						 ${showLabel ? '<hr>' : ''}				    `);
         });
@@ -2485,7 +2771,7 @@ showLoader();
 
         //const product_desc = json.Invoice_Data?.product_desc || ''; // Fix reference
 
-        const invoice_to_id_value = Invoice_Data[0].invoice_to_id_value;
+        const invoice_to_id_value = Invoice_Data[0].consignee_id_value;
         /*    const tax_payable = Contractor_Data[0].tax_payable;*/
         const tax_payable = Invoice_Data[0].tax_onpayable_rev;
         const area_no = Invoice_Data[0].area_number;
@@ -2494,7 +2780,7 @@ showLoader();
         const epcgno = Invoice_Data[0].epcg_license;
         const shipment_mode_id_value = Invoice_Data[0].shipment_mode_id_value;
         const delivery_condition_id_value = Invoice_Data[0].delivery_condition_id_value;
-        const consignee_id_value = Invoice_Data[0].consignee_id_value;
+        const consignee_id_value = Invoice_Data[0].invoice_to_id_value;
         const work_id_value = Invoice_Data[0].work_id_value;
         const invoiceStateName = Invoice_Data[0].invoiceStateName;
         const consigneeStateName = Invoice_Data[0].consigneestateName;
@@ -2506,10 +2792,61 @@ showLoader();
         const consigneePanNo = Invoice_Data[0].consigneePanNo;
         const bankName = Invoice_Data[0].org_name;
 		
-		
 		const productdesc = Invoice_Data[0].product_desc;
-		
-		
+		const supplyplace = Invoice_Data[0].supply_place;
+
+		// ✅ DYNAMIC: Business Unit details (from the "bu" alias in your query).
+		// business_unit_name actually comes back as a COMPOSITE string:
+		//   "<unit code> <company name> <full address>"
+		//   e.g. "JBU-8 JSW Severfield Structures Limited Flat No 05, 5th Floor, ..."
+		// So it has to be split into its 3 parts before printing — the "JBU-8" code
+		// is an internal reference only and should never appear on the invoice.
+		function parseBusinessUnitDetails(raw) {
+			const result = { code: '', name: (raw || '').trim(), address: '' };
+			if (!raw) return result;
+
+			let text = raw.trim();
+
+			// Strip a leading unit code like "JBU-8 " (letters + dash + digits)
+			const codeMatch = text.match(/^([A-Z]{2,6}-\d+)\s+(.*)$/);
+			if (codeMatch) {
+				result.code = codeMatch[1];
+				text = codeMatch[2].trim();
+			}
+
+			// The legal company name ends with "Limited" / "Ltd" / "LLP" / "Pvt Ltd" —
+			// everything after that word is treated as the unit's address.
+			const nameMatch = text.match(/^(.*?\b(?:Private\s+Limited|Pvt\.?\s*Ltd\.?|Limited|Ltd\.?|LLP))\b\s*(.*)$/i);
+			if (nameMatch) {
+				result.name = nameMatch[1].trim();
+				result.address = nameMatch[2].trim();
+			} else {
+				// No "Limited/Ltd/LLP" found — fall back to treating the whole
+				// remaining string as the name so we never print nothing.
+				result.name = text;
+			}
+			return result;
+		}
+
+		const businessUnitRaw    = Invoice_Data[0].business_unit_name || '';
+		const businessUnitParsed = parseBusinessUnitDetails(businessUnitRaw);
+		//const businessUnitCode    = businessUnitParsed.code;     // "JBU-8" — kept for reference/debugging, NOT printed
+		const businessUnitName   = businessUnitParsed.name;      // "JSW Severfield Structures Limited"
+		const businessUnitAddress = businessUnitParsed.address;  // "Flat No 05, 5th Floor, ... Moulali"
+		const businessUnitlocation   = Invoice_Data[0].location;    // e.g. "Telangana" — human-readable state name
+
+		// ✅ DYNAMIC: GSTIN / State / PAN must come from the business unit itself,
+		// not from the factory master — a business unit can be registered in a
+		// different state than the factory it's printing from (Telangana vs the
+		// factory's Karnataka in your example).
+		const businessUnitGstNo    = Invoice_Data[0].gst_number || '';   // bu.gst_number, e.g. "36AACCJ1473D1ZV"
+		const businessUnitPanNo    = Invoice_Data[0].pan_number || '';   // bu.pan_number
+		const businessUnitDistrict = Invoice_Data[0].district || '';    // bu.district, e.g. "Hyderabad"
+		const businessUnitPin      = Invoice_Data[0].pinNo || '';       // bu.pinNo
+		// added below already shows it separately either way.
+		const businessUnitStateName = Invoice_Data[0].state_id || '';
+
+
         const account_number = Invoice_Data[0].account_number;
         const branch_address =  Invoice_Data[0].bank_details_id_value+' '+ Invoice_Data[0].branch_address;
         const branch_code = Invoice_Data[0].branch_code;
@@ -2605,13 +2942,7 @@ const total_invoice_value = Invoice_Data[0].grand_total;
 							   						   		        <tr class="product-row ">
 							   						   		            <td  colspan="1" style="text-align: right;">${index + 1}</td>
 							   						   		            <td colspan="4" class="desc-col descri">${item.scrapNameTypeId || ''}</td>
-							   						   		        
-																		<td colspan="1" style="text-align: right;">
-																		    ${Math.max(
-																		        Number(Invoice_Data[0].s_code_value) || 0,
-																		        Number(Invoice_Data[0].h_code_value) || 0
-																		    ) || ''}
-																		</td>
+																		<td colspan="1" style="text-align:right !important; white-space: nowrap; font-size: 9px;">${[item.scode, item.hsncode].filter(Boolean).join('/')}</td>
 							   						   		            <td colspan="1" style="text-align:left !important;">${item.uom_name || ''}</td>
 							   						   		            <td colspan="1" class="qtys">${item.quantities || ''}</td>
 							   						   		            <td colspan="2" class="weits">${item.kgs || ''}</td>
@@ -2651,65 +2982,6 @@ const total_invoice_value = Invoice_Data[0].grand_total;
 				            </tr>`;
 				    }
 				}
-        // Generate dynamic tax rows
-        /*  let taxRows = taxData.map(tax => `
-              <tr>
-                  <td colspan="10" class="tax-name" style="border-bottom:none;">${tax.tax_name || ''}</td>
-                  <td colspan="1" class="tax-per">${tax.tax_per || ''}</td>
-                  <td colspan="2" class="tax-per"  style= "border-bottom: 0.25px solid #000;">${tax.tax_value || ''}</td>
-              </tr>
-          `).join('');*/
-
-
-
-        /*         let taxRows = taxData.map((tax, i, arr) => {
-                     const isLast = i === arr.length - 1;
-
-                     return `
-                              <tr>
-                          	
-                                  <td colspan="10" class="tax-name" style="${isLast ? '' : 'border-bottom:none;'}">
-                                      ${tax.tax_name || ''}
-                                  </td>
-                                  <td colspan="1" class="tax-per" style="${isLast ? '' : 'border-bottom:none;'}">
-                                      ${tax.tax_per || ''} %
-                                  </td>
-                                  <td colspan="2" class="tax-per" style="${isLast ? '' : 'border-bottom:none;'}">
-                                      ${tax.tax_value || ''}
-                                  </td>
-                              </tr>
-                          `;
-                 }).join('');*/
-
-
-        /*    // Generate dynamic tax descriptions with tax_name and tax_value_in_words
-            let taxDetails = taxData.map(tax => `
-                     <b>${tax.tax_name}:</b> ${tax.tax_value_in_words}<br>
-                 `).join('');
-
-            let taxDetailsNew = taxData.map(tax => `
-                     <b>${tax.tax_name}</b><br>
-                 `).join('');
-
-            let taxPerValue = taxData.map(tax => `
-                     <b>${tax.tax_per}</b><br>
-                 `).join('');
-
-            let taxValue = taxData.map(tax => `
-                     <b>${tax.tax_value}</b><br>
-                 `).join('');
-
-            let taxValuedept = taxData.map(tax => `
-                     <b>${tax.ptc}</b><br>
-                 `).join('');
-
-            let taxValuecos = taxData.map(tax => `
-                     <b>${tax.ptc}</b><br>
-                 `).join('');
-
-            let taxadvanceValue = taxData.map(tax => `
-                     <b>${tax.adv_tax}</b><br>
-                 `).join('');*/
 
         const currentDate = new Date().toLocaleDateString('en-GB', {
             day: '2-digit',
@@ -3101,12 +3373,15 @@ const total_invoice_value = Invoice_Data[0].grand_total;
 							   						   		                    <div class="company-logo">
 							   						   		                        <img src="img/logo/download.png" alt="Company Logo" style="width:100px;">
 							   						   		                    </div>
-							   						   		                    <strong>JSW Serverfiled Structures Limited</strong><br>
+							   						   		                    <strong class="businessUnitName"></strong><br>
 							   						   		                   <p style="width :70%" class="facotry_address"> 
 							   						   		                   
 							   						   		                    <p>
-							   						   		                   <b> State Code</b>:<span class="state_code"></span><br>
-							   						   		                   <b> GSTIN :</b> <span class="gst_code"> </span>    <b style="margin-left: 20px;">PAN </b>: AACCJ1473D<br>
+							   						   		                   <span class="businessUnitlocation"></span><br>
+							   						   		                   <span class="businessUnitDistrict"></span><br>
+							   						   		                   <span class="businessUnitPin"></span><br>
+																			   <b> State Code :</b> <span class="businessUnitStateName"> </span><br>
+							   						   		                   <b> GSTIN :</b> <span class="gst_code"> </span>    <b style="margin-left: 20px;">PAN </b>: <span class="pan_code"></span><br>
 							   						   		                  <b>  ICE No:</b> 0309033152   <b style="margin-left: 40px;">CIN No:</b> U28112MH2009PLC191045<br>
 							   						   		                    <b>Email:</b> invoice@jssl.in   <b style="margin-left: 30px;"> Website:</b> www.jssl.in
 							   						   		                </td>
@@ -3138,12 +3413,13 @@ const total_invoice_value = Invoice_Data[0].grand_total;
 
 																						    <!-- Address (NOT bold) -->
 																						    <span class="fulladdress" style="white-space: pre-line;"></span><br>
+																							<b>Place of Supply : <span class="placeofsupply"></span></b><br><br>
 
 																						    <b>
-																						        Name of the State : <span class="statename"></span><br>
-																						        State Code : <span class="stcode11"></span><br>
-																						        GSTIN : <span class="ingst"></span><br>
-																						        PAN : <span class="panin"></span><br>
+																						        Name of the State : <span class="state"></span><br>
+																						        State Code : <span class="stateco"></span><br>
+																						        GSTIN : <span class="congst"></span><br>
+																						        PAN : <span class="pancon"></span><br>
 																						    </b>
 
 																						</td>
@@ -3158,10 +3434,10 @@ const total_invoice_value = Invoice_Data[0].grand_total;
 																						    <span class="conaddress" style="white-space: pre-line;"></span><br>
 
 																							<b>
-																						    Name of the State: <span class="state"></span><br>
-																						    State Code: <span class="stateco"></span><br>
-																						    GSTIN: <span class="congst"></span><br>
-																						    PAN: <span class="pancon"></span><br>
+																						    Name of the State: <span class="statename"></span><br>
+																						    State Code: <span class="stcode11"></span><br>
+																						    GSTIN: <span class="ingst "></span><br>
+																						    PAN: <span class="panin"></span><br>
 																						   </b>
 																						   
 																						</td>
@@ -3386,7 +3662,7 @@ const total_invoice_value = Invoice_Data[0].grand_total;
 							   						   		                    </td>
 							   						   		                  
 							   						   		                    <td  colspan="4">
-							   						   		                        <span>For JSW SEVERFIELD STRUCTURES LTD.</span><br>
+							   						   		                        <span class="signatoryFor"></span><br>
 							   						   		                        <span style="margin-top: 20px; display: inline-block;">(Authorised signature)</span><br>
 							   						   		                    </td>
 							   						   		                </tr>
@@ -3438,16 +3714,36 @@ const total_invoice_value = Invoice_Data[0].grand_total;
 			
 			container.querySelector(".grand").textContent = total_invoice_value;
 
+            // ✅ DYNAMIC: business unit name & PAN (previously hardcoded "JSW Serverfiled
+            // Structures Limited" and "AACCJ1473D" directly in the HTML template) 
+            container.querySelector(".businessUnitName").textContent = businessUnitName;
+			container.querySelector(".businessUnitlocation").textContent = businessUnitlocation;
+			container.querySelector(".businessUnitDistrict").textContent = businessUnitDistrict;
+			container.querySelector(".businessUnitPin").textContent = businessUnitPin;
+			container.querySelector(".businessUnitStateName").textContent = businessUnitStateName;
+            container.querySelector(".pan_code").textContent = businessUnitPanNo;
+
+            // ✅ DYNAMIC: signatory line now also uses the business unit name instead of
+            // a fixed "For JSW SEVERFIELD STRUCTURES LTD." string
+            container.querySelector(".signatoryFor").textContent = "For " + businessUnitName;
 
             container.querySelector(".reg_add").textContent = reg_addresss;
-            container.querySelector(".gst_code").textContent = Gst_Code;
-            container.querySelector(".state_code").textContent = state_Code;
-            container.querySelector('.facotry_address').innerHTML = formatAddress(factory_Address);
+
+            // ✅ DYNAMIC: GSTIN now comes from the business unit, not the factory —
+            // this is the fix for GSTIN showing the factory's GSTIN instead of the
+            // business unit's own GSTIN. State is shown via .businessUnitlocation
+            // below (flowing text), so there's no separate .state_code span anymore.
+            container.querySelector(".gst_code").textContent = businessUnitGstNo;
+
+            // ✅ DYNAMIC: use the address parsed out of business_unit_name; fall back to
+            // the factory master's address only if parsing found nothing (safety net).
+            container.querySelector('.facotry_address').innerHTML =
+                formatAddress(businessUnitAddress || factory_Address);
             container.querySelector('.datetime').textContent = formattedDateTime;
             container.querySelector('.dateor').textContent = currentDate;
             container.querySelector('.date').textContent = currentDate;
             container.querySelector('.invoiceNumber').textContent = invoiceno;
-            //container.querySelector('.shipto11').textContent = invoice_to_id_value;
+            //container.querySelector('.shipto11').textContent = invoice_to_id_value; consignee_id_value
 			const fullText = invoice_to_id_value || "";
 
 					   // Normalize spaces
@@ -3471,6 +3767,7 @@ const total_invoice_value = Invoice_Data[0].grand_total;
 					       container.querySelector('.projectname').textContent = "";
 					       container.querySelector('.fulladdress').textContent = "";
 					   }
+			container.querySelector('.placeofsupply').textContent = supplyplace || '';
             container.querySelector('.taxpayre').textContent = tax_payable;
             container.querySelector('.areano').textContent = area_no;
             container.querySelector('.contlo').textContent = containter_no;
@@ -3668,11 +3965,21 @@ const total_invoice_value = Invoice_Data[0].grand_total;
 		       downloadInvoicePDF(htmlContent, fillInvoice, hideLoader);
 
     } catch (error) {
-        /*hideLoader();  */
+        // ✅ FIX: previously hideLoader() was commented out here, so if anything threw
+        // (e.g. the missing .businessUnitlocation/.businessUnitDistrict/.businessUnitPin
+        // elements before this fix) the loader would spin forever with no visible error —
+        // it looked like "print isn't opening" with nothing to go on.
         console.error('Error generating PDF:', error);
+        alert('Something went wrong while preparing the print preview. Please check the browser console for details.');
+    } finally {
+        // ✅ FIX: hideLoader now always runs, whether printing succeeds or fails,
+        // so the UI never gets stuck on the loading state again.
+        hideLoader();
     }
 
 }
+
+
 
 function openModalcancel(id, other_pn_id) {
 		  // const allowed = window.allowedActions || [];

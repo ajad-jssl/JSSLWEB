@@ -14,8 +14,8 @@ var activeSessions     = {};
 var WORKER_EMP_VERIFIED = false;
 var heartbeatInterval  = null;
 
-function getWorkerId()  { return localStorage.getItem('worker_emp_code') || ''; }
-function getFactoryId() { return parseInt(localStorage.getItem('selectedFactoryId') || '0'); }
+function getWorkerId()  { return sessionStorage.getItem('worker_emp_code') || ''; }
+function getFactoryId() { return parseInt(sessionStorage.getItem('selectedFactoryId') || '0'); }
 
 // ═══════════════════════════════════════════════════════════════════════════
 // BOOT
@@ -34,7 +34,7 @@ $(document).ready(function () {
 // EMP VERIFICATION
 // ═══════════════════════════════════════════════════════════════════════════
 function checkEmpVerification() {
-    var stored = localStorage.getItem('worker_emp_code');
+    var stored = sessionStorage.getItem('worker_emp_code');
     if (stored) {
         verifyEmpCodeBackend(stored, function (ok, empName) {
             if (ok) {
@@ -44,8 +44,8 @@ function checkEmpVerification() {
                 loadWorkerTickets();
                 loadNotifications();
             } else {
-                localStorage.removeItem('worker_emp_code');
-                localStorage.removeItem('worker_emp_name');
+                sessionStorage.removeItem('worker_emp_code');
+                sessionStorage.removeItem('worker_emp_name');
                 showEmpModal('Stored employee code could not be verified. Please re-enter.');
             }
         });
@@ -83,8 +83,8 @@ function submitEmpVerify() {
 
     verifyEmpCodeBackend(code, function (ok, empName) {
         if (ok) {
-            localStorage.setItem('worker_emp_code', code);
-            localStorage.setItem('worker_emp_name', empName);
+            sessionStorage.setItem('worker_emp_code', code);
+            sessionStorage.setItem('worker_emp_name', empName);
             WORKER_EMP_VERIFIED = true;
             $('#empVerifyModal').modal('hide');
             showVerifiedStrip(code, empName);
@@ -117,8 +117,8 @@ function showVerifiedStrip(empCode, empName) {
 }
 
 function reVerifyEmp() {
-    localStorage.removeItem('worker_emp_code');
-    localStorage.removeItem('worker_emp_name');
+    sessionStorage.removeItem('worker_emp_code');
+    sessionStorage.removeItem('worker_emp_name');
     WORKER_EMP_VERIFIED = false;
     stopAllTimers();
     clearTopbarPills();
@@ -252,25 +252,50 @@ function buildActionButtons(t, aStatus) {
              + markFixedButton(t, logId)
              + transferButton(t.ASSIGN_ID, t.TICKET_ID, logId);
 
-    } else if (aStatus === 3) {
-        return '<span class="badge badge-resolved"><i class="fas fa-check-double"></i> Fixed – Awaiting Close</span>';
-    }
+    			 } else if (aStatus === 3) {
+			     var assigns = t.assigns || [];
+			     var allDone = assigns.length === 0 || assigns.every(function (a) {
+			         return a.STATUS === 3 || a.STATUS === 6;
+			     });
+			     var activeWorkers = assigns.filter(function (a) {
+			         return a.STATUS !== 4 && a.STATUS !== 6;
+			     });
+
+			     var closeBtn;
+			     if (allDone) {
+			         closeBtn = '<button class="btn-close-action ml-1" style="background:#27ae60;" ' +
+			                    'onclick="confirmClose(' + t.TICKET_ID + ', ' + (t.REPORTED_BY || 0) + ')">' +
+			                    '<i class="fas fa-lock"></i> Close</button>';
+			     } else {
+			         var activeData = JSON.stringify(activeWorkers.map(function (a) {
+			             return { name: (a.WORKER_NAME || '').trim(), status: a.STATUS };
+			         }));
+			         closeBtn = '<button class="btn-close-action ml-1" style="background:#e67e22;"' +
+			                    ' data-ticket="' + t.TICKET_ID + '"' +
+			                    ' data-reported="' + (t.REPORTED_BY || 0) + '"' +
+			                    ' data-workers=\'' + activeData + '\'' +
+			                    ' onclick="confirmForceClose(this)">' +
+			                    '<i class="fas fa-lock"></i> Close</button>';
+			     }
+
+			     return '<span class="badge badge-resolved"><i class="fas fa-check-double"></i> Fixed – Awaiting Close</span> ' + closeBtn;
+			 }
     return '';
 }
 
 function pauseButton(assignId, logId) {
     return '<button class="btn-pause-work mr-1" onclick="pauseWork(' + assignId + ',' + (logId||'null') + ')">' +
-           '<i class="fas fa-pause-circle"></i> Pause</button>';
+           '<i class="fas fa-pause-circle"></i> Stop</button>';
 }
 function resumeButton(assignId, logId) {
     return '<button class="btn-resume-work mr-1" onclick="resumeWork(' + assignId + ',' + (logId||'null') + ')">' +
-           '<i class="fas fa-play-circle"></i> Resume</button>';
+           '<i class="fas fa-play-circle"></i> ReStart</button>';
 }
 function markFixedButton(t, logId) {
     return '<button class="btn-mark-fixed" onclick="openFixedModal(' +
            t.ASSIGN_ID + ',' + t.TICKET_ID + ',' +
            (t.REPORTED_BY || 0) + ',' + (t.ASSIGNED_BY || 0) + ',' + (logId||'null') + ')">' +
-           '<i class="fas fa-check-circle"></i> Mark Fixed</button>';
+           '<i class="fas fa-check-circle"></i> Work Complete</button>';
 }
 
 function transferButton(assignId, ticketId, logId) {
@@ -281,7 +306,7 @@ function transferButton(assignId, ticketId, logId) {
            ticketId + ',' +
            (logId || "null") +
            ')">' +
-           '<i class="fas fa-random"></i> Transfer</button>';
+           '<i class="fas fa-random"></i> Release</button>';
 }
 
 function openTransferModal(
@@ -292,7 +317,7 @@ function openTransferModal(
     
 ) {
 
-	let factoryId = localStorage.getItem("selectedFactoryId");
+	let factoryId = sessionStorage.getItem("selectedFactoryId");
 	
 	
     _transferCtx = {
@@ -326,7 +351,7 @@ function submitTransferRequest() {
             logId:          _transferCtx.logId,
             factoryId:      _transferCtx.factoryId,
             assignedBy:     _transferCtx.assignedBy,
-            workerId:       localStorage.getItem('worker_emp_code'),
+            workerId:       sessionStorage.getItem('worker_emp_code'),
             transferReason: reason
         },
         xhrFields: { withCredentials: true },
@@ -372,6 +397,151 @@ function submitTransferRequest() {
             alert('Failed to submit transfer request.');
         }
     });
+}
+
+
+
+// ── CLOSE TICKET (Normal — all workers done) ──────────────────────────────
+function confirmClose(ticketId, reportedBy) {
+    Swal.fire({
+        title: 'Close Ticket?',
+        html: '<p style="color:#555;margin-bottom:10px;">Are you sure you want to close this ticket? This action is final.</p>' +
+              '<textarea id="swal-close-remarks" class="swal2-textarea" ' +
+              'placeholder="Enter closing remarks (optional)..." ' +
+              'style="font-size:13px;border-radius:6px;border:1px solid #d1d5e8;width:100%;"></textarea>',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#27ae60',
+        cancelButtonColor: '#aaa',
+        confirmButtonText: '<i class="fas fa-lock mr-1"></i> Yes, Close',
+        cancelButtonText: 'Cancel',
+        preConfirm: function () {
+            var remarks = $('#swal-close-remarks').val().trim();
+            if (!remarks) {
+                Swal.showValidationMessage('Please enter closing remarks before closing.');
+                return false;
+            }
+            return remarks;
+        }
+    }).then(function (result) {
+        if (result.isConfirmed) {
+            doCloseTicket(ticketId, reportedBy, result.value);
+        }
+    });
+}
+
+// ── FORCE CLOSE (Some workers still active) ───────────────────────────────
+function confirmForceClose(btn) {
+    var ticketId   = $(btn).data('ticket');
+    var reportedBy = $(btn).data('reported');
+    var workers    = $(btn).data('workers');
+
+    if (typeof workers === 'string') {
+        workers = JSON.parse(workers);
+    }
+
+    var workerRows = workers.map(function (w) {
+        var stage = getWorkerStageLabel(w.status);
+        return '<div style="display:flex;align-items:center;gap:10px;padding:6px 10px;margin:5px 0;' +
+               'background:#f9f9f9;border-radius:8px;border-left:4px solid ' + stage.color + ';">' +
+               '<i class="fas fa-user-wrench" style="color:#555;"></i>' +
+               '<span style="flex:1;font-weight:600;font-size:13px;">' + w.name + '</span>' +
+               '<span style="background:' + stage.color + ';color:#fff;font-size:11px;font-weight:600;' +
+               'padding:2px 8px;border-radius:12px;">' +
+               '<i class="fas ' + stage.icon + ' mr-1"></i>' + stage.label + '</span>' +
+               '</div>';
+    }).join('');
+
+    Swal.fire({
+        title: 'Workers Still Active!',
+        html: '<p style="color:#555;margin-bottom:8px;">These workers have not finished yet:</p>' +
+              workerRows +
+              '<p style="margin-top:12px;color:#e74c3c;font-size:12px;">' +
+              '<i class="fas fa-exclamation-triangle mr-1"></i>Force closing will end all active work.</p>' +
+              '<textarea id="swal-force-remarks" class="swal2-textarea mt-2" ' +
+              'placeholder="Enter closing remarks (optional)..." ' +
+              'style="font-size:13px;border-radius:6px;border:1px solid #d1d5e8;width:100%;"></textarea>',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#e67e22',
+        cancelButtonColor: '#aaa',
+        confirmButtonText: '<i class="fas fa-lock mr-1"></i> Force Close',
+        cancelButtonText: 'Cancel',
+        preConfirm: function () {
+            var remarks = $('#swal-force-remarks').val().trim();
+            if (!remarks) {
+                Swal.showValidationMessage('Please enter closing remarks before force closing.');
+                return false;
+            }
+            return remarks;
+        }
+    }).then(function (result) {
+        if (result.isConfirmed) {
+            doCloseTicket(ticketId, reportedBy, result.value);
+        }
+    });
+}
+
+// ── WORKER STAGE LABEL HELPER ─────────────────────────────────────────────
+function getWorkerStageLabel(status) {
+    switch (parseInt(status)) {
+        case 1: return { label: 'Assigned',  color: '#3498db', icon: 'fa-user-check' };
+        case 2: return { label: 'Working',   color: '#f39c12', icon: 'fa-tools' };
+        case 3: return { label: 'Fixed',     color: '#27ae60', icon: 'fa-check-circle' };
+        case 4: return { label: 'Closed',    color: '#adb5bd', icon: 'fa-lock' };
+        case 6: return { label: 'Transfer',  color: '#7e22ce', icon: 'fa-random' };
+        default: return { label: 'Unknown',  color: '#aaa',    icon: 'fa-question-circle' };
+    }
+}
+
+// ── ACTUAL CLOSE API CALL ─────────────────────────────────────────────────
+function doCloseTicket(ticketId, reportedBy, remarks) {
+    var closedBy  = parseInt(sessionStorage.getItem('id') || '0');
+    var factoryId = getFactoryId();
+
+    $.ajax({
+        url: new URL('/api/ticket/close', baseUrl).toString(),
+        type: 'POST',
+        data: {
+            ticketId:   ticketId,
+            factoryId:  factoryId,
+            closedBy:   closedBy,
+            reportedBy: reportedBy,
+            remarks:    remarks || 'Verified and closed by technician'
+        },
+        xhrFields: { withCredentials: true },
+        success: function (res) {
+            if (res.status) {
+                loadWorkerTickets();
+                showWorkHoursSummary(res);
+            } else {
+                alert('Error: ' + res.message);
+            }
+        },
+        error: function () { alert('Failed to close ticket.'); }
+    });
+}
+
+// ── WORK HOURS SUMMARY AFTER CLOSE ────────────────────────────────────────
+function showWorkHoursSummary(res) {
+    var html = '<div class="work-hours-summary">' +
+        '<h6><i class="fas fa-clock mr-2"></i>Work Hours Summary</h6>' +
+        '<p><strong>Total Combined Hours:</strong> ' +
+        (parseFloat(res.totalHours || 0).toFixed(2)) + ' hrs</p>';
+
+    if (res.workerHours && res.workerHours.length > 0) {
+        html += '<table class="table table-sm mt-2"><thead><tr>' +
+            '<th>Worker</th><th>Hours</th></tr></thead><tbody>';
+        res.workerHours.forEach(function (w) {
+            html += '<tr><td>' + (w.WORKER_NAME || '') + '</td>' +
+                '<td>' + (parseFloat(w.TOTAL_HOURS || 0).toFixed(2)) + ' hrs</td></tr>';
+        });
+        html += '</tbody></table>';
+    }
+    html += '</div>';
+
+    $('#workHoursBody').html(html);
+    $('#workHoursSummaryModal').modal('show');
 }
 
 
@@ -883,4 +1053,17 @@ function showToast(msg, type) {
     $('body').append($t);
     setTimeout(function () { $t.addClass('show'); }, 10);
     setTimeout(function () { $t.removeClass('show'); setTimeout(function () { $t.remove(); }, 400); }, 3000);
+}
+
+
+
+
+function showPopup(message, redirectUrl) {
+	var popup = $('<div class="popup">' + message + '</div>').appendTo('body').hide().fadeIn(400);
+	setTimeout(function() {
+		popup.fadeOut(400, function() {
+			$(this).remove();
+			window.location = redirectUrl;
+		});
+	}, 2000);
 }

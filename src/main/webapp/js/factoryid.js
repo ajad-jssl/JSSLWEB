@@ -1,4 +1,4 @@
-// Global variables to store factory data and selected factory ID
+
 let factoryData = null;
 let factoryById = null; // To store the selected factory id
 
@@ -13,7 +13,7 @@ function fetchFactoryList() {
 
     fetch(url,	{
 	        method: "GET",
-	        credentials: "include"   // 🔑 send JSESSIONID cookie automatically
+	        credentials: "include"   //  send JSESSIONID cookie automatically
 	    })
         .then(response => response.json())
         .then(data => {
@@ -42,15 +42,13 @@ function populateDropdown(factories) {
         // Store the factory ID when the item is clicked
         listItem.addEventListener('click', function() {
             factoryById = factory.id; // Store selected factory ID
-            localStorage.setItem('selectedFactoryId', factory.id); // Save ID to localStorage
+            sessionStorage.setItem('selectedFactoryId', factory.id); // Save ID to sessionStorage
             dropdownButton.textContent = factory.factory_name; // Update button text
             dropdownMenu.style.display = 'none'; // Hide the dropdown menu
 
-            // Call fetchEmployeeList1 with the selected factory ID
-          //  fetchEmployeeList1(factory.id);
+           
+         
 
-            // Optionally, redirect to another page
-           // window.location.href = 'page2.html';
         });
 
         dropdownMenu.appendChild(listItem);
@@ -64,7 +62,7 @@ document.querySelector('.dropdown-toggle').addEventListener('click', fetchFactor
 
 // Handle selected factory display
 document.addEventListener('DOMContentLoaded', function() {
-    const selectedFactoryId = localStorage.getItem('selectedFactoryId');
+    const selectedFactoryId = sessionStorage.getItem('selectedFactoryId');
 
     const factoryIdElement = document.getElementById('selectedFactoryId');
     if (factoryIdElement) {

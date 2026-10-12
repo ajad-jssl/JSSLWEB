@@ -15,8 +15,10 @@
   <link href="css/ruang-admin.min.css" rel="stylesheet">
   <link href="css/main.css" rel="stylesheet">
   <link href="css/masterpage.css" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"/>
-     <script src="js/sidebar.js"></script>
+  
+  
+ <link rel="stylesheet" href="externalLibrary/cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"/>
+ 
 
 <style>
   .card-grid {
@@ -199,23 +201,22 @@
     <i class="fas fa-angle-up"></i>
   </a>
 
-  <!-- Scripts -->
-  <script src="js/config.js"></script>
+
+
   <script src="vendor/jquery/jquery.min.js"></script>
       <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
       <script src="vendor/jquery-easing/jquery.easing.min.js"></script>
-      <script src="js/ruang-admin.min.js"></script>
-      <!-- Page level plugins -->
+   <script src="js/config.js?v=<%=jsVersion%>"></script>
 
-  <script src="js/logout.js"></script>
-  <script src="js/username.js"></script>
-  <script src="js/permissions.js"></script>
-   <script src="js/Sessionfilter.js"></script>
-   <script src="js/AmsMaster.js"></script>
+  <script src="js/logout.js?v=<%=jsVersion%>"></script>
+  <script src="js/username.js?v=<%=jsVersion%>"></script>
+  <script src="js/permissions.js?v=<%=jsVersion%>"></script>
+   <script src="js/Sessionfilter.js?v=<%=jsVersion%>"></script>
+   <script src="js/AmsMaster.js?v=<%=jsVersion%>"></script>
    
    <script>
    function openSection(radioId) {
-	    localStorage.setItem("selectedAssetRadio", radioId);
+	    sessionStorage.setItem("selectedAssetRadio", radioId);
 	    window.location.href = "AmsMasterRegister.jsp";
 	}
 </script>

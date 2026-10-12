@@ -1,5 +1,5 @@
 document.addEventListener("DOMContentLoaded", function () {
-    const selectedFactoryId = localStorage.getItem("selectedFactoryId"); // Get factory_id from localStorage
+    const selectedFactoryId = sessionStorage.getItem("selectedFactoryId"); // Get factory_id from sessionStorage
     if (selectedFactoryId) {
         fetchSalework1(selectedFactoryId);
         fetchSalebank1(selectedFactoryId);
@@ -15,7 +15,7 @@ document.addEventListener("DOMContentLoaded", function () {
         fetchinvoiceto1(selectedFactoryId);
         fetchconname1(selectedFactoryId);
     } else {
-        console.error("No factory ID found in localStorage.");
+        console.error("No factory ID found in sessionStorage.");
     }
 });
 
@@ -56,6 +56,8 @@ async function fetchSalework1() {
                 selectElement.appendChild(option);
             }
         });
+		
+		initSelect2('work1', 'exampleModalScrollableEdit', 'Select work order');
     } catch (error) {
         console.error("Error fetching sale order types:", error);
     }
@@ -134,13 +136,15 @@ async function fetchSalebusunit1() {
         // Populate dropdown options using SalesOrderTypeDetails array
         json.Data.forEach((type) => {
             if (type.business_unit_id && type.business_unit_name) { // Ensure both values exist
-				let bindaddress = type.bu_code+'-'+type.business_unit_name +' '+type.orgName +',' +type.location+','+type.stateName +'('+type.gst_number +')';
+				let bindaddress = type.business_unit_name +' '+type.orgName +',' +type.location+','+type.stateName +'('+type.gst_number +')';
                 const option = document.createElement("option");
                 option.value = type.business_unit_id; // Backend keeps saleorder_id
                 option.textContent =bindaddress; // Display saleorder_typename
                 selectElement.appendChild(option);
             }
         });
+		
+		initSelect2('bus1', 'exampleModalScrollableEdit', 'Select Business Unit');
     } catch (error) {
         console.error("Error fetching sale order types:", error);
     }
@@ -350,6 +354,8 @@ async function fetchcont1(factoryId) {
                 selectElement.appendChild(option);
             }
         });
+		
+		initSelect2('cont1', 'exampleModalScrollableEdit', 'Select contractor');
     } catch (error) {
         console.error("Error fetching contractors:", error);
     }
@@ -435,6 +441,8 @@ async function fetchinvoiceto1() {
                 selectElement.appendChild(option);
             }
         });
+		
+		initSelect2('into1', 'exampleModalScrollableEdit', 'Select invoice to');
 
     } catch (error) {
         console.error("Error fetching invoice addresses:", error);
@@ -479,6 +487,8 @@ async function fetchconname1() {
                 selectElement.appendChild(option);
             }
         });
+		
+		initSelect2('consig1', 'exampleModalScrollableEdit', 'Select');
     } catch (error) {
         console.error("Error fetching sale order types:", error);
     }
@@ -665,9 +675,15 @@ function editRecord(con_slno) {
                 const data = response.DATA[0];
 
                 // Populate form fields with the data from the response
-                $('#cont1').val(data.contract_id);
-                $('#bus1').val(data.bid);
+                //$('#cont1').val(data.contract_id);
+                //$('#bus1').val(data.bid);
 				// set hidden value (actual)
+				
+				$('#cont1').val(data.contract_id).trigger('change');
+				$('#bus1').val(data.bid).trigger('change');
+				$('#into1').val(data.invoice_to_id).trigger('change');
+				$('#consig1').val(data.consignee_id).trigger('change');
+				$('#work1').val(data.work_id).trigger('change');
 				$('#intypecal1_hidden').val(data.invoice_type_calculation);
 
 				// set visible text (display only)
@@ -680,8 +696,8 @@ function editRecord(con_slno) {
 				}
                 //$('#intypecal1').val(data.invoice_type_calculation);
                 $('#per1').val(data.percentage_value);
-                $('#into1').val(data.invoice_to_id);
-                $('#consig1').val(data.consignee_id);
+               // $('#into1').val(data.invoice_to_id);
+              //  $('#consig1').val(data.consignee_id);
                 $('#ship1').val(data.shipment_mode_id);
                 $('#del1').val(data.delivery_condition_id);
 				$('#per0des1_hidden').val(data.product_desc_id);
@@ -696,7 +712,7 @@ function editRecord(con_slno) {
 				}
                // $('#per0des1').val(data.product_desc_id);
                 $('#bank1').val(data.bank_details_id);
-                $('#work1').val(data.work_id);
+               // $('#work1').val(data.work_id);
                 $('#reoffice1').val(data.regd_office_id);
                 $('#serco1').val(data.s_code);
                 $('#hsncode1').val(data.h_code);
@@ -980,6 +996,8 @@ function openModalUp() {
 }
 
 function editvent() {
+	$("#exampleModalCenteredit").modal("hide");
+	
 	// Validate role code and role description
 	 const selectedTaxes = [];
     $('.tax-checkbox1:checked').each(function() {
@@ -1020,7 +1038,7 @@ function editvent() {
 		export:exportSelect1.value,
 		export_title_text:extitle1.value,
 		freight_advance_recovery:fread1.value,
-		h_code: hsncode1.value ? hsncode1.value : null,
+		h_code: hsncode1.value,
 		invoice_to_id:into1.value,
 		invoice_type_calculation: document.getElementById("intypecal1_hidden").value,
 		lot_no:lut1.value,
@@ -1028,7 +1046,7 @@ function editvent() {
 		percentage_value:per1.value,
 		product_desc_id:document.getElementById("per0des1_hidden").value,
 		regd_office_id:reoffice1.value,
-		s_code: serco1.value ? serco1.value : null,
+		s_code: serco1.value,
 		shipment_mode_id:ship1.value,
 		tax_ex_inc:taxein1.value,
 		tax_payable:payre111.value,

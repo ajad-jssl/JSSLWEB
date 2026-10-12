@@ -5,9 +5,7 @@
     response.setHeader("Pragma", "no-cache"); // HTTP 1.0
     response.setDateHeader("Expires", 0); // Proxies
 %>
-<%
-long ts = System.currentTimeMillis();
-%>
+
 <!DOCTYPE html>
 <html>
 
@@ -23,7 +21,7 @@ long ts = System.currentTimeMillis();
   <link href="vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css">
   <link href="css/ruang-admin.min.css" rel="stylesheet">
   <link rel="stylesheet" href="css/main.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" integrity="sha512-xxx" crossorigin="anonymous" />
+<link rel="stylesheet" href="externalLibrary/cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" integrity="sha512-xxx" crossorigin="anonymous" />
   <link href="css/masterpage.css" rel="stylesheet">
 
    <script>
@@ -33,24 +31,7 @@ long ts = System.currentTimeMillis();
     }
     </script>
 </head>
-<!-- <script type="text/javascript">
-    window.history.forward();
 
-    // Auth Guard
-    const loginStatus = sessionStorage.getItem('loginStatus');
-    if (loginStatus !== 'Success') {
-      logout();
-    }
-
-    function noBack() {
-      window.history.forward();
-    }
-
-    function logout() {
-      sessionStorage.removeItem('loginStatus');
-      window.location = "newlogin.jsp";
-    }
-  </script> -->
 <body>
   <div id="wrapper">
     <!-- Sidebar -->
@@ -104,38 +85,7 @@ long ts = System.currentTimeMillis();
           
 
 <div class="row mb-3">
-  <!-- Invoice Card -->
-       <!--      <div class="col-md-3">
-             <div class="card h-100" onclick="window.location.href='Employee.jsp'">
-                <div class="card-body">
-                  <div class="row align-items-center">
-                   <div class="col mr-2">
-                      <i class="fas fa-address-card" style="color:  #4ACCF7;font-size:1.5rem;"></i>         
-                    </div>
-                    <div class="col-auto">
-                      <div class="text-xs font-weight-bold text-uppercase mb-1">Employee Master</div>
-                      <div class="h5 mb-0 font-weight-bold text-gray-800 text-right" id="todays">0</div>
-                     </div>                   
-                  </div>
-                </div>
-              </div>
-             </div>-->
-              
-           <!--   <div class="col-md-3">
-              <div class="card h-100" onclick="window.location.href='Department.jsp'" style=" margin-t:40px;">
-                <div class="card-body">
-                  <div class="row align-items-center">
-                   <div class="col mr-2">
-                      <i class="fas fa-map-marked-alt fa-2x" style="color:  #4ACCF7;font-size:1.5rem;"></i>         
-                    </div>
-                    <div class="col-auto">
-                      <div class="text-xs font-weight-bold text-uppercase mb-1">Department Master</div>
-                      <div class="h5 mb-0 font-weight-bold text-gray-800 text-right" id="todays">0</div>
-                     </div>                   
-                  </div>
-                </div>
-              </div>
-             </div> -->
+
              
              
              <div class="col-md-3">
@@ -170,21 +120,7 @@ long ts = System.currentTimeMillis();
              </div>
             </div>
             
-            <!--  <div class="col-md-3">
-              <div class="card h-100" onclick="window.location.href='Employee.jsp'">
-                <div class="card-body">
-                  <div class="row align-items-center">
-                   <div class="col mr-2">
-                     <i class="fas fa-shopping-cart fa-2x" style="color: #4ACCF7; font-size:1.5rem;"></i>         
-                     </div>
-                    <div class="col-auto">
-                      <div class="text-xs font-weight-bold text-uppercase mb-1">Employee Master</div>
-                      <div class="h5 mb-0 font-weight-bold text-gray-800 text-right" id="clientnew"></div>
-                     </div>                   
-                  </div>
-                </div>
-             </div>
-            </div> -->
+         
     </div>
   </div>
 
@@ -201,17 +137,14 @@ long ts = System.currentTimeMillis();
   <a class="scroll-to-top rounded" href="#page-top">
     <i class="fas fa-angle-up"></i>
   </a>
-
- <script src="js/config.js"></script>
   <script src="vendor/jquery/jquery.min.js"></script>
       <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
       <script src="vendor/jquery-easing/jquery.easing.min.js"></script>
-      <script src="js/ruang-admin.min.js"></script>
-      <!-- Page level plugins -->
-    <script src="js/gpmsmaster.js?v=<%=ts%>"></script>
-  <script src="js/logout.js"></script>
-  <script src="js/username.js"></script>
-   <script src="js/Sessionfilter.js"></script>
+ <script src="js/config.js?v=<%=jsVersion%>"></script>
+    <script src="js/gpmsmaster.js?v=<%=jsVersion%>"></script>
+  <script src="js/logout.js?v=<%=jsVersion%>"></script>
+  <script src="js/username.js?v=<%=jsVersion%>"></script>
+   <script src="js/Sessionfilter.js?v=<%=jsVersion%>"></script>
   <script>
   document.querySelectorAll('.card-container').forEach((card) => {
     card.addEventListener('click', function (event) {

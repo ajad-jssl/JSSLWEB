@@ -6,9 +6,7 @@
   response.setHeader("Pragma", "no-cache"); // HTTP 1.0
   response.setDateHeader("Expires", 0); // Proxies
 %>
-<%
-long ts = System.currentTimeMillis();
-%>
+
 <html>
 
 <head>
@@ -23,11 +21,13 @@ long ts = System.currentTimeMillis();
       <link href="vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css" />
       <link href="css/ruang-admin.min.css" rel="stylesheet" />
       <link href="vendor/datatables/dataTables.bootstrap4.min.css" rel="stylesheet">
-      <!-- <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css" /> -->
-      <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css" />
+      
+      
+      
+    <link rel="stylesheet" href="externalLibrary/cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css" />
      <link rel="stylesheet" href="css/main.css">
-      <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
- <script src="js/sidebar.js"></script>
+
+
  
   <style>
  .error-message {
@@ -174,10 +174,10 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
  </script>
 </head>
 
-<body onload="fetchUserList();">
+<body >
   <div id="wrapper">
     <!-- Sidebar -->
-      <%@ include file="sidebar.jsp" %>
+      <%@ include file="InVoiceSideBar.jsp" %>
     <!-- Sidebar -->
     <div id="content-wrapper" class="d-flex flex-column">
       <div id="content">
@@ -216,7 +216,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
           <div class="d-sm-flex align-items-center justify-content-between mb-4">
             <h1 class="h3 mb-0 text-gray-800">Sales Order List</h1>
             <ol class="breadcrumb">
-              <li class="breadcrumb-item"><a href="Dashboard.jsp">Home</a></li>
+              <li class="breadcrumb-item"><a href="InvoiceDashBoard.jsp">Home</a></li>
               <li class="breadcrumb-item"><a href="SidemenuScrap.jsp">Scrap Page</a></li>
              <li class="breadcrumb-item active" aria-current="page">Scrap</li>
              
@@ -511,6 +511,30 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
               </div>
             </div>
           </div>
+          		<div class="modal fade" id="exampleModalCenter16" tabindex="-1"
+			role="dialog" aria-labelledby="exampleModalCenterTitle"
+			aria-hidden="true">
+			<div class="modal-dialog modal-dialog-centered" role="document">
+				<div class="modal-content"
+					style="width: 54%; right: -22%; border-width: thick; border-color: #eaecf4;">
+					<div class="modal-header1">
+						<!-- <h5 class="modal-title" id="exampleModalCenterTitle">Modal Vertically Centered</h5> -->
+						<!-- <button type="button" class="close" data-dismiss="modal" aria-label="Close" >
+                    <span aria-hidden="true">&times;</span>
+                  </button>  -->
+					</div>
+					<div class="modal-body">
+						<b>Are you sure you want to Cancel Scrap Sale Order?</b>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-secondary btn-sm"
+							data-dismiss="modal">NO</button>
+						<button type="button" class="btn btn-info btn-sm"
+							onclick="cancelRecord()">YES</button>
+					</div>
+				</div>
+			</div>
+		</div>
 
 
 
@@ -764,39 +788,41 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 
 
 
-   <script src="js/config.js"></script>
+ 
   <script src="vendor/jquery/jquery.min.js"></script>
       <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
       <script src="vendor/jquery-easing/jquery.easing.min.js"></script>
       <script src="js/ruang-admin.min.js"></script>
-      <!-- Page level plugins -->
+ 
       <script src="vendor/datatables/jquery.dataTables.min.js"></script>
       <script src="vendor/datatables/dataTables.bootstrap4.min.js"></script>
-    <!-- <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script> -->
-    <script src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
-    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
-    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-  <script src="js/logout.js"></script>
-  <script src="js/Scrap.js?v=<%=ts%>"></script>
-  <script src="js/scrapedit.js?v=<%=ts%>"></script>
- <script src="js/username.js"></script>
+   
+    
+      <script src="js/config.js?v=<%=jsVersion%>"></script>
+   <script src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
+    <script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
+    <script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
+    <script src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
+    <script src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
+    <script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <script src="js/logout.js?v=<%=jsVersion%>"></script>
+  <script src="js/Scrap.js?v=<%=jsVersion%>"></script>
+  <script src="js/scrapedit.js?v=<%=jsVersion%>"></script>
+ <script src="js/username.js?v=<%=jsVersion%>"></script>
  
-  <script src="js/createdby.js"></script>
- 	   <script src="js/modifiedby.js"></script>
- 	  <script src="js/factoryid.js"></script>
- 	   <script src="js/Sessionfilter.js"></script>
+  <script src="js/createdby.js?v=<%=jsVersion%>"></script>
+ 	   <script src="js/modifiedby.js?v=<%=jsVersion%>"></script>
+ 	  <script src="js/factoryid.js?v=<%=jsVersion%>"></script>
+ 	   <script src="js/Sessionfilter.js?v=<%=jsVersion%>"></script>
  	   	  <script>
 /* const moduleId = localStorage.getItem("selectedModuleId"); */
   // This maps action names from the API to button IDs on this page
   window.actionElementMap = {
   };
 </script>
-<script src="js/permissions.js"></script>
- 	  <script>
+<script src="js/permissions.js?v=<%=jsVersion%>"></script>
+<!--  	  <script>
 // Track user activity and logout after 2 minutes (120000 ms)
 let inactivityTime = function () {
     let timeout;
@@ -868,6 +894,6 @@ function logoutUser(event) {
         }
     });
 }
-</script>
+</script> -->
 </body>
 </html>

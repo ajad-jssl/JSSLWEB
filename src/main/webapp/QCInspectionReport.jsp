@@ -1,9 +1,7 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8"
     pageEncoding="UTF-8"%>
     
-<%
-long ts = System.currentTimeMillis();
-%>
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -18,16 +16,15 @@ long ts = System.currentTimeMillis();
    <link href="vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css" />
    <link href="css/ruang-admin.min.css" rel="stylesheet" />
    <link href="vendor/datatables/dataTables.bootstrap4.min.css" rel="stylesheet">
-      <!-- <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css" /> -->
-   <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css" />
+     
+   <link rel="stylesheet" href="externalLibrary/cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css" />
    <link rel="stylesheet" href="css/main.css">
-       <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-       <script src="js/sidebar.js"></script>
-   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-KyZXEJjRkC9iY3NfJVzz6se99Nz05dfk03S8zNeS46E1H2nKfHlR9ltRf9TL7zG6" crossorigin="anonymous">
- <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+   
+<link href="externalLibrary/cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-KyZXEJjRkC9iY3NfJVzz6se99Nz05dfk03S8zNeS46E1H2nKfHlR9ltRf9TL7zG6" crossorigin="anonymous">
+ <link href="externalLibrary/cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
+<script src="externalLibrary/cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<link rel="stylesheet" href="externalLibrary/stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
 
 <script>
     const user_id = sessionStorage.getItem('user_id');
@@ -228,24 +225,7 @@ th, td {
   overflow-x: auto;  /* horizontal scroll if needed */
 }
 </style>
-<!-- <script type="text/javascript">
-    window.history.forward();
 
-    // Auth Guard
-    const loginStatus = sessionStorage.getItem('loginStatus');
-    if (loginStatus !== 'Success') {
-      logout();
-    }
-
-    function noBack() {
-      window.history.forward();
-    }
-
-    function logout() {
-      sessionStorage.removeItem('loginStatus');
-      window.location = "newlogin.jsp";
-    }
-  </script> -->
   
        <style>
         table {
@@ -296,7 +276,7 @@ th, td {
 </style>
 </head>
 
-<body onload="fetchUserList();">
+<body >
   <div id="wrapper">
     <!-- Sidebar -->
       <%@ include file="QCSidebar.jsp" %>
@@ -467,23 +447,11 @@ th, td {
   <a class="scroll-to-top rounded" href="#page-top">
     <i class="fas fa-angle-up"></i>
   </a>
- <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+ 
 
-  <!-- Bootstrap JS and dependencies -->
-
-
-<!-- <script>
-  document.getElementById("btnnext").addEventListener("click", function () {
-    document.getElementById("container2").style.display = "block";
-  });
-</script> -->  
+<script src="externalLibrary/cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
 
 
-<!-- <script>
-  document.getElementById("search").addEventListener("click", function () {
-    document.getElementById("container1").style.display = "block";
-  });
-</script> -->
 
 <script>
 function printreport() {
@@ -492,6 +460,43 @@ function printreport() {
     var thead = originalTable.querySelector("thead");
     var tfoot = originalTable.querySelector("tfoot");
     var allRows = Array.from(originalTable.querySelectorAll("tbody tr"));
+
+    /* Stacked values (one per line) -> comma separated wrapped text */
+    function compactCell(html) {
+        return html
+            .replace(/<br\s*\/?>/gi, ", ")
+            .replace(/[\r\n]+/g, " ")
+            .replace(/(,\s*){2,}/g, ", ")
+            .replace(/^\s*,\s*/, "")
+            .replace(/,\s*$/, "")
+            .trim();
+    }
+
+    /* Column widths in % (18 columns, total = 100) */
+    var colWidths = [
+        3.5,  // 1  SL.NO
+        4.5,  // 2  MARK
+        3,    // 3  REV
+        3,    // 4  QTY
+        10.9, // 5  SECTION SIZE
+        8.5,  // 6  FITTING MARK
+        6.3,  // 7  FABRICATOR ID
+        9.5,  // 8  LENGTH
+        5.8,  // 9  FIT UP INSPECTED BY
+        4.5,  // 10 WELDER ID
+        5.2,  // 11 BUCKLING
+        4.8,  // 12 CAMBER
+        4.5,  // 13 SWEEP
+        6.2,  // 14 WELD VISUAL
+        3,    // 15 UT
+        5.5,  // 16 RESULT
+        5.8,  // 17 INSPECTED BY
+        5.5   // 18 DATE
+    ];
+
+    var colgroup = "<colgroup>" + colWidths.map(function (w) {
+        return '<col style="width:' + w + '%">';
+    }).join("") + "</colgroup>";
 
     var printWindow = window.open("", "", "height=900,width=1400");
 
@@ -520,9 +525,10 @@ function printreport() {
 
     table{
         width:100%;
+        table-layout:fixed;
         border-collapse:collapse;
         border:1.5px solid #000;
-        font-size:10pt;
+        font-size:8pt;
     }
 
     thead{
@@ -537,39 +543,61 @@ function printreport() {
 
     tr{
         page-break-inside:avoid;
+        break-inside:avoid;
     }
 
     th,
     td{
         border:1px solid #000;
-        padding:4px 5px;
+        padding:3px 2px;
         text-align:center;
         vertical-align:middle;
+    }
+
+    td{
+        overflow-wrap:break-word;
         word-wrap:break-word;
     }
 
+    /* HEADER LABELS: never break inside a word */
+    th{
+        overflow-wrap:normal;
+        word-wrap:normal;
+        word-break:normal;
+        hyphens:none;
+    }
+
+    thead tr:last-child th{
+        font-size:6.5pt;
+        line-height:1.2;
+        white-space:normal;
+    }
+
     tbody td{
-        font-size:10pt;
+        font-size:8pt;
+        line-height:1.25;
     }
 
-    /* SECTION SIZE */
-    tbody td:nth-child(5){
-        text-align:center !important;
-        vertical-align:middle !important;
-        white-space:pre-line !important;
-    }
-
-    /* LENGTH */
+    /* SECTION SIZE (5), FITTING MARK (6), LENGTH (8): compact wrapped text */
+    tbody td:nth-child(5),
+    tbody td:nth-child(6),
     tbody td:nth-child(8){
         text-align:center !important;
         vertical-align:middle !important;
-        white-space:pre-line !important;
+        white-space:normal !important;
+        font-size:7pt !important;
+        line-height:1.3;
     }
 
-    tbody td:nth-child(5) br,
-    tbody td:nth-child(8) br{
-        display:block;
-        margin-top:2px;
+    /* FABRICATOR ID (7), WELDER ID (10), WELD VISUAL (14), RESULT (16), DATE (18):
+       always on a single line */
+    tbody td:nth-child(7),
+    tbody td:nth-child(10),
+    tbody td:nth-child(14),
+    tbody td:nth-child(16),
+    tbody td:nth-child(18){
+        white-space:nowrap !important;
+        font-size:7pt !important;
     }
 
     .signature-block td,
@@ -599,10 +627,6 @@ function printreport() {
         background-color: #fff !important;
     }
 
-    .table-secondary{
-    	background: #fff !important;
-    }
-
     img{
         max-width:100px;
     }
@@ -624,6 +648,7 @@ function printreport() {
 
         tr{
             page-break-inside:avoid !important;
+            break-inside:avoid !important;
         }
     }
 
@@ -633,6 +658,7 @@ function printreport() {
     `);
 
     printWindow.document.write("<table>");
+    printWindow.document.write(colgroup);
 
     if (thead) {
         printWindow.document.write(thead.outerHTML);
@@ -640,8 +666,15 @@ function printreport() {
 
     printWindow.document.write("<tbody>");
 
-    allRows.forEach(function(row) {
-        printWindow.document.write(row.outerHTML);
+    allRows.forEach(function (row) {
+        var clone = row.cloneNode(true);
+        [5, 6, 8].forEach(function (n) {
+            var cell = clone.cells[n - 1];
+            if (cell) {
+                cell.innerHTML = compactCell(cell.innerHTML);
+            }
+        });
+        printWindow.document.write(clone.outerHTML);
     });
 
     printWindow.document.write("</tbody>");
@@ -662,31 +695,29 @@ function printreport() {
     }, 1000);
 }
 </script>
-
-   <script src="js/config.js"></script>
   <script src="vendor/jquery/jquery.min.js"></script>
       <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
       <script src="vendor/jquery-easing/jquery.easing.min.js"></script>
-      <script src="js/ruang-admin.min.js"></script>
-      <!-- Page level plugins -->
       <script src="vendor/datatables/jquery.dataTables.min.js"></script>
-      <script src="vendor/datatables/dataTables.bootstrap4.min.js"></script>
-    <!-- <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script> -->
-    <script src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
-    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
-    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>  
-    <!-- <script src="js/QCInspectionReport.js"></script> -->
-    <script src="js/QCInspectionReport.js?v=<%=ts%>"></script>
-    <script src="js/logout.js"></script>
-    <script src="js/username.js"></script>
-    <script src="js/customertype.js"></script>
-    <script src="js/createdby.js"></script>
- 	<script src="js/modifiedby.js"></script>
- 	<script src="js/factoryid.js"></script>
+   <script src="js/config.js?v=<%=jsVersion%>"></script>
 
-  <!-- Page level custom scripts -->
+      <script src="vendor/datatables/dataTables.bootstrap4.min.js"></script>
+   
+     <script src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
+    <script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
+    <script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
+    <script src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
+    <script src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>   
+
+    <script src="js/QCInspectionReport.js?v=<%=jsVersion%>"></script>
+    <script src="js/logout.js?v=<%=jsVersion%>"></script>
+    <script src="js/username.js?v=<%=jsVersion%>"></script>
+
+    <script src="js/createdby.js?v=<%=jsVersion%>"></script>
+ 	<script src="js/modifiedby.js?v=<%=jsVersion%>"></script>
+ 	<script src="js/factoryid.js?v=<%=jsVersion%>"></script>
+
+
 </body>
 </html>

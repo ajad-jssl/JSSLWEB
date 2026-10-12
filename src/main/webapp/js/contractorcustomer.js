@@ -53,8 +53,8 @@ document.getElementById("#modalScroll1").addEventListener("click", function () {
 	$('#exampleModalScrollableCon').modal('show');
 });
 
-// Fetch selectedFactoryId from localStorage
-const selectedFactoryId = localStorage.getItem('selectedFactoryId');
+// Fetch selectedFactoryId from sessionStorage
+const selectedFactoryId = sessionStorage.getItem('selectedFactoryId');
 console.log('selectedFactoryId:', selectedFactoryId);
 
 document.addEventListener("DOMContentLoaded", function () {
@@ -65,7 +65,7 @@ document.addEventListener("DOMContentLoaded", function () {
     fetchUserList();
     fetchUserList11();
 } else {
-    console.error('No factory ID found in localStorage.');
+    console.error('No factory ID found in sessionStorage.');
 }*/
 
 // Function to fetch the list of users/vendors based on the selected factory ID
@@ -452,11 +452,11 @@ async function fetchUserList11() {
 }*/
 
 document.addEventListener("DOMContentLoaded", function () {
-    const selectedFactoryId = localStorage.getItem("selectedFactoryId"); // Get factory_id from localStorage
+    const selectedFactoryId = sessionStorage.getItem("selectedFactoryId"); // Get factory_id from sessionStorage
     if (selectedFactoryId) {
         fetchSaleOrderTypes();
     } else {
-        console.error("No factory ID found in localStorage.");
+        console.error("No factory ID found in sessionStorage.");
     }
 });
 
@@ -505,11 +505,11 @@ async function fetchSaleOrderTypes() {
 }
 
 document.addEventListener("DOMContentLoaded", function () {
-    const selectedFactoryId = localStorage.getItem("selectedFactoryId"); // Get factory_id from localStorage
+    const selectedFactoryId = sessionStorage.getItem("selectedFactoryId"); // Get factory_id from sessionStorage
     if (selectedFactoryId) {
         fetchSaleOrderTypescon();
     } else {
-        console.error("No factory ID found in localStorage.");
+        console.error("No factory ID found in sessionStorage.");
     }
 });
 
@@ -557,11 +557,11 @@ async function fetchSaleOrderTypescon() {
 }
 
 document.addEventListener("DOMContentLoaded", function () {
-    const selectedFactoryId = localStorage.getItem("selectedFactoryId"); // Get factory_id from localStorage
+    const selectedFactoryId = sessionStorage.getItem("selectedFactoryId"); // Get factory_id from sessionStorage
     if (selectedFactoryId) {
         fetchCountry();
     } else {
-        console.error("No factory ID found in localStorage.");
+        console.error("No factory ID found in sessionStorage.");
     }
 });
 
@@ -608,11 +608,11 @@ async function fetchCountry() {
 }
 
 document.addEventListener("DOMContentLoaded", function () {
-    const selectedFactoryId = localStorage.getItem("selectedFactoryId"); // Get factory_id from localStorage
+    const selectedFactoryId = sessionStorage.getItem("selectedFactoryId"); // Get factory_id from sessionStorage
     if (selectedFactoryId) {
         fetchCountrycon();
     } else {
-        console.error("No factory ID found in localStorage.");
+        console.error("No factory ID found in sessionStorage.");
     }
 });
 
@@ -659,11 +659,11 @@ async function fetchCountrycon() {
 }
 
 document.addEventListener("DOMContentLoaded", function () {
-    const selectedFactoryId = localStorage.getItem("selectedFactoryId"); // Get factory_id from localStorage
+    const selectedFactoryId = sessionStorage.getItem("selectedFactoryId"); // Get factory_id from sessionStorage
     if (selectedFactoryId) {
         fetchCountryinup();
     } else {
-        console.error("No factory ID found in localStorage.");
+        console.error("No factory ID found in sessionStorage.");
     }
 });
 
@@ -710,11 +710,11 @@ async function fetchCountryinup() {
 }
 
 document.addEventListener("DOMContentLoaded", function () {
-    const selectedFactoryId = localStorage.getItem("selectedFactoryId"); // Get factory_id from localStorage
+    const selectedFactoryId = sessionStorage.getItem("selectedFactoryId"); // Get factory_id from sessionStorage
     if (selectedFactoryId) {
         fetchsataeupin();
     } else {
-        console.error("No factory ID found in localStorage.");
+        console.error("No factory ID found in sessionStorage.");
     }
 });
 
@@ -767,11 +767,11 @@ async function fetchsataeupin() {
 }
 
 document.addEventListener("DOMContentLoaded", function () {
-    const selectedFactoryId = localStorage.getItem("selectedFactoryId"); // Get factory_id from localStorage
+    const selectedFactoryId = sessionStorage.getItem("selectedFactoryId"); // Get factory_id from sessionStorage
     if (selectedFactoryId) {
         fetchCountryconup();
     } else {
-        console.error("No factory ID found in localStorage.");
+        console.error("No factory ID found in sessionStorage.");
     }
 });
 
@@ -818,11 +818,11 @@ async function fetchCountryconup() {
 }
 
 document.addEventListener("DOMContentLoaded", function () {
-    const selectedFactoryId = localStorage.getItem("selectedFactoryId"); // Get factory_id from localStorage
+    const selectedFactoryId = sessionStorage.getItem("selectedFactoryId"); // Get factory_id from sessionStorage
     if (selectedFactoryId) {
         fetchsataeupcon();
     } else {
-        console.error("No factory ID found in localStorage.");
+        console.error("No factory ID found in sessionStorage.");
     }
 });
 
@@ -998,6 +998,7 @@ function openModalAddInvoice() {
 }
 
 function addevent() {
+	$('#exampleModalCenter66').modal('hide'); 
 
     // ✅ Always set BOTH flags to 1
     var isInvoice   = 1;
@@ -1178,6 +1179,7 @@ function openModalAddCon() {
 }
 
 function addeventCon() {
+	 $('#exampleModalCenter66con').modal('hide');
     // Validate role code and role description
      var isInvoice = document.getElementById("invoiceRadio").checked ? 1 : 0;
     var isConsignee = document.getElementById("consigneeRadio").checked ? 1 : 0;
@@ -1582,7 +1584,7 @@ function openModalUpdateInvoice() {
 }
 
 function addeventINupdate() {
-
+	$('#exampleModalCenter66inupdate').modal('hide');
     // Get current values from UI
 	const currentData = {
 	    name_of_add: $('#nameOfAddup').val().trim(),
@@ -1805,26 +1807,22 @@ function openModalAddConUP() {
 
 
 function addeventConupdate() {
-
+	$('#exampleModalCenter66inupdateCOn').modal('hide');
     // Get current values from UI
-    const currentData = {
+	const currentData = {
+	    name_of_add: $('#nameOfAddConup').val().trim(),
+	    add1:        $('#conaddup').val().trim(),
+	    add2:        $('#conaddupLine2').val().trim(),
+	    country_id:  $('#conconup').val().trim(),
+	    city:        $('#cityup').val().trim(),
+	    district:    $('#discttup').val().trim(),
+	    pin_no:      $('#pinnoup').val().trim(),
+	    pan_no:      $('#pannoup').val().trim(),
+	    gst_no:      $('#gstnoup').val().trim(),
+	    state_id:    $('#stateup').val().trim()
+	};
+	
 
-        address: $('#conaddup').val().trim(),
-
-        country_id: $('#conconup').val().trim(),
-
-        city: $('#cityup').val().trim(),
-
-        district: $('#discttup').val().trim(),
-
-        pin_no: $('#pinnoup').val().trim(),
-
-        pan_no: $('#pannoup').val().trim(),
-
-        gst_no: $('#gstnoup').val().trim(),
-
-        state_id: $('#stateup').val().trim()
-    };
 
     // Compare with original values
     const isChanged = Object.keys(currentData).some(function(key) {

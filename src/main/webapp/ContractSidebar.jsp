@@ -1,7 +1,10 @@
-<script src="js/sidebar.js"></script>
- <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+	<%@ include file="version.jsp" %>
+	<script src="externalLibrary/code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="js/sidebar.js?v=<%=jsVersion%>"></script>
+ 
 <ul class="navbar-nav sidebar sidebar-light accordion" id="accordionSidebar">
-    <a class="sidebar-brand d-flex align-items-center justify-content-center mb-3 mt-3" href="Dashboard.jsp" style="background-color: white;">
+    <a class="sidebar-brand d-flex align-items-center justify-content-center mb-3 mt-3" href="ContractDashboard.jsp" style="background-color: white;">
         <div class="sidebar-brand-icon">
             <img src="img/logo/download.png" style="max-height: 4.3rem;">
         </div>
@@ -18,43 +21,9 @@
     </li>
 
     <hr class="sidebar-divider">
-    
-  <!--   <div class="sidebar-heading">Features</div>
+    </ul>
 
-    <li class="nav-item" id="qs-package">
-        <a class="nav-link" href="VMSMaster.jsp">
-            <i class="fas fa-clipboard-check" style="color: #007bff;"></i>
-            <span>General Master</span>
-        </a>
-    </li>
-    
-    <li class="nav-item" id="qs-package">
-        <a class="nav-link" href="ContractMaster.jsp">
-            <i class="fas fa-box-open" style="color: #007bff;"></i>
-            <span>Contract Master</span>
-        </a>
-    </li>
-
-  <li class="nav-item" id="invoice-module">
-        <a class="nav-link" href="ContractGPEntry.jsp">
-            <i class="far fa-file-alt" style="color: #007bff;"></i>
-            <span>Contract Entry</span>
-        </a>
-    </li>
-    <li class="nav-item" id="invoice-module">
-        <a class="nav-link" href="AdminEntry.jsp">
-            <i class="far fa-file-alt" style="color: #007bff;"></i>
-            <span>Admin Contract Entry</span>
-        </a>
-    </li>
-    <li class="nav-item" id="scrap-module">
-        <a class="nav-link" href="ContractGPReport.jsp">
-            <i class="fas fa-recycle" style="color: #dc3545;"></i>
-            <span>Contract GP Report</span>
-        </a>
-    </li> -->
-</ul>
-   <script>
+<script>
 if (!window.sidebarInitialized) {
   window.sidebarInitialized = true;
 
@@ -62,8 +31,7 @@ if (!window.sidebarInitialized) {
     const userId = sessionStorage.getItem("user_id");
     const moduleName = sessionStorage.getItem("selectedModule");
 
-    console.log("Sidebar: userId =", userId, ", moduleName =", moduleName);
-
+   
     if (!userId || !moduleName) {
       console.warn("Missing user_id or selectedModule in storage");
       renderNoAccess();
@@ -74,30 +42,27 @@ if (!window.sidebarInitialized) {
     url.searchParams.append("userId", userId);
     url.searchParams.append("moduleName", moduleName);
 
-    console.log("Sidebar: Fetching permissions from URL:", url.toString());
+  
 
     fetch(url, { credentials: "include" })
       .then(res => res.json())
       .then(data => {
 		let pages={};
-        console.log("Sidebar: API data received:", data);
+    
         if (!Array.isArray(data) || data.length === 0) {
           renderNoAccess();
           return;
         }
-        if (data[0]?.moduleId) {
-            localStorage.setItem("selectedModuleId", data[0].moduleId);
-            console.log("Module ID stored in localStorage:", data[0].moduleId);
-          }
+
         const uniquePages = [...new Set(
           data.map(item => (item.pageUrl || "").trim())
               .filter(pageUrl => pageUrl.length > 0)
         )];
 
-        console.log("Sidebar: Unique pages:", uniquePages);
+     
         const filteredPages = uniquePages.filter(pageUrl => pageUrl.length > 0);
 
-        console.log("Unique pages after filter:", filteredPages);
+   
         renderSidebarLinks(data);
       })
       .catch(err => {
@@ -112,7 +77,7 @@ if (!window.sidebarInitialized) {
 	    return;
 	  }
 
-	  console.log("Rendering pages:", pages);
+	
 
 	  const sidebarUl = document.getElementById("accordionSidebar");
 	  if (!sidebarUl) return;
@@ -163,6 +128,7 @@ if (!window.sidebarInitialized) {
 	}
 
 
+
     function renderNoAccess() {
       const sidebarUl = document.getElementById("accordionSidebar");
       if (!sidebarUl) return;
@@ -191,3 +157,5 @@ if (!window.sidebarInitialized) {
 
 }
 </script>
+
+

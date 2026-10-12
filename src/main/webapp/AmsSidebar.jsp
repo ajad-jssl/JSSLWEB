@@ -1,77 +1,33 @@
-<script src="js/sidebar.js"></script>
- <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+	<%@ include file="version.jsp" %>
+	<script src="externalLibrary/code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="js/sidebar.js?v=<%=jsVersion%>"></script>
 <ul class="navbar-nav sidebar sidebar-light accordion" id="accordionSidebar">
-    <a class="sidebar-brand d-flex align-items-center justify-content-center mb-3 mt-3" href="Dashboard.jsp" style="background-color: white;">
-        <div class="sidebar-brand-icon">
-            <img src="img/logo/download.png" style="max-height: 4.3rem;">
-        </div>
-        <div class="sidebar-brand-text mx-3" id="dash"></div>
+  <!-- Logo -->
+  <a class="sidebar-brand d-flex align-items-center justify-content-center mb-3 mt-3" href="AMSDashBoard.jsp" style="background-color: white;">
+    <div class="sidebar-brand-icon">
+      <img src="img/logo/download.png" style="max-height: 4.3rem;">
+    </div>
+    <div class="sidebar-brand-text mx-3" id="dash"></div>
+  </a>
+
+  <hr class="sidebar-divider my-0">
+
+  <li class="nav-item active">
+    <a class="nav-link" href="AMSDashBoard.jsp">
+      <i class="fas fa-home"></i>
+      <span>Dashboard</span>
     </a>
-    
-    <hr class="sidebar-divider my-0" style="margin-top:10px;">
-    
-    <li class="nav-item active">
-        <a class="nav-link" href="AMSDashBoard.jsp">
-            <i class="fas fa-home"></i>
-            <span>Dashboard</span>
-        </a>
-    </li>
+  </li>
 
-    <hr class="sidebar-divider">
-    </ul>
-<!--     <div class="sidebar-heading">Features</div>
-    
-     <li class="nav-item" id="qs-package">
-        <a class="nav-link" href="VTSMaster.jsp">
-            <i class="fas fa-clipboard-check" style="color: #007bff;"></i>
-            <span>General Master</span>
-        </a>
-    </li>
+  <hr class="sidebar-divider">
+</ul>
 
-    <li class="nav-item" id="qs-package">
-        <a class="nav-link" href="Vehicle.jsp">
-            <i class="fas fa-clipboard-check" style="color: #007bff;"></i>
-            <span>Vehicle Entry</span>
-        </a>
-    </li>
-    
-    <li class="nav-item" id="qs-package">
-        <a class="nav-link" href="VehicleOut.jsp">
-            <i class="fas fa-box-open" style="color: #007bff;"></i>
-            <span>Vehicle Out</span>
-        </a>
-    </li> -->
-
- <!--  <li class="nav-item" id="invoice-module">
-        <a class="nav-link" href="VehicleSite.jsp">
-            <i class="fas fa-shipping-fast" style="color: #007bff;"></i>
-            <span>Vehicle Site</span>
-        </a>
-  </li> -->
-<!--   
-   <li class="nav-item" id="invoice-module">
-        <a class="nav-link" href="Rejected.jsp">
-            <i class="far fa-file-alt" style="color: #007bff;"></i>
-            <span>Rejected</span>
-        </a>
-    </li>
-   <li class="nav-item" id="scrap-module">
-        <a class="nav-link" href="RejectedOut.jsp">
-            <i class="fas fa-recycle" style="color: #dc3545;"></i>
-            <span>Rejected Out</span>
-        </a>
-    </li>
-</ul> -->
 <script>
 if (!window.sidebarInitialized) {
   window.sidebarInitialized = true;
 
   $(document).ready(function () {
-  //  const userId = sessionStorage.getItem("user_id");
-    
-    const userId = sessionStorage.getItem("username");
-    
-    
+    const userId = sessionStorage.getItem("user_id");
     const moduleName = sessionStorage.getItem("selectedModule");
 
     console.log("Sidebar: userId =", userId, ", moduleName =", moduleName);
@@ -140,14 +96,28 @@ if (!window.sidebarInitialized) {
 	  sidebarUl.appendChild(heading);
 
 	  // Remove duplicate pageUrls
-	  const uniquePages = [
+	 /*  const uniquePages = [
 	    ...new Map(
 	      pages.map(item => [item.pageUrl, item])
 	    ).values()
 	  ];
 
-	  uniquePages.forEach(item => {
+	  uniquePages.forEach(item => { */
 
+		// Remove items whose displayName ends with "Dashboard" (case-insensitive)
+		  const filteredByDashboard = pages.filter(item => {
+		      const name = (item.displayName || "").trim().toLowerCase();
+		      return !name.endsWith("dashboard");
+		  });
+
+		  // Remove duplicate pageUrls
+		  const uniquePages = [
+		      ...new Map(
+		        filteredByDashboard.map(item => [item.pageUrl, item])
+		      ).values()
+		  ];
+
+		  uniquePages.forEach(item => {
 	    const pageUrl = item.pageUrl;
 	    const displayName = item.displayName;
 
@@ -173,6 +143,7 @@ if (!window.sidebarInitialized) {
 	    sidebarUl.appendChild(li);
 	  });
 	}
+
 
 
     function renderNoAccess() {

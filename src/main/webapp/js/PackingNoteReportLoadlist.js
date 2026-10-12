@@ -45,8 +45,8 @@ async function loadActions() {
 
 
 
-const supplierId = localStorage.getItem('selectedSupplierId')
-const selectedFactoryId = localStorage.getItem('selectedFactoryId');
+const supplierId = sessionStorage.getItem('selectedSupplierId')
+const selectedFactoryId = sessionStorage.getItem('selectedFactoryId');
 const selecteduserId = sessionStorage.getItem('id')
 
 async function getSupplierId() {
@@ -62,7 +62,7 @@ async function getSupplierId() {
     const data = await response.json();
     if (Array.isArray(data) && data.length > 0) {
         const supid = data[0].supid; // assuming one supplier per user
-		localStorage.setItem("selectedSupplierId", supid);
+		sessionStorage.setItem("selectedSupplierId", supid);
 		return supid;
     }
 
@@ -87,7 +87,7 @@ async function fetchFactory() {
             console.log("Factory Loaded:", factoryList);
 
             // ✅ AUTO SET ADDRESS AFTER LOAD
-            const selectedFactoryId = localStorage.getItem('selectedFactoryId');
+            const selectedFactoryId = sessionStorage.getItem('selectedFactoryId');
             setFactoryDetails(selectedFactoryId);
         }
 
@@ -140,8 +140,8 @@ document.addEventListener("DOMContentLoaded", function () {
 		
 
     //const supplierId = 168; // set dynamically if needed
-	const supplierId = localStorage.getItem('selectedSupplierId');
-	const selectedFactoryId = localStorage.getItem('selectedFactoryId');
+	const supplierId = sessionStorage.getItem('selectedSupplierId');
+	const selectedFactoryId = sessionStorage.getItem('selectedFactoryId');
     const contractSelect = document.getElementById("contractload");
     const phaseSelect = document.getElementById("phaseSelect");
     const loadSelect = document.getElementById("loadSelect");
@@ -530,7 +530,7 @@ $("#fetchsummaryOrdetails").click(async function () {
     let tloadId = $("#lotsd").val();
     let fromDate = $("#fromDate").val();
     let toDate = $("#toDate").val();
-    let factory_ids = localStorage.getItem('selectedFactoryId');
+    let factory_ids = sessionStorage.getItem('selectedFactoryId');
 
     // 🔴 VALIDATION
 	let errorMessage = "";
@@ -735,7 +735,7 @@ let index =1;
 async function buildload(load_id) {
    // alert("the build load is clicked");
 
-    let factory_ids = localStorage.getItem('selectedFactoryId');
+    let factory_ids = sessionStorage.getItem('selectedFactoryId');
 
     const url = `${baseUrl1}/api/lotdetail/load/pieces-in-loadss?tLoadId=${load_id}&factory_id=${factory_ids}`;
 
@@ -797,7 +797,7 @@ function renderBuildTable(data) {
 async function buildHistory(load_id) {
    // alert("the build load is clicked");
 
-    let factory_ids = localStorage.getItem('selectedFactoryId');
+    let factory_ids = sessionStorage.getItem('selectedFactoryId');
 
     const url = `${baseUrl1}/api/traloads/runs-subcon?tloadId=${load_id}&factory_id=${factory_ids}`;
 

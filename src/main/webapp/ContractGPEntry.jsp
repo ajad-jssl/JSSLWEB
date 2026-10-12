@@ -5,9 +5,7 @@
     response.setHeader("Pragma", "no-cache"); // HTTP 1.0
     response.setDateHeader("Expires", 0); // Proxies
 %>
-<%
-long ts = System.currentTimeMillis();
-%>
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -26,24 +24,24 @@ long ts = System.currentTimeMillis();
 <link href="css/ruang-admin.min.css" rel="stylesheet" />
 <link href="vendor/datatables/dataTables.bootstrap4.min.css"
 	rel="stylesheet">
-<!-- <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css" /> -->
+
 <link rel="stylesheet"
-	href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css" />
+	href="externalLibrary/cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css" />
 <link rel="stylesheet" href="css/main.css">
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
 
 <link
-	href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css"
+	href="externalLibrary/cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css"
 	rel="stylesheet"
 	integrity="sha384-KyZXEJjRkC9iY3NfJVzz6se99Nz05dfk03S8zNeS46E1H2nKfHlR9ltRf9TL7zG6"
 	crossorigin="anonymous">
 <link
-	href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css"
+	href="externalLibrary/cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css"
 	rel="stylesheet" />
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
 <script
-	src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-<script src="js/sidebar.js"></script>
+	src="externalLibrary/cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
 
 <style>
 .error-message {
@@ -244,24 +242,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 	margin-bottom: 10px;
 }
 </style>
-<!-- <script type="text/javascript">
-    window.history.forward();
 
-    // Auth Guard
-    const loginStatus = sessionStorage.getItem('loginStatus');
-    if (loginStatus !== 'Success') {
-      logout();
-    }
-
-    function noBack() {
-      window.history.forward();
-    }
-
-    function logout() {
-      sessionStorage.removeItem('loginStatus');
-      window.location = "newlogin.jsp";
-    }
-  </script> -->
 <script>
 	const user_id = sessionStorage.getItem('user_id');
 	if (!user_id) {
@@ -272,7 +253,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 
 <body>
 	<div id="wrapper">
-	<%@ include file="ContractSidebar.jsp"%>
+		<%@ include file="ContractSidebar.jsp"%>
 
 		<!-- Sidebar -->
 		<div id="content-wrapper" class="d-flex flex-column">
@@ -315,8 +296,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 							</div></li>
 					</ul>
 				</nav>
-				<!-- Topbar -->
-				<!-- Container Fluid-->
+
 				<div class="container-fluid" id="container-wrapper">
 					<div
 						class="d-sm-flex align-items-center justify-content-between mb-4">
@@ -338,37 +318,15 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 									<div
 										class="card-header py-3 d-flex flex-row align-items-center justify-content-between"
 										style="background-color: #f8f9fc;">
-										<button data-toggle="modal"
-											 id="modalcontrentry">
+										<button data-toggle="modal" id="modalcontrentry">
 											<i class="fas fa-plus"></i> Create
 										</button>
 									</div>
 								</div>
 
 
-<!-- 
+
 								<div class="table-responsive p-3">
-									<table class="table table-striped table-bordered table-sm"
-										id="Table1" width="100%">
-										<thead>
-											<tr>
-												<th>Slno</th>
-												<th>Aadhar No</th>
-												<th>Pass No</th>
-												<th>Contact No</th>
-												<th>Pan Card</th>
-
-												<th>Father Name</th>
-												<th>Action</th>
-
-											</tr>
-										</thead>
-										<tbody>
-											 Dynamic rows will be inserted here
-										</tbody>
-									</table>
-								</div> -->
-									<div class="table-responsive p-3">
 									<table class="table table-striped table-bordered table-sm"
 										id="Table1" width="100%">
 										<thead>
@@ -1041,9 +999,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 
 
 
-					<script
-						src="http://cdn.jsdelivr.net/npm/@popperjs/core@2.9.1/dist/umd/popper.min.js"></script>
-					<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
 
 					<div class="modal fade" id="exampleModalScrollable12" tabindex="-1"
 						role="dialog" aria-labelledby="exampleModalScrollableTitle123"
@@ -1589,50 +1545,33 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 							</div>
 						</div>
 					</div>
-				<div class="modal fade" id="messageModal" tabindex="-1" role="dialog" aria-labelledby="messageTitle" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered" role="document">
-    
-    <div class="modal-content" style="width: 70%; margin: auto; border-width: thick; border-color: #eaecf4;">
+					<div class="modal fade" id="messageModal" tabindex="-1"
+						role="dialog" aria-labelledby="messageTitle" aria-hidden="true">
+						<div class="modal-dialog modal-dialog-centered" role="document">
 
-      <!-- Optional empty header (for spacing like your design) -->
-      <div class="modal-header1"></div>
+							<div class="modal-content"
+								style="width: 70%; margin: auto; border-width: thick; border-color: #eaecf4;">
 
-      <!-- Body -->
-      <div class="modal-body text-center">
-        <b id="modalMessage">Message here</b>
-      </div>
+								<!-- Optional empty header (for spacing like your design) -->
+								<div class="modal-header1"></div>
 
-      <!-- Footer -->
-      <div class="modal-footer d-flex justify-content-center border-0">
-        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal" id="removeadharduplicate">
-          OK
-        </button>
-      </div>
+								<!-- Body -->
+								<div class="modal-body text-center">
+									<b id="modalMessage">Message here</b>
+								</div>
 
-    </div>
+								<!-- Footer -->
+								<div class="modal-footer d-flex justify-content-center border-0">
+									<button type="button" class="btn btn-secondary btn-sm"
+										data-bs-dismiss="modal" id="removeadharduplicate">OK
+									</button>
+								</div>
 
-  </div>
-</div>
-<!-- <div class="modal fade show" id="duplicateBloodModal" tabindex="-1" role="dialog" aria-labelledby="duplicateBloodTitle" aria-modal="true" style="display: block;">
-  <div class="modal-dialog modal-dialog-centered" role="document">
-    <div class="modal-content" style="width: 70%; right: -22%; border-width: thick; border-color: #eaecf4;">
+							</div>
 
-      <div class="modal-header1"></div>
+						</div>
+					</div>
 
-      <div class="modal-body text-center">
-        <b id="duplicateBloodMessage">Blood Group already exists.</b>
-      </div>
-
-      <div class="modal-footer d-flex justify-content-center">
-        <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">
-          OK
-        </button>
-      </div>
-
-    </div>
-  </div>
-</div>
- -->
 
 					<div class="modal fade" id="exampleModalCenterUpdate" tabindex="-1"
 						role="dialog" aria-labelledby="exampleModalCenterTitleUpdate"
@@ -1658,7 +1597,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 
 
 
-					<!-- <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js"></script> -->
+
 				</div>
 			</div>
 
@@ -1674,26 +1613,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 	</a>
 
 
-	<!-- Bootstrap JS and dependencies -->
 
-
-	<!-- <script>
-  document.getElementById("btnnext").addEventListener("click", function () {
-    document.getElementById("container2").style.display = "block";
-  });
-</script> -->
-
-	<!-- 	<script>
-		window.onload = function() {
-			fetchbloodgrp();
-			fetchnatureofjob();
-			fetchworkloc();
-			fetchbloodgrp1();
-			fetchreligon();
-			fetchedu();
-			fetchvacc();
-		};
-	</script> -->
 
 	<script>
 		document
@@ -1816,76 +1736,36 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 						});
 	</script>
 
-	<!-- <script>
-document.getElementById('joining').addEventListener('change', function () {
-    const joiningDate = new Date(this.value);
-    const today = new Date();
-
-    if (isNaN(joiningDate)) {
-        document.getElementById('joiningError').style.display = 'block';
-        document.getElementById('services').value = '';
-        return;
-    } else {
-        document.getElementById('joiningError').style.display = 'none';
-    }
-
-    if (joiningDate > today) {
-        document.getElementById('services').value = '';
-        alert("Date of joining cannot be in the future.");
-        return;
-    }
-
-    let years = today.getFullYear() - joiningDate.getFullYear();
-    let months = today.getMonth() - joiningDate.getMonth();
-    let days = today.getDate() - joiningDate.getDate();
-
-    if (days < 0) {
-        months--;
-    }
-
-    if (months < 0) {
-        years--;
-        months += 12;
-    }
-
-    // Convert months to a decimal
-    let serviceDuration = years + (months / 12);
-    serviceDuration = serviceDuration.toFixed(1); // One decimal place
-
-    document.getElementById('services').value = serviceDuration;
-});
-</script> -->
 
 
-	<script src="js/config.js"></script>
 	<script src="vendor/jquery/jquery.min.js"></script>
 	<script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
 	<script src="vendor/jquery-easing/jquery.easing.min.js"></script>
-	<script src="js/ruang-admin.min.js"></script>
-	<!-- Page level plugins -->
+
+
 	<script src="vendor/datatables/jquery.dataTables.min.js"></script>
 	<script src="vendor/datatables/dataTables.bootstrap4.min.js"></script>
-	<!-- <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script> -->
-	<script
-		src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
-	<script
-		src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-	<script
-		src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
-	<script
-		src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
-	<script
-		src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
-	<script
-		src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
-	<!-- <script src="js/ContractGP.js"></script> -->
+	<script src="js/config.js?v=<%=jsVersion%>"></script>
 
-	<script src="js/ContractGP.js?v=<%=ts%>"></script>
-	<script src="js/logout.js"></script>
-	<script src="js/username.js"></script>
-	<script src="js/createdby.js"></script>
-	<script src="js/modifiedby.js"></script>
-	<script src="js/Sessionfilter.js"></script>
+	<script
+		src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
+	<script
+		src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+	<script
+		src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
+	<script
+		src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
+	<script
+		src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
+	<script
+		src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
+
+	<script src="js/ContractGP.js?v=<%=jsVersion%>"></script>
+	<script src="js/logout.js?v=<%=jsVersion%>"></script>
+	<script src="js/username.js?v=<%=jsVersion%>"></script>
+	<script src="js/createdby.js?v=<%=jsVersion%>"></script>
+	<script src="js/modifiedby.js?v=<%=jsVersion%>"></script>
+	<script src="js/Sessionfilter.js?v=<%=jsVersion%>"></script>
 
 	<script>
 		let today = new Date().toISOString().split('T')[0];
@@ -1900,6 +1780,6 @@ document.getElementById('joining').addEventListener('change', function () {
 		$("#nomineedate").attr("max", today);
 		$("#nomineedate1").attr("max", today);
 	</script>
-	<!-- Page level custom scripts -->
+
 </body>
 </html>

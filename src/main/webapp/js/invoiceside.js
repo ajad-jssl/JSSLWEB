@@ -13,6 +13,109 @@ document.getElementById("#modalScroll").addEventListener("click", function () {
 	$('#exampleModalScrollable').modal('show');
 });
 
+// ---------- Shared helper ----------
+function normalizeText(str) {
+    return (str || "").replace(/\s+/g, " ").trim().toLowerCase();
+}
+
+/**
+ * Dedupe a list of {id, label} records by normalized label text.
+ * If a duplicate is found, prefer the one whose id matches selectedId
+ * (so pre-selection still works correctly even if the backend has
+ * two different ids pointing to the same display text).
+ */
+function dedupeByLabel(records, selectedId) {
+    const map = new Map(); // key: normalized label -> record
+    records.forEach((rec) => {
+        const key = normalizeText(rec.label);
+        if (!key) return;
+        const existing = map.get(key);
+        if (!existing) {
+            map.set(key, rec);
+        } else if (selectedId && String(rec.id) === String(selectedId)) {
+            // incoming one is the actual selected record — prefer it
+            map.set(key, rec);
+        }
+        // else: keep the first one seen, drop this duplicate
+    });
+    return Array.from(map.values());
+}
+
+function populateSelect(selectElement, records, selectedId, placeholder, fallbackText) {
+    selectElement.innerHTML = `<option value="">${placeholder}</option>`;
+
+    let matched = false;
+    records.forEach((rec) => {
+        const option = document.createElement("option");
+        option.value = rec.id;
+        option.textContent = rec.label;
+        if (selectedId && String(rec.id) === String(selectedId)) {
+            option.selected = true;
+            matched = true;
+        }
+        selectElement.appendChild(option);
+    });
+
+    if (!matched && fallbackText) {
+        const fallbackOption = document.createElement("option");
+        fallbackOption.value = fallbackText;
+        fallbackOption.textContent = fallbackText;
+        fallbackOption.selected = true;
+        selectElement.insertBefore(fallbackOption, selectElement.children[1] || null);
+    }
+}
+
+
+let hsnMasterList = [];
+let serviceMasterList = [];
+
+async function fetchhsn() {
+    try {
+        const url = new URL(`/jssl/master/listHsncodemasternew`, baseUrl);
+        const response = await fetch(url, {
+            method: "GET",
+            credentials: "include"
+        });
+        if (!response.ok) throw new Error("Failed to fetch hsn codes");
+
+        const json = await response.json();
+
+        if (json.status !== "yes" || !json.Data.length) {
+            console.warn("No hsn codes found.");
+            return;
+        }
+
+        // Cache globally for per-row dropdowns
+        hsnMasterList = json.Data;
+
+    } catch (error) {
+        console.error("Error fetching hsn codes:", error);
+    }
+}
+
+async function fetchservice() {
+    try {
+        const url = new URL(`/jssl/master/listservicecodemasternew`, baseUrl);
+        const response = await fetch(url, {
+            method: "GET",
+            credentials: "include"
+        });
+        if (!response.ok) throw new Error("Failed to fetch service codes");
+
+        const json = await response.json();
+
+        if (json.status !== "yes" || !json.Data.length) {
+            console.warn("No service codes found.");
+            return;
+        }
+
+        // Cache globally for per-row dropdowns
+        serviceMasterList = json.Data;
+
+    } catch (error) {
+        console.error("Error fetching service codes:", error);
+    }
+}
 
 function loadAllowedActions() {
     // Get current JSP page name dynamically
@@ -59,17 +162,23 @@ function loadAllowedActions() {
 }
 document.addEventListener("DOMContentLoaded", function () {
 	loadAllowedActions();
-    const selectedFactoryId = localStorage.getItem("selectedFactoryId"); // Get factory_id from localStorage
+	fetchhsn();
+	fetchservice();
+	fetchBusinessUnitList();       
+    fetchInvoiceAddressList();     
+	fetchWorkOrderList();          
+	fetchConsigneeAddressList();   
+    const selectedFactoryId = sessionStorage.getItem("selectedFactoryId"); // Get factory_id from sessionStorage
     if (selectedFactoryId) {
         fetchCont(selectedFactoryId); // Fetch contractor list on page load
     } else {
-        console.error("No factory ID found in localStorage.");
+        console.error("No factory ID found in sessionStorage.");
     }
 
     // Add event listener for contractor dropdown change
     document.getElementById("cont").addEventListener("change", function () {
         const selectedContractorId = this.value; // Get selected contractor ID
-        const selectedFactoryId = localStorage.getItem("selectedFactoryId"); // Get factory ID again
+        const selectedFactoryId = sessionStorage.getItem("selectedFactoryId"); // Get factory ID again
 
         if (selectedContractorId) {
             fetchLoad(selectedFactoryId, selectedContractorId); // Fetch load dropdown
@@ -167,309 +276,448 @@ async function fetchLoad(factoryId, contractId) {
     }
 }
 
+async function fetchSalebusunit(targetId = "bus", currentValueText = null) {
+    try {
+        const url = new URL(`/jssl/contract/listbusinessunitnew`, baseUrl);
+
+        const response = await fetch(url, {
+            method: "GET",
+            credentials: "include"
+        });
+        if (!response.ok) throw new Error("Failed to fetch sale order types");
+
+        const json = await response.json();
+
+        if (json.status !== "yes" || !json.Data.length) {
+            console.warn("No sale order types found.");
+            return;
+        }
+
+        const selectElement = document.getElementById(targetId);
+        if (!selectElement) return;
+
+        selectElement.innerHTML = `<option value="">Select Business Unit</option>`;
+
+        //let matchFound = false;
+
+		json.Data.forEach((type) => {
+		    if (type.business_unit_id && type.business_unit_name) {
+		        const bindaddress = type.business_unit_name + type.location + '(' + type.gst_number + ')';
+
+		        const option = document.createElement("option");
+		        option.value = type.business_unit_id;
+		        option.textContent = bindaddress;
+
+		        // Loosen the match — check if currentValueText starts with the business unit name
+		        if (currentValueText && currentValueText.startsWith(type.business_unit_name)) {
+		            option.selected = true;
+		            matchFound = true;
+		        }
+
+		        selectElement.appendChild(option);
+		    }
+		});
+
+        // Only add currentValueText as a fallback option if it wasn't found in the API list
+        /*if (currentValueText && !matchFound) {
+            const currentOption = document.createElement("option");
+            currentOption.value = currentValueText;
+            currentOption.textContent = currentValueText;
+            currentOption.selected = true;
+            selectElement.insertBefore(currentOption, selectElement.firstChild.nextSibling);
+        }*/
+    } catch (error) {
+        console.error("Error fetching sale order types:", error);
+    }
+}
+
+async function fetchinvoiceto(targetId = "into", currentValueText = null) {
+    try {
+        const url = new URL(`/jssl/invoiceConsigneeAddress/getInvoiceAddress`, baseUrl);
+        const response = await fetch(url, { method: "GET", credentials: "include" });
+        if (!response.ok) throw new Error("Failed to fetch invoice addresses");
+        const json = await response.json();
+        if (json.status !== "yes" || !json.InvoiceAddress?.length) {
+            console.warn("No invoice addresses found.");
+            return;
+        }
+
+        const selectElement = document.getElementById(targetId);
+        if (!selectElement) return;
+
+        const records = json.InvoiceAddress
+            .filter(t => t.is_verified == 1 && t.id && t.address)
+            .map(t => ({ id: t.id, label: t.address }));
+
+        // find id matching currentValueText by exact address text, if any
+        let matchedId = null;
+        const match = records.find(r => normalizeText(r.label) === normalizeText(currentValueText));
+        if (match) matchedId = match.id;
+
+        const deduped = dedupeByLabel(records, matchedId);
+        populateSelect(selectElement, deduped, matchedId, "Select invoice to", matchedId ? null : currentValueText);
+    } catch (error) {
+        console.error("Error fetching invoice addresses:", error);
+    }
+}
+
+async function fetchSalework(targetId = "work", currentValueText = null) {
+    try {
+        const url = new URL(`/jssl/contract/listworkordernew`, baseUrl);
+        const response = await fetch(url, { method: "GET", credentials: "include" });
+        if (!response.ok) throw new Error("Failed to fetch work orders");
+        const json = await response.json();
+        if (json.status !== "yes" || !json.Data.length) {
+            console.warn("No work orders found.");
+            return;
+        }
+
+        const selectElement = document.getElementById(targetId);
+        if (!selectElement) return;
+
+        const records = json.Data
+            .filter(t => t.work_id && t.workorder_no)
+            .map(t => ({ id: t.work_id, label: t.workorder_no }));
+
+        let matchedId = null;
+        const match = records.find(r => normalizeText(r.label) === normalizeText(currentValueText));
+        if (match) matchedId = match.id;
+
+        const deduped = dedupeByLabel(records, matchedId);
+        populateSelect(selectElement, deduped, matchedId, "Select work order", matchedId ? null : currentValueText);
+    } catch (error) {
+        console.error("Error fetching work orders:", error);
+    }
+}
+
+async function fetchconname(targetId = "consig", currentValueText = null) {
+    try {
+        const url = new URL(`/jssl/invoiceConsigneeAddress/getConsigneeAddressNew`, baseUrl);
+        const response = await fetch(url, { method: "GET", credentials: "include" });
+        if (!response.ok) throw new Error("Failed to fetch consignee addresses");
+        const json = await response.json();
+        if (json.status !== "yes" || !json.ConsigneeAddress?.length) {
+            console.warn("No consignee addresses found.");
+            return;
+        }
+
+        const selectElement = document.getElementById(targetId);
+        if (!selectElement) return;
+
+        const records = json.ConsigneeAddress
+            .filter(t => t.is_verified == 1 && t.id && t.address)
+            .map(t => ({ id: t.id, label: t.address }));
+
+        let matchedId = null;
+        const match = records.find(r => normalizeText(r.label) === normalizeText(currentValueText));
+        if (match) matchedId = match.id;
+
+        const deduped = dedupeByLabel(records, matchedId);
+        populateSelect(selectElement, deduped, matchedId, "Select", matchedId ? null : currentValueText);
+    } catch (error) {
+        console.error("Error fetching consignee addresses:", error);
+    }
+}
+
 // Fetch the QsPacking data using contractor_id and load_id
 async function fetchQsPackingData(contractId, loadId) {
     try {
-        const selectedFactoryId = localStorage.getItem("selectedFactoryId"); // Get the factory_id from localStorage
+        const selectedFactoryId = sessionStorage.getItem("selectedFactoryId"); // Get the factory_id from sessionStorage
 
         // Ensure factory_id is available
         if (!selectedFactoryId) {
-            console.error("No factory ID found in localStorage.");
+            console.error("No factory ID found in sessionStorage.");
             return;
         }
 
         const url = new URL(`/jssl/invoice/getcontractqspackingdetailsnew`, baseUrl);
-        
+
         // Append the parameters to the URL
         url.searchParams.append("contract_id", contractId);
         url.searchParams.append("load_id", loadId);
         url.searchParams.append("factory_id", selectedFactoryId); // Append factory_id as well
 
-		const response = await fetch(url,{
-						           method: "GET",
-						           credentials: "include"   // ✅ Always send JSESSIONID cookie
-						       });
+        const response = await fetch(url, {
+            method: "GET",
+            credentials: "include"   // ✅ Always send JSESSIONID cookie
+        });
         if (!response.ok) throw new Error("Failed to fetch QsPacking data");
 
         const json = await response.json();
-        
+
+        // Declared here (function-level scope) so it's still visible later
+        // when we build the QsPacking_Data rows below.
+        let contractor = null;
+
         if (json.Grand_Total_value && json.Grand_Total_value.length > 0) {
-        const Grand_Total_value = json.Grand_Total_value[0];
-        
-            const grandvalue = Grand_Total_value.Grand_Total_tax; // Assuming the bank details ID is inside this property
+            const Grand_Total_value = json.Grand_Total_value[0];
+
+            const grandvalue = Grand_Total_value.Grand_Total_tax;
             const grand1 = document.getElementById("ingrandv");
             if (grand1) {
-                grand1.value = grandvalue; // Populate the bank name field
+                grand1.value = grandvalue;
             }
-         } else {
-            console.warn("No Contractor Data found.");
-        }
-        
-        if (json.QsPacking_Data && json.QsPacking_Data.length > 0) {
-        const QsPacking = json.QsPacking_Data[0];
-        
-            const freightValue = QsPacking.freight; // Assuming the bank details ID is inside this property
-            const frie = document.getElementById("freight");
-            if (frie) {
-                frie.value = freightValue; // Populate the bank name field
-            }
-            
-            const pnidValue = QsPacking.pn_id; // Assuming the bank details ID is inside this property
-            const pnid = document.getElementById("id11");
-            if (pnid) {
-                pnid.value = pnidValue; // Populate the bank name field
-            }
-            
         } else {
             console.warn("No Contractor Data found.");
         }
+
+        if (json.QsPacking_Data && json.QsPacking_Data.length > 0) {
+            const QsPacking = json.QsPacking_Data[0];
+
+            const freightValue = QsPacking.freight;
+            const frie = document.getElementById("freight");
+            if (frie) {
+                frie.value = freightValue;
+            }
+
+            const pnidValue = QsPacking.pn_id;
+            const pnid = document.getElementById("id11");
+            if (pnid) {
+                pnid.value = pnidValue;
+            }
+
+        } else {
+            console.warn("No Contractor Data found.");
+        }
+
         // Check if Contractor_Data exists and contains items
         if (json.Contractor_Data && json.Contractor_Data.length > 0) {
             // Get the first item (or iterate if needed)
-            const contractor = json.Contractor_Data[0];
+            contractor = json.Contractor_Data[0]; // was: const contractor = ...
 
             // Set the bank name from the contractor data
-            const bankDetailsIdValue = contractor.bank_details_id_value; // Assuming the bank details ID is inside this property
+            const bankDetailsIdValue = contractor.bank_details_id_value;
             const bankInput = document.getElementById("bank");
             if (bankInput) {
-                bankInput.value = bankDetailsIdValue; // Populate the bank name field
+                bankInput.value = bankDetailsIdValue;
             }
-        // Set the work order from the contractor data
-            const workIdValue = contractor.work_id_value; // Assuming the work order ID is inside this property
-            const workInput = document.getElementById("work");
-            if (workInput) {
-                workInput.value = workIdValue; // Populate the work order field
-            }
-            const InvoiceTypeCal = contractor.invoice_type_calculation; // Assuming the work order ID is inside this property
+
+            fetchSalework("work", contractor.work_id_value);
+
+            const InvoiceTypeCal = contractor.invoice_type_calculation;
             const InvoiceTypeCalcu = document.getElementById("intypecal");
             if (InvoiceTypeCalcu) {
-                InvoiceTypeCalcu.value = InvoiceTypeCal; // Populate the work order field
+                InvoiceTypeCalcu.value = InvoiceTypeCal;
             }
-            const InvoiceToValue = contractor.invoice_to_id_value; // Assuming the work order ID is inside this property
-            const InvoiceTo = document.getElementById("ininto");
-            if (InvoiceTo) {
-                InvoiceTo.value = InvoiceToValue; // Populate the work order field
-            }
-            const ProductValue = contractor.product_desc_id; // Assuming the work order ID is inside this property
+
+            fetchinvoiceto("ininto", contractor.invoice_to_id_value);
+
+            const ProductValue = contractor.product_desc_id;
             const ProDec = document.getElementById("prodesc");
             if (ProDec) {
-                ProDec.value = ProductValue; // Populate the work order field
+                ProDec.value = ProductValue;
             }
-            const ShipmentValue = contractor.shipment_mode_id_value; // Assuming the work order ID is inside this property
+
+            const ShipmentValue = contractor.shipment_mode_id_value;
             const Ship = document.getElementById("shipmode");
             if (Ship) {
-                Ship.value = ShipmentValue; // Populate the work order field
+                Ship.value = ShipmentValue;
             }
-            const ExportValue = contractor.export; // Assuming the work order ID is inside this property
+
+            const ExportValue = contractor.export;
             const exp = document.getElementById("expt");
             if (exp) {
-                exp.value = ExportValue; // Populate the work order field
+                exp.value = ExportValue;
             }
-            const TaxPayValye = contractor.tax_payable; // Assuming the work order ID is inside this property
+
+            const TaxPayValye = contractor.tax_payable;
             const taxpay = document.getElementById("taxres");
             if (taxpay) {
-                taxpay.value = TaxPayValye; // Populate the work order field
+                taxpay.value = TaxPayValye;
             }
-            const PercenValue = contractor.percentage_value; // Assuming the work order ID is inside this property
+
+            const PercenValue = contractor.percentage_value;
             const per = document.getElementById("percen");
             if (per) {
-                per.value = PercenValue; // Populate the work order field
+                per.value = PercenValue;
             }
-            const ConValue = contractor.consignee_id_value; // Assuming the work order ID is inside this property
-            const conadd = document.getElementById("billing");
-            if (conadd) {
-                conadd.value = ConValue; // Populate the work order field
-            }
-            const DelValue = contractor.delivery_condition_id_value; // Assuming the work order ID is inside this property
+
+            fetchconname("billing", contractor.consignee_id_value);
+
+            const DelValue = contractor.delivery_condition_id_value;
             const del = document.getElementById("delivery");
             if (del) {
-                del.value = DelValue; // Populate the work order field
+                del.value = DelValue;
             }
-            const RegValue = contractor.reg_office_id_value; // Assuming the work order ID is inside this property
+
+            const RegValue = contractor.reg_office_id_value;
             const reg = document.getElementById("office");
             if (reg) {
-                reg.value = RegValue; // Populate the work order field
+                reg.value = RegValue;
             }
+
             if (contractor.export === 'yes') {
-                    $('#exportFields1').show();
-                } else {
-                    $('#exportFields1').hide();
-                }
-            const AreaValue = contractor.area_no; // Assuming the work order ID is inside this property
+                $('#exportFields1').show();
+            } else {
+                $('#exportFields1').hide();
+            }
+
+            const AreaValue = contractor.area_no;
             const area = document.getElementById("are");
             if (area) {
-                area.value = AreaValue; // Populate the work order field
+                area.value = AreaValue;
             }
-            const LotValue = contractor.lot_no; // Assuming the work order ID is inside this property
+
+            const LotValue = contractor.lot_no;
             const lot = document.getElementById("lut");
             if (lot) {
-                lot.value = LotValue; // Populate the work order field
+                lot.value = LotValue;
             }
-            const contValue = contractor.containter_no; // Assuming the work order ID is inside this property
+
+            const contValue = contractor.containter_no;
             const cont = document.getElementById("connum");
             if (cont) {
-                cont.value = contValue; // Populate the work order field
+                cont.value = contValue;
             }
-            const epcgnoValue = contractor.epcgno; // Assuming the work order ID is inside this property
+
+            const epcgnoValue = contractor.epcgno;
             const epcgno = document.getElementById("epog");
             if (epcgno) {
-                epcgno.value = epcgnoValue; // Populate the work order field
+                epcgno.value = epcgnoValue;
             }
-            const exptitelvalue = contractor.export_title; // Assuming the work order ID is inside this property
+
+            const exptitelvalue = contractor.export_title;
             const expval = document.getElementById("exptitle");
             if (expval) {
-                expval.value = exptitelvalue; // Populate the work order field
+                expval.value = exptitelvalue;
             }
-            const ServiceValue = contractor.s_code_value; // Assuming the work order ID is inside this property
+
+            const ServiceValue = contractor.s_code_value;
             const Scode = document.getElementById("service");
             if (Scode) {
-                Scode.value = ServiceValue; // Populate the work order field
+                Scode.value = ServiceValue;
             }
-            const HsnValue = contractor.h_code_value; // Assuming the work order ID is inside this property
+
+            const HsnValue = contractor.h_code_value;
             const Hcode = document.getElementById("hsncode");
             if (Hcode) {
-                Hcode.value = HsnValue; // Populate the work order field
+                Hcode.value = HsnValue;
             }
-            const BNameValue = contractor.businessUnitName; // Assuming the work order ID is inside this property
-            const Bname = document.getElementById("inbusunit");
-            if (Bname) {
-                Bname.value = BNameValue; // Populate the work order field
-            }
-            const ScodeNameValue = contractor.s_code_value; // Assuming the work order ID is inside this property
-            const Scodename = document.getElementById("officeservice");
-            if (Scodename) {
-                Scodename.value = ScodeNameValue; // Populate the work order field
-            }
-            const HcodeNameValue = contractor.h_code_value; // Assuming the work order ID is inside this property
-            const Hcodename = document.getElementById("officehsn");
-            if (Hcodename) {
-                Hcodename.value = HcodeNameValue; // Populate the work order field
-            }
-            const con_slnoValue = contractor.con_slno; // Assuming the work order ID is inside this property
+
+            // Populate the business unit dropdown
+            fetchSalebusunit("inbusunit", contractor.businessUnitName);
+
+            const con_slnoValue = contractor.con_slno;
             const con_slno = document.getElementById("id11con");
             if (con_slno) {
-                con_slno.value = con_slnoValue; // Populate the work order field
+                con_slno.value = con_slnoValue;
             }
         } else {
             console.warn("No Contractor Data found.");
         }
-        
 
         // Check if QsPacking_Data exists and contains items
-      /*  if (json.QsPacking_Data && json.QsPacking_Data.length > 0) {
-            const container = document.querySelector(".dynamic-row"); // Find the container for dynamic rows
-            container.innerHTML = ""; // Clear any existing rows
+        if (json.QsPacking_Data && json.QsPacking_Data.length > 0) {
+            const container = document.querySelector(".dynamic-row");
+            container.innerHTML = "";
 
-            // Loop through QsPacking_Data and create input fields dynamically
+            // Contractor-level codes, if present, take priority for every row.
+            // If contractor is null, or the field is empty, this falls back
+            // to the existing "as is" behavior (blank / unselected dropdown).
+            const contractorServiceCode = contractor ? contractor.s_code_value : null;
+            const contractorHsnCode = contractor ? contractor.h_code_value : null;
+
             json.QsPacking_Data.forEach((item, index) => {
+
+                const showLabel = index === 0;
+
                 const div = document.createElement("div");
-                div.classList.add("form-group-container", "col-md-12"); // Add classes to style the row
+                div.classList.add("form-group-container", "col-md-12");
 
-                // Create fields dynamically based on the data
+                // Build Service Code <option> list — pre-select the option
+                // that matches contractor.s_code_value, if it exists.
+                const serviceOptions = serviceMasterList.map(s => {
+                    const isMatch = contractorServiceCode && s.service_code === contractorServiceCode;
+                    return `
+                        <option value="${s.service_code}" ${isMatch ? 'selected' : ''}>
+                            ${s.service_code} - ${s.service_description}
+                        </option>`;
+                }).join("");
+
+                // Build HSN Code <option> list — pre-select the option
+                // that matches contractor.h_code_value, if it exists.
+                const hsnOptions = hsnMasterList.map(h => {
+                    const isMatch = contractorHsnCode && h.service_code === contractorHsnCode;
+                    return `
+                        <option value="${h.service_code}" ${isMatch ? 'selected' : ''}>
+                            ${h.service_code} - ${h.service_description}
+                        </option>`;
+                }).join("");
+
                 div.innerHTML = `
-                    <div class="form-row">
+                    <div class="form-row flex-nowrap">
+
                         <div class="form-group col-md-1 col-sm-12">
-                            <label for="uom_${index}"><b>UOM</b></label>
-                            <input type="text" id="uom_${index}" value="${item.uom_name}" class="form-control" disabled>
+                            ${showLabel ? '<label><b>UOM</b></label>' : ''}
+                            <input type="text" value="${item.uom_name}" class="form-control form-control-sm" disabled>
                         </div>
+
                         <div class="form-group col-md-1 col-sm-12">
-                            <label for="qty_${index}"><b>Quantity</b></label>
-                            <input type="number" id="qty_${index}" value="${item.qty}" class="form-control" disabled>
+                            ${showLabel ? '<label><b>Quantity</b></label>' : ''}
+                            <input type="number" value="${item.qty}" class="form-control form-control-sm text-right" disabled>
                         </div>
+
                         <div class="form-group col-md-1 col-sm-12">
-                            <label for="kg_${index}"><b>Kg</b></label>
-                            <input type="number" id="kg_${index}" value="${item.per_kgs}" class="form-control" disabled>
+                            ${showLabel ? '<label><b>Kg</b></label>' : ''}
+                            <input type="number" value="${item.per_kgs}" class="form-control form-control-sm text-right" disabled>
                         </div>
+
                         <div class="form-group col-md-1 col-sm-12">
-                            <label for="unit_price_${index}"><b>Unit Price</b></label>
-                            <input type="number" id="unit_price_${index}" value="${item.unit_price}" class="form-control" disabled>
+                            ${showLabel ? '<label><b>Unit Price</b></label>' : ''}
+                            <input type="number" value="${item.unit_price}" class="form-control form-control-sm text-right" disabled>
                         </div>
+
                         <div class="form-group col-md-1 col-sm-12">
-                            <label for="total_${index}"><b>Total</b></label>
-                            <input type="number" id="total_${index}" value="${item.total}" class="form-control" disabled>
+                            ${showLabel ? '<label><b>Total</b></label>' : ''}
+                            <input type="number" value="${item.total}" class="form-control form-control-sm text-right" disabled>
                         </div>
+
+                        <div class="form-group col-md-1 col-sm-12">
+                            ${showLabel ? '<label><b>Milestone</b></label>' : ''}
+                            <input type="text" value="${item.milestone_name}" class="form-control form-control-sm" disabled>
+                        </div>
+
+                        <div class="form-group col-md-1 col-sm-12">
+                            ${showLabel ? '<label><b>Invoice Type</b></label>' : ''}
+                            <input type="text" value="${item.scrap_name_type_id}" class="form-control form-control-sm" disabled>
+                        </div>
+
                         <div class="form-group col-md-2 col-sm-12">
-                            <label for="mile_${index}"><b>Milestone</b></label>
-                            <input type="text" id="mile_${index}" value="${item.milestone_name}" class="form-control" disabled>
+                            ${showLabel ? '<label><b>Service Code</b></label>' : ''}
+                            <select class="form-control form-control-sm service-code-select" data-slno="${item.slno || ''}">
+                                <option value="" ${!contractorServiceCode ? 'selected' : ''}>Select Service Code</option>
+                                ${serviceOptions}
+                            </select>
+                            <div class="error-message service-code-error"></div>
                         </div>
+
                         <div class="form-group col-md-2 col-sm-12">
-                            <label for="intype_${index}"><b>Invoice Type</b></label>
-                            <input type="text" id="intype_${index}" value="${item.scrap_name_type_id}" class="form-control" disabled>
+                            ${showLabel ? '<label><b>HSN Code</b></label>' : ''}
+                            <select class="form-control form-control-sm hsn-code-select" data-slno="${item.slno || ''}">
+                                <option value="" ${!contractorHsnCode ? 'selected' : ''}>Select HSN Code</option>
+                                ${hsnOptions}
+                            </select>
                         </div>
-                        
-                        </div>
-                `;*/
-				// Check if QsPacking_Data exists and contains items
-				     if (json.QsPacking_Data && json.QsPacking_Data.length > 0) {
-				         const container = document.querySelector(".dynamic-row"); // Find the container for dynamic rows
-				         container.innerHTML = ""; // Clear any existing rows
 
-				         // Loop through QsPacking_Data and create input fields dynamically
-						json.QsPacking_Data.forEach((item, index) => {
+                    </div>
 
-						    const showLabel = index === 0;
-
-						    const div = document.createElement("div");
-						    div.classList.add("form-group-container", "col-md-12");
-
-						    div.innerHTML = `
-						        <div class="form-row">
-
-						            <div class="form-group col-md-1 col-sm-12">
-						                ${showLabel ? '<label><b>UOM</b></label>' : ''}
-						                <input type="text" value="${item.uom_name}" class="form-control form-control-sm" disabled>
-						            </div>
-
-						            <div class="form-group col-md-1 col-sm-12">
-						                ${showLabel ? '<label><b>Quantity</b></label>' : ''}
-						                <input type="number" value="${item.qty}" class="form-control form-control-sm text-right" disabled>
-						            </div>
-
-						            <div class="form-group col-md-1 col-sm-12">
-						                ${showLabel ? '<label><b>Kg</b></label>' : ''}
-						                <input type="number" value="${item.per_kgs}" class="form-control form-control-sm text-right" disabled>
-						            </div>
-
-						            <div class="form-group col-md-1 col-sm-12">
-						                ${showLabel ? '<label><b>Unit Price</b></label>' : ''}
-						                <input type="number" value="${item.unit_price}" class="form-control form-control-sm text-right" disabled>
-						            </div>
-
-						            <div class="form-group col-md-1 col-sm-12">
-						                ${showLabel ? '<label><b>Total</b></label>' : ''}
-						                <input type="number" value="${item.total}" class="form-control form-control-sm text-right" disabled>
-						            </div>
-
-						            <div class="form-group col-md-2 col-sm-12">
-						                ${showLabel ? '<label><b>Milestone</b></label>' : ''}
-						                <input type="text" value="${item.milestone_name}" class="form-control form-control-sm" disabled>
-						            </div>
-
-						            <div class="form-group col-md-2 col-sm-12">
-						                ${showLabel ? '<label><b>Invoice Type</b></label>' : ''}
-						                <input type="text" value="${item.scrap_name_type_id}" class="form-control form-control-sm" disabled>
-						            </div>
-
-						        </div>
-
-						        ${showLabel ? '<hr>' : ''}
-						    `;
-                container.appendChild(div); // Append the new dynamic row
-             });
+                    ${showLabel ? '<hr>' : ''}
+                `;
+                container.appendChild(div);
+            });
         } else {
             console.warn("No QsPacking data found.");
         }
-       // Now, handle tax data and append it to .dynamic-row1
-        if (json.tax && json.tax.length > 0) {
-            const taxContainer = document.querySelector(".dynamic-row1"); // Find the container for dynamic tax rows
-            taxContainer.innerHTML = ""; // Clear any existing rows
 
-            // Loop through tax data and create dynamic rows
+        // Now, handle tax data and append it to .dynamic-row1
+        if (json.tax && json.tax.length > 0) {
+            const taxContainer = document.querySelector(".dynamic-row1");
+            taxContainer.innerHTML = "";
+
             json.tax.forEach((tax, taxIndex) => {
                 const div = document.createElement("div");
-                div.classList.add("form-group", "col-md-12"); // Add classes to style the tax row
+                div.classList.add("form-group", "col-md-12");
 
-                // Create fields dynamically based on tax data
                 div.innerHTML = `
                     <div class="form-row">
                         <div class="form-group col-md-3 col-sm-12">
@@ -486,8 +734,8 @@ async function fetchQsPackingData(contractId, loadId) {
                         </div>
                     </div>
                 `;
-                
-                taxContainer.appendChild(div); // Append the new dynamic tax row
+
+                taxContainer.appendChild(div);
             });
         } else {
             console.warn("No tax data found.");
@@ -498,7 +746,7 @@ async function fetchQsPackingData(contractId, loadId) {
 }
 
 document.addEventListener("DOMContentLoaded", function () {
-    const selectedFactoryId = localStorage.getItem("selectedFactoryId"); // Get factory_id from localStorage
+    const selectedFactoryId = sessionStorage.getItem("selectedFactoryId"); // Get factory_id from sessionStorage
     if (selectedFactoryId) {
         fetchinvoice(selectedFactoryId);
         fetchBgType();
@@ -506,7 +754,7 @@ document.addEventListener("DOMContentLoaded", function () {
         fetchinvoiceEdit(selectedFactoryId);
         fetchBgTypeedit();
     } else {
-        console.error("No factory ID found in localStorage.");
+        console.error("No factory ID found in sessionStorage.");
     }
 });
 
@@ -654,7 +902,7 @@ let currentFactoryIdQSInvoice = null;
 function fetchUserList111(selectedFactoryId) {
 
     currentFactoryIdQSInvoice = selectedFactoryId ||
-                                localStorage.getItem("selectedFactoryId");
+                                sessionStorage.getItem("selectedFactoryId");
 
     // 🔥 Destroy existing DataTable
     if ($.fn.DataTable.isDataTable('#tableID')) {
@@ -902,6 +1150,8 @@ async function fetchinvoice() {
                 selectElement.appendChild(option);
             }
         });
+		// NEW: run once after populating, in case a value is pre-selected
+		toggleSubcontractingFields();
     } catch (error) {
         console.error("Error fetching sale order types:", error);
     }
@@ -1033,63 +1283,171 @@ async function fetchBgTypeedit() {
 
 function openModalAdd() {
 
-	
     var username = document.getElementById('intype444').value.trim();
     var prodes = document.getElementById('prodes').value.trim();
     var remark = document.getElementById('remark').value.trim();
-    var showError = false; // Initialize showError variable
 
-    // Username Validation
+    var showError = false;
+
+    // Invoice Type
     if (username === '') {
-        document.getElementById('Vehicleerror').innerText = "Please select invoice type.";
+        document.getElementById('Vehicleerror').innerText =
+            "Please select invoice type.";
         document.getElementById('Vehicleerror').style.display = "inline-block";
         showError = true;
     } else {
         document.getElementById('Vehicleerror').innerText = "";
         document.getElementById('Vehicleerror').style.display = "none";
     }
-    
+
+
+    // Product Description
     if (prodes === '') {
-        document.getElementById('productCodeError3').innerText = "Please enter product description.";
+        document.getElementById('productCodeError3').innerText =
+            "Please enter product description.";
         document.getElementById('productCodeError3').style.display = "inline-block";
         showError = true;
     } else {
         document.getElementById('productCodeError3').innerText = "";
         document.getElementById('productCodeError3').style.display = "none";
     }
-    
+
+
+    // Remarks
     if (remark === '') {
-        document.getElementById('productCodeError4').innerText = "Please enter remarks.";
+        document.getElementById('productCodeError4').innerText =
+            "Please enter remarks.";
         document.getElementById('productCodeError4').style.display = "inline-block";
         showError = true;
     } else {
         document.getElementById('productCodeError4').innerText = "";
         document.getElementById('productCodeError4').style.display = "none";
     }
-   
-   // If no errors, proceed
+
+
+    // ============================================
+    // HSN / SERVICE CODE
+    // At least ONE is mandatory
+    // ============================================
+
+    const serviceSelects =
+        document.querySelectorAll(".service-code-select");
+
+    const hsnSelects =
+        document.querySelectorAll(".hsn-code-select");
+
+    console.log("Service selects:", serviceSelects.length);
+    console.log("HSN selects:", hsnSelects.length);
+
+    if (serviceSelects.length === 0 && hsnSelects.length === 0) {
+
+        console.log("No HSN / Service Code fields found.");
+
+    } else {
+
+        const totalRows = Math.max(
+            serviceSelects.length,
+            hsnSelects.length
+        );
+
+        for (let i = 0; i < totalRows; i++) {
+
+            const serviceVal =
+                serviceSelects[i]
+                    ? serviceSelects[i].value.trim()
+                    : '';
+
+            const hsnVal =
+                hsnSelects[i]
+                    ? hsnSelects[i].value.trim()
+                    : '';
+
+            console.log(
+                "Row:",
+                i,
+                "Service:",
+                serviceVal,
+                "HSN:",
+                hsnVal
+            );
+
+            // BOTH empty = error
+            if (serviceVal === '' && hsnVal === '') {
+
+                showError = true;
+
+                // Find error div corresponding to service select
+                if (serviceSelects[i]) {
+
+                    const errorDiv =
+                        serviceSelects[i]
+                            .parentElement
+                            .querySelector(".service-code-error");
+
+                    if (errorDiv) {
+                        errorDiv.innerText =
+                            "Please select either HSN Code or Service Code.";
+
+                        errorDiv.style.display = "inline-block";
+                    }
+                }
+
+            } else {
+
+                // At least one selected
+                if (serviceSelects[i]) {
+
+                    const errorDiv =
+                        serviceSelects[i]
+                            .parentElement
+                            .querySelector(".service-code-error");
+
+                    if (errorDiv) {
+                        errorDiv.innerText = "";
+                        errorDiv.style.display = "none";
+                    }
+                }
+            }
+        }
+    }
+
+
+    // ============================================
+    // OPEN MODAL
+    // ============================================
+
+    console.log("showError =", showError);
+
     if (!showError) {
-        $('#exampleModalCenter66').modal('show'); // Show the next modal (Ensure this modal exists)
+
+        console.log("Opening exampleModalCenter66...");
+
+        $('#exampleModalCenter66').modal('show');
+
+    } else {
+
+        console.log("Modal NOT opened because validation failed.");
+
     }
 }
    
-// Fetch selectedFactoryId from localStorage
-const selectedFactoryId = localStorage.getItem('selectedFactoryId');
+// Fetch selectedFactoryId from sessionStorage
+const selectedFactoryId = sessionStorage.getItem('selectedFactoryId');
 console.log('selectedFactoryId:', selectedFactoryId);
 
-function addevent() {
-	$('#exampleModalCenter66').modal('hide');
-    // Validate role code and role description
-    const selectedCOnt = document.getElementById("cont").selectedOptions[0]; // Get the selected option
-    const contid = selectedCOnt ? selectedCOnt.value : ''; // Get the contract_id
-    const contname = selectedCOnt ? selectedCOnt.textContent : ''; // Get the contract_name
-    
+async function addevent() {
+    $('#exampleModalCenter66').modal('hide');
+
+    const selectedCOnt = document.getElementById("cont").selectedOptions[0];
+    const contid = selectedCOnt ? selectedCOnt.value : '';
+    const contname = selectedCOnt ? selectedCOnt.textContent : '';
+
+    await saveServiceHsnSelections();
+
     $.ajax({
         url: new URL('/jssl/invoice/addnew', baseUrl),
         type: 'POST',
-		xhrFields: {
-			    withCredentials: true
-			},
+        xhrFields: { withCredentials: true },
         dataType: 'json',
         data: jQuery.param({
             contract_id: contid,
@@ -1106,6 +1464,10 @@ function addevent() {
             reference_no: ref.value,
             lc_number: lc.value,
             supply_place: sup.value,
+			vendorname: vendorname.value,
+			vendorinvno: vendorinvno.value,
+			vendorqty: vendorqty.value,
+			vendorinvdate: vendordate.value,
             s_t_exempted: exe.value,
             lr_docketno: dock.value,
             bg_no: bgno.value,
@@ -1115,15 +1477,28 @@ function addevent() {
             contract_name: contname,
             factory_id: selectedFactoryId,
             inc_type: intype444.value,
-            pn_id: id11.value
+            pn_id: id11.value,
+
+            // ---- Contract Details modal fields ----
+            business_unit_id: document.getElementById("inbusunit").value,
+            invoice_type_calculation: document.getElementById("intypecal").value,
+            invoice_to_id: document.getElementById("ininto").value,
+            product_desc_id: document.getElementById("prodesc").value,
+            shipment_mode_id: document.getElementById("shipmode").value,
+            work_id: document.getElementById("work").value,
+            export: document.getElementById("expt").value,
+            tax_ex_inc: document.getElementById("taxres").value,
+            percentage_value: document.getElementById("percen").value,
+            consignee_id: document.getElementById("billing").value,
+            bank_details_id: document.getElementById("bank").value,
+            delivery_condition_id: document.getElementById("delivery").value,
+            regd_office_id: document.getElementById("office").value
         }),
         success: function (data) {
             var result = data.message;
-
             if (result === "Success") {
                 const popup = $('<div class="popup">Steel Invoice Created Successfully!</div>')
                     .appendTo('body').hide().fadeIn(400);
-
                 setTimeout(function () {
                     popup.fadeOut(400, function () {
                         $(this).remove();
@@ -1143,31 +1518,77 @@ function addevent() {
         }
     });
 }
-
 // Function to safely set values in input fields
 function setInputValue(selector, value) {
     $(selector).val(value ? value : ""); // Set value or empty string if undefined/null
 }
 
+
+let businessUnitList = [];
+let invoiceAddressList = [];
+let workOrderList = [];
+let consigneeAddressList = [];
+
+async function fetchBusinessUnitList() {
+    try {
+        const url = new URL(`/jssl/contract/listbusinessunitnew`, baseUrl);
+        const response = await fetch(url, { method: "GET", credentials: "include" });
+        const json = await response.json();
+        businessUnitList = (json.status === "yes" && json.Data) ? json.Data : [];
+    } catch (error) {
+        console.error("Error fetching business unit list:", error);
+    }
+}
+
+async function fetchInvoiceAddressList() {
+    try {
+        const url = new URL(`/jssl/invoiceConsigneeAddress/getInvoiceAddress`, baseUrl);
+        const response = await fetch(url, { method: "GET", credentials: "include" });
+        const json = await response.json();
+        invoiceAddressList = (json.status === "yes" && json.InvoiceAddress) ? json.InvoiceAddress : [];
+    } catch (error) {
+        console.error("Error fetching invoice address list:", error);
+    }
+}
+
+async function fetchWorkOrderList() {
+    try {
+        const url = new URL(`/jssl/contract/listworkordernew`, baseUrl);
+        const response = await fetch(url, { method: "GET", credentials: "include" });
+        const json = await response.json();
+        workOrderList = (json.status === "yes" && json.Data) ? json.Data : [];
+    } catch (error) {
+        console.error("Error fetching work order list:", error);
+    }
+}
+
+async function fetchConsigneeAddressList() {
+    try {
+        const url = new URL(`/jssl/invoiceConsigneeAddress/getConsigneeAddressNew`, baseUrl);
+        const response = await fetch(url, { method: "GET", credentials: "include" });
+        const json = await response.json();
+        consigneeAddressList = (json.status === "yes" && json.ConsigneeAddress) ? json.ConsigneeAddress : [];
+    } catch (error) {
+        console.error("Error fetching consignee address list:", error);
+    }
+}
+
 async function editRecord(id) {
-	  //const allowed = window.allowedActions || [];
+    if (!allowed.includes("Verify")) {
+      alert(" You do not have permission to Verify.");
+      console.warn("Blocked verify attempt. User lacks verify permission.");
+      return;
+    }
 
-	if (!allowed.includes("Verify")) {
-	  alert(" You do not have permission to Verify.");
-	  console.warn("Blocked verify attempt. User lacks verify permission.");
-	  return;
-	}
-
-
-	console.log(" verify record with ID:", id);
+    console.log(" verify record with ID:", id);
     try {
         const url = new URL(`/jssl/invoice/searchidnew`, baseUrl);
         url.searchParams.append('id', id);
 
-		const response = await fetch(url,{
-						           method: "GET",
-						           credentials: "include"   // ✅ Always send JSESSIONID cookie
-						       });
+        const response = await fetch(url, {
+            method: "GET",
+            credentials: "include"
+        });
         if (!response.ok) throw new Error("Failed to fetch data");
         const json = await response.json();
 
@@ -1176,6 +1597,35 @@ async function editRecord(id) {
         const invoiceData = json.Invoice_Data || {};
         const GrandValue = json.Grand_Total_value || [];
         const ContData = json.Contractor_Data || [];
+
+        // ---- Resolve Contract Details display text from InvoiceContractMaster, fallback to ContData ----
+        const ContractMasterData = json.InvoiceContractMaster || {};
+
+        const matchedBU = businessUnitList.find(b => String(b.business_unit_id) === String(ContractMasterData.bid));
+        const buDisplay = matchedBU
+            ? `${matchedBU.business_unit_name} ${matchedBU.orgName},${matchedBU.location},${matchedBU.stateName}(${matchedBU.gst_number})`
+            : (ContData.length > 0 ? ContData[0].business_unit_name : "");
+
+        const matchedInvoiceTo = invoiceAddressList.find(a => String(a.id) === String(ContractMasterData.invoice_to_id));
+        const invoiceToDisplay = matchedInvoiceTo
+            ? matchedInvoiceTo.address
+            : (ContData.length > 0 ? ContData[0].invoice_to_id_value : "");
+
+        const matchedWork = workOrderList.find(w => String(w.work_id) === String(ContractMasterData.work_id));
+        const workDisplay = matchedWork
+            ? matchedWork.workorder_no
+            : (ContData.length > 0 ? ContData[0].work_id_value : "");
+
+        const matchedConsignee = consigneeAddressList.find(c => String(c.id) === String(ContractMasterData.consignee_id));
+        const consigneeDisplay = matchedConsignee
+            ? matchedConsignee.address
+            : (ContData.length > 0 ? ContData[0].consignee_id_value : "");
+
+        setInputValue("#bunitv",     buDisplay);
+        setInputValue("#intov",      invoiceToDisplay);
+        setInputValue("#workorderv", workDisplay);
+        setInputValue("#nandconv",   consigneeDisplay);
+        // ---- END Contract Details resolution ----
 
         $(".dynamic-row11, .dynamic-row122").empty(); // Clear previous content
 
@@ -1200,24 +1650,21 @@ async function editRecord(id) {
         // Set "freight" value
         setInputValue("#vfreight11", packingData.length > 0 ? packingData[0].freight : "");
         setInputValue("#pnverifyww", packingData.length > 0 ? packingData[0].pn_id : "");
-		setInputValue("#vcontract11up", packingData.length > 0 ? packingData[0].con_code_with_lot_no : "");
-		setInputValue("#vintypeedityww", packingData.length > 0 ? packingData[0].invoice_remarks_type_name : "");
-		
+        setInputValue("#vcontract11up", packingData.length > 0 ? packingData[0].con_code_with_lot_no : "");
+        setInputValue("#vintypeedityww", packingData.length > 0 ? packingData[0].invoice_remarks_type_name : "");
+
         // Set grand total value
         setInputValue("#grandv", GrandValue.length > 0 ? GrandValue[0].Grand_Total_tax : "");
 
-        // Set contractor data fields
+        // Set contractor data fields (bunitv/intov/workorderv/nandconv handled separately above,
+        // vendor fields handled separately below — NOT included here anymore)
         const contractorFields = {
-            "#bunitv": "business_unit_name",
             "#intypev": "invoice_type_calculation",
-            "#intov": "invoice_to_id_value",
             "#prodesv": "product_desc_id",
             "#shipmodev": "shipment_mode_id_value",
-            "#workorderv": "work_id_value",
             "#exptv": "export",
             "#taxresv": "tax_payable",
             "#percenv": "percentage_value",
-            "#nandconv": "consignee_id_value",
             "#banknamev": "bank_details_id_value",
             "#deliveryconv": "delivery_condition_id_value",
             "#officevv": "reg_office_id_value",
@@ -1228,23 +1675,27 @@ async function editRecord(id) {
             "#connumv": "containter_no",
             "#epogv": "epcgno",
             "#exptitlev": "export_title",
-            "#newscode2": "s_code_value",
-            "#newhcode2": "h_code_value",
-            
         };
-        
+
         const TaxFields = {
-	        "#bvaue": "basic_value",
-	        "#pdptv": "optd",
-	        "#pdptcv": "optc_p",
-	        "#advA": "taxable",
-	        "#advan": "non_taxable"
-	      };
+            "#bvaue": "basic_value",
+            "#pdptv": "optd",
+            "#pdptcv": "optc_p",
+            "#advA": "taxable",
+            "#advan": "non_taxable"
+        };
 
         Object.keys(contractorFields).forEach(selector => {
             setInputValue(selector, ContData.length > 0 ? ContData[0][contractorFields[selector]] : "");
         });
-        
+
+        // ---- FIX: vendor fields don't always live on ContData[0]; find the row that actually
+		setInputValue("#vendornamev", invoiceData.vendorname);
+		setInputValue("#vendorinvnov", invoiceData.vendorinvno);
+		setInputValue("#vendorqtyv", invoiceData.vendorqty);
+		setInputValue("#vendordatev", toDateInputValue(invoiceData.vendorinvdate));
+        // ---- END vendor fields fix ----
+
         Object.keys(TaxFields).forEach(selector => {
             setInputValue(selector, taxData.length > 0 ? taxData[0][TaxFields[selector]] : "");
         });
@@ -1252,91 +1703,87 @@ async function editRecord(id) {
         // Show/hide export field based on "export" value
         $('#exportFields1verify').toggle(ContData.length > 0 && ContData[0].export === 'yes');
 
-        // Append packing data
-     /*   packingData.forEach((item) => {
+        packingData.forEach((item, index) => {
+
+            const showLabel = index === 0;
+
+            const selectedService = serviceMasterList.find(s => s.service_code == item.scode);
+            const selectedHsn = hsnMasterList.find(h => h.service_code == item.hsncode);
+
+            const serviceDisplay = selectedService
+                ? `${selectedService.service_code} - ${selectedService.service_description}`
+                : (item.scode || "");
+
+            const hsnDisplay = selectedHsn
+                ? `${selectedHsn.service_code} - ${selectedHsn.service_description}`
+                : (item.hsncode || "");
+
             $(".dynamic-row11").append(`
                 <div class="row align-items-center mb-1">
-                    <div class="col-auto"><label class="small-label">UOM</label>
-                        <input type="text" class="form-control form-control-sm small-input" value="${item.uom_name}" readonly>
+
+                    <div class="col-auto">
+                        ${showLabel ? '<label class="small-label">UOM</label>' : ''}
+                        <input type="text" class="form-control form-control-sm small-input text-right"
+                               value="${item.uom_name || ''}" readonly>
                     </div>
-                    <div class="col-auto"><label class="small-label">Quantity</label>
-                        <input type="text" class="form-control form-control-sm small-input" value="${item.qty}" readonly>
+
+                    <div class="col-auto">
+                        ${showLabel ? '<label class="small-label">Quantity</label>' : ''}
+                        <input type="text" class="form-control form-control-sm small-input text-right"
+                               value="${item.qty || ''}" readonly>
                     </div>
-                    <div class="col-auto"><label class="small-label">Kg</label>
-                        <input type="text" class="form-control form-control-sm small-input" value="${item.per_kgs}" readonly>
+
+                    <div class="col-auto">
+                        ${showLabel ? '<label class="small-label">Kg</label>' : ''}
+                        <input type="text" class="form-control form-control-sm small-input text-right"
+                               value="${item.per_kgs || ''}" readonly>
                     </div>
-                    <div class="col-auto"><label class="small-label">Unit Price</label>
-                        <input type="text" class="form-control form-control-sm small-input" value="${item.unit_price}" readonly>
+
+                    <div class="col-auto">
+                        ${showLabel ? '<label class="small-label">Unit Price</label>' : ''}
+                        <input type="text" class="form-control form-control-sm small-input text-right"
+                               value="${item.unit_price || ''}" readonly>
                     </div>
-                    <!-- <div class="col-auto"><label class="small-label">pices</label>
-                        <input type="text" class="form-control form-control-sm small-input" value="${item.pice}" readonly>
-                    </div> -->
-                    <div class="col-auto"><label class="small-label">Total</label>
-                        <input type="text" class="form-control form-control-sm small-input" value="${item.total}" readonly>
+
+                    <div class="col-auto">
+                        ${showLabel ? '<label class="small-label">Total</label>' : ''}
+                        <input type="text" class="form-control form-control-sm small-input text-right"
+                               value="${item.total || ''}" readonly>
                     </div>
-                    <div class="col-auto"><label class="small-label">Invoice Type</label>
-                        <input type="text" class="form-control form-control-sm small-input" value="${item.scrap_name_type_id}" readonly>
+
+                    <div class="col-auto">
+                        ${showLabel ? '<label class="small-label">Invoice Type</label>' : ''}
+                        <input type="text" class="form-control form-control-sm small-input"
+                               value="${item.scrap_name_type_id || ''}" readonly>
                     </div>
-                    <div class="col-auto"><label class="small-label">Milestone</label>
-                        <input type="text" class="form-control form-control-sm small-input" value="${item.milestone_name}" readonly>
+
+                    <div class="col-auto">
+                        ${showLabel ? '<label class="small-label">Milestone</label>' : ''}
+                        <input type="text" class="form-control form-control-sm small-input"
+                               value="${item.milestone_name || ''}" readonly>
                     </div>
-                    <!-- <div class="col-auto"><label class="small-label">Service Code</label>
-                        <input type="text" class="form-control form-control-sm small-input" value="${item.scode}" readonly>
+
+                    <div class="col-auto">
+                        ${showLabel ? '<label class="small-label">Service Code</label>' : ''}
+                        <input type="text"
+                               class="form-control form-control-sm small-input"
+                               value="${serviceDisplay}"
+                               readonly>
                     </div>
-                    <div class="col-auto"><label class="small-label">HSN Code</label>
-                        <input type="text" class="form-control form-control-sm small-input" value="${item.hcode}" readonly>
-                    </div> -->
+
+                    <div class="col-auto">
+                        ${showLabel ? '<label class="small-label">HSN Code</label>' : ''}
+                        <input type="text"
+                               class="form-control form-control-sm small-input"
+                               value="${hsnDisplay}"
+                               readonly>
+                    </div>
+
                 </div>
-                <hr style="width:100%;border-top:1px solid #ccc;">
+
+                ${showLabel ? '<hr>' : ''}
             `);
-        });*/
-		packingData.forEach((item, index) => {
-
-		    const showLabel = index === 0;
-
-		    $(".dynamic-row11").append(`
-		        <div class="row align-items-center mb-1">
-
-		            <div class="col-auto">
-		                ${showLabel ? '<label class="small-label">UOM</label>' : ''}
-		                <input type="text" class="form-control form-control-sm small-input text-right" value="${item.uom_name}" readonly>
-		            </div>
-
-		            <div class="col-auto">
-		                ${showLabel ? '<label class="small-label">Quantity</label>' : ''}
-		                <input type="text" class="form-control form-control-sm small-input text-right" value="${item.qty}" readonly>
-		            </div>
-
-		            <div class="col-auto">
-		                ${showLabel ? '<label class="small-label">Kg</label>' : ''}
-		                <input type="text" class="form-control form-control-sm small-input text-right" value="${item.per_kgs}" readonly>
-		            </div>
-
-		            <div class="col-auto">
-		                ${showLabel ? '<label class="small-label">Unit Price</label>' : ''}
-		                <input type="text" class="form-control form-control-sm small-input text-right" value="${item.unit_price}" readonly>
-		            </div>
-
-		            <div class="col-auto">
-		                ${showLabel ? '<label class="small-label">Total</label>' : ''}
-		                <input type="text" class="form-control form-control-sm small-input text-right" value="${item.total}" readonly>
-		            </div>
-
-		            <div class="col-auto">
-		                ${showLabel ? '<label class="small-label">Invoice Type</label>' : ''}
-		                <input type="text" class="form-control form-control-sm small-input" value="${item.scrap_name_type_id}" readonly>
-		            </div>
-
-		            <div class="col-auto">
-		                ${showLabel ? '<label class="small-label">Milestone</label>' : ''}
-		                <input type="text" class="form-control form-control-sm small-input" value="${item.milestone_name}" readonly>
-		            </div>
-
-		        </div>
-
-		        ${showLabel ? '<hr>' : ''}
-		    `);
-		});
+        });
 
         // Append tax data
         taxData.forEach((tax) => {
@@ -1369,6 +1816,7 @@ async function editRecord(id) {
         });
 
         // Show the modal
+        toggleSubcontractingFieldsVerify();
         $("#exampleModalScrollableVerify").modal("show");
 
     } catch (error) {
@@ -1380,8 +1828,6 @@ async function editRecord11(id,status) {
 
 	if(status!='CANCELLED')
 		{
-			//  const allowed = window.allowedActions || [];
-
 			if (!allowed.includes("view")) {
 			  alert(" You do not have permission to view.");
 			    $("#exampleModalScrollableVerified").modal("hide");
@@ -1393,7 +1839,7 @@ async function editRecord11(id,status) {
 
 		const response = await fetch(url,{
 						           method: "GET",
-						           credentials: "include"   // ✅ Always send JSESSIONID cookie
+						           credentials: "include"
 						       });
         if (!response.ok) throw new Error("Failed to fetch data");
         const json = await response.json();
@@ -1403,6 +1849,35 @@ async function editRecord11(id,status) {
         const invoiceData = json.Invoice_Data || {};
         const GrandValue = json.Grand_Total_value || [];
         const ContData = json.Contractor_Data || [];
+
+        // ---- NEW: resolve Contract Details display text from InvoiceContractMaster, fallback to ContData ----
+        const ContractMasterData = json.InvoiceContractMaster || {};
+
+        const matchedBU = businessUnitList.find(b => String(b.business_unit_id) === String(ContractMasterData.bid));
+        const buDisplay = matchedBU
+            ? `${matchedBU.business_unit_name} ${matchedBU.orgName},${matchedBU.location},${matchedBU.stateName}(${matchedBU.gst_number})`
+            : (ContData.length > 0 ? ContData[0].business_unit_name : "");
+
+        const matchedInvoiceTo = invoiceAddressList.find(a => String(a.id) === String(ContractMasterData.invoice_to_id));
+        const invoiceToDisplay = matchedInvoiceTo
+            ? matchedInvoiceTo.address
+            : (ContData.length > 0 ? ContData[0].invoice_to_id_value : "");
+
+        const matchedWork = workOrderList.find(w => String(w.work_id) === String(ContractMasterData.work_id));
+        const workDisplay = matchedWork
+            ? matchedWork.workorder_no
+            : (ContData.length > 0 ? ContData[0].work_id_value : "");
+
+        const matchedConsignee = consigneeAddressList.find(c => String(c.id) === String(ContractMasterData.consignee_id));
+        const consigneeDisplay = matchedConsignee
+            ? matchedConsignee.address
+            : (ContData.length > 0 ? ContData[0].consignee_id_value : "");
+
+        setInputValue("#bunitvv",     buDisplay);
+        setInputValue("#intovv",      invoiceToDisplay);
+        setInputValue("#workordervv", workDisplay);
+        setInputValue("#nandconvv",   consigneeDisplay);
+        // ---- END NEW ----
 
         $(".dynamic-row11test, .dynamic-row122test").empty(); // Clear previous content
 
@@ -1433,18 +1908,14 @@ async function editRecord11(id,status) {
         setInputValue("#grandvv", GrandValue.length > 0 ? GrandValue[0].Grand_Total_tax : "");
 		setInputValue("#vintypeeditvv", packingData.length > 0 ? packingData[0].invoice_remarks_type_name : "");
 
-        // Set contractor data fields
+        // Set contractor data fields (bunitvv/intovv/workordervv/nandconvv handled separately above)
         const contractorFields = {
-            "#bunitvv": "business_unit_name",
             "#intypevv": "invoice_type_calculation",
-            "#intovv": "invoice_to_id_value",
             "#prodesvv": "product_desc_id",
             "#shipmodevv": "shipment_mode_id_value",
-            "#workordervv": "work_id_value",
             "#exptvv": "export",
             "#taxresvv": "tax_payable",
             "#percenvv": "percentage_value",
-            "#nandconvv": "consignee_id_value",
             "#banknamevv": "bank_details_id_value",
             "#deliveryconvv": "delivery_condition_id_value",
             "#officevvv": "reg_office_id_value",
@@ -1455,10 +1926,8 @@ async function editRecord11(id,status) {
             "#connumvv": "containter_no",
             "#epogvv": "epcgno",
             "#exptitlevv": "export_title",
-            "#newscode1": "s_code_value",
-            "#newhcode1": "h_code_value",
         };
-        
+
         const TaxFields = {
 	        "#bvauev": "basic_value",
 	        "#pdptvv": "optd",
@@ -1470,7 +1939,14 @@ async function editRecord11(id,status) {
         Object.keys(contractorFields).forEach(selector => {
             setInputValue(selector, ContData.length > 0 ? ContData[0][contractorFields[selector]] : "");
         });
-        
+		
+		// ---- FIX: vendor fields don't always live on ContData[0]; find the row that actually
+		setInputValue("#vendornamevv", invoiceData.vendorname);
+		setInputValue("#vendorinvnovv", invoiceData.vendorinvno);
+		setInputValue("#vendorqtyvv", invoiceData.vendorqty);
+		setInputValue("#vendordatevv", toDateInputValue(invoiceData.vendorinvdate));
+		// ---- END vendor fields fix ----
+		
         Object.keys(TaxFields).forEach(selector => {
             setInputValue(selector, taxData.length > 0 ? taxData[0][TaxFields[selector]] : "");
         });
@@ -1478,47 +1954,20 @@ async function editRecord11(id,status) {
         // Show/hide export field based on "export" value
         $('#exportFields1verified').toggle(ContData.length > 0 && ContData[0].export === 'yes');
 
-        // Append packing data
-     /*   packingData.forEach((item) => {
-            $(".dynamic-row11test").append(`
-                <div class="row align-items-center mb-1">
-                    <div class="col-auto"><label class="small-label">UOM</label>
-                        <input type="text" class="form-control form-control-sm small-input" value="${item.uom_name}" readonly>
-                    </div>
-                    <div class="col-auto"><label class="small-label">Quantity</label>
-                        <input type="text" class="form-control form-control-sm small-input" value="${item.qty}" readonly>
-                    </div>
-                    <div class="col-auto"><label class="small-label">Kg</label>
-                        <input type="text" class="form-control form-control-sm small-input" value="${item.per_kgs}" readonly>
-                    </div>
-                    <div class="col-auto"><label class="small-label">Unit Price</label>
-                        <input type="text" class="form-control form-control-sm small-input" value="${item.unit_price}" readonly>
-                    </div>
-                    <!-- <div class="col-auto"><label class="small-label">pices</label>
-                        <input type="text" class="form-control form-control-sm small-input" value="${item.pice}" readonly>
-                    </div> -->
-                    <div class="col-auto"><label class="small-label">Total</label>
-                        <input type="text" class="form-control form-control-sm small-input" value="${item.total}" readonly>
-                    </div>
-                    <div class="col-auto"><label class="small-label">Invoice Type</label>
-                        <input type="text" class="form-control form-control-sm small-input" value="${item.scrap_name_type_id}" readonly>
-                    </div>
-                    <div class="col-auto"><label class="small-label">Milestone</label>
-                        <input type="text" class="form-control form-control-sm small-input" value="${item.milestone_name}" readonly>
-                    </div>
-                   <!--  <div class="col-auto"><label class="small-label">Service Code</label>
-                        <input type="text" class="form-control form-control-sm small-input" value="${item.scode}" readonly>
-                    </div>
-                    <div class="col-auto"><label class="small-label">HSN Code</label>
-                        <input type="text" class="form-control form-control-sm small-input" value="${item.hcode}" readonly>
-                    </div> -->
-                </div>
-                <hr style="width:100%;border-top:1px solid #ccc;">
-            `);
-        });*/
 		packingData.forEach((item, index) => {
 
 		    const showLabel = index === 0;
+
+			const selectedService = serviceMasterList.find(s => s.service_code == item.scode);
+			const selectedHsn = hsnMasterList.find(h => h.service_code == item.hsncode);
+
+			const serviceDisplay = selectedService
+			    ? `${selectedService.service_code} - ${selectedService.service_description}`
+			    : (item.scode || "");
+
+			const hsnDisplay = selectedHsn
+			    ? `${selectedHsn.service_code} - ${selectedHsn.service_description}`
+			    : (item.hsncode || "");
 
 		    $(".dynamic-row11test").append(`
 		        <div class="row align-items-center mb-1">
@@ -1558,6 +2007,22 @@ async function editRecord11(id,status) {
 		                <input type="text" class="form-control form-control-sm small-input" value="${item.milestone_name}" readonly>
 		            </div>
 
+					<div class="col-auto">
+					    ${showLabel ? '<label class="small-label">Service Code</label>' : ''}
+					    <input type="text"
+					           class="form-control form-control-sm small-input"
+					           value="${serviceDisplay}"
+					           readonly>
+					</div>
+
+					<div class="col-auto">
+					    ${showLabel ? '<label class="small-label">HSN Code</label>' : ''}
+					    <input type="text"
+					           class="form-control form-control-sm small-input"
+					           value="${hsnDisplay}"
+					           readonly>
+					</div>
+
 		        </div>
 
 		        ${showLabel ? '<hr>' : ''}
@@ -1595,7 +2060,10 @@ async function editRecord11(id,status) {
         });
 
         // Show the modal
-        $("#exampleModalScrollableVerified").modal("show");
+		const invTypeName = packingData.length > 0 ? (packingData[0].invoice_remarks_type_name || "") : "";
+		$('#subcontractingFieldsView').toggle(invTypeName.toLowerCase() === "subcontracting");
+
+		$("#exampleModalScrollableVerified").modal("show");
 
     } catch (error) {
         console.error('Error fetching invoice data:', error);
@@ -1608,7 +2076,7 @@ else{
 
 		const response = await fetch(url,{
 						           method: "GET",
-						           credentials: "include"   // ✅ Always send JSESSIONID cookie
+						           credentials: "include"
 						       });
 	       if (!response.ok) throw new Error("Failed to fetch data");
 	       const json = await response.json();
@@ -1618,6 +2086,35 @@ else{
 	       const invoiceData = json.Invoice_Data || {};
 	       const GrandValue = json.Grand_Total_value || [];
 	       const ContData = json.Contractor_Data || [];
+
+	       // ---- NEW: resolve Contract Details display text from InvoiceContractMaster, fallback to ContData ----
+	       const ContractMasterData = json.InvoiceContractMaster || {};
+
+	       const matchedBU = businessUnitList.find(b => String(b.business_unit_id) === String(ContractMasterData.bid));
+	       const buDisplay = matchedBU
+	           ? `${matchedBU.business_unit_name} ${matchedBU.orgName},${matchedBU.location},${matchedBU.stateName}(${matchedBU.gst_number})`
+	           : (ContData.length > 0 ? ContData[0].business_unit_name : "");
+
+	       const matchedInvoiceTo = invoiceAddressList.find(a => String(a.id) === String(ContractMasterData.invoice_to_id));
+	       const invoiceToDisplay = matchedInvoiceTo
+	           ? matchedInvoiceTo.address
+	           : (ContData.length > 0 ? ContData[0].invoice_to_id_value : "");
+
+	       const matchedWork = workOrderList.find(w => String(w.work_id) === String(ContractMasterData.work_id));
+	       const workDisplay = matchedWork
+	           ? matchedWork.workorder_no
+	           : (ContData.length > 0 ? ContData[0].work_id_value : "");
+
+	       const matchedConsignee = consigneeAddressList.find(c => String(c.id) === String(ContractMasterData.consignee_id));
+	       const consigneeDisplay = matchedConsignee
+	           ? matchedConsignee.address
+	           : (ContData.length > 0 ? ContData[0].consignee_id_value : "");
+
+	       setInputValue("#bunitvv",     buDisplay);
+	       setInputValue("#intovv",      invoiceToDisplay);
+	       setInputValue("#workordervv", workDisplay);
+	       setInputValue("#nandconvv",   consigneeDisplay);
+	       // ---- END NEW ----
 
 	       $(".dynamic-row11test, .dynamic-row122test").empty(); // Clear previous content
 
@@ -1648,18 +2145,14 @@ else{
 	       setInputValue("#grandvv", GrandValue.length > 0 ? GrandValue[0].Grand_Total_tax : "");
 		   setInputValue("#vintypeeditvv", packingData.length > 0 ? packingData[0].invoice_remarks_type_name : "");
 
-	       // Set contractor data fields
+	       // Set contractor data fields (bunitvv/intovv/workordervv/nandconvv handled separately above)
 	       const contractorFields = {
-	           "#bunitvv": "business_unit_name",
 	           "#intypevv": "invoice_type_calculation",
-	           "#intovv": "invoice_to_id_value",
 	           "#prodesvv": "product_desc_id",
 	           "#shipmodevv": "shipment_mode_id_value",
-	           "#workordervv": "work_id_value",
 	           "#exptvv": "export",
 	           "#taxresvv": "tax_payable",
 	           "#percenvv": "percentage_value",
-	           "#nandconvv": "consignee_id_value",
 	           "#banknamevv": "bank_details_id_value",
 	           "#deliveryconvv": "delivery_condition_id_value",
 	           "#officevvv": "reg_office_id_value",
@@ -1673,7 +2166,7 @@ else{
 	           "#newscode1": "s_code_value",
 	           "#newhcode1": "h_code_value",
 	       };
-	       
+
 	       const TaxFields = {
 	        "#bvauev": "basic_value",
 	        "#pdptvv": "optd",
@@ -1685,7 +2178,7 @@ else{
 	       Object.keys(contractorFields).forEach(selector => {
 	           setInputValue(selector, ContData.length > 0 ? ContData[0][contractorFields[selector]] : "");
 	       });
-	       
+
 	       Object.keys(TaxFields).forEach(selector => {
 	           setInputValue(selector, taxData.length > 0 ? taxData[0][TaxFields[selector]] : "");
 	       });
@@ -1693,44 +2186,6 @@ else{
 	       // Show/hide export field based on "export" value
 	       $('#exportFields1verified').toggle(ContData.length > 0 && ContData[0].export === 'yes');
 
-	       // Append packing data
-	      /* packingData.forEach((item) => {
-	           $(".dynamic-row11test").append(`
-	               <div class="row align-items-center mb-1">
-	                   <div class="col-auto"><label class="small-label">UOM</label>
-	                       <input type="text" class="form-control form-control-sm small-input" value="${item.uom_name}" readonly>
-	                   </div>
-	                   <div class="col-auto"><label class="small-label">Quantity</label>
-	                       <input type="text" class="form-control form-control-sm small-input" value="${item.qty}" readonly>
-	                   </div>
-	                   <div class="col-auto"><label class="small-label">Kg</label>
-	                       <input type="text" class="form-control form-control-sm small-input" value="${item.per_kgs}" readonly>
-	                   </div>
-	                   <div class="col-auto"><label class="small-label">Unit Price</label>
-	                       <input type="text" class="form-control form-control-sm small-input" value="${item.unit_price}" readonly>
-	                   </div>
-	                   <!-- <div class="col-auto"><label class="small-label">pices</label>
-	                       <input type="text" class="form-control form-control-sm small-input" value="${item.pice}" readonly>
-	                   </div> -->
-	                   <div class="col-auto"><label class="small-label">Total</label>
-	                       <input type="text" class="form-control form-control-sm small-input" value="${item.total}" readonly>
-	                   </div>
-	                   <div class="col-auto"><label class="small-label">Invoice Type</label>
-	                       <input type="text" class="form-control form-control-sm small-input" value="${item.scrap_name_type_id}" readonly>
-	                   </div>
-	                   <div class="col-auto"><label class="small-label">Milestone</label>
-	                       <input type="text" class="form-control form-control-sm small-input" value="${item.milestone_name}" readonly>
-	                   </div>
-	                  <!--  <div class="col-auto"><label class="small-label">Service Code</label>
-	                       <input type="text" class="form-control form-control-sm small-input" value="${item.scode}" readonly>
-	                   </div>
-	                   <div class="col-auto"><label class="small-label">HSN Code</label>
-	                       <input type="text" class="form-control form-control-sm small-input" value="${item.hcode}" readonly>
-	                   </div> -->
-	               </div>
-	               <hr style="width:100%;border-top:1px solid #ccc;">
-	           `);
-	       });*/
 		   packingData.forEach((item, index) => {
 
 		       const showLabel = index === 0;
@@ -1823,8 +2278,6 @@ else{
 
 
 async function editRecordInvoice(id,status,load_id) {
-	 // const allowed = window.allowedActions || [];
-
 	if (!allowed.includes("Edit")) {
 	  alert(" You do not have permission to edit.");
 	  return;
@@ -1840,7 +2293,7 @@ if(status!='CANCELLED')
 
 		const response = await fetch(url,{
 						           method: "GET",
-						           credentials: "include"   // ✅ Always send JSESSIONID cookie
+						           credentials: "include"
 						       });
         if (!response.ok) throw new Error("Failed to fetch data");
         const json = await response.json();
@@ -1851,7 +2304,31 @@ if(status!='CANCELLED')
         const GrandValue = json.Grand_Total_value || [];
         const ContData = json.Contractor_Data || [];
 
-        $(".dynamic-row11uptest, .dynamic-row122up").empty(); // Clear previous content
+        // ---- NEW: populate Contract Details from INVOICE_CONTRACT_MASTER ----
+        const ContractMasterData = json.InvoiceContractMaster || {};
+
+        setInputValue("#vconslnoupdate", ContractMasterData.con_slno || invoiceData.contract_slno || "");
+
+		//fetchSalebusunitEdit("bunitvup", ContractMasterData.bid || (ContData.length > 0 ? ContData[0].business_unit_name : ""));
+		fetchSalebusunitEdit("bunitvup",ContractMasterData.bid,ContData.length > 0 ? ContData[0].business_unit_name : "",ContData.length > 0 ? ContractMasterData.verified_status : undefined);
+		document.getElementById("intypevup").value = ContractMasterData.invoice_type_calculation || "2";
+		//fetchinvoicetoEdit("intovup", ContractMasterData.invoice_to_id || (ContData.length > 0 ? ContData[0].invoice_to_id_value : ""));
+		fetchinvoicetoEdit("intovup",ContractMasterData.invoice_to_id,ContData.length > 0 ? ContData[0].invoice_to_id_value : "");
+		document.getElementById("prodesvup").value = ContractMasterData.product_desc_id || "1";
+		setInputValue("#shipmodevup", ContData.length > 0 ? ContData[0].shipment_mode_id_value : "");
+		//fetchSaleworkEdit("workordervup", ContractMasterData.work_id || (ContData.length > 0 ? ContData[0].work_id_value : ""));
+		fetchSaleworkEdit("workordervup",ContractMasterData.work_id,ContData.length > 0 ? ContData[0].work_id_value : "");
+		setInputValue("#exptvup", ContractMasterData.export);
+		document.getElementById("taxresvup").value = ContractMasterData.tax_ex_inc || "0";
+		setInputValue("#percenvup", ContractMasterData.percentage_value);
+		//fetchconnameEdit("nandconvup", ContractMasterData.consignee_id || (ContData.length > 0 ? ContData[0].consignee_id_value : ""));
+		fetchconnameEdit("nandconvup",ContractMasterData.consignee_id,ContData.length > 0 ? ContData[0].consignee_id_value : "");
+		setInputValue("#banknamevup", ContData.length > 0 ? ContData[0].bank_details_id_value : "");
+		setInputValue("#deliveryconvup", ContData.length > 0 ? ContData[0].delivery_condition_id_value : "");
+		setInputValue("#officevvup", ContData.length > 0 ? ContData[0].reg_office_id_value : "");
+        // ---- END NEW ----
+
+        $(".dynamic-row11uptest, .dynamic-row122up").empty();
         
         // Set values in form fields
         setInputValue("#remarkvup", invoiceData.remarks);
@@ -1871,16 +2348,13 @@ if(status!='CANCELLED')
         setInputValue("#bgvaerifyup", invoiceData.bg_type);
         setInputValue("#vidverifyup", invoiceData.id);
 
-        // Set "freight" value
         setInputValue("#vfreight11up", packingData.length > 0 ? packingData[0].freight : "");
         setInputValue("#pnverifywwup", packingData.length > 0 ? packingData[0].pn_id : "");
         setInputValue("#intypeeditup", packingData.length > 0 ? packingData[0].inc_type : "");
 		setInputValue("#contract11up", packingData.length > 0 ? packingData[0].con_code_with_lot_no : "");
 
-        // Set grand total value
         setInputValue("#grandvup", GrandValue.length > 0 ? GrandValue[0].Grand_Total_tax : "");
 
-        // Set contractor data fields
         const contractorFields = {
             "#bunitvup": "business_unit_name",
             "#intypevup": "invoice_type_calculation",
@@ -1902,8 +2376,6 @@ if(status!='CANCELLED')
             "#connumvup": "containter_no",
             "#epogvup": "epcgno",
             "#exptitlevup": "export_title",
-            "#newhcode": "h_code_value",
-            "#newscode": "s_code_value",
         };
         
         const TaxFields = {
@@ -1917,99 +2389,86 @@ if(status!='CANCELLED')
         Object.keys(contractorFields).forEach(selector => {
             setInputValue(selector, ContData.length > 0 ? ContData[0][contractorFields[selector]] : "");
         });
+		
+		// ---- FIX: vendor fields don't always live on ContData[0]; find the row that actually
+		setInputValue("#vendornameup", invoiceData.vendorname);
+		setInputValue("#vendorinvnoup", invoiceData.vendorinvno);
+		setInputValue("#vendorqtyup", invoiceData.vendorqty);
+		setInputValue("#vendordateup", toDateInputValue(invoiceData.vendorinvdate));
+		// ---- END vendor fields fix ----
         
         Object.keys(TaxFields).forEach(selector => {
             setInputValue(selector, taxData.length > 0 ? taxData[0][TaxFields[selector]] : "");
         });
 
-        // Show/hide export field based on "export" value
         $('#exportFields1verifyup').toggle(ContData.length > 0 && ContData[0].export === 'yes');
 
-        // Append packing data
-      /*  packingData.forEach((item) => {
-            $(".dynamic-row11uptest").append(`
-                <div class="row align-items-center mb-1">
-                    <div class="col-auto"><label class="small-label">UOM</label>
-                        <input type="text" class="form-control form-control-sm small-input" value="${item.uom_name}" readonly>
-                    </div>
-                    <div class="col-auto"><label class="small-label">Quantity</label>
-                        <input type="text" class="form-control form-control-sm small-input" value="${item.qty}" readonly>
-                    </div>
-                    <div class="col-auto"><label class="small-label">Kg</label>
-                        <input type="text" class="form-control form-control-sm small-input" value="${item.per_kgs}" readonly>
-                    </div>
-                    <div class="col-auto"><label class="small-label">Unit Price</label>
-                        <input type="text" class="form-control form-control-sm small-input" value="${item.unit_price}" readonly>
-                    </div>
-                    <!--  <div class="col-auto"><label class="small-label">pices</label>
-                        <input type="text" class="form-control form-control-sm small-input" value="${item.pice}" readonly>
-                    </div> -->
-                    <div class="col-auto"><label class="small-label">Total</label>
-                        <input type="text" class="form-control form-control-sm small-input" value="${item.total}" readonly>
-                    </div>
-                    <div class="col-auto"><label class="small-label">Invoice Type</label>
-                        <input type="text" class="form-control form-control-sm small-input" value="${item.scrap_name_type_id}" readonly>
-                    </div>
-                    <div class="col-auto"><label class="small-label">Milestone</label>
-                        <input type="text" class="form-control form-control-sm small-input" value="${item.milestone_name}" readonly>
-                    </div>
-                  <!--   <div class="col-auto"><label class="small-label">Service Code</label>
-                        <input type="text" class="form-control form-control-sm small-input" value="${item.scode}" readonly>
-                    </div>
-                    <div class="col-auto"><label class="small-label">HSN Code</label>
-                        <input type="text" class="form-control form-control-sm small-input" value="${item.hcode}" readonly>
-                    </div> -->
-                </div>
-                <hr style="width:100%;border-top:1px solid #ccc;">
-            `);
-        });*/
 		packingData.forEach((item, index) => {
+		    const showLabel = index === 0;
 
-		    const showLabel = index === 0;   // true only for first item
+		    const serviceOptions = serviceMasterList.map(s => `
+		        <option value="${s.service_code}"
+		            ${item.scode == s.service_code ? "selected" : ""}>
+		            ${s.service_code} - ${s.service_description}
+		        </option>
+		    `).join("");
+
+		    const hsnOptions = hsnMasterList.map(h => `
+		        <option value="${h.service_code}"
+		            ${item.hsncode == h.service_code ? "selected" : ""}>
+		            ${h.service_code} - ${h.service_description}
+		        </option>
+		    `).join("");
 
 		    $(".dynamic-row11uptest").append(`
-		        <div class="row align-items-center mb-1">
-		            <div class="col-auto">
+		        <div class="row align-items-end mb-2">
+		            <div class="form-group col-md-1 col-sm-12">
 		                ${showLabel ? '<label class="small-label">UOM</label>' : ''}
-		                <input type="text" class="form-control form-control-sm small-input" value="${item.uom_name}" readonly>
+		                <input type="text" class="form-control form-control-sm small-input" value="${item.uom_name || ''}" readonly>
 		            </div>
-
-		            <div class="col-auto">
+		            <div class="form-group col-md-1 col-sm-12">
 		                ${showLabel ? '<label class="small-label">Quantity</label>' : ''}
-		                <input type="text" class="form-control form-control-sm small-input text-right" value="${item.qty}" readonly>
+		                <input type="text" class="form-control form-control-sm small-input text-right" value="${item.qty || ''}" readonly>
 		            </div>
-
-		            <div class="col-auto">
+		            <div class="form-group col-md-1 col-sm-12">
 		                ${showLabel ? '<label class="small-label">Kg</label>' : ''}
-		                <input type="text" class="form-control form-control-sm small-input text-right" value="${item.per_kgs}" readonly>
+		                <input type="text" class="form-control form-control-sm small-input text-right" value="${item.per_kgs || ''}" readonly>
 		            </div>
-
-		            <div class="col-auto">
+		            <div class="form-group col-md-1 col-sm-12">
 		                ${showLabel ? '<label class="small-label">Unit Price</label>' : ''}
-		                <input type="text" class="form-control form-control-sm small-input text-right" value="${item.unit_price}" readonly>
+		                <input type="text" class="form-control form-control-sm small-input text-right" value="${item.unit_price || ''}" readonly>
 		            </div>
-
-		            <div class="col-auto">
+		            <div class="form-group col-md-1 col-sm-12">
 		                ${showLabel ? '<label class="small-label">Total</label>' : ''}
-		                <input type="text" class="form-control form-control-sm small-input text-right" value="${item.total}" readonly>
+		                <input type="text" class="form-control form-control-sm small-input text-right" value="${item.total || ''}" readonly>
 		            </div>
-
-		            <div class="col-auto">
+		            <div class="form-group col-md-1 col-sm-12">
 		                ${showLabel ? '<label class="small-label">Invoice Type</label>' : ''}
-		                <input type="text" class="form-control form-control-sm small-input" value="${item.scrap_name_type_id}" readonly>
+		                <input type="text" class="form-control form-control-sm small-input" value="${item.scrap_name_type_id || ''}" readonly>
 		            </div>
-
-		            <div class="col-auto">
+		            <div class="form-group col-md-1 col-sm-12">
 		                ${showLabel ? '<label class="small-label">Milestone</label>' : ''}
-		                <input type="text" class="form-control form-control-sm small-input" value="${item.milestone_name}" readonly>
+		                <input type="text" class="form-control form-control-sm small-input" value="${item.milestone_name || ''}" readonly>
+		            </div>
+		            <div class="form-group col-md-2 col-sm-12">
+		                ${showLabel ? '<label class="small-label">Service Code</label>' : ''}
+		                <select class="form-control form-control-sm service-code-select" data-slno="${item.slno}">
+		                    <option value="">Select Service Code</option>
+		                    ${serviceOptions}
+		                </select>
+		            </div>
+		            <div class="form-group col-md-2 col-sm-12">
+		                ${showLabel ? '<label class="small-label">HSN Code</label>' : ''}
+		                <select class="form-control form-control-sm hsn-code-select" data-slno="${item.slno}">
+		                    <option value="">Select HSN Code</option>
+		                    ${hsnOptions}
+		                </select>
 		            </div>
 		        </div>
-
-		        ${showLabel ? '<hr>' : ''}
+		        <hr style="margin:6px 0;">
 		    `);
 		});
 
-        // Append tax data
         taxData.forEach((tax) => {
             $(".dynamic-row122up").append(`
                 <div class="row align-items-center mb-1">
@@ -2038,8 +2497,8 @@ if(status!='CANCELLED')
                 <hr>
             `);
         });
-
-        // Show the modal
+		
+		toggleSubcontractingFieldsUp(); 
         $("#exampleModalScrollableEditUp").modal("show");
 
     } catch (error) {
@@ -2065,6 +2524,30 @@ if(status!='CANCELLED')
 		        const invoiceData = json.Invoice_Data || {};
 		        const GrandValue = json.Grand_Total_value || [];
 		        const ContData = json.Contractor_Data || [];
+				
+				const ContractMasterData = json.InvoiceContractMaster || {};
+
+				// Store con_slno + factory_id on the modal for the update call later
+				setInputValue("#vconslnoupdate", ContractMasterData.con_slno || packingData[0]?.con_slno || "");
+
+				// Populate the Contract Details fields (dropdowns get value set + fetched)
+				//fetchSalebusunitEdit("bunitvup", ContractMasterData.bid || (ContData.length > 0 ? ContData[0].business_unit_name : ""));
+				fetchSalebusunitEdit("bunitvup",ContractMasterData.bid,ContData.length > 0 ? ContData[0].business_unit_name : "",ContData.length > 0 ? ContractMasterData.verified_status : undefined);
+				document.getElementById("intypevup").value = ContractMasterData.invoice_type_calculation || "2";
+				//fetchinvoicetoEdit("intovup", ContractMasterData.invoice_to_id || (ContData.length > 0 ? ContData[0].invoice_to_id_value : ""));
+				fetchinvoicetoEdit("intovup",ContractMasterData.invoice_to_id,ContData.length > 0 ? ContData[0].invoice_to_id_value : "");
+				document.getElementById("prodesvup").value = ContractMasterData.product_desc_id || "1";
+				setInputValue("#shipmodevup", ContractMasterData.shipment_mode_id_value || "");
+				//fetchSaleworkEdit("workordervup", ContractMasterData.work_id || (ContData.length > 0 ? ContData[0].work_id_value : ""));
+				fetchSaleworkEdit("workordervup",ContractMasterData.work_id,ContData.length > 0 ? ContData[0].work_id_value : "");
+				setInputValue("#exptvup", ContractMasterData.export);
+				document.getElementById("taxresvup").value = ContractMasterData.tax_ex_inc || "0";
+				setInputValue("#percenvup", ContractMasterData.percentage_value);
+				//fetchconnameEdit("billing", ContractMasterData.consignee_id || (ContData.length > 0 ? ContData[0].consignee_id_value : ""));
+				fetchconnameEdit("nandconvup",ContractMasterData.consignee_id,ContData.length > 0 ? ContData[0].consignee_id_value : "");
+				setInputValue("#banknamevup", ContractMasterData.bank_details_id_value || "");
+				setInputValue("#deliveryconvup", ContractMasterData.delivery_condition_id_value || "");
+				setInputValue("#officevvup", ContractMasterData.regd_office_id_value || "");
 
 		        $(".dynamic-row11uptest, .dynamic-row122up").empty(); // Clear previous content
 		        
@@ -2096,30 +2579,30 @@ if(status!='CANCELLED')
 		        setInputValue("#grandvup", GrandValue.length > 0 ? GrandValue[0].Grand_Total_tax : "");
 
 		        // Set contractor data fields
-		        const contractorFields = {
-		            "#bunitvup": "business_unit_name",
-		            "#intypevup": "invoice_type_calculation",
-		            "#intovup": "invoice_to_id_value",
-		            "#prodesvup": "product_desc_id",
-		            "#shipmodevup": "shipment_mode_id_value",
-		            "#workordervup": "work_id_value",
-		            "#exptvup": "export",
-		            "#taxresvup": "tax_payable",
-		            "#percenvup": "percentage_value",
-		            "#nandconvup": "consignee_id_value",
-		            "#banknamevup": "bank_details_id_value",
-		            "#deliveryconvup": "delivery_condition_id_value",
-		            "#officevvup": "reg_office_id_value",
-		            "#vingrandvup": "tax_ex_inc",
-		            "#advFup": "freight_advance_recovery",
-		            "#arevup": "area_no",
-		            "#lutvup": "lot_no",
-		            "#connumvup": "containter_no",
-		            "#epogvup": "epcgno",
-		            "#exptitlevup": "export_title",
-		            "#newhcode": "h_code_value",
-		            "#newscode": "s_code_value",
-		        };
+				const contractorFields = {
+				    "#bunitvup": "business_unit_name",
+				    "#intypevup": "invoice_type_calculation",
+				    "#intovup": "invoice_to_id_value",
+				    "#prodesvup": "product_desc_id",
+				    "#shipmodevup": "shipment_mode_id_value",
+				    "#workordervup": "work_id_value",
+				    "#exptvup": "export",
+				    "#taxresvup": "tax_payable",
+				    "#percenvup": "percentage_value",
+				    "#nandconvup": "consignee_id_value",
+				    "#banknamevup": "bank_details_id_value",
+				    "#deliveryconvup": "delivery_condition_id_value",
+				    "#officevvup": "reg_office_id_value",
+				    "#vingrandvup": "tax_ex_inc",
+				    "#advFup": "freight_advance_recovery",
+				    "#arevup": "area_no",
+				    "#lutvup": "lot_no",
+				    "#connumvup": "containter_no",
+				    "#epogvup": "epcgno",
+				    "#exptitlevup": "export_title",
+				    "#newhcode": "h_code_value",
+				    "#newscode": "s_code_value",
+				};
 		        
 		        const TaxFields = {
 			        "#bvaueup": "basic_value",
@@ -2132,6 +2615,13 @@ if(status!='CANCELLED')
 		        Object.keys(contractorFields).forEach(selector => {
 		            setInputValue(selector, ContData.length > 0 ? ContData[0][contractorFields[selector]] : "");
 		        });
+				
+				// ---- FIX: vendor fields don't always live on ContData[0]; find the row that actually
+				setInputValue("#vendornameup", invoiceData.vendorname);
+				setInputValue("#vendorinvnoup", invoiceData.vendorinvno);
+				setInputValue("#vendorqtyup", invoiceData.vendorqty);
+				setInputValue("#vendordateup", toDateInputValue(invoiceData.vendorinvdate));
+				// ---- END vendor fields fix ----
 		        
 		        Object.keys(TaxFields).forEach(selector => {
 		            setInputValue(selector, taxData.length > 0 ? taxData[0][TaxFields[selector]] : "");
@@ -2210,6 +2700,7 @@ if(status!='CANCELLED')
 		        });
 
 		        // Show the modal
+				toggleSubcontractingFieldsUp(); 
 		        $("#exampleModalScrollableEditUp").modal("show");
 
 		    } catch (error) {
@@ -2218,6 +2709,114 @@ if(status!='CANCELLED')
 	}
 }
 
+function toDateInputValue(v) {
+    if (!v) return "";
+    return String(v).split(" ")[0]; // "2026-08-01 00:00:00.0" -> "2026-08-01"
+}
+
+
+
+async function fetchSalebusunitEdit(targetId, selectedId, fallbackText, verified_status) {
+    const url = new URL(`/jssl/contract/listbusinessunitnew`, baseUrl);
+    const response = await fetch(url, { method: "GET", credentials: "include" });
+    const json = await response.json();
+    if (json.status !== "yes" || !json.Data.length) return;
+
+    const selectElement = document.getElementById(targetId);
+    selectElement.innerHTML = `<option value="">Select Business Unit</option>`;
+
+    let matched = false;
+    json.Data.forEach((type) => {
+        const bindaddress = type.business_unit_name + type.location + '(' + type.gst_number + ')';
+        const option = document.createElement("option");
+        option.value = type.business_unit_id;
+        option.textContent = bindaddress;
+        if (selectedId && String(type.business_unit_id) === String(selectedId)) {
+            option.selected = true;
+            matched = true;
+        }
+        selectElement.appendChild(option);
+    });
+
+    // Fallback: no ID match, but we have a display string from Contractor_Data
+    if (!matched && fallbackText) {
+        const fallbackOption = document.createElement("option");
+        fallbackOption.value = fallbackText;
+        fallbackOption.textContent = fallbackText;
+        fallbackOption.selected = true;
+        selectElement.insertBefore(fallbackOption, selectElement.firstChild.nextSibling);
+    }
+
+    // ✅ Make it read-only once verified
+    if (verified_status === "true" || verified_status === "1" || verified_status === 1) {
+        selectElement.setAttribute("disabled", "disabled");
+    } else {
+        selectElement.removeAttribute("disabled"); // reset in case it was disabled from a previous open
+    }
+}
+
+async function fetchinvoicetoEdit(targetId, selectedId, fallbackText) {
+    try {
+        const url = new URL(`/jssl/invoiceConsigneeAddress/getInvoiceAddress`, baseUrl);
+        const response = await fetch(url, { method: "GET", credentials: "include" });
+        const json = await response.json();
+        if (json.status !== "yes" || !json.InvoiceAddress?.length) return;
+
+        const selectElement = document.getElementById(targetId);
+        if (!selectElement) return;
+
+        const records = json.InvoiceAddress
+            .filter(t => t.is_verified == 1 && t.id)
+            .map(t => ({ id: t.id, label: t.address }));
+
+        const deduped = dedupeByLabel(records, selectedId);
+        populateSelect(selectElement, deduped, selectedId, "Select invoice to", fallbackText);
+    } catch (err) {
+        console.error("Error fetching invoice addresses:", err);
+    }
+}
+
+async function fetchSaleworkEdit(targetId, selectedId, fallbackText) {
+    try {
+        const url = new URL(`/jssl/contract/listworkordernew`, baseUrl);
+        const response = await fetch(url, { method: "GET", credentials: "include" });
+        const json = await response.json();
+        if (json.status !== "yes" || !json.Data.length) return;
+
+        const selectElement = document.getElementById(targetId);
+        if (!selectElement) return;
+
+        const records = json.Data
+            .filter(t => t.work_id)
+            .map(t => ({ id: t.work_id, label: t.workorder_no }));
+
+        const deduped = dedupeByLabel(records, selectedId);
+        populateSelect(selectElement, deduped, selectedId, "Select work order", fallbackText);
+    } catch (err) {
+        console.error("Error fetching work orders:", err);
+    }
+}
+
+async function fetchconnameEdit(targetId, selectedId, fallbackText) {
+    try {
+        const url = new URL(`/jssl/invoiceConsigneeAddress/getConsigneeAddressNew`, baseUrl);
+        const response = await fetch(url, { method: "GET", credentials: "include" });
+        const json = await response.json();
+        if (json.status !== "yes" || !json.ConsigneeAddress?.length) return;
+
+        const selectElement = document.getElementById(targetId);
+        if (!selectElement) return;
+
+        const records = json.ConsigneeAddress
+            .filter(t => t.is_verified == 1 && t.id)
+            .map(t => ({ id: t.id, label: t.address }));
+
+        const deduped = dedupeByLabel(records, selectedId);
+        populateSelect(selectElement, deduped, selectedId, "Select", fallbackText);
+    } catch (err) {
+        console.error("Error fetching consignee addresses:", err);
+    }
+}
 
 function openModalVerify() {
     var username = document.getElementById('remarkvvei').value.trim();
@@ -2380,6 +2979,19 @@ function openModalUpdate() {
 
 function addeventudate() {
 	$('#exampleModalCenter66Editup').modal('hide');
+	const slno = [];
+	const service_code_id = [];
+	const hsn_code_id = [];
+	$(".service-code-select").each(function () {
+	    const rowSlno = $(this).data("slno");
+	    slno.push(rowSlno);
+	    service_code_id.push($(this).val());
+	    const hsn = $(this)
+	        .closest(".row")
+	        .find(".hsn-code-select")
+	        .val();
+	    hsn_code_id.push(hsn);
+	});
     $.ajax({
         url: new URL('/jssl/invoice/updatenew', baseUrl),
         type: 'POST',
@@ -2387,34 +2999,60 @@ function addeventudate() {
 			    withCredentials: true
 			},
         dataType: 'json',
-        data: jQuery.param({
-            modified_by: createdById,
-            product_desc: prodesv11up.value,
-            remarks: remarkvup.value,
-            date_of_notification: datevup.value,
-            date_val: date1vup.value,
-            pn_id: pnverifywwup.value,
-            bg_type: bgvaerifyup.value,
-            date_of_issue: dissuevup.value,
-            reference_no: refvup.value,
-            lc_number: lcvup.value,
-            supply_place: supvup.value,
-            s_t_exempted: exevup.value,
-            lr_docketno: dockvup.value,
-            bg_no: bgnovup.value,
-            date_of_expiry: dateexpvup.value,
-            date_of_ref: daterefvup.value,   
-            lc_issue_date: lcdatevup.value, 
-            id: vidverifyup.value,
-            inc_type:intypeeditup.value
-        }),
+		data: jQuery.param({
+		    modified_by: createdById,
+		    product_desc: prodesv11up.value,
+		    remarks: remarkvup.value,
+		    date_of_notification: datevup.value,
+		    date_val: date1vup.value,
+		    pn_id: pnverifywwup.value,
+		    bg_type: bgvaerifyup.value,
+		    date_of_issue: dissuevup.value,
+		    reference_no: refvup.value,
+		    lc_number: lcvup.value,
+		    supply_place: supvup.value,
+		    s_t_exempted: exevup.value,
+		    lr_docketno: dockvup.value,
+		    bg_no: bgnovup.value,
+		    date_of_expiry: dateexpvup.value,
+		    date_of_ref: daterefvup.value,
+		    lc_issue_date: lcdatevup.value,
+		    id: vidverifyup.value,
+		    inc_type: intypeeditup.value,
+		    slno: slno,
+		    service_code_id: service_code_id,
+		    hsn_code_id: hsn_code_id,
+			
+			// ---- Vendor / subcontracting fields ----
+			vendorname: vendornameup.value,
+			vendorinvno: vendorinvnoup.value,
+			vendorqty: vendorqtyup.value,
+			//vendorinvdate: vendordateup.value || '',
+			vendorinvdate: vendordateup.value
+			    ? vendordateup.value.replace(/-/g, '')   // "2026-08-20" -> "20260820"
+			    : '',
+		    // ---- Contract Details modal fields ----
+			con_slno: document.getElementById("vconslnoupdate").value,
+		    factory_id: selectedFactoryId,
+		    business_unit_id: document.getElementById("bunitvup").value,
+		    invoice_type_calculation: document.getElementById("intypevup").value,
+		    invoice_to_id: document.getElementById("intovup").value,
+		    product_desc_id: document.getElementById("prodesvup").value,
+		    shipment_mode_id: document.getElementById("shipmodevup").value,
+		    work_id: document.getElementById("workordervup").value,
+		    export: document.getElementById("exptvup").value,
+		    tax_ex_inc: document.getElementById("taxresvup").value,
+		    percentage_value: document.getElementById("percenvup").value,
+		    consignee_id: document.getElementById("nandconvup").value,   // ✅ FIXED
+		    bank_details_id: document.getElementById("banknamevup").value,
+		    delivery_condition_id: document.getElementById("deliveryconvup").value,
+		    regd_office_id: document.getElementById("officevvup").value
+		}),
         success: function (data) {
             var result = data.message;
-
             if (result === "Success") {
                 const popup = $('<div class="popup">Steel Invoice updated Successfully!</div>')
                     .appendTo('body').hide().fadeIn(400);
-
                 setTimeout(function () {
                     popup.fadeOut(400, function () {
                         $(this).remove();
@@ -2427,11 +3065,10 @@ function addeventudate() {
                 $('#exampleModalCenterDup').modal('show');
                 $('#exampleModalCenter66Editup').modal('hide');
                 $('#exampleModalScrollableEditUp').modal('hide');
-                
             }
         },
-        error: function () {
-            console.error('Request failed.');
+        error: function (xhr, status, error) {
+            console.error('Request failed.', status, error, xhr.responseText);
         }
     });
 }
@@ -4810,8 +5447,57 @@ async function printRecord(id, status) {
         const Invoice_Data     = json.Invoice_Data;
         const Contractor_Data  = json.Contractor_Data;
         const QsPacking_Data   = json.QsPacking_Data;
-        const tax              = json.tax;
+        const tax               = json.tax;
         const Grand_Total_value = json.Grand_Total_value;
+
+        // ---- Resolve Invoice To / Consignee / Work Order from InvoiceContractMaster, fallback to Contractor_Data ----
+        const ContractMasterData = json.InvoiceContractMaster || {};
+
+        const matchedInvoiceTo = invoiceAddressList.find(a => String(a.id) === String(ContractMasterData.invoice_to_id));
+        const resolvedInvoiceTo = matchedInvoiceTo
+            ? matchedInvoiceTo.address
+            : Contractor_Data[0].invoice_to_id_value;
+
+        // Invoice To — district / pincode / state name / state code / GSTIN / PAN
+        // Prefer the matched master record; fall back to Contractor_Data only if no match.
+        const resolvedInvoiceDistrict  = matchedInvoiceTo ? matchedInvoiceTo.district   : Contractor_Data[0].invoiceDistrict;
+        const resolvedInvoicePinNo     = matchedInvoiceTo ? matchedInvoiceTo.pin_no     : Contractor_Data[0].invoicePinNo;
+        const resolvedInvoiceStateName = matchedInvoiceTo ? matchedInvoiceTo.state_name : Contractor_Data[0].invoiceStateName;
+        const resolvedInvoiceStateCode = matchedInvoiceTo ? matchedInvoiceTo.state_id   : Contractor_Data[0].invoiceStateCode;
+        const resolvedInvoiceGstNo     = matchedInvoiceTo ? matchedInvoiceTo.gst_no     : Contractor_Data[0].invoiceGstNo;
+        const resolvedInvoicePanNo     = matchedInvoiceTo ? matchedInvoiceTo.pan_no     : Contractor_Data[0].invoicePanNo;
+
+        const matchedConsignee = consigneeAddressList.find(c => String(c.id) === String(ContractMasterData.consignee_id));
+        const resolvedConsignee = matchedConsignee
+            ? matchedConsignee.address
+            : Contractor_Data[0].consignee_id_value;
+
+        // Consignee — district / pincode / state name / state code / GSTIN / PAN
+        const resolvedConsigneeDistrict  = matchedConsignee ? matchedConsignee.district   : Contractor_Data[0].consigneeDistrict;
+        const resolvedConsigneePinNo     = matchedConsignee ? matchedConsignee.pin_no     : Contractor_Data[0].consigneePinNo;
+        const resolvedConsigneeStateName = matchedConsignee ? matchedConsignee.state_name : Contractor_Data[0].consigneeStateName;
+        const resolvedConsigneeStateCode = matchedConsignee ? matchedConsignee.state_id   : Contractor_Data[0].consigneeStateCode;
+        const resolvedConsigneeGstNo     = matchedConsignee ? matchedConsignee.gst_no     : Contractor_Data[0].consigneeGstNo;
+        const resolvedConsigneePanNo     = matchedConsignee ? matchedConsignee.pan_no     : Contractor_Data[0].consigneePanNo;
+
+        const matchedWork = workOrderList.find(w => String(w.work_id) === String(ContractMasterData.work_id));
+        const resolvedWork = matchedWork
+            ? matchedWork.workorder_no
+            : Contractor_Data[0].work_id_value;
+
+        function cleanBusinessUnitAddress(name) {
+            if (!name) return '';
+            return name
+                .replace(/^JBU-\d+\s*/i, '')                                    // remove "JBU-16 "
+                .replace(/^JSW\s+Severfield\s+Structures\s+Limited\s*/i, '')    // remove company name
+                .trim();
+        }
+
+        const matchedBU = businessUnitList.find(b => String(b.business_unit_id) === String(ContractMasterData.bid));
+        const resolvedbudisplay = matchedBU
+            ? `${cleanBusinessUnitAddress(matchedBU.business_unit_name)},${matchedBU.district || ''}-${matchedBU.pinNo || ''}<br>${matchedBU.location || ''}`
+            : (Contractor_Data.length > 0 ? cleanBusinessUnitAddress(Contractor_Data[0].business_unit_name) : "");
+        // ---- END resolution block ----
 
         const Grand_Total_tax        = Grand_Total_value[0].Grand_Total_tax;
         const Total_adv_tax_Taxable  = Grand_Total_value[0].Total_adv_tax_Taxable;
@@ -4823,9 +5509,8 @@ async function printRecord(id, status) {
         const date_val       = Invoice_Data.date_val;
         //const factory_id     = Invoice_Data.factory_id;
         const cancel         = Invoice_Data.cancel;
-		
-		
-		const productdesc = Invoice_Data.product_desc;
+
+        const productdesc = Invoice_Data.product_desc;
 
         // ── Factory Data ──────────────────────────────────────────────────────
         const url_factory = new URL(`/jssl/factory/getAllFactoryListSS`, baseUrl);
@@ -4847,16 +5532,17 @@ async function printRecord(id, status) {
             .filter(x => x !== "")
             .join(', ');
 
-        const factory_Address = address;
-       // const factory_Address = FactoryDataBasedById.address;
+        //const factory_Address = address;
+        // const factory_Address = FactoryDataBasedById.address;
+        const bid = resolvedbudisplay;
 
-        // ── Business Unit State Code / GSTIN / PAN (pulled from Contractor_Data) ─
-        const state_Code     = Contractor_Data[0].businessStateName;
-        const Gst_Code       = Contractor_Data[0].businessgstNumber;
-		const Pan_Code       = Contractor_Data[0].businesspanNumber;
+        // ── Business Unit State Code / GSTIN / PAN (from InvoiceContractMaster, fallback Contractor_Data) ─
+        const state_Code = ContractMasterData.state_id   || Contractor_Data[0].invoiceStateCode;
+        const Gst_Code   = ContractMasterData.gst_number || Contractor_Data[0].invoiceGstNo;
+        const Pan_Code   = ContractMasterData.pan_number || Contractor_Data[0].invoicePanNo;
 
         // ── Contractor / Invoice Fields ───────────────────────────────────────
-        const invoice_to_id_value          = (Contractor_Data[0].invoice_to_id_value);
+        const invoice_to_id_value          = resolvedInvoiceTo;
         const tax_payable                  = Contractor_Data[0].tax_payable == 1 ? "No" : "Yes";
         const area_no                      = Contractor_Data[0].area_no;
         const lot_no                       = Contractor_Data[0].lot_no;
@@ -4864,16 +5550,19 @@ async function printRecord(id, status) {
         const epcgno                       = Contractor_Data[0].epcgno;
         const shipment_mode_id_value       = Contractor_Data[0].shipment_mode_id_value;
         const delivery_condition_id_value  = Contractor_Data[0].delivery_condition_id_value;
-        const consignee_id_value           = (Contractor_Data[0].consignee_id_value);
-        const work_id_value                = Contractor_Data[0].work_id_value;
-        const invoiceStateName             = Contractor_Data[0].invoiceStateName;
-        const consigneeStateName           = Contractor_Data[0].consigneeStateName;
-        const invoiceStateCode             = Contractor_Data[0].invoiceStateCode;
-        const consigneeStateCode           = Contractor_Data[0].consigneeStateCode;
-        const invoiceGstNo                 = Contractor_Data[0].invoiceGstNo;
-        const consigneeGstNo               = Contractor_Data[0].consigneeGstNo;
-        const invoicePanNo                 = Contractor_Data[0].invoicePanNo;
-        const consigneePanNo               = Contractor_Data[0].consigneePanNo;
+        const consignee_id_value           = resolvedConsignee;
+        const work_id_value                = resolvedWork;
+
+        // Invoice To / Consignee state / GST / PAN — now resolved from master, with Contractor_Data fallback
+        const invoiceStateName             = resolvedInvoiceStateName;
+        const consigneeStateName           = resolvedConsigneeStateName;
+        const invoiceStateCode             = resolvedInvoiceStateCode;
+        const consigneeStateCode           = resolvedConsigneeStateCode;
+        const invoiceGstNo                 = resolvedInvoiceGstNo;
+        const consigneeGstNo               = resolvedConsigneeGstNo;
+        const invoicePanNo                 = resolvedInvoicePanNo;
+        const consigneePanNo               = resolvedConsigneePanNo;
+
         const bankName                     = Contractor_Data[0].bankName;
         const account_number               = Contractor_Data[0].account_number;
         const branch_address               = Contractor_Data[0].branch_address;
@@ -4906,52 +5595,54 @@ async function printRecord(id, status) {
         const basicValuecos     = taxData[0].optc || '';
 
         // ── Product Table Rows ────────────────────────────────────────────────
-		const maxRows = 9;
-		      let tableRows = "";
+        const maxRows = 9;
+        let tableRows = "";
 
-		      items.forEach((item, index) => {
-		          tableRows += `
-		              <tr class="product-row">
-		                  <td colspan="1" style="text-align: right;">${index + 1}</td>
-		                  <td colspan="4" class="desc-col descri">${item.scrap_name_type_id || ''}</td>
-		                  <td colspan="1" style="text-align:right !important;">${item.serviceCode || ''}</td>
-		                  <td colspan="1" style="text-align:left !important;">${item.uom_name || ''}</td>
-		                  <td colspan="1" class="qtys">${item.qty || ''}</td>
-		                  <td colspan="2" class="weits">${item.per_kgs || ''}</td>
-		                  <td colspan="1" class="prs">${formatAmount(item.unit_price) || ''}</td>
-		                  <td colspan="2" class="tols">${formatAmount(item.total) || ''}</td>
-		              </tr>`;
-		      });
-			const emptyCount = Math.max(0, maxRows - items.length);
+        items.forEach((item, index) => {
+            tableRows += `
+                <tr class="product-row">
+                    <td colspan="1" style="text-align: right;">${index + 1}</td>
+                    <td colspan="4" class="desc-col descri">
+                        ${item.scrap_name_type_id || ''}
+                    </td>
+                    <td colspan="1" style="text-align:right !important; white-space: nowrap; font-size: 9px;">${[item.scode, item.hsncode].filter(Boolean).join('/')}</td>
+                    <td colspan="1" style="text-align:left !important;">${item.uom_name || ''}</td>
+                    <td colspan="1" class="qtys">${item.qty || ''}</td>
+                    <td colspan="2" class="weits">${item.per_kgs || ''}</td>
+                    <td colspan="1" class="prs">${formatAmount(item.unit_price) || ''}</td>
+                    <td colspan="2" class="tols">${formatAmount(item.total) || ''}</td>
+                </tr>`;
+        });
+        const emptyCount = Math.max(0, maxRows - items.length);
 
-			for (let i = 0; i < emptyCount; i++) {
+        for (let i = 0; i < emptyCount; i++) {
 
-			    if (i === 1) { // 👈 only once (3rd empty row)
-			        tableRows += `
-			            <tr class="empty-row">
-			                <td colspan="1">&nbsp;</td>
-			                <td colspan="4" style="font-weight:550;">${productdesc || ''}</td>
-			                <td colspan="1"></td>
-			                <td colspan="1"></td>
-			                <td colspan="1"></td>
-			                <td colspan="2"></td>
-			                <td colspan="1"></td>
-			                <td colspan="2"></td>
-			            </tr>`;
-			    } else {
-			        tableRows += `
-			            <tr class="empty-row">
-			                <td colspan="1">&nbsp;</td>
-			                <td colspan="4"></td>
-			                <td colspan="1"></td>
-			                <td colspan="1"></td>
-			                <td colspan="1"></td>
-			                <td colspan="2"></td>
-			                <td colspan="1"></td>
-			                <td colspan="2"></td>
-			            </tr>`;
-			    }
-			}
+            if (i === 1) { // only once (3rd empty row)
+                tableRows += `
+                    <tr class="empty-row">
+                        <td colspan="1">&nbsp;</td>
+                        <td colspan="4" style="font-weight:550;">${productdesc || ''}</td>
+                        <td colspan="1"></td>
+                        <td colspan="1"></td>
+                        <td colspan="1"></td>
+                        <td colspan="2"></td>
+                        <td colspan="1"></td>
+                        <td colspan="2"></td>
+                    </tr>`;
+            } else {
+                tableRows += `
+                    <tr class="empty-row">
+                        <td colspan="1">&nbsp;</td>
+                        <td colspan="4"></td>
+                        <td colspan="1"></td>
+                        <td colspan="1"></td>
+                        <td colspan="1"></td>
+                        <td colspan="2"></td>
+                        <td colspan="1"></td>
+                        <td colspan="2"></td>
+                    </tr>`;
+            }
+        }
         // ── Tax Rows ──────────────────────────────────────────────────────────
         let taxRows = taxData.map((tax, i, arr) => {
             const isLast = i === arr.length - 1;
@@ -5115,10 +5806,10 @@ async function printRecord(id, status) {
                 }
 
                 .product-table .fright-row .fright-data { line-height: 1.6 !important; padding: 5px !important; }
-				
-				.total-body{
-					border-top:1px solid #000;
-				}
+
+                .total-body{
+                    border-top:1px solid #000;
+                }
                 .total-body .total-datatd  { line-height: 1.6 !important; padding: 5px !important; }
                 .total-body .total-datatds { line-height: 2.3 !important; text-align: right !important; }
 
@@ -5210,11 +5901,11 @@ async function printRecord(id, status) {
                                 <img src="img/logo/download.png" alt="Company Logo" style="width:100px;">
                             </div>
                             <strong>JSW Serverfiled Structures Limited</strong><br>
-                            <span class="facotry_address"></span>
+                            <span class="bid"></span>
                             <p>
                             <b>State Code:</b> <span class="state_code"></span><br>
-                            <b>GSTIN:</b> <span class="gst_code"></span> &nbsp; 
-							<b>PAN:</b> <span class="pan_code"></span><br>
+                            <b>GSTIN:</b> <span class="gst_code"></span> &nbsp;
+                            <b>PAN:</b> <span class="pan_code"></span><br>
                             <b>ICE No:</b> 0309033152 &nbsp; <b>CIN No:</b> U28112MH2009PLC191045<br>
                             <b>Email:</b> invoice@jssl.in &nbsp; <b>Website:</b> www.jssl.in<br>
                         </td>
@@ -5233,52 +5924,52 @@ async function printRecord(id, status) {
                         </td>
                     </tr>
                     <tr>
-					<td colspan="6" style="font-size:10px; line-height:1.3;">
-										    
-										    <b>
-										        Invoice To :<br> </b>
-					 
-										       <b><span class="shipto11"></span></b><br>
-												<span class="shipto11add2" ></span><br>
-												<span class="shipto11add3" ></span>
-												
-										        <span class="projectname"></span><br>
-										   
-					 
-										    <!-- Address (NOT bold) -->
-										    <span class="fulladdress" style="white-space: pre-line;"></span><br><br>
-											
-											<b>Place of Supply : <span class="placeofsupply"></span></b><br><br>
-					 
-											<b>
-											    Name of the State : <span class="statename"></span><br>
-											    State Code : <span class="stcode11"></span><br>
-											    GSTIN : <span class="ingst"></span><br>
-											    PAN : <span class="panin"></span><br>
-											</b>
-					 
-										</td>
-										<td colspan="6" style="font-size:10px; line-height:1.3;">
-															    
-															    <b>Name & Address of consignee:<br></b>
-										 
-															    <b><span class="conname"></span></b><br>
-																<span class="conname1" ></span><br>
-																<span class="conname2" ></span><br>
-															  
-										 
-															    <!-- Address -->
-															    <span class="conaddress" style="white-space: pre-line;"></span><br>
-																<br>
-															
-																<b>
-																Name of the State: <span class="state"></span><br>
-																State Code: <span class="stateco"></span><br>
-																GSTIN: <span class="congst"></span><br>
-																PAN: <span class="pancon"></span><br>
-																</b>
-															   
-															</td>
+                    <td colspan="6" style="font-size:10px; line-height:1.3;">
+
+                                            <b>
+                                                Invoice To :<br> </b>
+
+                                               <b><span class="shipto11"></span></b><br>
+                                                <span class="shipto11add2" ></span><br>
+                                                <span class="shipto11add3" ></span>
+
+                                                <span class="projectname"></span><br>
+
+
+                                            <!-- Address (NOT bold) -->
+                                            <span class="fulladdress" style="white-space: pre-line;"></span><br><br>
+
+                                            <b>Place of Supply : <span class="placeofsupply"></span></b><br><br>
+
+                                            <b>
+                                                Name of the State : <span class="statename"></span><br>
+                                                State Code : <span class="stcode11"></span><br>
+                                                GSTIN : <span class="ingst"></span><br>
+                                                PAN : <span class="panin"></span><br>
+                                            </b>
+
+                                        </td>
+                                        <td colspan="6" style="font-size:10px; line-height:1.3;">
+
+                                                                            <b>Name & Address of consignee:<br></b>
+
+                                                                            <b><span class="conname"></span></b><br>
+                                                                                <span class="conname1" ></span><br>
+                                                                                <span class="conname2" ></span><br>
+
+
+                                                                            <!-- Address -->
+                                                                            <span class="conaddress" style="white-space: pre-line;"></span><br>
+                                                                                <br>
+
+                                                                                <b>
+                                                                                Name of the State: <span class="state"></span><br>
+                                                                                State Code: <span class="stateco"></span><br>
+                                                                                GSTIN: <span class="congst"></span><br>
+                                                                                PAN: <span class="pancon"></span><br>
+                                                                                </b>
+
+                                                                        </td>
                     </tr>
                     <tr class="fixed-8px">
                         <td colspan="3" class="notif-cell">
@@ -5322,7 +6013,7 @@ async function printRecord(id, status) {
                     <tbody id="product_table_data">
                         ${tableRows}
                     </tbody>
-                  
+
                     <tbody class="total-body" >
                         <tr>
                             <td colspan="7" class="total-datatd"><span>TOTAL</span><br></td>
@@ -5438,8 +6129,8 @@ async function printRecord(id, status) {
             container.querySelector(".reg_add").textContent    = reg_addresss;
             container.querySelector(".gst_code").textContent   = Gst_Code;
             container.querySelector(".state_code").textContent = state_Code;
-			container.querySelector(".pan_code").textContent   = Pan_Code;
-            container.querySelector('.facotry_address').textContent = factory_Address;
+            container.querySelector(".pan_code").textContent   = Pan_Code;
+            container.querySelector('.bid').innerHTML = bid;
 
             // INVOICE HEADER
             container.querySelector('.datetime').textContent     = formattedDateTime;
@@ -5448,107 +6139,101 @@ async function printRecord(id, status) {
             container.querySelector('.invoiceNumber').textContent = invoiceno;
 
             // INVOICE TO DETAILS
-			const invoiceToValue = invoice_to_id_value || '';
-			 
-						// Split using \r\n
-						const invoiceLines = invoiceToValue.split(/\r?\n/);
-			 
-						// First line
-						const line1 = invoiceLines[0] || '';
-			 
-						// Second line
-						const line2 = invoiceLines[1] || '';
-			 
-						// Third line → remove ", Thane, Maharashtra"
-						const line3 = (invoiceLines[2] || '')
-						    ;
-			 
-						// Set values
-						container.querySelector('.shipto11').textContent = line1;
-			 
-						container.querySelector('.shipto11add2').textContent = line2;
-			 
-						container.querySelector('.shipto11add3').textContent = line3;
-						const districtAndPin = [
-						    Contractor_Data[0].invoiceDistrict,
-						    Contractor_Data[0].invoicePinNo
-						]
-						.filter(x => x && x.toString().trim() !== "")
-						.join("-");
-			 
-						const invoiceAddress = [
-						    Invoice_Data.addressLine1up,
-						    Invoice_Data.addressLine2up,
-						    Invoice_Data.addressLine3up,
-						    districtAndPin
-						]
-						.filter(x => x && x.toString().trim() !== "")
-						.join("\n");
-			 
-						console.log("the the invoice address is this2 ", invoiceAddress);
-			 
-						container.querySelector('.fulladdress').textContent = invoiceAddress;
-			 
-					    container.querySelector('.statename').textContent =
-					        invoiceStateName || '';
-			 
-					    container.querySelector('.stcode11').textContent =
-					        invoiceStateCode || '';
-			 
-					    container.querySelector('.placeofsupply').textContent =
-					        Invoice_Data.supply_place || '';
-			 
-					    container.querySelector('.ingst').textContent =
-					        invoiceGstNo || '';
-			 
-					    container.querySelector('.panin').textContent =
-					        invoicePanNo || '';
-			 
-					    // =========================
-					    // CONSIGNEE DETAILS
-					    // =========================
-			 
-						console.log("the consignee value is this ", consignee_id_value);
-			 
-						const consigneeValue = consignee_id_value || '';
-			 
-						// Split using \r\n
-						const consigneeLines = consigneeValue.split(/\r?\n/);
-			 
-						// First line
-						const conLine1 = consigneeLines[0] || '';
-			 
-						// Second line
-						const conLine2 = consigneeLines[1] || '';
-			 
-						// Third line
-						const conLine3 = consigneeLines[2] || '';
-			 
-						// Set values
-						container.querySelector('.conname').textContent = conLine1;
-			 
-						container.querySelector('.conname1').textContent = conLine2;
-			 
-						container.querySelector('.conname2').textContent = conLine3;
-			 
-							const consigneeDistrictAndPin = [
-							    Contractor_Data[0].consigneeDistrict,
-							    Contractor_Data[0].consigneePinNo
-							]
-							.filter(x => x && x.toString().trim() !== "")
-							.join("-");
-			 
-							const consigneeAddress = [
-							    Invoice_Data.conaddressLine1,
-							    Invoice_Data.conaddressLine2,
-							    Invoice_Data.conaddressLine3,
-							    consigneeDistrictAndPin
-							]
-							.filter(x => x && x.toString().trim() !== "")
-							.join("\n");
-			 
-							container.querySelector('.conaddress').textContent =
-							    consigneeAddress;
+            const invoiceToValue = invoice_to_id_value || '';
+
+            // Split using \r\n
+            const invoiceLines = invoiceToValue.split(/\r?\n/);
+
+            // First line
+            const line1 = invoiceLines[0] || '';
+
+            // Second line
+            const line2 = invoiceLines[1] || '';
+
+            // Third line
+            const line3 = (invoiceLines[2] || '');
+
+            // Set values
+            container.querySelector('.shipto11').textContent = line1;
+            container.querySelector('.shipto11add2').textContent = line2;
+            container.querySelector('.shipto11add3').textContent = line3;
+
+            // District + Pincode — resolved (master first, Contractor_Data fallback)
+            const districtAndPin = [
+                resolvedInvoiceDistrict,
+                resolvedInvoicePinNo
+            ]
+            .filter(x => x && x.toString().trim() !== "")
+            .join("-");
+
+            const invoiceAddress = [
+                Invoice_Data.addressLine1up,
+                Invoice_Data.addressLine2up,
+                Invoice_Data.addressLine3up,
+                districtAndPin
+            ]
+            .filter(x => x && x.toString().trim() !== "")
+            .join("\n");
+
+            container.querySelector('.fulladdress').textContent = invoiceAddress;
+
+            container.querySelector('.statename').textContent =
+                invoiceStateName || '';
+
+            container.querySelector('.stcode11').textContent =
+                invoiceStateCode || '';
+
+            container.querySelector('.placeofsupply').textContent =
+                Invoice_Data.supply_place || '';
+
+            container.querySelector('.ingst').textContent =
+                invoiceGstNo || '';
+
+            container.querySelector('.panin').textContent =
+                invoicePanNo || '';
+
+            // =========================
+            // CONSIGNEE DETAILS
+            // =========================
+
+            const consigneeValue = consignee_id_value || '';
+
+            // Split using \r\n
+            const consigneeLines = consigneeValue.split(/\r?\n/);
+
+            // First line
+            const conLine1 = consigneeLines[0] || '';
+
+            // Second line
+            const conLine2 = consigneeLines[1] || '';
+
+            // Third line
+            const conLine3 = consigneeLines[2] || '';
+
+            // Set values
+            container.querySelector('.conname').textContent = conLine1;
+            container.querySelector('.conname1').textContent = conLine2;
+            container.querySelector('.conname2').textContent = conLine3;
+
+            // District + Pincode — resolved (master first, Contractor_Data fallback)
+            const consigneeDistrictAndPin = [
+                resolvedConsigneeDistrict,
+                resolvedConsigneePinNo
+            ]
+            .filter(x => x && x.toString().trim() !== "")
+            .join("-");
+
+            const consigneeAddress = [
+                Invoice_Data.conaddressLine1,
+                Invoice_Data.conaddressLine2,
+                Invoice_Data.conaddressLine3,
+                consigneeDistrictAndPin
+            ]
+            .filter(x => x && x.toString().trim() !== "")
+            .join("\n");
+
+            container.querySelector('.conaddress').textContent =
+                consigneeAddress;
 
             container.querySelector('.state').textContent          = consigneeStateName || '';
             container.querySelector('.stateco').textContent        = consigneeStateCode || '';
@@ -5780,3 +6465,95 @@ function cancelRecord(id) {
 	            return char.toUpperCase();
 	        });
 	}*/
+	
+	async function saveServiceHsnSelections() {
+
+	    const slnoList = [];
+	    const serviceCodeList = [];
+	    const hsnCodeList = [];
+
+	    const serviceSelects = document.querySelectorAll(".dynamic-row .service-code-select");
+
+	    console.log("Found Service Code dropdowns:", serviceSelects.length);
+
+	    serviceSelects.forEach(serviceSelect => {
+
+	        const slno = serviceSelect.getAttribute("data-slno");
+
+	        const row = serviceSelect.closest(".form-row");
+	        const hsnSelect = row ? row.querySelector(".hsn-code-select") : null;
+
+	        // Selected values
+	        const serviceCode = serviceSelect.value ? serviceSelect.value.trim() : "";
+	        const hsnCode = hsnSelect ? (hsnSelect.value || "").trim() : "";
+
+	        console.log(
+	            "Row ->",
+	            "SlNo:", slno,
+	            "| Service Code:", serviceCode,
+	            "| HSN Code:", hsnCode
+	        );
+
+	        // Save only rows having SlNo
+	        if (slno) {
+	            slnoList.push(slno);
+	            serviceCodeList.push(serviceCode);
+	            hsnCodeList.push(hsnCode);
+	        }
+
+	    });
+
+	    console.log("SlNo List:", slnoList);
+	    console.log("Service Code List:", serviceCodeList);
+	    console.log("HSN Code List:", hsnCodeList);
+
+	    if (slnoList.length === 0) {
+	        console.warn("No rows found to update.");
+	        return;
+	    }
+
+	    try {
+
+	        const url = new URL("/jssl/invoicemaster/updateServiceHsnForItems", baseUrl);
+
+	        const params = new URLSearchParams();
+
+	        // Spring Boot expects repeated parameters
+	        slnoList.forEach(value => params.append("slno", value));
+	        serviceCodeList.forEach(value => params.append("service_code_id", value));
+	        hsnCodeList.forEach(value => params.append("hsn_code_id", value));
+
+	        params.append("modified_by", createdById);
+
+	        console.log("Request Payload:");
+	        console.log(params.toString());
+
+	        const response = await fetch(url, {
+	            method: "POST",
+	            credentials: "include",
+	            headers: {
+	                "Content-Type": "application/x-www-form-urlencoded"
+	            },
+	            body: params.toString()
+	        });
+
+	        const result = await response.json();
+
+	        console.log("Response:", result);
+
+	        if (result.status === "yes") {
+
+	            console.log("Successfully updated " + result.updatedCount + " rows.");
+
+	        } else {
+
+	            console.error("Update failed:", result.message);
+
+	        }
+
+	    } catch (err) {
+
+	        console.error("Error while saving Service/HSN Codes:", err);
+
+	    }
+	}

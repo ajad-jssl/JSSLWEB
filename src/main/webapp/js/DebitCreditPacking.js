@@ -77,11 +77,11 @@ document.addEventListener("DOMContentLoaded", function () {
 	fetchinvoicetype();
 	
 	
-	const factoryId = localStorage.getItem("selectedFactoryId");
+	const factoryId = sessionStorage.getItem("selectedFactoryId");
 	if (factoryId) {
 	    fetchSteelPackingNoteDetails(factoryId);  // ✅ loads table automatically
 	} else {
-	    console.warn("No factory ID found in localStorage");
+	    console.warn("No factory ID found in sessionStorage");
 	}
 
 	// existing tableselect listener
@@ -298,7 +298,7 @@ async function fetchinvoicetype() {
         // Construct the API URL properly
         const url = new URL(`/jssl/master/listinvoicetypenew`, baseUrl1);
 
-		const selectedFactoryId = localStorage.getItem("selectedFactoryId");
+		const selectedFactoryId = sessionStorage.getItem("selectedFactoryId");
 
         // Fetch data from API
 		const response = await fetch(url,{
@@ -322,14 +322,20 @@ async function fetchinvoicetype() {
         selectElement.innerHTML = `<option value="">Select invoicetype</option>`;
 
         // Populate dropdown options using contractor data
-        json.INVOICE_TYPE_LIST.forEach((invoicetype) => {
-            if (invoicetype.type_no && invoicetype.type) { // Ensure both values exist
-                const option = document.createElement("option");
-                option.value = invoicetype.type_no;
-                option.textContent = invoicetype.type;
-                selectElement.appendChild(option);
-            }
-        });
+		// Populate dropdown options using invoice type data
+		json.INVOICE_TYPE_LIST.forEach((invoicetype) => {
+		    // Skip GP invoice type
+		    if (
+		        invoicetype.type_no &&
+		        invoicetype.type &&
+		        invoicetype.type.trim().toUpperCase() !== "GP"
+		    ) {
+		        const option = document.createElement("option");
+		        option.value = invoicetype.type_no;
+		        option.textContent = invoicetype.type;
+		        selectElement.appendChild(option);
+		    }
+		});
 
         // Add event listener for contractor selection change
         selectElement.addEventListener("change", function() {
@@ -477,7 +483,7 @@ let currentFactoryIdSteel = null;
 
 async function fetchSteelPackingNoteDetails(selectedFactoryId) {
 
-    currentFactoryIdSteel = localStorage.getItem("selectedFactoryId");
+    currentFactoryIdSteel = sessionStorage.getItem("selectedFactoryId");
 
     // 🔥 Destroy existing DataTable
     if ($.fn.DataTable.isDataTable('#tableID')) {
@@ -630,7 +636,7 @@ let currentFactoryIdScrap = null;
 
 function fetchScrapPackingNoteDetails(selectedFactoryId) {
 
-    currentFactoryIdScrap = localStorage.getItem("selectedFactoryId");
+    currentFactoryIdScrap = sessionStorage.getItem("selectedFactoryId");
 
     // 🔥 Destroy existing DataTable
     if ($.fn.DataTable.isDataTable('#tableID')) {
@@ -916,21 +922,26 @@ function openModalAdd() {
     $('#exampleModalCenter66').modal('show'); // Show the next modal (Ensure this modal exists)
 }
 
-// Fetch selectedFactoryId from localStorage
-const selectedFactoryId = localStorage.getItem('selectedFactoryId');
+// Fetch selectedFactoryId from sessionStorage
+const selectedFactoryId = sessionStorage.getItem('selectedFactoryId');
 console.log('selectedFactoryId:', selectedFactoryId);
 
 function addevent() {
-	$('#exampleModalCenter66').modal('hide');
+    // ❌ REMOVED: $('#exampleModalCenter66').modal('hide');
+    // Hiding the modal here (before the AJAX call even runs) was the bug —
+    // it meant the modal was already hidden by the time success/error fired,
+    // so 'hidden.bs.modal' never triggered and the popup never showed.
+
     // Validate role code and role description
-	const selectedinvoicetype_id =document.getElementById("invoice").selectedOptions[0];
-	const invoice = selectedinvoicetype_id ? selectedinvoicetype_id.value : '';
+    const selectedinvoicetype_id = document.getElementById("invoice").selectedOptions[0];
+    const invoice = selectedinvoicetype_id ? selectedinvoicetype_id.value : '';
     const selectedcontract = document.getElementById("cont").selectedOptions[0]; // Get the selected option
     const contractid = selectedcontract ? selectedcontract.value : ''; // Get the contract_id
-	const selectedmilestone =document.getElementById("mile").selectedOptions[0]; 
-	const milestoneid = selectedmilestone ? selectedmilestone.value : '';
-	var select = document.getElementById('note');
-	var Note = select.options[select.selectedIndex].text;
+    const selectedmilestone = document.getElementById("mile").selectedOptions[0];
+    const milestoneid = selectedmilestone ? selectedmilestone.value : '';
+    var select = document.getElementById('note');
+    var Note = select.options[select.selectedIndex].text;
+
     // Arrays to collect the values from the dynamic rows
     const qtyArray = [];
     const perKgsArray = [];
@@ -951,7 +962,8 @@ function addevent() {
         const uom = row.querySelector('[id^="uom"]').value.trim();
         const type = row.querySelector('[id^="type"]').value.trim();
         //const pices = row.querySelector('[id^="pice"]').value.trim();
-console.warn(uom)
+        console.warn(uom);
+
         // Only push values that are not empty (to avoid duplicates and empty values)
         if (qty) qtyArray.push(qty);
         if (perKgs) perKgsArray.push(perKgs);
@@ -975,138 +987,169 @@ console.warn(uom)
     const fileInput = document.getElementById('file');
     const file = fileInput.files[0]; // Get the selected file
 
+    // Reusable helper: shows the success popup, then redirects.
+    // Called AFTER we know the save actually succeeded, so there's no
+    // dependency on modal animation events / timing races.
+    function showSuccessPopupAndRedirect() {
+        $('#exampleModalCenter66').modal('hide'); // hide now that we know it's a success
 
+        const popup = $('<div class="popup">Packing Note Created Successfully!</div>')
+            .appendTo('body').hide().fadeIn(400);
 
-	if(contractid!="Scrap")
-    // Make the AJAX request
-{
-	// Create FormData object for file upload
-	const formData = new FormData();
-	formData.append('con_id',contractid);
-	formData.append('milestone_id', milestoneid);
-	formData.append('note_type', Note);
-	formData.append('freight', freig.value);
-	formData.append('quantity', qtyString);
-	formData.append('kgs', perKgsString);
-	formData.append('unit_price', unitPriceString);
-	formData.append('total', totalString);
-	formData.append('uom_id', uomString);
-	formData.append('type_id', typeString);
-	formData.append('invoice_type_id', invoice);
-	formData.append('remarkstype_id', 1);
-	formData.append('totalpn_amount', totalNo.value);
-	formData.append('created_by', createdById);
-	formData.append('factory_id', selectedFactoryId);
-	formData.append('file_path', '/dummy-path'); // Required by backend
+        setTimeout(function () {
+            popup.fadeOut(400, function () {
+                $(this).remove();
+                window.location = 'DebitCreditPackingNote.jsp'; // Redirect to role list page
+            });
+        }, 800);
+    }
 
-	if (file) {
-	    formData.append('file', file); // Append file only if selected
-	}
-	
-    $.ajax({
-        url: new URL('/jssl/steelDebitCredit/addSteelDebitCreditPackingNote', baseUrl1),
-        type: 'POST',
-        dataType: 'json',
-		xhrFields: {
-			    withCredentials: true
-			},
-        data: formData,
-        processData: false, // Important: prevent jQuery from processing the data
-        contentType: false, // Important: prevent jQuery from setting contentType
-        success: function(data) {
-            var result = data.message; // No need to stringify
+    // 🔍 DEBUG: log the exact value/type coming from the dropdown so we can
+    // confirm whether the "Scrap" branch is actually being selected.
+    console.log('contractid raw value:', JSON.stringify(contractid), 'typeof:', typeof contractid);
 
-            if (result === "Success") {
-				$('#exampleModalCenter66').modal('hide');   // ✅ force close the modal
-                // Store permissions in sessionStorage
-				$('#exampleModalCenter66').one('hidden.bs.modal', function () {
-                const popup = $('<div class="popup">Packing Note Created Successfully!</div>')
-                    .appendTo('body').hide().fadeIn(400);
-				
-                setTimeout(function() {
-                    popup.fadeOut(400, function() {
-                        $(this).remove();
-                        window.location = 'DebitCreditPackingNote.jsp'; // Redirect to role list page
-                    });
-                }, 800);
-				});
-            } else {
-                const errorMessage = data.message || 'Failed to create Packing Note.';
-                $('#errorMessage').text(errorMessage); // Set the error message dynamically
-       		    $('#exampleModalCenterDup').modal('show'); // Show the modal with the error message*/
-            }
-        },
-        error: function() {
-            // Handle AJAX error
-            console.error('Request failed.');
+    // Robust check: trim whitespace and compare case-insensitively, so
+    // "Scrap", " scrap ", "SCRAP" etc. are all treated the same way.
+    const isScrap = String(contractid).trim().toLowerCase() === "scrap";
+    console.log('isScrap evaluated to:', isScrap);
+
+    if (!isScrap) {
+        // ---- Steel Debit/Credit branch ----
+        const formData = new FormData();
+        formData.append('con_id', contractid);
+        formData.append('milestone_id', milestoneid);
+        formData.append('note_type', Note);
+        formData.append('freight', freig.value);
+        formData.append('quantity', qtyString);
+        formData.append('kgs', perKgsString);
+        formData.append('unit_price', unitPriceString);
+        formData.append('total', totalString);
+        formData.append('uom_id', uomString);
+        formData.append('type_id', typeString);
+        formData.append('invoice_type_id', invoice);
+        formData.append('remarkstype_id', 1);
+        formData.append('totalpn_amount', totalNo.value);
+        formData.append('created_by', createdById);
+        formData.append('factory_id', selectedFactoryId);
+        formData.append('file_path', '/dummy-path'); // Required by backend
+
+        if (file) {
+            formData.append('file', file); // Append file only if selected
         }
-    });
-}
-else
-{
-	// Create FormData object for file upload
-	const formData = new FormData();
-/*	formData.append('con_id',contractid);
-	formData.append('milestone_id', milestoneid);*/
-	formData.append('note_type', Note);
-	formData.append('freight', freig.value);
-	formData.append('quantity', qtyString);
-	formData.append('kgs', perKgsString);
-	formData.append('unit_price', unitPriceString);
-	formData.append('total', totalString);
-	formData.append('uom_id', uomString);
-	formData.append('invoice_type_id', invoice);
-	formData.append('type_id', typeString);
-	formData.append('remarkstype_id', 1);
-	formData.append('totalpn_amount', totalNo.value);
-	formData.append('created_by', createdById);
-	formData.append('factory_id', selectedFactoryId);
-	formData.append('file_path', '/dummy-path'); // Required by backend
 
-	if (file) {
-	    formData.append('file', file); // Append file only if selected
-	}
-	
-	$.ajax({
-	    url: new URL('/jssl/scrapDebitCredit/addDebitCreditPackingNote', baseUrl1),
-	    type: 'POST',
-	    dataType: 'json',
-		xhrFields: {
-			    withCredentials: true
-			},
-	    data: formData,
-	    processData: false, // Important: prevent jQuery from processing the data
-	    contentType: false, // Important: prevent jQuery from setting contentType
-	    success: function(data) {
-	        var result = data.message; // No need to stringify
+        $.ajax({
+            url: new URL('/jssl/steelDebitCredit/addSteelDebitCreditPackingNote', baseUrl1),
+            type: 'POST',
+            dataType: 'json',
+            xhrFields: {
+                withCredentials: true
+            },
+            data: formData,
+            processData: false, // Important: prevent jQuery from processing the data
+            contentType: false, // Important: prevent jQuery from setting contentType
+            success: function (data) {
+                // 🔍 DEBUG: log the raw response so we can see exactly what the
+                // server sent back. Check your browser console after saving.
+                console.log('Steel/DebitCredit AJAX success, raw response:', data);
 
-	        if (result === "Success") {
-				$('#exampleModalCenter66').modal('hide');   // ✅ force close the modal
-	            // Store permissions in sessionStorage
-				$('#exampleModalCenter66').one('hidden.bs.modal', function () {
-	            const popup = $('<div class="popup">Packing Note Created Successfully!</div>')
-	                .appendTo('body').hide().fadeIn(400);
-				
-	            setTimeout(function() {
-	                popup.fadeOut(400, function() {
-	                    $(this).remove();
-	                    window.location = 'DebitCreditPackingNote.jsp'; // Redirect to role list page
-	                });
-	            }, 800);
-				});
-	        } else {
-	            const errorMessage = data.message || 'Failed to create Packing Note.';
-	            $('#errorMessage').text(errorMessage); // Set the error message dynamically
-			    $('#exampleModalCenterDup').modal('show'); // Show the modal with the error message*/
-	        }
-	    },
-	    error: function() {
-	        // Handle AJAX error
-	        console.error('Request failed.');
-	    }
-	});
+                // Normalize: trim whitespace and compare case-insensitively,
+                // in case the backend returns "success", " Success ", etc.
+                const result = (data && data.message ? String(data.message) : '').trim().toLowerCase();
+
+                if (result === "success") {
+                    showSuccessPopupAndRedirect();
+                } else {
+                    const errorMessage = (data && data.message) || 'Failed to create Packing Note.';
+                    $('#errorMessage').text(errorMessage); // Set the error message dynamically
+                    $('#exampleModalCenterDup').modal('show'); // Show the modal with the error message
+                }
+            },
+            error: function (jqXHR, textStatus, errorThrown) {
+                // 🔍 DEBUG: this fires if the request fails OR if dataType:'json'
+                // can't parse the response (e.g. server didn't return valid JSON,
+                // or Content-Type header isn't application/json).
+                console.error('Steel/DebitCredit AJAX error:', textStatus, errorThrown);
+                console.error('Raw server response text:', jqXHR.responseText);
+
+                const errorMessage = 'Request failed: ' + textStatus + (jqXHR.responseText ? ' — ' + jqXHR.responseText.substring(0, 200) : '');
+                $('#errorMessage').text(errorMessage);
+                $('#exampleModalCenterDup').modal('show');
+            }
+        });
+
+    } else {
+        // ---- Scrap Debit/Credit branch ----
+        const formData = new FormData();
+        /* formData.append('con_id', contractid);
+        formData.append('milestone_id', milestoneid); */
+        formData.append('note_type', Note);
+        formData.append('freight', freig.value);
+        formData.append('quantity', qtyString);
+        formData.append('kgs', perKgsString);
+        formData.append('unit_price', unitPriceString);
+        formData.append('total', totalString);
+        formData.append('uom_id', uomString);
+        formData.append('invoice_type_id', invoice);
+        formData.append('type_id', typeString);
+        formData.append('remarkstype_id', 1);
+        formData.append('totalpn_amount', totalNo.value);
+        formData.append('created_by', createdById);
+        formData.append('factory_id', selectedFactoryId);
+        formData.append('file_path', '/dummy-path'); // Required by backend
+
+        if (file) {
+            formData.append('file', file); // Append file only if selected
+        }
+
+        // 🔍 DEBUG: print every field being sent to the scrap endpoint.
+        // Check for any value that shows as "undefined", "null", or empty —
+        // a missing required field is a common cause of a silent insert failure.
+        console.log('--- Scrap FormData being sent ---');
+        for (const pair of formData.entries()) {
+            console.log(pair[0] + ':', pair[1]);
+        }
+
+        $.ajax({
+            url: new URL('/jssl/scrapDebitCredit/addDebitCreditPackingNote', baseUrl1),
+            type: 'POST',
+            dataType: 'json',
+            xhrFields: {
+                withCredentials: true
+            },
+            data: formData,
+            processData: false, // Important: prevent jQuery from processing the data
+            contentType: false, // Important: prevent jQuery from setting contentType
+            success: function (data) {
+                // 🔍 DEBUG: log the raw response so we can see exactly what the
+                // server sent back. Check your browser console after saving.
+                console.log('Scrap AJAX success, raw response:', data);
+
+                const result = (data && data.message ? String(data.message) : '').trim().toLowerCase();
+
+                if (result === "success") {
+                    showSuccessPopupAndRedirect();
+                } else {
+                    const errorMessage = (data && data.message) || 'Failed to create Packing Note.';
+                    $('#errorMessage').text(errorMessage); // Set the error message dynamically
+                    $('#exampleModalCenterDup').modal('show'); // Show the modal with the error message
+                }
+            },
+            error: function (jqXHR, textStatus, errorThrown) {
+                // 🔍 DEBUG: this fires if the request fails OR if dataType:'json'
+                // can't parse the response (e.g. server didn't return valid JSON,
+                // or Content-Type header isn't application/json).
+                console.error('Scrap AJAX error:', textStatus, errorThrown);
+                console.error('Raw server response text:', jqXHR.responseText);
+
+                const errorMessage = 'Request failed: ' + textStatus + (jqXHR.responseText ? ' — ' + jqXHR.responseText.substring(0, 200) : '');
+                $('#errorMessage').text(errorMessage);
+                $('#exampleModalCenterDup').modal('show');
+            }
+        });
+    }
 }
-}
+
+
 
 /*function calculateRowTotaledit(rowIndex) {
     const kgField = document.getElementById(`kg_new_${rowIndex}`);
@@ -1754,12 +1797,12 @@ function deleteRow1(rowIndex) {
     }
 }
 document.addEventListener("DOMContentLoaded", function() {
-    const selectedFactoryId = localStorage.getItem("selectedFactoryId"); // Get factory_id from localStorage
+    const selectedFactoryId = sessionStorage.getItem("selectedFactoryId"); // Get factory_id from sessionStorage
     if (selectedFactoryId) {
         fetchuomEdit();
         fetchtypeEdit();
     } else {
-        console.error("No factory ID found in localStorage.");
+        console.error("No factory ID found in sessionStorage.");
     }
 });
 

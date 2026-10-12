@@ -18,7 +18,9 @@ response.setDateHeader("Expires", 0);
 <link href="vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css">
 
 <!-- Bootstrap Icons -->
-<link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.5.0/font/bootstrap-icons.min.css" rel="stylesheet">
+<link
+	href="externalLibrary/cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.5.0/font/bootstrap-icons.min.css"
+	rel="stylesheet">
 
 <!-- Font Awesome -->
 <link href="vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
@@ -29,11 +31,12 @@ response.setDateHeader("Expires", 0);
 <!-- Main CSS -->
 <link rel="stylesheet" href="css/main.css">
 
-<script src="js/sidebar.js"></script>
+
 
 <!-- jsPDF + autoTable -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+
+    <script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/jspdf/4.2.1/jspdf.umd.min.js"></script>
+<script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/5.0.8/jspdf.plugin.autotable.min.js"></script>
 
 <style>
 /* ═══════════════════════════════════════════════════════
@@ -142,18 +145,21 @@ body {
   .page-title { font-size: 18px; }
 }
 
+
+
+
 </style>
 </head>
 
-<body id="page-top">
+<body id="page-top" >
 <div id="wrapper">
 
   <!-- Sidebar -->
-  <%@ include file="GPMSSidebar.jsp"%>
+  <%@ include file="Homedashboardsidebar.jsp"%>
 
   <!-- Content Wrapper -->
   <div id="content-wrapper" class="d-flex flex-column">
-    <div id="content">
+    <div id="content" class="page-hidden">
 
       <!-- Topbar -->
       <nav class="navbar navbar-expand navbar-light bg-navbar topbar mb-4 static-top"
@@ -184,14 +190,14 @@ body {
       </nav>
 
       <!-- Container -->
-      <div class="container-fluid">
+      <div class="container-fluid"  id="container-wrapper">
 
         <!-- PAGE TITLE -->
         <div class="page-title">Production Status Report</div>
 
         <!-- FILTER CARD -->
-        <div class="card shadow-sm mb-3">
-          <div class="card-body">
+        <div class="card shadow-sm mb-3 ">
+          <div class="card-body ">
             <div class="row align-items-end">
 
               <!-- Factory -->
@@ -285,16 +291,16 @@ body {
 </div>
 
 <!-- JS FILES -->
+
 <script src="vendor/jquery/jquery.min.js"></script>
 <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
 <script src="vendor/jquery-easing/jquery.easing.min.js"></script>
-<script src="js/ruang-admin.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="js/config.js"></script>
-<script src="js/logout.js"></script>
-<script src="js/username.js"></script>
-<script src="js/Sessionfilter.js"></script>
-<script src="js/productionReport.js"></script>
+<script src="js/config.js?v=<%=jsVersion%>"></script>
+<script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/xlsx/0.20.3/xlsx.full.min.js"></script>
+<script src="js/logout.js?v=<%=jsVersion%>"></script>
+<script src="js/username.js?v=<%=jsVersion%>"></script>
+<script src="js/Sessionfilter.js?v=<%=jsVersion%>"></script>
+<script src="js/productionReport.js?v=<%=jsVersion%>"></script>
 
 </body>
 </html>

@@ -60,18 +60,18 @@ function loadAllowedActions() {
 
 document.addEventListener("DOMContentLoaded", function () {
 	loadAllowedActions();
-    const selectedFactoryId = localStorage.getItem("selectedFactoryId"); // Get factory_id from localStorage
+    const selectedFactoryId = sessionStorage.getItem("selectedFactoryId"); // Get factory_id from sessionStorage
     if (selectedFactoryId) {
         fetchCont(selectedFactoryId); // Fetch contractor list on page load
 			  fetchinvoice();
 			  fetchinvoice1();
     } else {
-        console.error("No factory ID found in localStorage.");
+        console.error("No factory ID found in sessionStorage.");
     }
 	
 	document.getElementById("cont").addEventListener("change", function () {
 	    const selectedContractorId = this.value; // Get selected contractor ID
-	    const selectedFactoryId = localStorage.getItem("selectedFactoryId"); // Get factory ID again
+	    const selectedFactoryId = sessionStorage.getItem("selectedFactoryId"); // Get factory ID again
 
 	    if (selectedContractorId) {
 	        fetchLoad(selectedFactoryId, selectedContractorId); // Fetch load dropdown
@@ -97,11 +97,11 @@ document.addEventListener("DOMContentLoaded", function () {
 	
 						async function fetchQsPackingData(contract_id,loadId) {
 						      try {
-						          const selectedFactoryId = localStorage.getItem("selectedFactoryId"); // Get the factory_id from localStorage
+						          const selectedFactoryId = sessionStorage.getItem("selectedFactoryId"); // Get the factory_id from sessionStorage
 
 						          // Ensure factory_id is available
 						          if (!selectedFactoryId) {
-						              console.error("No factory ID found in localStorage.");
+						              console.error("No factory ID found in sessionStorage.");
 						              return;
 						          }
 
@@ -520,13 +520,13 @@ document.addEventListener("DOMContentLoaded", function () {
 					}
 					
 					document.addEventListener("DOMContentLoaded", function () {
-					    const selectedFactoryId = localStorage.getItem("selectedFactoryId"); // Get factory_id from localStorage
+					    const selectedFactoryId = sessionStorage.getItem("selectedFactoryId"); // Get factory_id from sessionStorage
 					    if (selectedFactoryId) {
 					        fetchBgType();
 					        fetchUserList111(selectedFactoryId);
 					        fetchBgTypeedit();
 					    } else {
-					        console.error("No factory ID found in localStorage.");
+					        console.error("No factory ID found in sessionStorage.");
 					    }
 					});
 					async function fetchBgType() {
@@ -718,7 +718,7 @@ document.addEventListener("DOMContentLoaded", function () {
 					function fetchUserList111(selectedFactoryId) {
 
 					    currentFactoryIdConsolidated =
-					        selectedFactoryId || localStorage.getItem("selectedFactoryId");
+					        selectedFactoryId || sessionStorage.getItem("selectedFactoryId");
 
 					    // 🔥 Destroy existing table
 					    if ($.fn.DataTable.isDataTable('#tableID')) {
@@ -984,8 +984,8 @@ document.addEventListener("DOMContentLoaded", function () {
 					    }
 					}
 					   
-					// Fetch selectedFactoryId from localStorage
-					const selectedFactoryId = localStorage.getItem('selectedFactoryId');
+					// Fetch selectedFactoryId from sessionStorage
+					const selectedFactoryId = sessionStorage.getItem('selectedFactoryId');
 					console.log('selectedFactoryId:', selectedFactoryId);
 					
 					function addevent() {

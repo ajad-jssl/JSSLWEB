@@ -1,5 +1,6 @@
-<script src="js/sidebar.js"></script>
- <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+	<%@ include file="version.jsp" %>
+	<script src="externalLibrary/code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="js/sidebar.js?v=<%=jsVersion%>"></script>
 <ul class="navbar-nav sidebar sidebar-light accordion" id="accordionSidebar">
   <!-- Logo -->
   <a class="sidebar-brand d-flex align-items-center justify-content-center mb-3 mt-3" href="DotimeSheetDashBoard.jsp" style="background-color: white;">

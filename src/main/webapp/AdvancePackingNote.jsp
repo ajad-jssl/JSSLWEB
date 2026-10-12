@@ -23,13 +23,18 @@ long ts = System.currentTimeMillis();
       <link href="vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css" />
       <link href="css/ruang-admin.min.css" rel="stylesheet" />
       <link href="vendor/datatables/dataTables.bootstrap4.min.css" rel="stylesheet">
-      <!-- <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css" /> -->
-      <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css" />
+      <link rel="stylesheet"
+      href="externalLibrary/cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">
+      
+      
+     <!--  <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css" /> -->
+        <link rel="stylesheet" href="externalLibrary/cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css" />
       <link rel="stylesheet" href="css/main.css">
-      <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
-       <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-       <script src="js/sidebar.js"></script>
-  
+      
+      
+      
+  <link href="externalLibrary/cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+    
   
    <script>
     const user_id = sessionStorage.getItem('user_id');
@@ -165,25 +170,20 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
     color: white;
     padding: 4px 10px;
   }  
+    .select2-container .select2-selection--single {
+    height: calc(1.5em + 0.5rem + 2px) !important;
+    font-size: 0.875rem;
+    display: flex;
+    align-items: center;
+}
+.select2-container .select2-selection--single .select2-selection__arrow {
+    height: 100% !important;
+}
+.select2-container--open {
+    z-index: 1056 !important; /* above bootstrap's modal (1050) and backdrop (1040) */
+}
 </style>
-<!-- <script type="text/javascript">
-    window.history.forward();
 
-    // Auth Guard
-    const loginStatus = sessionStorage.getItem('loginStatus');
-    if (loginStatus !== 'Success') {
-      logout();
-    }
-
-    function noBack() {
-      window.history.forward();
-    }
-
-    function logout() {
-      sessionStorage.removeItem('loginStatus');
-      window.location = "newlogin.jsp";
-    }
-  </script> -->
   <script type="text/javascript">
  function noBack() {
      window.history.forward();
@@ -199,7 +199,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 <body onload="fetchUserList();">
   <div id="wrapper">
     <!-- Sidebar -->
-      <%@ include file="sidebar.jsp" %>
+      <%@ include file="InVoiceSideBar.jsp" %>
     <!-- Sidebar -->
     <div id="content-wrapper" class="d-flex flex-column">
       <div id="content">
@@ -238,7 +238,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
           <div class="d-sm-flex align-items-center justify-content-between mb-4">
             <h1 class="h3 mb-0 text-gray-800">Advance Packing Note</h1>
             <ol class="breadcrumb">
-             <li class="breadcrumb-item"><a href="Dashboard.jsp">Home</a></li>
+             <li class="breadcrumb-item"><a href="InvoiceDashBoard.jsp">Home</a></li>
              <li class="breadcrumb-item"><a href="AdvanceSideMenu.jsp">Advance</a></li>
              <li class="breadcrumb-item active" aria-current="page">Advance Packing Note</li>
               
@@ -685,30 +685,41 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 </script>
 
 
-   <script src="js/config.js"></script>
+
   <script src="vendor/jquery/jquery.min.js"></script>
+   <script src="externalLibrary/cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
       <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
       <script src="vendor/jquery-easing/jquery.easing.min.js"></script>
-      <script src="js/ruang-admin.min.js"></script>
-      <!-- Page level plugins -->
+
       <script src="vendor/datatables/jquery.dataTables.min.js"></script>
       <script src="vendor/datatables/dataTables.bootstrap4.min.js"></script>
-    <!-- <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script> -->
+  
+     <script src="js/config.js?v=<%=jsVersion%>"></script>
+  <!-- 
     <script src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
     <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
-    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script> -->
+    
+    
+    
+       <script src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
+    <script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
+    <script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
+    <script src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
+    <script src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
  <!--  <script src="js/AdvancePacking.js"></script> -->
- <script src="js/AdvancePacking.js?v=<%=ts%>"></script>
-      <script src="js/logout.js"></script>
-  <script src="js/username.js"></script>
+ <script src="js/AdvancePacking.js?v=<%=jsVersion%>"></script>
+      <script src="js/logout.js?v=<%=jsVersion%>"></script>
+  <script src="js/username.js?v=<%=jsVersion%>"></script>
   
-  <script src="js/createdby.js"></script>
- 	   <script src="js/modifiedby.js"></script>
- 	  <script src="js/factoryid.js"></script>
- 	   <script src="js/Sessionfilter.js"></script>
+  <script src="js/createdby.js?v=<%=jsVersion%>"></script>
+ 	   <script src="js/modifiedby.js?v=<%=jsVersion%>"></script>
+ 	  <script src="js/factoryid.js?v=<%=jsVersion%>"></script>
+ 	   <script src="js/Sessionfilter.js?v=<%=jsVersion%>"></script>
  	      	  <script>
 /* const moduleId = localStorage.getItem("selectedModuleId"); */
   // This maps action names from the API to button IDs on this page
@@ -724,11 +735,21 @@ function allowOnlyPositive(e) {
         return false;
     }
 
-    // Allow numbers, backspace, delete, arrows, tab
-    if (
-        (e.key >= '0' && e.key <= '9') ||
-        ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab'].includes(e.key)
-    ) {
+    // Allow navigation/editing keys
+    if (['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab'].includes(e.key)) {
+        return true;
+    }
+
+    // Allow one decimal point only
+    if (e.key === '.') {
+        if (e.target.value.includes('.')) {
+            return false; // already has a decimal point
+        }
+        return true;
+    }
+
+    // Allow digits
+    if (e.key >= '0' && e.key <= '9') {
         return true;
     }
 
@@ -736,7 +757,7 @@ function allowOnlyPositive(e) {
 }
 </script>
 
-<script src="js/permissions.js"></script>
+<script src="js/permissions.js?v=<%=jsVersion%>"></script>
   <!-- Page level custom scripts -->
 </body>
 </html>

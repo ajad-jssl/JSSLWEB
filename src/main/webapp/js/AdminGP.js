@@ -4,9 +4,7 @@ const UserId = sessionStorage.getItem("username");
 
 let allowedActions = [];
 
-/* =========================
-   LOAD PAGE ACTIONS
-========================= */
+
 async function loadActions() {
 
     try {
@@ -40,231 +38,26 @@ async function loadActions() {
 $(document).ready(function() {
 	loadActions();
 	fetchAndDisplayadminGP();
-	/*loadAadharForAdmin();*/
+
 	loadCompanyDropdown();
 	loadMedicalDropdown();
 	loadBusDropdown();
-/*	loadVaccineDropdown();*/
+
 	handleContractAdminSubmission();
 	handleAdminUpdateSubmission()
 
 });
-const selectedFactoryId = localStorage.getItem('selectedFactoryId');
+const selectedFactoryId = sessionStorage.getItem('selectedFactoryId');
 
 let currentFactoryIdAdminGP = null;
 
 
-/*function fetchAndDisplayadminGP() {
-
-    currentFactoryIdAdminGP = parseInt(localStorage.getItem("selectedFactoryId"), 10);
-
-    if (!currentFactoryIdAdminGP || isNaN(currentFactoryIdAdminGP)) {
-        console.warn("No valid factory ID in localStorage");
-        return;
-    }
-
-    //  Destroy existing DataTable
-    if ($.fn.DataTable.isDataTable('#adminTable1')) {
-        $('#adminTable1').DataTable().clear().destroy();
-    }
-
-    $('#adminTable1').DataTable({
-        processing: true,
-        serverSide: true,
-        scrollX: true,
-        searching: true,
-        dom: 'Bfrtip',
-        pageLength: 10,
-        buttons: [
-            {
-                text: 'Export to Excel',
-                action: function () {
-
-                    const url = new URL(`/api/contractgatepass/adminlist`, baseUrl1);
-                    url.searchParams.append('factory_id', currentFactoryIdAdminGP);
-                    url.searchParams.append('page', 0);
-                    url.searchParams.append('size', 99999);
-
-                    fetch(url, { credentials: "include" })
-                        .then(response => response.json())
-                        .then(json => {
-
-                            const exportData = json.data.map(item => [
-                                item.pass_id   || '',
-                                item.aadhar_no ? item.aadhar_no.trim() : '',
-                                item.emp_id    || '',
-                                ((item.fname || '') + ' ' + (item.lname || '')).trim()
-                            ]);
-
-                            let tempTable = $('<table>').append(
-                                $('<thead>').append(
-                                    $('<tr>').append(
-                                        '<th>Pass No</th>',
-                                        '<th>Aadhar No</th>',
-                                        '<th>Employee Code</th>',
-                                        '<th>Employee Name</th>'
-                                    )
-                                ),
-                                $('<tbody>').append(
-                                    exportData.map(row =>
-                                        $('<tr>').append(
-                                            row.map(cell => $('<td>').text(cell))
-                                        )
-                                    )
-                                )
-                            ).appendTo('body');
-
-                            $(tempTable).DataTable({
-                                buttons: [{
-                                    extend: 'excelHtml5',
-                                    title: 'ContractGP Admin Details'
-                                }]
-                            }).button(0).trigger();
-
-                            setTimeout(() => {
-                                $(tempTable).DataTable().destroy();
-                                $(tempTable).remove();
-                            }, 1000);
-                        })
-                        .catch(error => console.error('Export error:', error));
-                }
-            }
-        ],
-        columns: [
-            { title: "Sl No",          orderable: false },
-            { title: "Pass No"                          },
-            { title: "Aadhar No"                        },
-            { title: "Employee Code"                    },
-            { title: "Employee Name"                    },
-            { title: "Verify",         orderable: false },
-            { title: "Edit",           orderable: false },
-			{ title: "validityExtended",           orderable: false },
-            { title: "Status",         orderable: false }
-			
-        ],
-        ajax: function (data, callback, settings) {
-
-            const page        = data.start / data.length;
-            const size        = data.length;
-            const searchValue = data.search.value;
-
-            const url = new URL(`/api/contractgatepass/adminlist`, baseUrl1);
-            url.searchParams.append('factory_id', currentFactoryIdAdminGP);
-            url.searchParams.append('page',       page);
-            url.searchParams.append('size',       size);
-            url.searchParams.append('search',     searchValue);
-
-            fetch(url, { credentials: "include" })
-                .then(response => response.json())
-                .then(json => {
-
-                    if (!json.data) {
-                        callback({
-                            draw:            data.draw,
-                            recordsTotal:    0,
-                            recordsFiltered: 0,
-                            data:            []
-                        });
-                        return;
-                    }
-
-                    let slNo = data.start + 1;
-
-                    const rows = json.data.map(item => {
-
-                        const isVerified = item.emp_id &&
-                                           String(item.emp_id).trim() !== '';
-                        const isInactive = item.active == 1;
-                        const aadhar     = item.aadhar_no
-                                           ? item.aadhar_no.trim() : '';
-                        const passId     = item.pass_id || '';
-                        const empName    = ((item.fname || '') + ' ' +
-                                           (item.lname  || '')).trim();
-
-                        // ── Verify icon ──────────────────────────────
-                        const verifyIcon = (isVerified || isInactive)
-                            ? `<i class="fa fa-edit"
-                                  title="${isInactive
-                                      ? 'Inactive Record'
-                                      : 'Already Verified'}"
-                                  style="cursor:not-allowed; opacity:0.5;"></i>`
-                            : `<i class="fa fa-edit cursor-pointer"
-                                  style="color:blue;"
-                                  title="Verify"
-                                  onclick="verifyContractGP(
-                                      ${item.cg_id},'${aadhar}')"></i>`;
-
-                        // ── Edit icon ────────────────────────────────
-                        const editIcon = (!isVerified || isInactive)
-                            ? `<i class="fa fa-pen text-secondary"
-                                  title="${isInactive
-                                      ? 'Inactive Record'
-                                      : 'Record is not verified'}"
-                                  style="cursor:not-allowed; opacity:0.3;"></i>`
-                            : `<i class="fa fa-pen cursor-pointer"
-                                  style="color:blue;"
-                                  title="Edit"
-                                  onclick="editadminContractGP(
-                                      ${item.cg_id})"></i>`;
-
-                        // ── Status checkbox ───────────────
-                        const statusBox =
-                            `<input type="checkbox"
-                                    class="status-toggle" id="status"
-                                    data-id="${item.cg_id}"
-                                    ${item.active == 1 ? 'checked' : ''}>`;
-									const isExpired = item.is_expired == 1;
-
-									// 🔥 Extend Icon
-									const extendIcon = (isExpired && !isInactive)
-									    ? `<i class="fa fa-calendar-check cursor-pointer"
-									          style="color:blue;"
-									          title="Extend Validity"
-									          onclick="extendContract(${item.cg_id})"></i>`
-									    : `<i class="fa fa-calendar-check"
-									          title="${isInactive ? 'Inactive Record' : 'Not Expired'}"
-									          style="cursor:not-allowed; opacity:0.5;"></i>`;
-
-                        return [
-                            slNo++,      // col 0 — Sl No
-                            passId,      // col 1
-                            aadhar,      // col 2
-                            item.emp_id || '',  // col 3
-                            empName,     // col 4
-                            verifyIcon,  // col 5
-                            editIcon,    // col 6
-							extendIcon,    
-                            statusBox    // col 7
-                        ];
-                    });
-
-                    callback({
-                        draw:            data.draw,
-                        recordsTotal:    json.totalRecords,
-                        recordsFiltered: json.totalItems,
-                        data:            rows
-                    });
-                })
-                .catch(error => {
-                    console.error('Error fetching admin GP data:', error);
-                    callback({
-                        draw:            data.draw,
-                        recordsTotal:    0,
-                        recordsFiltered: 0,
-                        data:            []
-                    });
-                });
-        }
-    });
-}
-*/
-
 function fetchAndDisplayadminGP() {
 
-    currentFactoryIdAdminGP = parseInt(localStorage.getItem("selectedFactoryId"), 10);
+    currentFactoryIdAdminGP = parseInt(sessionStorage.getItem("selectedFactoryId"), 10);
 
     if (!currentFactoryIdAdminGP || isNaN(currentFactoryIdAdminGP)) {
-        console.warn("No valid factory ID in localStorage");
+        console.warn("No valid factory ID in sessionStorage");
         return;
     }
 
@@ -294,12 +87,7 @@ function fetchAndDisplayadminGP() {
                         .then(response => response.json())
                         .then(json => {
 
-                        /*    const exportData = json.data.map(item => [
-                                item.pass_id   || '',
-                                item.aadhar_no ? item.aadhar_no.trim() : '',
-                                item.emp_id    || '',
-                                ((item.fname || '') + ' ' + (item.lname || '')).trim()
-                            ]);*/
+                     
 							
 							const exportData = json.data.map(item => [
 							    item.pass_id || '',
@@ -311,12 +99,7 @@ function fetchAndDisplayadminGP() {
 
                             let tempTable = $('<table>').append(
                                 $('<thead>').append(
-                                  /*  $('<tr>').append(
-                                        '<th>Pass No</th>',
-                                        '<th>Aadhar No</th>',
-                                        '<th>Employee Code</th>',
-                                        '<th>Employee Name</th>'
-                                    )*/
+                                
 									
 									$('<tr>').append(
 									    '<th>Pass No</th>',
@@ -351,18 +134,7 @@ function fetchAndDisplayadminGP() {
                 }
             }
         ],
-   /*     columns: [
-            { title: "Sl No",          orderable: false },
-            { title: "Pass No"                          },
-            { title: "Aadhar No"                        },
-            { title: "Employee Code"                    },
-            { title: "Employee Name"                    },
-            { title: "Verify",         orderable: false },
-            { title: "Edit",           orderable: false },
-			{ title: "validityExtended",           orderable: false },
-            { title: "Status",         orderable: false }
-			
-        ],*/
+   
 		
 		columns: [
 		    { title: "Sl No", orderable: false },
@@ -374,7 +146,8 @@ function fetchAndDisplayadminGP() {
 		    { title: "Verify", orderable: false },
 		    { title: "Edit", orderable: false },
 		    { title: "Validity Extended", orderable: false },
-		    { title: "Status", orderable: false }
+		    { title: "Status", orderable: false },
+		    { title: "Delete", orderable: false }
 		],
         ajax: function (data, callback, settings) {
 
@@ -459,18 +232,18 @@ function fetchAndDisplayadminGP() {
 									    : `<i class="fa fa-calendar-check"
 									          title="${isInactive ? 'Inactive Record' : 'Not Expired'}"
 									          style="cursor:not-allowed; opacity:0.5;"></i>`;
+											  
+											  // 🔥 Delete Icon
+											  const deleteIcon = !isInactive
+											      ? `<i class="fa fa-trash cursor-pointer"
+											            style="color:red;"
+											            title="Delete"
+											            onclick="deleteContractGP(${item.cg_id})"></i>`
+											      : `<i class="fa fa-trash"
+											            title="Inactive Record"
+											            style="cursor:not-allowed; opacity:0.5;"></i>`;
 
-                    /*    return [
-                            slNo++,      // col 0 — Sl No
-                            passId,      // col 1
-                            aadhar,      // col 2
-                            item.emp_id || '',  // col 3
-                            empName,     // col 4
-                            verifyIcon,  // col 5
-                            editIcon,    // col 6
-							extendIcon,    
-                            statusBox    // col 7
-                        ];*/
+                  
 						
 						return [
 						    slNo++,            // Sl No
@@ -482,7 +255,8 @@ function fetchAndDisplayadminGP() {
 						    verifyIcon,        // Verify
 						    editIcon,          // Edit
 						    extendIcon,        // Validity Extended
-						    statusBox          // Status
+						    statusBox,         // Status
+						    deleteIcon         // Delete
 						];
                     });
 
@@ -505,6 +279,7 @@ function fetchAndDisplayadminGP() {
         }
     });
 }
+
 
 function extendContract(cg_id) {
 	
@@ -593,7 +368,7 @@ function verifyContractGP(cg_id, aadharNo) {
     console.log("Verify clicked:", cg_id, aadharNo);
 
     // Store ID if needed
-    localStorage.setItem("selectedCGID", cg_id);
+    sessionStorage.setItem("selectedCGID", cg_id);
 
     // Reset form
     $("#exampleModalScrollable123 form")[0].reset();
@@ -729,61 +504,7 @@ $('#btnStatusNo').click(function () {
     currentCheckbox.prop('checked', previousState);
 });
 
-/*function loadAadharForAdmin() {
 
-	var apiUrl = new URL(
-		`/api/contractgatepass/jims/aadharforadmin?factory_id=${selectedFactoryId}`,
-		baseUrl1
-	).toString();
-
-	$.ajax({
-		url: apiUrl,
-		method: "GET",
-		xhrFields: {
-			withCredentials: true   // send session cookie
-		},
-		success: function(data) {
-
-			var $selectElement = $("#Adaadhar");
-			$selectElement.empty();   // clear existing options
-
-			// Optional default option
-			$selectElement.append(
-				$("<option></option>").val("").text("-- Select Aadhar --")
-			);
-
-			$.each(data, function(index, item) {
-				$selectElement.append(
-					$("<option></option>")
-						.val(item.cg_id)
-						.text(item.aadhar_no)
-				);
-			});
-
-			// Enable dropdown
-			$selectElement.prop("disabled", false);
-		},
-		error: function(xhr, status, error) {
-			console.error("Error fetching Aadhar data:", error);
-		}
-	});
-}*/
-
-/*$("#search").on("click", function() {
-
-	const selectedCGID = $("#Adaadhar").val();
-
-
-	// ❌ If Aadhar not selected
-	if (!selectedCGID) {
-		alert("Please select Aadhar number first");
-		$("#container1").hide();
-		return;
-	}
-
-	// ✅ If Aadhar selected → fetch details
-	fetchContractGPDetails(selectedCGID);
-})*/
 
 function fetchContractGPDetails(selectedCGID,adharNo) {
 
@@ -854,7 +575,7 @@ function fetchContractGPDetails(selectedCGID,adharNo) {
 			$("#econtactno").val(contractGp.emergency_contact_no || '');
 			$("#religion3").val(contractGp.religion || '');
 			$("#education3").val(contractGp.education || '');
-		/*	$("#vaccinationstatus").val(contractGp.Vac_status || '');*/
+		
 			$("#addpermanent").val(contractGp.Permnt_add || '');
 			$("#pstate2").val(contractGp.state || '');
 			$("#pdistrict2").val(contractGp.dist || '');
@@ -866,9 +587,9 @@ function fetchContractGPDetails(selectedCGID,adharNo) {
 			$("#nature-job").val(contractGp.Nojdesc || '');
 			$("#blood_group").val(contractGp.blg || '');
 			$("#location").val(contractGp.wldesc || '');
-			/*$("#eprevious").val(contractGp.previous_exp || '');*/
+			
 
-			// ✅ SHOW container only after data load
+			//  SHOW container only after data load
 			$("#container1").slideDown();
 			
 			
@@ -1023,51 +744,7 @@ function loadBusDropdown() {
 	});
 }
 
-/*function loadVaccineDropdown() {
 
-	$.ajax({
-		url: new URL('/api/contractvaccine', baseUrl1),
-		method: 'GET',
-		xhrFields: {
-			withCredentials: true
-		},
-		success: function(data) {
-
-			const $vaccine = $("#vaccine");
-			const $vaccine1 = $("#vaccine1");
-
-			// Clear existing options
-			$vaccine.empty();
-			$vaccine1.empty();
-
-			// 🔹 Default option
-			$vaccine.append('<option value="">Select Vaccine</option>');
-			$vaccine1.append('<option value="">Select Vaccine</option>');
-
-			// 🔹 Append backend values
-			$.each(data, function(index, item) {
-				$vaccine.append(
-					$('<option></option>')
-						.val(item.vac_id)
-						.text(item.vaccineDesc)
-				);
-
-				$vaccine1.append(
-					$('<option></option>')
-						.val(item.vac_id)
-						.text(item.vaccineDesc)
-				);
-			});
-
-			// Enable dropdowns
-			$vaccine.prop("disabled", false);
-			$vaccine1.prop("disabled", false);
-		},
-		error: function(xhr, status, error) {
-			console.error("Error fetching vaccine data:", error);
-		}
-	});
-}*/
 
 async function handleContractAdminSubmission() {
 
@@ -1089,46 +766,18 @@ async function handleContractAdminSubmission() {
 		const companyid = $("#company").val();
 		const medical = $("#medical").val();
 		const busid = $("#bus").val();
-/*		const vaccineid = $("#vaccine").val();*/
-	/*	const vaccinedate1 = $("#vaccinedate").val();
-		const vaccinedate2 = $("#vaccine_date").val();*/
-		const remarks = $("#remarks").val().trim();
-	/*	const file = $("#upload")[0].files[0];*/
-		
-		/*if (file) {
-		    const fileName = file.name.toLowerCase();
-		    const fileType = file.type;
 
-		    if (!fileName.endsWith(".pdf") || fileType !== "application/pdf") {
-		        $("#uploadError")
-		            .text("Please select only a PDF file")
-		            .show();
-		        isValid = false;
-		    }
-		}*/
+		const remarks = $("#remarks").val().trim();
+	
 		
 
 		if (!empid) { $("#IDError").show(); isValid = false; }
 		if (!companyid) { $("#companyError").show(); isValid = false; }
 		if (!medical) { $("#medicalError").show(); isValid = false; }
 		if (!busid) { $("#busError").show(); isValid = false; }
-	/*	if (!vaccineid) { $("#vaccineError").show(); isValid = false; }*/
-		/*if (!vaccinedate1) { $("#vaccinedateError").show(); isValid = false; }
-		if (!vaccinedate2) { $("#vaccine_dateError").show(); isValid = false; }*/
+	
 		if (!remarks) { $("#remarksError").show(); isValid = false; }
-		/*if (!file) { $("#uploadError").show(); isValid = false; }
-*/
-		// Vaccine 2 must be at least 28 days after Vaccine 1
-		/*if (vaccinedate1 && vaccinedate2) {
-			const vac1Date = new Date(vaccinedate1);
-			const vac2Date = new Date(vaccinedate2);
-			const diffTime = vac2Date - vac1Date;
-			const diffDays = diffTime / (1000 * 60 * 60 * 24);
-			if (diffDays < 28) {
-				alert("Vaccine 2 date must be at least 28 days after Vaccine 1.");
-				isValid = false;
-			}
-		}*/
+	
 		
 		if (empid && isValid) {
 		    try {
@@ -1151,7 +800,7 @@ async function handleContractAdminSubmission() {
 		if (!isValid) return; // Stop here if validation fails
 		// --- Validation ends here ---
 
-		// ✅ Show confirmation modal only if validation passes
+		//  Show confirmation modal only if validation passes
 		$("#exampleModalCenter322").modal("show");
 
 		// Handle YES button click
@@ -1159,7 +808,7 @@ async function handleContractAdminSubmission() {
 		    $("#exampleModalCenter322").modal("hide");
 
 		    let currentDateTimeString = getIndianDateTimeFormat(new Date());
-		    const selectedCGID = localStorage.getItem("selectedCGID");
+		    const selectedCGID = sessionStorage.getItem("selectedCGID");
 
 		    try {
 		        const admindata = {
@@ -1297,12 +946,11 @@ async function editadminContractGP(cg_id) {
 			// Re-Join
 			document.getElementById("updatereentrydiv").style.display = "block";
 			setValue('entrydate1', contractGp.rejoin_date || '');
-		/*	setValue('eprevious1', contractGp.previous_exp);*/
+		
 		} else {
 			// New Join
 			document.getElementById("updatereentrydiv").style.display = "none";
-	/*		setValue('entrydate1', '');
-			setValue('eprevious1', '');*/
+	
 		}
 
 
@@ -1318,13 +966,13 @@ async function editadminContractGP(cg_id) {
 		setValue('nomineename1', contractGp.Nominee_name);
 		setValue('nominee_date1', contractGp.NDOB);
 		setValue('nominee_age1', contractGp.NAge);
-		setValue('rela_tion11', contractGp.NRelationship);
+		setValue('n_relationship1', contractGp.NRelationship);
 		setValue('dependants1', contractGp.NTotal_depandants);
 
 		/* ================= BANK ================= */
 
 		setValue('bankname1', contractGp.Bank_name);
-		setValue('bankac1', contractGp.bacc);     // FIXED ID
+		setValue('banka/c1', contractGp.bacc);     // FIXED ID
 		setValue('branch21', contractGp.Branch);
 		setValue('IFSC21', contractGp.IFSC);
 
@@ -1364,15 +1012,9 @@ async function editadminContractGP(cg_id) {
 		setValue('company1', contractGp.company_id);
 		setValue('medical1', contractGp.medical);
 		setValue('bus1', contractGp.bus_id);
-		/*setValue('vaccine1', contractGp.vac_id);
-		setValue('vaccinedate1', contractGp.vac_date);
-		setValue('vaccine_date1', contractGp.vac2_date);*/
-		/*setValue('vaccinationstatus1', contractGp.Vac_status);*/
+		
 		setValue('remarks1', contractGp.Admin_remarks);
-	/*	const existingPath = contractGp.filepath || '';
-		const existingFileName = extractFileName(existingPath);*/
-
-		/*setValue('existingFileLink', existingFileName);*/
+	
 		/* ================= OPEN MODAL ================= */
 		window.originalAdminData = {
 		    emp_id:        contractGp.emp_id?.trim(),
@@ -1514,4 +1156,90 @@ function showPopup(message, redirectUrl) {
 function extractFileName(path) {
     if (!path) return '';
     return path.split(/[/\\]/).pop();
+}
+
+
+
+
+
+
+let pendingDeleteCgId = null;
+
+function deleteContractGP(cg_id) {
+
+    const allowed = allowedActions || [];
+
+    if (!allowed.includes("Delete")) {
+        alert(" You do not have permission to delete.");
+        return;
+    }
+
+    console.log("the cg_id", cg_id);
+    $("#deleteRemarks").val('');
+    $("#deleteRemarksError").hide();
+    $("#deleteRemarksModal").modal("show");
+
+    // prevent multiple click bindings
+    $("#confirmDeleteRemarks").off("click").on("click", function () {
+
+        let remarks = $("#deleteRemarks").val().trim();
+
+        if (!remarks) {
+            $("#deleteRemarksError").show();
+        } else {
+            $("#deleteRemarksError").hide();
+
+            // store values temporarily
+            window._delete_cg_id = cg_id;
+            window._deleteRemarks = remarks;
+
+            // close remarks modal
+            $("#deleteRemarksModal").modal("hide");
+
+            // open confirmation modal
+            $("#exampleModalDeleteCenterUpdate").modal("show");
+        }
+    });
+}
+
+// 🔥 confirmation YES click (add this once, outside function)
+$("#confirmassetentrydeleteyes").off("click").on("click", function () {
+
+    $("#exampleModalDeleteCenterUpdate").modal("hide");
+
+    // call API only after confirmation
+    funDelete(window._delete_cg_id, window._deleteRemarks);
+});
+
+async function funDelete(cg_id, remarks) {
+
+    const payload = {
+        remarks: remarks,
+        modified_by: createdById,
+        modified_date: getIndianDateTimeFormat(new Date())
+    };
+
+    try {
+        const response = await fetch(`${baseUrl1}/api/contractgatepass/delete/${cg_id}`, {
+            method: 'PUT',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (response.ok) {
+            showPopup("Successfully Deleted", "AdminEntry.jsp");
+
+            // 🔄 Optional: refresh table
+            $('#adminTable1').DataTable().ajax.reload();
+
+        } else {
+            const result = await response.json().catch(() => ({}));
+            alert(result.message || "Failed to delete record");
+        }
+
+    } catch (error) {
+        console.error("Error deleting record:", error);
+        alert("Error occurred while deleting the record");
+    }
 }

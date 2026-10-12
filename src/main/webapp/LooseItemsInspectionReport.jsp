@@ -1,8 +1,10 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8"
     pageEncoding="UTF-8"%>
     
-<%
-long ts = System.currentTimeMillis();
+     <%
+    response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate"); // HTTP 1.1
+    response.setHeader("Pragma", "no-cache"); // HTTP 1.0
+    response.setDateHeader("Expires", 0); // Proxies
 %>
 <!DOCTYPE html>
 <html>
@@ -18,16 +20,15 @@ long ts = System.currentTimeMillis();
    <link href="vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css" />
    <link href="css/ruang-admin.min.css" rel="stylesheet" />
    <link href="vendor/datatables/dataTables.bootstrap4.min.css" rel="stylesheet">
-      <!-- <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css" /> -->
-   <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css" />
+   
+  <link rel="stylesheet" href="externalLibrary/cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css" />
    <link rel="stylesheet" href="css/main.css">
-       <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-       <script src="js/sidebar.js"></script>
-   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-KyZXEJjRkC9iY3NfJVzz6se99Nz05dfk03S8zNeS46E1H2nKfHlR9ltRf9TL7zG6" crossorigin="anonymous">
- <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+     
+ <link href="externalLibrary/cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-KyZXEJjRkC9iY3NfJVzz6se99Nz05dfk03S8zNeS46E1H2nKfHlR9ltRf9TL7zG6" crossorigin="anonymous">
+ <link href="externalLibrary/cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
+<script src="externalLibrary/cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<link rel="stylesheet" href="externalLibrary/stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
 
 <script>
     const user_id = sessionStorage.getItem('user_id');
@@ -228,24 +229,7 @@ th, td {
   overflow-x: auto;  /* horizontal scroll if needed */
 }
 </style>
-<!-- <script type="text/javascript">
-    window.history.forward();
 
-    // Auth Guard
-    const loginStatus = sessionStorage.getItem('loginStatus');
-    if (loginStatus !== 'Success') {
-      logout();
-    }
-
-    function noBack() {
-      window.history.forward();
-    }
-
-    function logout() {
-      sessionStorage.removeItem('loginStatus');
-      window.location = "newlogin.jsp";
-    }
-  </script> -->
   
        <style>
         table {
@@ -297,7 +281,7 @@ th, td {
 </style>
 </head>
 
-<body onload="fetchUserList();">
+<body >
   <div id="wrapper">
     <!-- Sidebar -->
       <%@ include file="QCSidebar.jsp" %>
@@ -370,11 +354,7 @@ th, td {
         <select id="Load1" class="form-control form-control-sm"></select>
       </div>
 
-      <!-- <div class="form-group col-md-3">
-        <button class="btn btn-sm btn-success" id="search">
-          <i class="fas fa-search"></i> Search
-        </button>
-      </div> -->
+ 
 
     </div>
   </div>
@@ -413,7 +393,7 @@ th, td {
 
     <tbody id="reportBody"></tbody>
 
-    <!-- ✅ Footer in tfoot — NOT loose inside table -->
+  
     <tfoot id="reportFooter">
         <tr class="bg-light">
             <td colspan="10" class="text-center font-italic">
@@ -465,23 +445,12 @@ th, td {
   <a class="scroll-to-top rounded" href="#page-top">
     <i class="fas fa-angle-up"></i>
   </a>
- <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="externalLibrary/cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
 
   <!-- Bootstrap JS and dependencies -->
 
 
-<!-- <script>
-  document.getElementById("btnnext").addEventListener("click", function () {
-    document.getElementById("container2").style.display = "block";
-  });
-</script> -->  
 
-
-<!-- <script>
-  document.getElementById("search").addEventListener("click", function () {
-    document.getElementById("container1").style.display = "block";
-  });
-</script> -->
 
 <script>
 function printreport() {
@@ -732,31 +701,30 @@ tfoot .signature-block td:not(.text-left) {
     }, 700);
 }
 </script>
-
-   <script src="js/config.js"></script>
   <script src="vendor/jquery/jquery.min.js"></script>
       <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
       <script src="vendor/jquery-easing/jquery.easing.min.js"></script>
-      <script src="js/ruang-admin.min.js"></script>
-      <!-- Page level plugins -->
+    
       <script src="vendor/datatables/jquery.dataTables.min.js"></script>
       <script src="vendor/datatables/dataTables.bootstrap4.min.js"></script>
-    <!-- <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script> -->
-    <script src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
-    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
-    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>  
-    <!-- <script src="js/LooseItemsInspectionReport.js"></script> -->
-    <script src="js/LooseItemsInspectionReport.js?v=<%=ts%>"></script>
-    <script src="js/logout.js"></script>
-    <script src="js/username.js"></script>
-    <script src="js/customertype.js"></script>
-    <script src="js/createdby.js"></script>
- 	<script src="js/modifiedby.js"></script>
- 	<script src="js/factoryid.js"></script>
+   <script src="js/config.js?v=<%=jsVersion%>"></script>
 
-  <!-- Page level custom scripts -->
+    <!-- <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script> -->
+    <script src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
+    <script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
+    <script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
+    <script src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
+    <script src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>   
+    
+    <script src="js/LooseItemsInspectionReport.js?v=<%=jsVersion%>"></script>
+    <script src="js/logout.js?v=<%=jsVersion%>"></script>
+    <script src="js/username.js?v=<%=jsVersion%>"></script>
+   
+    <script src="js/createdby.js?v=<%=jsVersion%>"></script>
+ 	<script src="js/modifiedby.js?v=<%=jsVersion%>"></script>
+ 	<script src="js/factoryid.js?v=<%=jsVersion%>"></script>
+
+  
 </body>
 </html>

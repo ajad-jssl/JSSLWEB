@@ -66,7 +66,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
     // Fetch modules
 
-    fetch(new URL('/api/modules', baseUrl1), {
+    fetch(new URL('/api/modules/getAllAssign', baseUrl1), {
         credentials: "include"
     })
         .then(res => res.json())

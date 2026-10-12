@@ -32,24 +32,7 @@
     }
     </script>
 
-   <!-- <script type="text/javascript">
-    window.history.forward();
-
-    // Auth Guard
-    const loginStatus = sessionStorage.getItem('loginStatus');
-    if (loginStatus !== 'Success') {
-      logout();
-    }
-
-    function noBack() {
-      window.history.forward();
-    }
-
-    function logout() {
-      sessionStorage.removeItem('loginStatus');
-      window.location = "newlogin.jsp";
-    }
-  </script> -->
+  
  <script type="text/javascript">
  function noBack() {
      window.history.forward();

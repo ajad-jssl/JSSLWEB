@@ -124,6 +124,11 @@ document.addEventListener("DOMContentLoaded", async function () {
 	       "modalcontrentry",
 	       "#exampleModalScrollable123"
 	   );
+	   
+	   bindModalPermission(
+	   	       "modaldesgination",
+	   	       "#exampleModalScrollabledesignation"
+	   	   );
 
 });
 
@@ -136,8 +141,11 @@ window.onload = function() {
     fetchreligon();
     fetchedu();
     fetchvacc();
+
 };
 $(document).ready(function() {
+	
+	openDesignationModal() ;
     // Create - "Submit" button click
     $("#createreligion").click(function() {
         console.log("Create clicked - Modal will show");
@@ -278,7 +286,7 @@ $(document).ready(function() {
     // Fetch initial table
     fetchreligion();
 });
-const selectedFactoryId = localStorage.getItem('selectedFactoryId');
+const selectedFactoryId = sessionStorage.getItem('selectedFactoryId');
 console.log('selectedFactoryId:', selectedFactoryId);
 function showPopup1(message, redirectUrl) {
     var popup = $('<div class="popup">' + message + '</div>').appendTo('body').hide().fadeIn(400);
@@ -1710,6 +1718,59 @@ $(document).ready(function() {
         }
 
     });
+	
+	
+	$("#createdesignation").click(function() {
+		
+		//alert("teh create designation is click");
+		 designationaddevent();
+	});
+	
+	
+	
+	$("#confirmdesignationUpdate").click(function (){
+		updatedesignation();
+	});
+	
+	
+	
+	$("#upddesignation").click(function() {
+		
+		//alert("teh create designation is click");
+		 designationupdateevent();
+	});
+	
+	$("#canceldesignation1modal").click(function (){
+		$("#exampleModalCenterdesUpdate").modal("hide");
+	})
+	
+	$(document).on("click", "#confirmdesiganation", function () {
+		
+
+	    var desgcode = $('#desgcode').val();
+	    var designation = $('#designationcreate').val().trim();
+
+	    $.ajax({
+	        url: new URL('/api/designation/insert', baseUrl1),
+	        type: 'POST',
+	        contentType: 'application/json',
+	        xhrFields: { withCredentials: true },
+	        data: JSON.stringify({ desno: desgcode, designation: designation,createdBy:sessionStorage.getItem("id") }),
+	        success: function (response) {
+	            console.log("Designation created:", response);
+				
+				showPopup("Designation is Created Successfully","ContractMaster.jsp");
+			
+	            $("#exampleModalCenterdes308").modal("hide");
+	            $("#exampleModalScrollabledesignation").modal("hide");
+	            // refresh your grid here
+	        },
+	        error: function (xhr, status, error) {
+	            console.error("Insert error:", error);
+	            alert("Error creating designation: " + error);
+	        }
+	    });
+	});
 
     // Create - "No" button click
     $(".btn-secondary[data-dismiss='modal']").click(function() {
@@ -2320,6 +2381,8 @@ $(document).ready(function() {
 
     // Fetch initial table
     fetchbusname();
+	
+	fetchAndDisplayDesignation();
 });
 
 let selectedbusnameid = null;  // Must store only ID
@@ -3660,7 +3723,7 @@ async function fetchedu() {
 
         const education = await res.json();   // e.g. [{ blId: 1, blg: "A+" }, …]
 
-        // ‑‑‑‑‑ add options to the SELECT, not the table ‑‑‑‑‑
+        //  add options to the SELECT, not the table 
         const ddl = document.getElementById('education');
         const ddl1 = document.getElementById('education1');
         ddl.length = 1;
@@ -4652,7 +4715,7 @@ let currentFactoryIdContractGP = null;
 /*function fetchAndDisplayVehicle() {
 
     currentFactoryIdContractGP = selectedFactoryId ||
-                                  localStorage.getItem("selectedFactoryId");
+                                  sessionStorage.getItem("selectedFactoryId");
 
     // 🔥 Destroy existing DataTable
     if ($.fn.DataTable.isDataTable('#Table1')) {
@@ -4820,7 +4883,7 @@ let currentFactoryIdContractGP = null;
 function fetchAndDisplayVehicle() {
 
     currentFactoryIdContractGP = selectedFactoryId ||
-                                  localStorage.getItem("selectedFactoryId");
+                                  sessionStorage.getItem("selectedFactoryId");
 
     // 🔥 Destroy existing DataTable
     if ($.fn.DataTable.isDataTable('#Table1')) {
@@ -5254,7 +5317,8 @@ async function updatecontractgp(cg_id) {
         modified_date: currentDateTimeString,
 		
 		
-		aadhar_no:getValue('adhar1')
+		aadhar_no:getValue('adhar1'),
+		factory_id:sessionStorage.getItem("selectedFactoryId")
     };
 
     // ================= API CALL =================
@@ -5952,5 +6016,364 @@ document.addEventListener("DOMContentLoaded", function() {
     joiningEl1.addEventListener('change', autoSetValidTill1);
     natureEl1.addEventListener('change', autoSetValidTill1);
 });
+
+
+
+
+
+
+
+
+
+function openDesignationModal() {
+    $.ajax({
+        url: new URL('/api/designation/nextcode', baseUrl1),
+        type: 'GET',
+        xhrFields: { withCredentials: true },
+        success: function (response) {
+            $('#desgcode').val(response.desno);
+       
+            $('#designationcreateError').hide();
+           
+        },
+        error: function (xhr, status, error) {
+            console.error("Error fetching next code:", error);
+            alert("Could not generate designation code.");
+        }
+    });
+}
+
+
+
+
+	
+	
+
+
+// ---------- CREATE ----------
+function designationaddevent() {
+    var desgcode = $('#desgcode').val();
+    var designation = $('#designationcreate').val().trim();
+
+    if (!designation) {
+        $('#designationcreateError').show();
+        return;
+    } else {
+        $('#designationcreateError').hide();
+    }
+
+    $.ajax({
+        url: new URL('/api/designation/check?desDesc=' + encodeURIComponent(designation), baseUrl1),
+        type: 'GET',
+        xhrFields: { withCredentials: true },
+        success: function (response) {
+            if (response.exists) {
+                $("#duplicateDesignationModal").modal("show");
+            } else {
+                $("#exampleModalCenterdes308").modal("show");
+            }
+        },
+        error: function (xhr, status, error) {
+            console.error("Check API Error:", error);
+            alert("An error occurred while checking: " + error);
+        }
+    });
+}
+
+$(document).on("click", "#confirmdesiganation", function () {
+	
+	alert("confirm")
+    var desgcode = $('#desgcode').val();
+    var designation = $('#designationcreate').val().trim();
+
+    $.ajax({
+        url: new URL('/api/designation/insert', baseUrl1),
+        type: 'POST',
+        contentType: 'application/json',
+        xhrFields: { withCredentials: true },
+        data: JSON.stringify({ desno: desgcode, designation: designation }),
+        success: function (response) {
+       console.log("Designation created:", response);
+			
+			
+			showPopup("New Designation Created", "ContractMaster.jsp")
+            $("#exampleModalCenterdes308").modal("hide");
+            $("#exampleModalScrollabledesignation").modal("hide");
+            // refresh your grid here
+        },
+        error: function (xhr, status, error) {
+            console.error("Insert error:", error);
+            alert("Error creating designation: " + error);
+        }
+    });
+});
+
+
+
+
+
+
+function fetchAndDisplayDesignation() {
+
+    if ($.fn.DataTable.isDataTable('#designationTableID')) {
+        $('#designationTableID').DataTable().clear().destroy();
+    }
+
+    $('#designationTableID').DataTable({
+        processing: true,
+        serverSide: true,
+        scrollX: true,
+        searching: true,
+        dom: 'Bfrtip',
+        pageLength: 10,
+        buttons: [
+            {
+                text: 'Export to Excel',
+                action: function () {
+
+                    const url = new URL(`/api/designation/adminlist`, baseUrl1);
+                    url.searchParams.append('page', 0);
+                    url.searchParams.append('size', 99999);
+
+                    fetch(url, { credentials: "include" })
+                        .then(response => response.json())
+                        .then(json => {
+
+                            const exportData = json.data.map(item => [
+                                item.desno || '',
+                                item.designation || ''
+                            ]);
+
+                            let tempTable = $('<table>').append(
+                                $('<thead>').append(
+                                    $('<tr>').append(
+                                        '<th>Designation Code</th>',
+                                        '<th>Designation</th>'
+                                    )
+                                ),
+                                $('<tbody>').append(
+                                    exportData.map(row =>
+                                        $('<tr>').append(
+                                            row.map(cell => $('<td>').text(cell))
+                                        )
+                                    )
+                                )
+                            ).appendTo('body');
+
+                            $(tempTable).DataTable({
+                                buttons: [{
+                                    extend: 'excelHtml5',
+                                    title: 'Designation Details'
+                                }]
+                            }).button(0).trigger();
+
+                            setTimeout(() => {
+                                $(tempTable).DataTable().destroy();
+                                $(tempTable).remove();
+                            }, 1000);
+                        })
+                        .catch(error => console.error('Export error:', error));
+                }
+            }
+        ],
+
+        columns: [
+            { title: "Sl No", orderable: false },
+            { title: "Designation Code" },
+            { title: "Designation" },
+            { title: "Edit", orderable: false }
+        ],
+
+        ajax: function (data, callback, settings) {
+
+            const page        = data.start / data.length;
+            const size        = data.length;
+            const searchValue = data.search.value;
+
+            const url = new URL(`/api/designation/adminlist`, baseUrl1);
+            url.searchParams.append('page',   page);
+            url.searchParams.append('size',   size);
+            url.searchParams.append('search', searchValue);
+
+            fetch(url, { credentials: "include" })
+                .then(response => response.json())
+                .then(json => {
+
+                    if (!json.data) {
+                        callback({
+                            draw:            data.draw,
+                            recordsTotal:    0,
+                            recordsFiltered: 0,
+                            data:            []
+                        });
+                        return;
+                    }
+
+                    // Keep local designationList in sync for next-code calc
+                    designationList = json.data;
+
+                    let slNo = data.start + 1;
+
+              /*      const rows = json.data.map(item => {
+
+                        const editIcon =
+                            `<i class="fa fa-pen cursor-pointer"
+                                style=";"
+                                title="Edit"
+                                onclick="editDesignation(${item.desgid})"></i>`;
+
+                        return [
+                            slNo++,
+                            item.desno || '',
+                            item.designation || '',
+                            editIcon
+                        ];
+                    });*/
+					
+					const rows = json.data.map(item => {
+
+					    const editIcon = item.isUsed
+					        ? `<i class="fa fa-pen text-secondary"
+					              title="Designation is in use, cannot edit"
+					              style="cursor:not-allowed; opacity:0.3;"></i>`
+					        : `<i class="fa fa-pen cursor-pointer"
+					              title="Edit"
+					              onclick="editDesignation(${item.desgid})"></i>`;
+
+					    return [
+					        slNo++,
+					        item.desno || '',
+					        item.designation || '',
+					        editIcon
+					    ];
+					});
+
+                    callback({
+                        draw:            data.draw,
+                        recordsTotal:    json.totalRecords,
+                        recordsFiltered: json.totalItems,
+                        data:            rows
+                    });
+                })
+                .catch(error => {
+                    console.error('Error fetching designation data:', error);
+                    callback({
+                        draw:            data.draw,
+                        recordsTotal:    0,
+                        recordsFiltered: 0,
+                        data:            []
+                    });
+                });
+        }
+    });
+}
+
+
+function editDesignation(desgid) {
+
+    if (!hasPermission("Edit")) {
+        alert(`You do not have permission to Edit`);
+        return;
+    }
+
+    fetch(new URL(`/api/designation/${desgid}`, baseUrl1), {
+        credentials: "include"
+    })
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('designationEdit').value = data.designation || '';
+            document.getElementById('designationEdit').setAttribute('data-original', data.designation || ''); // store original
+            $('#desgidEdit').val(data.desgid);   // store ID
+            $('#designationEditError').hide();
+            $('#exampleModalScrollabledesignation1').modal('show');
+        })
+        .catch(error => {
+            console.error('Error fetching designation:', error);
+            alert('Error fetching designation');
+        });
+}
+// ---------- UPDATE ----------
+
+// Step 1: Update button clicked -> validate, check duplicate, show confirm modal
+function designationupdateevent() {
+    var desgid = $('#desgidEdit').val();
+    var designation = $('#designationEdit').val().trim();
+    var originalValue = $('#designationEdit').attr('data-original');
+
+    if (!designation) {
+        $('#designationEditError').show();
+        return;
+    } else {
+        $('#designationEditError').hide();
+    }
+
+    // Skip update entirely if nothing changed
+    if (designation === originalValue) {
+       
+		showPopup("No Feilds Changes", "ContractMaster.jsp")
+        return;
+    }
+
+    $.ajax({
+        url: new URL('/api/designation/checkupdate?desDesc=' + encodeURIComponent(designation) + '&desgid=' + desgid, baseUrl1),
+        type: 'GET',
+        xhrFields: { withCredentials: true },
+        success: function (response) {
+            if (response.exists) {
+                $("#duplicateDesignationModal").modal("show");
+            } else {
+               $("#exampleModalCenterdesUpdate").modal("show");
+            }
+        },
+        error: function (xhr, status, error) {
+            console.error("Check API Error:", error);
+            alert("An error occurred while checking: " + error);
+        }
+    });
+}
+
+
+
+
+// Step 3: YES clicked on confirm modal -> actually call update API
+function updatedesignation(){
+    var desgid = $('#desgidEdit').val();
+    var designation = $('#designationEdit').val().trim();
+
+    $.ajax({
+        url: new URL('/api/designation/update', baseUrl1),
+        type: 'PUT',
+        contentType: 'application/json',
+        xhrFields: { withCredentials: true },
+        data: JSON.stringify({
+            desgid: parseInt(desgid),
+            designation: designation,
+			modifiedBy:sessionStorage.getItem("id")
+        }),
+        success: function (response) {
+            console.log("Designation updated:", response);
+
+            // Close both modals
+            $("#exampleModalCenterdesUpdate").modal("hide");
+            $("#exampleModalScrollabledesignation1").modal("hide");
+
+            // Update data-original so re-editing without reload works correctly
+            $('#designationEdit').attr('data-original', designation);
+
+            // Refresh table (server-side paginated DataTable)
+            if ($.fn.DataTable.isDataTable('#designationTableID')) {
+                $('#designationTableID').DataTable().ajax.reload(null, false); // false = stay on current page
+            }
+
+           
+			
+			showPopup("Designation updated successfully!.", "ContractMaster.jsp")
+        },
+        error: function (xhr, status, error) {
+            console.error("Update error:", error);
+            alert("Error updating designation: " + error);
+        }
+    });
+}
 
 

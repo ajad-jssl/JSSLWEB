@@ -85,6 +85,7 @@ document.addEventListener("DOMContentLoaded", async function () {
     await loadActions();
     await loadUserMap();
     await loadShipmentModes(); // ✅ now works correctly, awaits the data before rendering
+	await loadUOM(); 
 
     if (!allowedActions.includes("view")) {
         blockUI();
@@ -173,9 +174,9 @@ function fetchGatePassDetails(gp_no) {
                         <td>${index + 1}</td>
                         <td>${val(item.ItemNo)}</td>
                         <td>${description}</td>
-                        <td>${val(item.qty)}</td>
-                        <td>${val(item.UM)}</td>
-                        <td>${val(item.itmPrice)}</td>
+						<td>${getUOMName(item.UM)}</td>
+                        <td style="text-align:right;">${val(item.qty)}</td>
+                        <td style="text-align:right;">${val(item.itmPrice)}</td>
                         <td>${val(item.itmRemarks)}</td>
                     `;
                     tableBody.appendChild(row);
@@ -234,9 +235,9 @@ function fetchngpGatePassDetails(gp_no) {
                         <td>${index + 1}</td>
                         <td>${val(item.ItemNo)}</td>
                         <td>${val(item.itmDescription1)} ${val(item.itmDescription2)}</td>
-                        <td>${val(item.qty)}</td>
-                        <td>${val(item.UM)}</td>
-                        <td>${val(item.itmPrice)}</td>
+						<td>${getUOMName(item.UM)}</td>
+                        <td style="text-align:right;">${val(item.qty)}</td>
+                        <td style="text-align:right;">${val(item.itmPrice)}</td>
                         <td>${val(item.itmRemarks)}</td>
                     `;
                     tableBody.appendChild(row);
@@ -416,4 +417,30 @@ function blockUI() {
     `;
 
     container.appendChild(overlay);
+}
+
+let uomMapCache = {};
+let uomCache = null;
+
+async function loadUOM() {
+    if (uomCache) return uomCache;
+    try {
+        const res = await fetch(new URL('/api/items/all', baseUrl), { credentials: 'include' });
+        const data = await res.json();
+        uomCache = Array.isArray(data) ? data : [];
+        uomMapCache = {};
+        uomCache.forEach(u => {
+            uomMapCache[String(u.uid).trim()] = u.unit;
+        });
+    } catch (e) {
+        console.error('loadUOM error:', e);
+        uomCache = [];
+        uomMapCache = {};
+    }
+    return uomCache;
+}
+
+function getUOMName(uid) {
+    if (uid === undefined || uid === null || String(uid).trim() === '') return '';
+    return uomMapCache[String(uid).trim()] || uid;
 }
