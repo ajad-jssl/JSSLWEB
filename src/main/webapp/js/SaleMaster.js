@@ -1,23 +1,57 @@
 
+
+
+const MainPage = window.location.pathname.split("/").pop() +'.jsp';
+
+
+const UserId = sessionStorage.getItem('username');
+
+let allowedActions = [];
+
+async function loadActions() {
+    try {
+        const response = await fetch(
+            `${baseUrl}/api/page/actions?userId=${encodeURIComponent(UserId)}&pageName=${encodeURIComponent(MainPage)}`,
+            {
+                method: "GET",
+                credentials: "include",
+                headers: {
+                    "Content-Type": "application/json"
+                }
+            }
+        );
+
+        if (!response.ok) {
+            throw new Error("Failed to fetch actions");
+        }
+
+        allowedActions = await response.json();
+
+    } catch (error) {
+        console.error("Error:", error);
+    }
+}
+
+
 document.getElementById("OprtSrc").addEventListener("click", function () {
     // show custom message instead of opening modal
 	  const allowed =allowedActions || [];
 
-	/*if (!allowed.includes("Insert")) {
+	if (!allowed.includes("Insert")) {
 	  alert(" You do not have permission to Insert.");
 	  $('#exampleModalScrollableIN').modal('hide');
 	  return;
-	}*/
+	}
 	$('#exampleModalScrollableIN').modal('show');
 })
 
 
-$(document).ready(function () {
+$(document).ready(async function () {
 
     // ==============================
     // CREATE OPPORTUNITY SOURCE
     // ==============================
-	
+	await loadActions();
 	fetchregistertype();
 
     $('#submitregtype').on('click', function () {
@@ -186,15 +220,20 @@ async function fetchregistertype() {
                     </td>
 
 
-                    <td>
-
-                        <i class="fa fa-pen text-primary cursor-pointer"
-                           title="Edit"
-                           style="cursor:pointer;"
-                           onclick="editOpportunitySource(${item.id})">
-                        </i>
-
-                    </td>
+             
+					
+					<td>
+					    ${item.isUsed
+					        ? `<i class="fa fa-pen text-muted"
+					              title="Already used in activities, cannot be edited"
+					              style="cursor:not-allowed; opacity:0.4;">
+					           </i>`
+					        : `<i class="fa fa-pen text-primary cursor-pointer"
+					              title="Edit"
+					              style="cursor:pointer;"
+					              onclick="editOpportunitySource(${item.id})">
+					           </i>`}
+					</td>
 
                 </tr>
 
@@ -270,6 +309,14 @@ let selectedOpportunitySourceId = null;
 let originalOpportunitySourceName = '';
 
 async function editOpportunitySource(id) {
+	
+	
+	const allowed = allowedActions || [];
+
+	 if (!allowed.includes("Edit")) {
+	     alert("You do not have permission to edit.");
+	     return;
+	 }
 
     try {
 
@@ -473,6 +520,15 @@ $('#confirmregtypeupd').on('click', function () {
 
 
 document.getElementById("vtsveh").addEventListener("click", function () {
+	
+	  const allowed =allowedActions || [];
+
+	if (!allowed.includes("Insert")) {
+	  alert(" You do not have permission to Insert.");
+	  $('#exampleModalScrollableIN').modal('hide');
+	  return;
+	}
+	
     $('#exampleModalScrollableCon').modal('show');
 });
 
@@ -566,13 +622,18 @@ async function fetchzonetype() {
                 <tr id="${item.id}">
                     <td>${index + 1}</td>
                     <td>${item.zoneName}</td>
-                    <td>
-                        <i class="fa fa-pen text-primary cursor-pointer"
-                           title="Edit"
-                           style="cursor:pointer;"
-                           onclick="editZone(${item.id})">
-                        </i>
-                    </td>
+         
+					
+					<td>
+					    ${item.isUsed
+					        ? `<i class="fa fa-pen text-muted"
+					              title="Zone is already in use, cannot be edited"
+					              style="cursor:not-allowed; opacity:0.4;"></i>`
+					        : `<i class="fa fa-pen text-primary cursor-pointer"
+					              title="Edit"
+					              style="cursor:pointer;"
+					              onclick="editZone(${item.id})"></i>`}
+					</td>
                 </tr>
             `;
         }
@@ -606,6 +667,13 @@ let selectedZoneId = null;
 let originalZoneName = '';
 
 async function editZone(id) {
+	const allowed = allowedActions || [];
+
+	 if (!allowed.includes("Edit")) {
+	     alert("You do not have permission to edit.");
+	     return;
+	 }
+	
 
     try {
         const apiUrl = new URL(`/api/salescrm/zone/${id}`, baseUrl1);
@@ -704,6 +772,15 @@ function showPopup(message, redirectUrl) {
 
 
 document.getElementById("dsgnbss").addEventListener("click", function () {
+	
+	  const allowed =allowedActions || [];
+
+	if (!allowed.includes("Insert")) {
+	  alert(" You do not have permission to Insert.");
+	  $('#exampleModalScrollableIN').modal('hide');
+	  return;
+	}
+	
     $('#exampleModalScrollableDes').modal('show');
 });
 
@@ -797,13 +874,18 @@ async function fetchdesignbasis() {
                 <tr id="${item.id}">
                     <td>${index + 1}</td>
                     <td>${item.designBasisName}</td>
-                    <td>
-                        <i class="fa fa-pen text-primary cursor-pointer"
-                           title="Edit"
-                           style="cursor:pointer;"
-                           onclick="editDesignBasis(${item.id})">
-                        </i>
-                    </td>
+         
+					
+					<td>
+					    ${item.isUsed
+					        ? `<i class="fa fa-pen text-muted"
+					              title="Already used in leads or enquiries, cannot be edited"
+					              style="cursor:not-allowed; opacity:0.4;"></i>`
+					        : `<i class="fa fa-pen text-primary cursor-pointer"
+					              title="Edit"
+					              style="cursor:pointer;"
+					              onclick="editDesignBasis(${item.id})"></i>`}
+					</td>
                 </tr>
             `;
         }
@@ -837,6 +919,15 @@ let selectedDesignBasisId = null;
 let originalDesignBasisName = '';
 
 async function editDesignBasis(id) {
+	
+	const allowed = allowedActions || [];
+
+	 if (!allowed.includes("Edit")) {
+	     alert("You do not have permission to edit.");
+	     return;
+	 }
+	
+	
 
     try {
         const apiUrl = new URL(`/api/salescrm/design-basis/${id}`, baseUrl1);
@@ -922,6 +1013,15 @@ $('#confirmdesignupd').on('click', function () {
 });
 
 document.getElementById("sgmnt").addEventListener("click", function () {
+	  const allowed =allowedActions || [];
+
+	if (!allowed.includes("Insert")) {
+	  alert(" You do not have permission to Insert.");
+	  $('#exampleModalScrollableIN').modal('hide');
+	  return;
+	}
+	
+	
     $('#exampleModalScrollableSeg').modal('show');
 });
 
@@ -1015,13 +1115,18 @@ async function fetchsegment() {
                 <tr id="${item.id}">
                     <td>${index + 1}</td>
                     <td>${item.segmentName}</td>
-                    <td>
-                        <i class="fa fa-pen text-primary cursor-pointer"
-                           title="Edit"
-                           style="cursor:pointer;"
-                           onclick="editSegment(${item.id})">
-                        </i>
-                    </td>
+       
+					
+					<td>
+					    ${item.isUsed
+					        ? `<i class="fa fa-pen text-muted"
+					              title="Already used in clients, leads or enquiries, cannot be edited"
+					              style="cursor:not-allowed; opacity:0.4;"></i>`
+					        : `<i class="fa fa-pen text-primary cursor-pointer"
+					              title="Edit"
+					              style="cursor:pointer;"
+					              onclick="editSegment(${item.id})"></i>`}
+					</td>
                 </tr>
             `;
         }
@@ -1055,6 +1160,13 @@ let selectedSegmentId = null;
 let originalSegmentName = '';
 
 async function editSegment(id) {
+	const allowed = allowedActions || [];
+
+	 if (!allowed.includes("Edit")) {
+	     alert("You do not have permission to edit.");
+	     return;
+	 }
+	
 
     try {
         const apiUrl = new URL(`/api/salescrm/segment/${id}`, baseUrl1);
@@ -1141,6 +1253,15 @@ $('#confirmsegmentupd').on('click', function () {
 
 
 document.getElementById("clntBtn").addEventListener("click", function () {
+	
+	  const allowed =allowedActions || [];
+
+	if (!allowed.includes("Insert")) {
+	  alert(" You do not have permission to Insert.");
+	  $('#exampleModalScrollableIN').modal('hide');
+	  return;
+	}
+	
 	loadCountriesDropdown('#clientCountry');
     loadStatesDropdown('#clientState');
 	loadclientsegment('#clientSegment');
@@ -1485,6 +1606,7 @@ async function fetchclients() {
             tableRows += `
                 <tr id="${item.id}">
                     <td>${index + 1}</td>
+					<td>${item.clientCode || '-'}</td>
                     <td>${item.clientName}</td>
                     <td>${item.contactNo}</td>
                     <td>${item.emailAddress || ''}</td>
@@ -1493,13 +1615,18 @@ async function fetchclients() {
                     <td>${item.stateName || ''}</td>
                     <td>${item.cityName || ''}</td>
 					<td>${item.pincode || ''}</td>
-                    <td>
-                        <i class="fa fa-pen text-primary cursor-pointer"
-                           title="Edit"
-                           style="cursor:pointer;"
-                           onclick="editClient(${item.id})">
-                        </i>
-                    </td>
+                
+					
+					<td>
+					    ${item.isUsed
+					        ? `<i class="fa fa-pen text-muted"
+					              title="Client is used in a project, cannot be edited"
+					              style="cursor:not-allowed; opacity:0.4;"></i>`
+					        : `<i class="fa fa-pen text-primary cursor-pointer"
+					              title="Edit"
+					              style="cursor:pointer;"
+					              onclick="editClient(${item.id})"></i>`}
+					</td>
                 </tr>
             `;
         }
@@ -1533,6 +1660,14 @@ let selectedClientId = null;
 let originalClientData = {};
 
 async function editClient(id) {
+	
+	const allowed = allowedActions || [];
+
+	 if (!allowed.includes("Edit")) {
+	     alert("You do not have permission to edit.");
+	     return;
+	 }
+	
 
     try {
         const apiUrl = new URL(`/api/salescrm/client/${id}`, baseUrl1);
@@ -1755,6 +1890,15 @@ $('#confirmclientupd').on('click', function () {
 
 
 document.getElementById("stgBtn").addEventListener("click", function () {
+	  const allowed =allowedActions || [];
+
+	if (!allowed.includes("Insert")) {
+	  alert(" You do not have permission to Insert.");
+	  $('#exampleModalScrollableIN').modal('hide');
+	  return;
+	}
+	
+	
     $('#exampleModalScrollableStage').modal('show');
 });
 
@@ -1848,13 +1992,18 @@ async function fetchstage() {
                 <tr id="${item.id}">
                     <td>${index + 1}</td>
                     <td>${item.stageName}</td>
-                    <td>
-                        <i class="fa fa-pen text-primary cursor-pointer"
-                           title="Edit"
-                           style="cursor:pointer;"
-                           onclick="editStage(${item.id})">
-                        </i>
-                    </td>
+               
+					
+					<td>
+					    ${item.isUsed
+					        ? `<i class="fa fa-pen text-muted"
+					              title="Already used in leads or enquiries, cannot be edited"
+					              style="cursor:not-allowed; opacity:0.4;"></i>`
+					        : `<i class="fa fa-pen text-primary cursor-pointer"
+					              title="Edit"
+					              style="cursor:pointer;"
+					              onclick="editStage(${item.id})"></i>`}
+					</td>
                 </tr>
             `;
         }
@@ -1888,6 +2037,14 @@ let selectedStageId = null;
 let originalStageName = '';
 
 async function editStage(id) {
+	
+	const allowed = allowedActions || [];
+
+	 if (!allowed.includes("Edit")) {
+	     alert("You do not have permission to edit.");
+	     return;
+	 }
+	
 
     try {
         const apiUrl = new URL(`/api/salescrm/current-stage/${id}`, baseUrl1);
@@ -2410,19 +2567,30 @@ async function fetchcontacts() {
                     <td>${item.alternateMobileNo || ''}</td>
                     <td>${item.emailAddress || ''}</td>
                     <td>${item.clientNames || ''}</td>
-                    <td>
-                        <i class="fa fa-pen text-primary cursor-pointer"
-                           title="Edit"
-                           style="cursor:pointer;margin-right:10px;"
-                           onclick="editContact(${item.id}, ${item.clientId})">
-                        </i>
-                       
-                    </td>
-					<td>					<i class="fa fa-trash text-danger cursor-pointer"
-					                          title="Delete"
-					                          style="cursor:pointer;"
-					                          onclick="deleteContactFromMaster(${item.id})">
-					                       </i></td>
+					<td>
+					    ${item.isUsed
+					        ? `<i class="fa fa-pen text-muted"
+					              title="Already used in activities, cannot be edited"
+					              style="cursor:not-allowed; opacity:0.4; margin-right:10px;">
+					           </i>`
+					        : `<i class="fa fa-pen text-primary cursor-pointer"
+					              title="Edit"
+					              style="cursor:pointer; margin-right:10px;"
+					              onclick="editContact(${item.id}, ${item.clientId})">
+					           </i>`}
+					</td>
+					<td>
+					    ${item.isUsed
+					        ? `<i class="fa fa-trash text-muted"
+					              title="Already used in activities, cannot be deleted"
+					              style="cursor:not-allowed; opacity:0.4;">
+					           </i>`
+					        : `<i class="fa fa-trash text-danger cursor-pointer"
+					              title="Delete"
+					              style="cursor:pointer;"
+					              onclick="deleteContactFromMaster(${item.id})">
+					           </i>`}
+					</td>
                 </tr>
             `;
         }
@@ -2459,6 +2627,15 @@ async function fetchcontacts() {
 let selectedContactIdForDelete = null;
 
 function deleteContactFromMaster(id) {
+	
+	
+	const allowed = allowedActions || [];
+
+	 if (!allowed.includes("Delete")) {
+	     alert("You do not have permission to Delete.");
+	     return;
+	 }
+	
 
     // Store selected contact ID
     selectedContactIdForDelete = id;
@@ -2544,6 +2721,15 @@ $(document).on('click', '#confirmDeleteContact', function () {
 // OPEN CONTACT MODAL -> LOAD CLIENT DROPDOWN
 // ==============================
 document.getElementById("cntctBtn").addEventListener("click", async function () {
+	  const allowed =allowedActions || [];
+
+	if (!allowed.includes("Insert")) {
+	  alert(" You do not have permission to Insert.");
+	  $('#exampleModalScrollableIN').modal('hide');
+	  return;
+	}
+	
+	
     await loadClientSelectDropdown('#contactClientSelect');
     $('#clientContactsWrapper').hide();
     $('#contactClientSelect').val('');
@@ -2822,6 +3008,15 @@ let selectedContactClientId = null;
 let originalContactData = {};
 
 async function editContact(id, clientId) {
+	
+	
+	
+	const allowed = allowedActions || [];
+
+	 if (!allowed.includes("Edit")) {
+	     alert("You do not have permission to edit.");
+	     return;
+	 }
 
     try {
         const apiUrl = new URL(`/api/salescrm/contact-person/${id}`, baseUrl1);
@@ -2978,10 +3173,64 @@ function deleteContact(id, clientId) {
 
 
 document.getElementById("prjctBtn").addEventListener("click", function () {
+	  const allowed =allowedActions || [];
+
+	if (!allowed.includes("Insert")) {
+	  alert(" You do not have permission to Insert.");
+	  $('#exampleModalScrollableIN').modal('hide');
+	  return;
+	}
+	
+	
     $('#exampleModalScrollableProject').modal('show');
 });
 
+/*// Load client list into both dropdowns
+function loadClients() {
+    $.ajax({
+        url: baseUrl + '/api/salescrm/client', // adjust if your client list endpoint differs
+        type: 'GET',
+        xhrFields: { withCredentials: true },
+        success: function (clients) {
+            let options = '<option value="">-- Select Client --</option>';
+            clients.forEach(function (c) {
+                options += `<option value="${c.id}">${c.clientName}</option>`;
+            });
+            $('#clientSelectInput').html(options);
+            $('#clientSelectInput1').html(options);
+        },
+        error: function (xhr) {
+            console.error('Error loading clients:', xhr.responseText);
+        }
+    });
+}
+
+
+function loadZones1() {
+    $.ajax({
+        url: baseUrl + '/api/salescrm/zone', // adjust if your client list endpoint differs
+        type: 'GET',
+        xhrFields: { withCredentials: true },
+        success: function (clients) {
+            let options = '<option value="">-- Select Zones --</option>';
+            clients.forEach(function (c) {
+                options += `<option value="${c.id}">${c.zoneName}</option>`;
+            });
+            $('#ZoneSelectInput').html(options);
+			$('#ZoneSelectInput1').html(options);
+           // $('#clientSelectInput1').html(options);
+        },
+        error: function (xhr) {
+            console.error('Error loading clients:', xhr.responseText);
+        }
+    });
+}
+
+
 $(document).ready(function () {
+
+    loadClients();
+	loadZones1();
 
     // ==============================
     // CREATE PROJECT NAME
@@ -2990,14 +3239,24 @@ $(document).ready(function () {
     $('#submitproject').on('click', function () {
 
         const projectName = $('#projectNameInput').val().trim();
+        const clientId = $('#clientSelectInput').val();
 
         $('#projectNameInputError').hide();
+        $('#clientSelectInputError').hide();
+
+        let hasError = false;
+
+        if (clientId === '') {
+            $('#clientSelectInputError').text('Client is required').show();
+            hasError = true;
+        }
 
         if (projectName === '') {
             $('#projectNameInputError').text('Project Name is required').show();
-            $('#projectNameInput').focus();
-            return;
+            hasError = true;
         }
+
+        if (hasError) return;
 
         $('#exampleModalScrollableProject').modal('hide');
         $('#exampleModalCenter100').modal('show');
@@ -3010,6 +3269,7 @@ $(document).ready(function () {
     $('#confirmprojectYes').on('click', function () {
 
         const projectName = $('#projectNameInput').val().trim();
+        const clientId = $('#clientSelectInput').val();
 
         $('#exampleModalCenter100').modal('hide');
 
@@ -3017,15 +3277,17 @@ $(document).ready(function () {
             url: baseUrl + '/api/salescrm/project',
             type: 'POST',
             contentType: 'application/json',
-			xhrFields: { withCredentials: true },
+            xhrFields: { withCredentials: true },
             data: JSON.stringify({
                 projectName: projectName,
+                clientId: clientId,
                 status: false,
                 createdBy: sessionStorage.getItem('id')
             }),
             success: function (response) {
                 console.log('Project Name created successfully', response);
                 $('#projectNameInput').val('');
+                $('#clientSelectInput').val('');
                 showPopup('Project Name created successfully', 'SaleMaster.jsp');
             },
             error: function (xhr, status, error) {
@@ -3041,6 +3303,7 @@ $(document).ready(function () {
 
     $('#exampleModalScrollableProject').on('hidden.bs.modal', function () {
         $('#projectNameInputError').hide();
+        $('#clientSelectInputError').hide();
     });
 
 });
@@ -3070,6 +3333,7 @@ async function fetchprojects() {
             tableRows += `
                 <tr id="${item.id}">
                     <td>${index + 1}</td>
+                    <td>${item.clientName}</td>
                     <td>${item.projectName}</td>
                     <td>
                         <i class="fa fa-pen text-primary cursor-pointer"
@@ -3109,6 +3373,7 @@ async function fetchprojects() {
 
 let selectedProjectId = null;
 let originalProjectName = '';
+let originalClientId = '';
 
 async function editProject(id) {
 
@@ -3128,9 +3393,12 @@ async function editProject(id) {
 
         selectedProjectId = data.id;
         originalProjectName = data.projectName.trim();
+        originalClientId = data.clientId != null ? String(data.clientId) : '';
 
         $('#projectNameInput1').val(data.projectName);
+        $('#clientSelectInput1').val(originalClientId);
         $('#projectNameInput1Error').hide();
+        $('#clientSelectInput1Error').hide();
 
         $('#exampleModalScrollableProjectUp').modal('show');
 
@@ -3143,16 +3411,26 @@ async function editProject(id) {
 $('#projectupd').on('click', function () {
 
     const projectName = $('#projectNameInput1').val().trim();
+    const clientId = $('#clientSelectInput1').val();
 
     $('#projectNameInput1Error').hide();
+    $('#clientSelectInput1Error').hide();
+
+    let hasError = false;
+
+    if (clientId === '') {
+        $('#clientSelectInput1Error').text('Client is required').show();
+        hasError = true;
+    }
 
     if (projectName === '') {
         $('#projectNameInput1Error').text('Project Name is required').show();
-        $('#projectNameInput1').focus();
-        return;
+        hasError = true;
     }
 
-    if (projectName === originalProjectName) {
+    if (hasError) return;
+
+    if (projectName === originalProjectName && clientId === originalClientId) {
         showPopup('No Fields are changes', 'SaleMaster.jsp');
         return;
     }
@@ -3169,6 +3447,7 @@ $('#cancellprojectmodal').on('click', function () {
 $('#confirmprojectupd').on('click', function () {
 
     const projectName = $('#projectNameInput1').val().trim();
+    const clientId = $('#clientSelectInput1').val();
 
     $('#exampleModalCenter101').modal('hide');
 
@@ -3176,9 +3455,686 @@ $('#confirmprojectupd').on('click', function () {
         url: baseUrl1 + '/api/salescrm/project/' + selectedProjectId,
         type: 'PUT',
         contentType: 'application/json',
-		xhrFields: { withCredentials: true },
+        xhrFields: { withCredentials: true },
         data: JSON.stringify({
             projectName: projectName,
+            clientId: clientId,
+            modifiedBy: sessionStorage.getItem('id')
+        }),
+        success: function (response) {
+            console.log('Project Name updated successfully', response);
+            $('#exampleModalScrollableProjectUp').modal('hide');
+            $('#projectNameInput1').val('');
+            fetchprojects();
+            showPopup('Project Name updated successfully', 'SaleMaster.jsp');
+        },
+        error: function (xhr, status, error) {
+            console.error('Error updating Project Name:', xhr.responseText);
+            alert(xhr.responseText || 'Error updating Project Name');
+        }
+    });
+});
+*/
+
+
+// Load client list into both dropdowns
+/*function loadClients() {
+    $.ajax({
+        url: baseUrl + '/api/salescrm/client',
+        type: 'GET',
+        xhrFields: { withCredentials: true },
+        success: function (clients) {
+            let options = '<option value="">-- Select Client --</option>';
+            clients.forEach(function (c) {
+                options += `<option value="${c.id}">${c.clientName}</option>`;
+            });
+            $('#clientSelectInput').html(options);
+            $('#clientSelectInput1').html(options);
+        },
+        error: function (xhr) {
+            console.error('Error loading clients:', xhr.responseText);
+        }
+    });
+}
+
+// Load zone list into both dropdowns (Create and Update)
+function loadZones1() {
+    $.ajax({
+        url: baseUrl + '/api/salescrm/zone',
+        type: 'GET',
+        xhrFields: { withCredentials: true },
+        success: function (zones) {
+            let options = '<option value="">-- Select Zone --</option>';
+            zones.forEach(function (z) {
+                options += `<option value="${z.id}">${z.zoneName}</option>`;
+            });
+            $('#ZoneSelectInput').html(options);
+            $('#ZoneSelectInput1').html(options);
+        },
+        error: function (xhr) {
+            console.error('Error loading zones:', xhr.responseText);
+        }
+    });
+}
+
+$(document).ready(function () {
+
+    loadClients();
+    loadZones1();
+
+    // ==============================
+    // CREATE PROJECT NAME
+    // ==============================
+
+    $('#submitproject').on('click', function () {
+
+        const projectName = $('#projectNameInput').val().trim();
+        const clientId = $('#clientSelectInput').val();
+        const zoneId = $('#ZoneSelectInput').val();
+
+        $('#projectNameInputError').hide();
+        $('#clientSelectInputError').hide();
+        $('#ZoneSelectInputError').hide();
+
+        let hasError = false;
+
+        if (clientId === '') {
+            $('#clientSelectInputError').text('Client is required').show();
+            hasError = true;
+        }
+
+        if (zoneId === '') {
+            $('#ZoneSelectInputError').text('Zone is required').show();
+            hasError = true;
+        }
+
+        if (projectName === '') {
+            $('#projectNameInputError').text('Project Name is required').show();
+            hasError = true;
+        }
+
+        if (hasError) return;
+
+        $('#exampleModalScrollableProject').modal('hide');
+        $('#exampleModalCenter100').modal('show');
+    });
+
+    // ==============================
+    // CONFIRM CREATE
+    // ==============================
+
+    $('#confirmprojectYes').on('click', function () {
+
+        const projectName = $('#projectNameInput').val().trim();
+        const clientId = $('#clientSelectInput').val();
+        const zoneId = $('#ZoneSelectInput').val();
+
+        $('#exampleModalCenter100').modal('hide');
+
+        $.ajax({
+            url: baseUrl + '/api/salescrm/project',
+            type: 'POST',
+            contentType: 'application/json',
+            xhrFields: { withCredentials: true },
+            data: JSON.stringify({
+                projectName: projectName,
+                clientId: clientId,
+                zoneId: zoneId,
+                status: false,
+                createdBy: sessionStorage.getItem('id')
+            }),
+            success: function (response) {
+                console.log('Project Name created successfully', response);
+                $('#projectNameInput').val('');
+                $('#clientSelectInput').val('');
+                $('#ZoneSelectInput').val('');
+                showPopup('Project Name created successfully (' + (response.projectCode || '') + ')', 'SaleMaster.jsp');
+            },
+            error: function (xhr, status, error) {
+                console.error('Error creating Project Name:', xhr.responseText);
+                alert(xhr.responseText || 'Error creating Project Name');
+            }
+        });
+    });
+
+    // ==============================
+    // CLEAR MODAL WHEN CLOSED
+    // ==============================
+
+    $('#exampleModalScrollableProject').on('hidden.bs.modal', function () {
+        $('#projectNameInputError').hide();
+        $('#clientSelectInputError').hide();
+        $('#ZoneSelectInputError').hide();
+    });
+
+});
+
+async function fetchprojects() {
+
+    const apiUrl = new URL('/api/salescrm/project', baseUrl1);
+
+    try {
+        const response = await fetch(apiUrl, {
+            method: "GET",
+            credentials: "include"
+        });
+
+        if (!response.ok) {
+            throw new Error("Failed to fetch Project Names");
+        }
+
+        const projects = await response.json();
+
+        let tableRows = '';
+
+        for (let index = 0; index < projects.length; index++) {
+
+            const item = projects[index];
+
+            tableRows += `
+                <tr id="${item.id}">
+                    <td>${index + 1}</td>
+                    <td>${item.projectCode || '-'}</td>
+                    <td>${item.clientName}</td>
+                    <td>${item.zoneName || '-'}</td>
+                    <td>${item.projectName}</td>
+                
+					
+					<td>
+					    ${item.isUsed
+					        ? `<i class="fa fa-pen text-muted"
+					              title="Already used in leads, cannot be edited"
+					              style="cursor:not-allowed; opacity:0.4;"></i>`
+					        : `<i class="fa fa-pen text-primary cursor-pointer"
+					              title="Edit"
+					              style="cursor:pointer;"
+					              onclick="editProject(${item.id})"></i>`}
+					</td>
+                </tr>
+            `;
+        }
+
+        document.querySelector("#tableID7 tbody").innerHTML = tableRows;
+
+        if ($.fn.DataTable.isDataTable('#tableID7')) {
+            $('#tableID7').DataTable().destroy();
+        }
+
+        $('#tableID7').DataTable({
+            dom: 'Bfrtip',
+            scrollX: false,
+            info: true,
+            paging: true,
+            pageLength: 10,
+            lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
+            buttons: [{
+                extend: 'excel',
+                text: 'Export to Excel',
+                title: 'Project Name List'
+            }]
+        });
+
+    } catch (error) {
+        console.error('Error fetching Project Names:', error);
+    }
+}
+
+let selectedProjectId = null;
+let originalProjectName = '';
+let originalClientId = '';
+let originalZoneId = '';
+
+async function editProject(id) {
+	
+	
+	
+	const allowed = allowedActions || [];
+
+	 if (!allowed.includes("Edit")) {
+	     alert("You do not have permission to edit.");
+	     return;
+	 }
+	
+	
+
+    try {
+        const apiUrl = new URL(`/api/salescrm/project/${id}`, baseUrl1);
+
+        const response = await fetch(apiUrl, {
+            method: "GET",
+            credentials: "include"
+        });
+
+        if (!response.ok) {
+            throw new Error("Failed to fetch Project Name");
+        }
+
+        const data = await response.json();
+
+        selectedProjectId = data.id;
+        originalProjectName = data.projectName.trim();
+        originalClientId = data.clientId != null ? String(data.clientId) : '';
+        originalZoneId = data.projectZone != null ? String(data.projectZone) : '';
+
+        $('#projectNameInput1').val(data.projectName);
+        $('#clientSelectInput1').val(originalClientId);
+        $('#ZoneSelectInput1').val(originalZoneId);
+        $('#projectNameInput1Error').hide();
+        $('#clientSelectInput1Error').hide();
+        $('#ZoneSelectInput1Error').hide();
+
+        $('#exampleModalScrollableProjectUp').modal('show');
+
+    } catch (error) {
+        console.error("Error fetching Project Name:", error);
+        alert("Unable to fetch Project Name");
+    }
+}
+
+$('#projectupd').on('click', function () {
+
+    const projectName = $('#projectNameInput1').val().trim();
+    const clientId = $('#clientSelectInput1').val();
+    const zoneId = $('#ZoneSelectInput1').val();
+
+    $('#projectNameInput1Error').hide();
+    $('#clientSelectInput1Error').hide();
+    $('#ZoneSelectInput1Error').hide();
+
+    let hasError = false;
+
+    if (clientId === '') {
+        $('#clientSelectInput1Error').text('Client is required').show();
+        hasError = true;
+    }
+
+    if (zoneId === '') {
+        $('#ZoneSelectInput1Error').text('Zone is required').show();
+        hasError = true;
+    }
+
+    if (projectName === '') {
+        $('#projectNameInput1Error').text('Project Name is required').show();
+        hasError = true;
+    }
+
+    if (hasError) return;
+
+    if (projectName === originalProjectName && clientId === originalClientId && zoneId === originalZoneId) {
+        showPopup('No Fields are changes', 'SaleMaster.jsp');
+        return;
+    }
+
+    $('#exampleModalScrollableProjectUp').modal('hide');
+    $('#exampleModalCenter101').modal('show');
+});
+
+$('#cancellprojectmodal').on('click', function () {
+    $('#exampleModalCenter101').modal('hide');
+    $('#exampleModalScrollableProjectUp').modal('show');
+});
+
+$('#confirmprojectupd').on('click', function () {
+
+    const projectName = $('#projectNameInput1').val().trim();
+    const clientId = $('#clientSelectInput1').val();
+    const zoneId = $('#ZoneSelectInput1').val();
+
+    $('#exampleModalCenter101').modal('hide');
+
+    $.ajax({
+        url: baseUrl1 + '/api/salescrm/project/' + selectedProjectId,
+        type: 'PUT',
+        contentType: 'application/json',
+        xhrFields: { withCredentials: true },
+        data: JSON.stringify({
+            projectName: projectName,
+            clientId: clientId,
+            zoneId: zoneId,
+            modifiedBy: sessionStorage.getItem('id')
+        }),
+        success: function (response) {
+            console.log('Project Name updated successfully', response);
+            $('#exampleModalScrollableProjectUp').modal('hide');
+            $('#projectNameInput1').val('');
+            fetchprojects();
+            showPopup('Project Name updated successfully', 'SaleMaster.jsp');
+        },
+        error: function (xhr, status, error) {
+            console.error('Error updating Project Name:', xhr.responseText);
+            alert(xhr.responseText || 'Error updating Project Name');
+        }
+    });
+});*/
+
+
+// Load client list into both dropdowns
+function loadClients() {
+    $.ajax({
+        url: baseUrl + '/api/salescrm/client',
+        type: 'GET',
+        xhrFields: { withCredentials: true },
+        success: function (clients) {
+            let options = '<option value="">-- Select Client --</option>';
+            clients.forEach(function (c) {
+                options += `<option value="${c.id}">${c.clientName}</option>`;
+            });
+            $('#clientSelectInput').html(options);
+            $('#clientSelectInput1').html(options);
+        },
+        error: function (xhr) {
+            console.error('Error loading clients:', xhr.responseText);
+        }
+    });
+}
+
+// Load zone list into both dropdowns (Create and Update)
+function loadZones1() {
+    $.ajax({
+        url: baseUrl + '/api/salescrm/zone',
+        type: 'GET',
+        xhrFields: { withCredentials: true },
+        success: function (zones) {
+            let options = '<option value="">-- Select Zone --</option>';
+            zones.forEach(function (z) {
+                options += `<option value="${z.id}">${z.zoneName}</option>`;
+            });
+            $('#ZoneSelectInput').html(options);
+            $('#ZoneSelectInput1').html(options);
+        },
+        error: function (xhr) {
+            console.error('Error loading zones:', xhr.responseText);
+        }
+    });
+}
+
+$(document).ready(function () {
+
+    loadClients();
+    loadZones1();
+
+    // ==============================
+    // CREATE PROJECT NAME
+    // ==============================
+
+    $('#submitproject').on('click', function () {
+
+        const projectName = $('#projectNameInput').val().trim();
+        const clientId = $('#clientSelectInput').val();
+        const zoneId = $('#ZoneSelectInput').val();
+        const projectLocation = $('#projectLocationInput').val().trim();
+
+        $('#projectNameInputError').hide();
+        $('#clientSelectInputError').hide();
+        $('#ZoneSelectInputError').hide();
+        $('#projectLocationInputError').hide();
+
+        let hasError = false;
+
+        if (clientId === '') {
+            $('#clientSelectInputError').text('Client is required').show();
+            hasError = true;
+        }
+
+        if (zoneId === '') {
+            $('#ZoneSelectInputError').text('Zone is required').show();
+            hasError = true;
+        }
+
+        if (projectName === '') {
+            $('#projectNameInputError').text('Project Name is required').show();
+            hasError = true;
+        }
+
+        if (projectLocation === '') {
+            $('#projectLocationInputError').text('Project Location is required').show();
+            hasError = true;
+        }
+
+        if (hasError) return;
+
+        $('#exampleModalScrollableProject').modal('hide');
+        $('#exampleModalCenter100').modal('show');
+    });
+
+    // ==============================
+    // CONFIRM CREATE
+    // ==============================
+
+    $('#confirmprojectYes').on('click', function () {
+
+        const projectName = $('#projectNameInput').val().trim();
+        const clientId = $('#clientSelectInput').val();
+        const zoneId = $('#ZoneSelectInput').val();
+        const projectLocation = $('#projectLocationInput').val().trim();
+
+        $('#exampleModalCenter100').modal('hide');
+
+        $.ajax({
+            url: baseUrl + '/api/salescrm/project',
+            type: 'POST',
+            contentType: 'application/json',
+            xhrFields: { withCredentials: true },
+            data: JSON.stringify({
+                projectName: projectName,
+                clientId: clientId,
+                zoneId: zoneId,
+                projectLocation: projectLocation,
+                status: false,
+                createdBy: sessionStorage.getItem('id')
+            }),
+            success: function (response) {
+                console.log('Project Name created successfully', response);
+                $('#projectNameInput').val('');
+                $('#clientSelectInput').val('');
+                $('#ZoneSelectInput').val('');
+                $('#projectLocationInput').val('');
+                showPopup('Project Name created successfully (' + (response.projectCode || '') + ')', 'SaleMaster.jsp');
+            },
+            error: function (xhr, status, error) {
+                console.error('Error creating Project Name:', xhr.responseText);
+                alert(xhr.responseText || 'Error creating Project Name');
+            }
+        });
+    });
+
+    // ==============================
+    // CLEAR MODAL WHEN CLOSED
+    // ==============================
+
+    $('#exampleModalScrollableProject').on('hidden.bs.modal', function () {
+        $('#projectNameInputError').hide();
+        $('#clientSelectInputError').hide();
+        $('#ZoneSelectInputError').hide();
+        $('#projectLocationInputError').hide();
+    });
+
+});
+
+async function fetchprojects() {
+
+    const apiUrl = new URL('/api/salescrm/project', baseUrl1);
+
+    try {
+        const response = await fetch(apiUrl, {
+            method: "GET",
+            credentials: "include"
+        });
+
+        if (!response.ok) {
+            throw new Error("Failed to fetch Project Names");
+        }
+
+        const projects = await response.json();
+
+        let tableRows = '';
+
+        for (let index = 0; index < projects.length; index++) {
+
+            const item = projects[index];
+
+            tableRows += `
+                <tr id="${item.id}">
+                    <td>${index + 1}</td>
+                    <td>${item.projectCode || '-'}</td>
+                    <td>${item.clientName}</td>
+                    <td>${item.zoneName || '-'}</td>
+                    <td>${item.projectLocation || '-'}</td>
+                    <td>${item.projectName}</td>
+                    <td>
+                        ${item.isUsed
+                            ? `<i class="fa fa-pen text-muted"
+                                  title="Already used in leads, cannot be edited"
+                                  style="cursor:not-allowed; opacity:0.4;"></i>`
+                            : `<i class="fa fa-pen text-primary cursor-pointer"
+                                  title="Edit"
+                                  style="cursor:pointer;"
+                                  onclick="editProject(${item.id})"></i>`}
+                    </td>
+                </tr>
+            `;
+        }
+
+        document.querySelector("#tableID7 tbody").innerHTML = tableRows;
+
+        if ($.fn.DataTable.isDataTable('#tableID7')) {
+            $('#tableID7').DataTable().destroy();
+        }
+
+        $('#tableID7').DataTable({
+            dom: 'Bfrtip',
+            scrollX: false,
+            info: true,
+            paging: true,
+            pageLength: 10,
+            lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
+            buttons: [{
+                extend: 'excel',
+                text: 'Export to Excel',
+                title: 'Project Name List'
+            }]
+        });
+
+    } catch (error) {
+        console.error('Error fetching Project Names:', error);
+    }
+}
+
+let selectedProjectId = null;
+let originalProjectName = '';
+let originalClientId = '';
+let originalZoneId = '';
+let originalLocation = '';
+
+async function editProject(id) {
+
+    try {
+        const apiUrl = new URL(`/api/salescrm/project/${id}`, baseUrl1);
+
+        const response = await fetch(apiUrl, {
+            method: "GET",
+            credentials: "include"
+        });
+
+        if (!response.ok) {
+            throw new Error("Failed to fetch Project Name");
+        }
+
+        const data = await response.json();
+
+        selectedProjectId = data.id;
+        originalProjectName = data.projectName.trim();
+        originalClientId = data.clientId != null ? String(data.clientId) : '';
+        originalZoneId = data.projectZone != null ? String(data.projectZone) : '';
+        originalLocation = (data.projectLocation || '').trim();
+
+        $('#projectNameInput1').val(data.projectName);
+        $('#clientSelectInput1').val(originalClientId);
+        $('#ZoneSelectInput1').val(originalZoneId);
+        $('#projectLocationInput1').val(originalLocation);
+        $('#projectLocationInput1Error').hide();
+        $('#projectNameInput1Error').hide();
+        $('#clientSelectInput1Error').hide();
+        $('#ZoneSelectInput1Error').hide();
+
+        $('#exampleModalScrollableProjectUp').modal('show');
+
+    } catch (error) {
+        console.error("Error fetching Project Name:", error);
+        alert("Unable to fetch Project Name");
+    }
+}
+
+$('#projectupd').on('click', function () {
+
+    const projectName = $('#projectNameInput1').val().trim();
+    const clientId = $('#clientSelectInput1').val();
+    const zoneId = $('#ZoneSelectInput1').val();
+    const projectLocation = $('#projectLocationInput1').val().trim();
+
+    $('#projectLocationInput1Error').hide();
+    $('#projectNameInput1Error').hide();
+    $('#clientSelectInput1Error').hide();
+    $('#ZoneSelectInput1Error').hide();
+
+    let hasError = false;
+
+    if (clientId === '') {
+        $('#clientSelectInput1Error').text('Client is required').show();
+        hasError = true;
+    }
+
+    if (zoneId === '') {
+        $('#ZoneSelectInput1Error').text('Zone is required').show();
+        hasError = true;
+    }
+
+    if (projectName === '') {
+        $('#projectNameInput1Error').text('Project Name is required').show();
+        hasError = true;
+    }
+
+    if (projectLocation === '') {
+        $('#projectLocationInput1Error').text('Project Location is required').show();
+        hasError = true;
+    }
+
+    if (hasError) return;
+
+    if (projectName === originalProjectName && clientId === originalClientId
+        && zoneId === originalZoneId && projectLocation === originalLocation) {
+        showPopup('No Fields are changes', 'SaleMaster.jsp');
+        return;
+    }
+
+    $('#exampleModalScrollableProjectUp').modal('hide');
+    $('#exampleModalCenter101').modal('show');
+});
+
+$('#cancellprojectmodal').on('click', function () {
+    $('#exampleModalCenter101').modal('hide');
+    $('#exampleModalScrollableProjectUp').modal('show');
+});
+
+$('#confirmprojectupd').on('click', function () {
+
+    const projectName = $('#projectNameInput1').val().trim();
+    const clientId = $('#clientSelectInput1').val();
+    const zoneId = $('#ZoneSelectInput1').val();
+    const projectLocation = $('#projectLocationInput1').val().trim();
+
+    $('#exampleModalCenter101').modal('hide');
+
+    $.ajax({
+        url: baseUrl1 + '/api/salescrm/project/' + selectedProjectId,
+        type: 'PUT',
+        contentType: 'application/json',
+        xhrFields: { withCredentials: true },
+        data: JSON.stringify({
+            projectName: projectName,
+            clientId: clientId,
+            zoneId: zoneId,
+            projectLocation: projectLocation,
             modifiedBy: sessionStorage.getItem('id')
         }),
         success: function (response) {
@@ -3195,8 +4151,16 @@ $('#confirmprojectupd').on('click', function () {
     });
 });
 
-
 document.getElementById("subZoneBtn").addEventListener("click", function () {
+	  const allowed =allowedActions || [];
+
+	if (!allowed.includes("Insert")) {
+	  alert(" You do not have permission to Insert.");
+	  $('#exampleModalScrollableIN').modal('hide');
+	  return;
+	}
+	
+	
     $('#subZoneForm')[0].reset();
     loadZoneDropdownForSubZone('#subZoneParent');
     $('#exampleModalScrollableSubZone').modal('show');
@@ -3373,6 +4337,15 @@ let selectedSubZoneId = null;
 let originalSubZoneData = {};
 
 async function editSubZone(id) {
+	
+	
+	
+	const allowed = allowedActions || [];
+
+	 if (!allowed.includes("Edit")) {
+	     alert("You do not have permission to edit.");
+	     return;
+	 }
 
     try {
         const apiUrl = new URL(`/api/salescrm/subzone/${id}`, baseUrl1);
@@ -3536,3 +4509,515 @@ async function loadZones(selector) {
         console.error("Error fetching Zones:", error);
     }
 }
+
+
+
+// ==============================
+// OPEN CREATE MODAL
+// ==============================
+document.getElementById("UserMappingBtn").addEventListener("click", async function () {
+	
+	
+	
+	  const allowed =allowedActions || [];
+
+	if (!allowed.includes("Insert")) {
+	  alert(" You do not have permission to Insert.");
+	  $('#exampleModalScrollableIN').modal('hide');
+	  return;
+	}
+
+    $("#usermapUserSelect").val("");
+	$("#followupAccess").val("");
+    $(".error-message, .text-danger").addClass("d-none").hide();
+
+    await loadUsersDropdown("#usermapUserSelect");
+    await fetchZonesForUserMapping();
+
+    $("#usermapZoneDropdownMenu .usermap-zone-checkbox").prop("checked", false);
+    updateSelectedZones();
+
+    $("#userMappingModal").modal("show");
+});
+
+// ==============================
+// LOAD USERS INTO A DROPDOWN (userId = value, username = label)
+// ==============================
+async function loadUsersDropdown(selector) {
+    try {
+        const apiUrl = new URL("/api/salescrm/user", baseUrl1);
+        const response = await fetch(apiUrl, { method: "GET", credentials: "include" });
+
+        if (!response.ok) throw new Error("Failed to fetch Users");
+
+        const users = await response.json();
+
+        let options = '<option value="">Select User</option>';
+        users.forEach(u => {
+            options += `<option value="${u.userId}">${u.username}</option>`;
+        });
+
+        $(selector).html(options);
+
+    } catch (error) {
+        console.error("Error fetching Users:", error);
+    }
+}
+
+// ==============================
+// FETCH ZONES AND BUILD CHECKBOX LIST (CREATE)
+// ==============================
+async function fetchZonesForUserMapping() {
+    try {
+        const url = new URL("/api/salescrm/zone", baseUrl1);
+        const res = await fetch(url, { credentials: "include" });
+        const data = await res.json();
+
+        const menu = document.getElementById("usermapZoneDropdownMenu");
+        menu.innerHTML = "";
+
+        // ---- custom "All Zone" option (display only, value stored as "all") ----
+        const allDiv = document.createElement("div");
+        allDiv.innerHTML = `
+            <label style="display:block;padding:5px;cursor:pointer;margin:0;">
+                <input type="checkbox" class="usermap-zone-checkbox" value="all">
+                All Zone's
+            </label>`;
+        menu.appendChild(allDiv);
+        // ---------------------------------------------------------------------
+
+        data.forEach(item => {
+            const div = document.createElement("div");
+            div.innerHTML = `
+                <label style="display:block;padding:5px;cursor:pointer;margin:0;">
+                    <input type="checkbox" class="usermap-zone-checkbox" value="${item.id}">
+                    ${item.zoneName}
+                </label>`;
+            menu.appendChild(div);
+        });
+
+        menu.removeEventListener("change", updateSelectedZones);
+        menu.addEventListener("change", updateSelectedZones);
+
+    } catch (e) {
+        console.error("Error fetching Zones:", e);
+    }
+}
+
+// ==============================
+// FETCH ZONES AND BUILD CHECKBOX LIST (UPDATE)
+// ==============================
+async function fetchZonesForUserMappingUp() {
+    try {
+        const url = new URL("/api/salescrm/zone", baseUrl1);
+        const res = await fetch(url, { credentials: "include" });
+        const data = await res.json();
+
+        const menu = document.getElementById("usermapZoneDropdownMenuUp");
+        menu.innerHTML = "";
+
+        // ---- custom "All Zone" option ----
+        const allDiv = document.createElement("div");
+        allDiv.innerHTML = `
+            <label style="display:block;padding:5px;cursor:pointer;margin:0;">
+                <input type="checkbox" class="usermap-zone-up-checkbox" value="all">
+                All Zone
+            </label>`;
+        menu.appendChild(allDiv);
+        // -----------------------------------
+
+        data.forEach(item => {
+            const div = document.createElement("div");
+            div.innerHTML = `
+                <label style="display:block;padding:5px;cursor:pointer;margin:0;">
+                    <input type="checkbox" class="usermap-zone-up-checkbox" value="${item.id}">
+                    ${item.zoneName}
+                </label>`;
+            menu.appendChild(div);
+        });
+
+        menu.removeEventListener("change", updateSelectedZonesUp);
+        menu.addEventListener("change", updateSelectedZonesUp);
+
+    } catch (e) {
+        console.error("Error fetching Zones:", e);
+    }
+}
+
+// ==============================
+// LABEL HELPERS
+// ==============================
+/*function updateSelectedZones() {
+    const checked = document.querySelectorAll("#usermapZoneDropdownMenu .usermap-zone-checkbox:checked");
+    document.getElementById("usermapZoneDropdown").innerHTML =
+        (checked.length ? `${checked.length} selected` : "Select Zone's") +
+        ` <span style="float:right;">&#9662;</span>`;
+}*/
+
+
+
+function updateSelectedZones(e) {
+    const allCb = document.querySelector('#usermapZoneDropdownMenu .usermap-zone-checkbox[value="all"]');
+    const otherCbs = document.querySelectorAll('#usermapZoneDropdownMenu .usermap-zone-checkbox:not([value="all"])');
+
+    // If the checkbox that just changed is "All Zone" and it's now checked -> uncheck everything else
+    if (e && e.target === allCb && allCb.checked) {
+        otherCbs.forEach(cb => cb.checked = false);
+    }
+
+    // If the checkbox that just changed is an individual zone and it's now checked -> uncheck "All Zone"
+    if (e && e.target !== allCb && e.target.checked) {
+        if (allCb) allCb.checked = false;
+    }
+
+    const checked = document.querySelectorAll("#usermapZoneDropdownMenu .usermap-zone-checkbox:checked");
+    document.getElementById("usermapZoneDropdown").innerHTML =
+        (checked.length ? `${checked.length} selected` : "Select Zone's") +
+        ` <span style="float:right;">&#9662;</span>`;
+}
+
+/*function updateSelectedZonesUp() {
+    const checked = document.querySelectorAll("#usermapZoneDropdownMenuUp .usermap-zone-up-checkbox:checked");
+    document.getElementById("usermapZoneDropdownUp").innerHTML =
+        (checked.length ? `${checked.length} selected` : "Select Zone's") +
+        ` <span style="float:right;">&#9662;</span>`;
+}*/
+
+
+function updateSelectedZonesUp(e) {
+    const allCb = document.querySelector('#usermapZoneDropdownMenuUp .usermap-zone-up-checkbox[value="all"]');
+    const otherCbs = document.querySelectorAll('#usermapZoneDropdownMenuUp .usermap-zone-up-checkbox:not([value="all"])');
+
+    if (e && e.target === allCb && allCb.checked) {
+        otherCbs.forEach(cb => cb.checked = false);
+    }
+
+    if (e && e.target !== allCb && e.target.checked) {
+        if (allCb) allCb.checked = false;
+    }
+
+    const checked = document.querySelectorAll("#usermapZoneDropdownMenuUp .usermap-zone-up-checkbox:checked");
+    document.getElementById("usermapZoneDropdownUp").innerHTML =
+        (checked.length ? `${checked.length} selected` : "Select Zone's") +
+        ` <span style="float:right;">&#9662;</span>`;
+}
+
+
+
+// ==============================
+// GETTERS — plain arrays ready for backend
+// ==============================
+function getSelectedZoneIds() {
+    return Array.from(document.querySelectorAll("#usermapZoneDropdownMenu .usermap-zone-checkbox:checked"))
+        .map(cb => cb.value);
+}
+
+function getSelectedZoneIdsUp() {
+    return Array.from(document.querySelectorAll("#usermapZoneDropdownMenuUp .usermap-zone-up-checkbox:checked"))
+        .map(cb => cb.value);
+}
+
+// ==============================
+// PRE-SELECT ZONES ON EDIT
+// ==============================
+async function loadSelectedZonesUp(userMappingId) {
+    const res = await fetch(
+        new URL(`/api/salescrm/user-mapping/zones/${userMappingId}`, baseUrl1),
+        { credentials: "include" }
+    );
+    const selected = await res.json(); // expected: [{ zoneId: 1 }, { zoneId: 2 }, ...]
+
+    document.querySelectorAll("#usermapZoneDropdownMenuUp .usermap-zone-up-checkbox")
+        .forEach(cb => cb.checked = false);
+
+    selected.forEach(item => {
+        const cb = document.querySelector(
+            `#usermapZoneDropdownMenuUp .usermap-zone-up-checkbox[value="${item.zoneId}"]`
+        );
+        if (cb) cb.checked = true;
+    });
+
+    updateSelectedZonesUp();
+}
+
+// ==============================
+// TOGGLE ZONE DROPDOWN (CREATE)
+// ==============================
+$(document).on('click', '#usermapZoneDropdown', function (e) {
+    e.stopPropagation();
+    $('#usermapZoneDropdownMenuUp').hide();
+    $('#usermapZoneDropdownMenu').toggle();
+});
+
+// ==============================
+// TOGGLE ZONE DROPDOWN (UPDATE)
+// ==============================
+$(document).on('click', '#usermapZoneDropdownUp', function (e) {
+    e.stopPropagation();
+    $('#usermapZoneDropdownMenu').hide();
+    $('#usermapZoneDropdownMenuUp').toggle();
+});
+
+// ==============================
+// PREVENT CLICK INSIDE MENU FROM CLOSING IT
+// ==============================
+$(document).on('click', '#usermapZoneDropdownMenu, #usermapZoneDropdownMenuUp', function (e) {
+    e.stopPropagation();
+});
+
+// ==============================
+// CLICK OUTSIDE -> CLOSE BOTH
+// ==============================
+$(document).on('click', function () {
+    $('#usermapZoneDropdownMenu').hide();
+    $('#usermapZoneDropdownMenuUp').hide();
+});
+
+// ==============================
+// CREATE USER MAPPING
+// ==============================
+$("#createUserMapping").click(function () {
+
+    $(".error-message, .text-danger").addClass("d-none").hide();
+
+    const userId = $("#usermapUserSelect").val();
+    const selectedZones = getSelectedZoneIds();
+	const followupAccess = $("#followupAccess").val();  
+
+    let isValid = true;
+
+	if (!userId) {
+	    $("#usermapUserError").removeClass("d-none").show().text("Please select a user.");
+	    isValid = false;
+	}
+
+	if (selectedZones.length === 0) {
+	    $("#usermapZoneError").removeClass("d-none").show().text("Please select at least one Zone.");
+	    isValid = false;
+	}
+	if (!followupAccess) {
+	    $("#followupAccessError").removeClass("d-none").show().text("Please select Follow-up Access.");
+	    isValid = false;
+	}
+
+
+    if (!isValid) return;
+
+
+	
+	const request = {
+	    userId: userId,
+	    zoneIds: selectedZones,
+	    followupAccess: followupAccess,                  // NEW
+	    status: false,
+	    createdBy: sessionStorage.getItem("id")
+	};
+
+    $.ajax({
+        url: baseUrl + "/api/salescrm/user-mapping",
+        type: "POST",
+        contentType: "application/json",
+        data: JSON.stringify(request),
+        xhrFields: { withCredentials: true },
+
+        success: function (response) {
+            $("#userMappingModal").modal("hide");
+            showPopup("User mapped successfully.", "SaleMaster.jsp");
+        },
+
+        error: function (xhr) {
+            alert(xhr.responseText || "User mapping failed.");
+        }
+    });
+});
+
+// ==============================
+// FETCH USER MAPPING LIST
+// ==============================
+async function fetchusermapping() {
+
+    const apiUrl = new URL("/api/salescrm/user-mapping", baseUrl1);
+
+    try {
+        const response = await fetch(apiUrl, { method: "GET", credentials: "include" });
+        if (!response.ok) throw new Error("Failed to fetch User Mappings");
+
+        const mappings = await response.json();
+        let tableRows = "";
+
+        mappings.forEach((item, index) => {
+            tableRows += `
+                <tr id="${item.id}">
+                    <td>${index + 1}</td>
+                    <td>${item.username || ''}</td>
+                    <td>${item.zoneNames || ''}</td>
+					<td>${item.followupAccess == 1 ? 'Own Follow-up' : item.followupAccess == 2 ? 'Within Zone Follow-up' : ''}</td>
+                    <td>
+                        <i class="fa fa-pen text-primary cursor-pointer"
+                           title="Edit" style="cursor:pointer;"
+                           onclick="editUserMapping(${item.id})"></i>
+                    </td>
+                </tr>`;
+        });
+
+        document.querySelector("#tableID9 tbody").innerHTML = tableRows;
+
+        if ($.fn.DataTable.isDataTable('#tableID9')) {
+            $('#tableID9').DataTable().destroy();
+        }
+
+        $('#tableID9').DataTable({
+            dom: 'Bfrtip',
+            paging: true,
+            pageLength: 10,
+            lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
+            buttons: [{ extend: 'excel', text: 'Export to Excel', title: 'User Mapping List' }]
+        });
+
+    } catch (error) {
+        console.error('Error fetching User Mappings:', error);
+    }
+}
+
+// ==============================
+// EDIT USER MAPPING
+// ==============================
+let originalUserMappingData = {};
+let originalZoneIdsUp = [];
+
+async function editUserMapping(id) {
+	
+	
+	const allowed = allowedActions || [];
+
+	 if (!allowed.includes("Edit")) {
+	     alert("You do not have permission to edit.");
+	     return;
+	 }
+
+    $.ajax({
+        url: baseUrl1 + "/api/salescrm/user-mapping/" + id,
+        type: "GET",
+        xhrFields: { withCredentials: true },
+
+		success: async function (response) {
+
+		    $("#userMappingIdUp").val(response.userId);
+
+		    $("#usermapUserSelectUp").val(response.username);  // display name, readonly
+		    $("#usermapUserIdUp").val(response.userId);         // actual id used on submit
+			
+			$("#followupAccessUp").val(response.followupAccess != null ? String(response.followupAccess) : "");
+
+		    await fetchZonesForUserMappingUp();
+
+		    // ✅ directly use response.zoneIds instead of a separate fetch call
+
+				document.querySelectorAll("#usermapZoneDropdownMenuUp .usermap-zone-up-checkbox")
+				    .forEach(cb => {
+				        cb.checked = response.zoneIds.includes(cb.value);
+				    });
+		    updateSelectedZonesUp();
+
+		    
+			
+			originalUserMappingData = {
+			    userId: (response.userId || "").toString(),
+			    followupAccess: response.followupAccess != null ? String(response.followupAccess) : ""   // NEW
+			};
+
+		    originalZoneIdsUp = Array.from(
+		        document.querySelectorAll("#usermapZoneDropdownMenuUp .usermap-zone-up-checkbox:checked")
+		    ).map(cb => cb.value).sort();
+
+		    $(".error-message, .text-danger").addClass("d-none").hide();
+
+		    $("#userMappingUpdateModal").modal("show");
+		},
+
+        error: function () {
+            alert("Unable to fetch User Mapping");
+        }
+    });
+}
+// ==============================
+// UPDATE USER MAPPING
+// ==============================
+$("#updateUserMapping").click(function () {
+
+    $(".error-message, .text-danger").addClass("d-none").hide();
+
+ 
+	
+	const userId = $("#usermapUserIdUp").val(); 
+    const selectedZones = getSelectedZoneIdsUp();
+    const userMappingId = $("#userMappingIdUp").val();
+	
+	const followupAccess = $("#followupAccessUp").val();   // next to userId / selectedZones
+
+	
+
+
+    let isValid = true;
+
+	if (!userId) {
+	    $("#usermapUserUpError").removeClass("d-none").show().text("Please select a user.");
+	    isValid = false;
+	}
+
+	if (selectedZones.length === 0) {
+	    $("#usermapZoneUpError").removeClass("d-none").show().text("Please select at least one Zone.");
+	    isValid = false;
+	}
+
+	
+	if (!followupAccess) {
+		    $("#followupAccessUpError").removeClass("d-none").show().text("Please select Follow-up Access.");
+		    isValid = false;
+		}
+		
+		
+    if (!isValid) return;
+
+    const currentZoneIds = selectedZones.map(id => String(id)).sort();
+
+    const zonesUnchanged =
+        currentZoneIds.length === originalZoneIdsUp.length &&
+        currentZoneIds.every((id, i) => id === originalZoneIdsUp[i]);
+
+		const noChange =
+		    userId.toString() === originalUserMappingData.userId &&
+		    zonesUnchanged &&
+		    followupAccess === originalUserMappingData.followupAccess;  
+
+    if (noChange) {
+        showPopup("No fields were changed", "SaleMaster.jsp");
+        return;
+    }
+
+	const request = {
+	    id: userMappingId,
+	    userId: userId,
+	    zoneIds: selectedZones,
+	    followupAccess: followupAccess,                  // NEW
+	    modifiedBy: sessionStorage.getItem("id")
+	};
+
+    $.ajax({
+        url: baseUrl1 + "/api/salescrm/user-mapping/" + userMappingId,
+        type: "PUT",
+        contentType: "application/json",
+        data: JSON.stringify(request),
+        xhrFields: { withCredentials: true },
+
+        success: function (response) {
+            $("#userMappingUpdateModal").modal("hide");
+            fetchusermapping();
+            showPopup("User Mapping Updated Successfully", "SaleMaster.jsp");
+        },
+
+        error: function (xhr) {
+            alert(xhr.responseText || "Failed to update user mapping.");
+        }
+    });
+});

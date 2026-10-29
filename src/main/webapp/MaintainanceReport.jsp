@@ -516,9 +516,10 @@ word-wrap: break-word;     /* ❌ Prevent line break */
                     <th>Problem Description</th>
                     <th>Type of Issues</th>
                     <th>Status</th>
+                    <th>Start Time </th>
+                    <th>Closed Time</th>
                     <th>DownTime</th>
                     <th>Closed By</th>
-                    <th>Closed Time</th>
                     <th>Closed remarks</th>
                     <th>Factory</th>
 
@@ -532,96 +533,15 @@ word-wrap: break-word;     /* ❌ Prevent line break */
 </div>
 
 
-<!-- 🔹 SUMMARY TABLE (Hidden initially) -->
-<div class="container container-report mt-4" id="summaryTableContainer" style="display:none;">
-    <h5 class="text-center report-header">SUMMARY REPORT</h5>
-    <div class="table-wrapper">
-        <div class="table-responsive">
-            <table class="table table-bordered table-sm dynamicdesign" id="summaryTable" >
-                <thead>
-                <tr>
-                    <th>Contract No</th>
-                    <th>Lot No</th>
-                    <th>Description</th>
-                    <th>Trailer Ref No</th>
-                    <th>WB Reference No</th>
-                    <th>Created Date</th>
-                    <th>Piece Weight</th>
-                    <th>Others Weight</th>
-                    <th>Total Weight</th>
-                    <th>Fab Loads</th>
-                    <th>Commands</th>
-                </tr>
-                </thead>
-                <tbody>
-                
-                
-                
-    
-</tbody>
-                </tbody>
-            </table>
-        </div>
-    </div>
-    <button class="btn btn-success btn-sm my-3" onclick="exportToSummaryHistroy()">Export to Excel</button>
-    
-</div>
 
 
 
 
-<div class="container container-report mt-4" id="secondaryTableContainersss" style="display:none;" ">
-    <h5 class="text-center report-header">LOAD BUILD DETAILS</h5>
-
-    <div class="table-responsive">
-        <table class="table table-bordered table-sm dynamicdesign" id="secondaryTable">
-            <thead>
-                <tr>
-                    <th>Phase No</th>
-                    <th>Quantity</th>
-                    <th>Mark No</th>
-                    <th>Weight</th>
-                    <th>Size</th>
-                    <th>Dims</th>
-                    <th>Description</th>
-                    <th>PLoad</th>
-                    <th>Fab Loads</th>
-                    <th>Finished Goods</th>
-                </tr>
-            </thead>
-            <tbody>
-                <!-- You will insert values later -->
-            </tbody>
-        </table>
-    </div>
-     <button class="btn btn-success btn-sm my-3" onclick="exportToLoadBuildHistroy()">Export to Excel</button>
-</div>
 
 
-<div class="container container-report mt-4" id="HistoryDetailsContainer" style="display:none;">
-    <h5 class="text-center report-header">HAULIER DETAILS LIST</h5>
 
-    <div class="form-row dynamic-row">
-        <div class="table-responsive">
-            <table class="table table-bordered table-sm dynamicdesign" id="haulierDetailsTable">
-                <thead>
-                <tr>
-                    <th>SL.No</th>
-                    <th>Haulier</th>
-                    <th>Destination</th>
-                    <th>Country</th>
-                    <th>State</th>
-                    <th>Load Type</th>
-                    <th>Description</th>
-                </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
-        </div>
-    </div>
 
-    <button class="btn btn-success btn-sm my-3" onclick="exportHaulierHistory()">Export to Excel</button>
-</div>
+
        
 
          

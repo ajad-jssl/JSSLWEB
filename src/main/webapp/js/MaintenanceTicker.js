@@ -2,6 +2,32 @@
    MaintenanceTicker.js  – Ticket Raiser Screen
    ═══════════════════════════════════════════════════════════ */
 
+   
+   /* ── PAGE-LEVEL ACTION PERMISSIONS ───────────────────────────────────────── */
+   let allowedActions = [];
+
+   async function loadActions() {
+       const MainPage = window.location.pathname.split("/").pop() + '.jsp'; // e.g. "MaintenanceTicker.jsp"
+       const UserId   = sessionStorage.getItem('username');
+
+       try {
+           const response = await fetch(
+               `${baseUrl}/api/page/actions?userId=${encodeURIComponent(UserId)}&pageName=${encodeURIComponent(MainPage)}`,
+               {
+                   method: "GET",
+                   credentials: "include",
+                   headers: { "Content-Type": "application/json" }
+               }
+           );
+
+           if (!response.ok) throw new Error("Failed to fetch actions");
+
+           allowedActions = await response.json();
+       } catch (error) {
+           console.error("Error loading permitted actions:", error);
+           allowedActions = [];
+       }
+   }
 /* selectedBroke is now a Set so user can pick multiple across tabs */
 var selectedBrokeSet = new Set();
 
@@ -9,9 +35,10 @@ var ASSIGNOR_USER_ID = 1; // Replace with real assignor user id from your config
 
 $(document).ready(function () {
     loadMachineDescriptionDropdown();
-    loadMyTickets();
+    loadMyTickets(1);
     loadNotifications();
     loadEmployeeDropdown();
+	loadActions();
 	
 	$('#empCodeSelect').select2({
 	      theme: 'bootstrap',
@@ -41,8 +68,37 @@ $(document).ready(function () {
         $('#empNameHidden').val(empName);
     });
 
+	$('#reportProblemBtn').on('click', function () {
+	      const allowed = typeof allowedActions !== "undefined" ? allowedActions : [];
+
+	      if (!allowed.includes("Insert")) {
+	          alert("You do not have permission to Insert.");
+	          return;
+	      }
+
+	      $('#reportModal').modal('show');
+	  });
     setInterval(loadNotifications, 30000);
 });
+
+
+
+var tickerCurrentPage = 1;
+var tickerPageSize    = 2;
+
+function initSelect2(selector, modalId, placeholder) {
+    const $el = $(selector);
+    if ($el.hasClass("select2-hidden-accessible")) {
+        $el.select2('destroy');   // safe re-init since our loaders repopulate <select> via innerHTML
+    }
+    $el.select2({
+        theme          : "bootstrap4",
+        width          : "100%",
+        dropdownParent : $(modalId),
+        placeholder    : placeholder || "Select",
+        allowClear     : true
+    });
+}
 
 /* ── EMPLOYEE DROPDOWN ──────────────────────────────────────────────────── */
 function loadEmployeeDropdown() {
@@ -165,7 +221,7 @@ function switchBrokeTab(t) {
 }
 
 /* ── SUBMIT REPORT ───────────────────────────────────────────────────────── */
-function submitReport() {
+/*function submitReport() {
     var $btn = $('.btn-submit-modal');
     if ($btn.prop('disabled')) return; // ignore double-clicks while a request is in flight
 
@@ -190,7 +246,7 @@ function submitReport() {
 if(!mobile){alert("please Select the Mobile Number...")}
 	
 	
-    /* Lock the button so it can't be clicked again until the request finishes */
+     Lock the button so it can't be clicked again until the request finishes 
     $btn.prop('disabled', true)
         .html('<i class="fas fa-spinner fa-spin"></i> Submitting...');
 
@@ -214,10 +270,75 @@ if(!mobile){alert("please Select the Mobile Number...")}
             if (response.status) {
                 $('#tktRef').text(response.ticketNo);
                 $('#successAlert').fadeIn();
-                loadMyTickets();
+                loadMyTickets(1);
                 setTimeout(function () {
                     $('#reportModal').modal('hide');
                     resetModal(); // resetModal will re-enable the button
+                }, 1800);
+            } else {
+                alert('Error: ' + response.message);
+                resetSubmitButton();
+            }
+        },
+        error: function () {
+            alert('Failed to submit. Please try again.');
+            resetSubmitButton();
+        }
+    });
+}*/
+
+function submitReport() {
+    var $btn = $('.btn-submit-modal');
+    if ($btn.prop('disabled')) return;
+
+    var cat       = $('#catSelect').val();
+    var machine   = $('#machineSelect').val();
+    var desc      = $('#problemDesc').val().trim();
+    var userId    = parseInt(sessionStorage.getItem('id') || '0');
+    var factoryId = parseInt(sessionStorage.getItem('selectedFactoryId') || '0');
+
+    var empCode = $('#empCodeSelect').val();
+    var empName = $('#empNameHidden').val().trim();
+    var mobile  = $('#mobileInput').val().trim();
+    var bkLocation = $('#bkLocationInput').val().trim(); // optional, may be ''
+
+    var whatBroke = Array.from(selectedBrokeSet).join(', ');
+
+    if (!empCode) { alert('Please select an employee.'); return; }
+    if (!mobile){alert("please Select the Mobile Number..."); return;}
+    if (!cat || !machine) { alert('Please select machine type and machine.'); return; }
+    if (!desc) { alert('Please enter a problem description.'); return; }
+    if (!factoryId) { alert('Factory not selected. Please select a factory first.'); return; }
+    if (!userId)    { alert('Session expired. Please log in again.'); return; }
+
+    $btn.prop('disabled', true)
+        .html('<i class="fas fa-spinner fa-spin"></i> Submitting...');
+
+    $.ajax({
+        url: new URL('/api/ticket/raise', baseUrl).toString(),
+        type: 'POST',
+        data: {
+            factoryId:      factoryId,
+            machineDescId:  cat,
+            machineId:      machine,
+            whatBroke:      whatBroke,
+            problemDesc:    desc,
+            reportedBy:     userId,
+            assignorUserId: ASSIGNOR_USER_ID,
+            empCode:        empCode,
+            empName:        empName,
+            mobileNo:       mobile,
+            bkLocation:     bkLocation   // sent even if empty; backend treats '' as null
+        },
+        xhrFields: { withCredentials: true },
+        success: function (response) {
+            if (response.status) {
+                $('#tktRef').text(response.ticketNo);
+                $('#successAlert').fadeIn();
+                loadMyTickets(1);
+                setTimeout(function () {
+                    $('#reportModal').modal('hide');
+                    resetModal();
                 }, 1800);
             } else {
                 alert('Error: ' + response.message);
@@ -238,7 +359,7 @@ function resetSubmitButton() {
 }
 
 /* ── LOAD MY TICKETS ─────────────────────────────────────────────────────── */
-function loadMyTickets() {
+/*function loadMyTickets() {
     var userId    = parseInt(sessionStorage.getItem('id') || '0');
     var factoryId = parseInt(sessionStorage.getItem('selectedFactoryId') || '0');
     if (!userId || !factoryId) return;
@@ -266,16 +387,88 @@ function loadMyTickets() {
                 var dateStr = t.REPORTED_DATE
                     ? new Date(t.REPORTED_DATE).toLocaleString('en-IN', { hour12: true }) : '';
 
+		                $tbody.append(
+		                    '<tr>' +
+		                    '<td><strong>' + t.TICKET_NO + '</strong></td>' +
+		                    '<td>' + (t.MACHINE_DESCRIPTION || '') + '</td>' +
+		                    '<td>' + (t.MACHINE_SUBCODE || '') + '</td>' +
+		                    '<td><span style="font-size:11px;font-weight:600;color:#37499A;">' + (t.WHAT_BROKE || '') + '</span></td>' +
+		                    '<td title="' + (t.PROBLEM_DESC || '') + '">' + (shortDesc || '') + '</td>' +
+		                    '<td>' + dateStr + '</td>' +
+		                    '<td>' + statusLabel + '</td>' +
+		                    '<td>' +
+		                    '  <button class="btn-track-ticket" onclick="openTrackModal(' + t.TICKET_ID + ')" title="Track Status">' +
+		                    '    <i class="fas fa-search-location"></i> Track' +
+		                    '  </button>' +
+		                    '</td>' +
+		                    '</tr>'
+		                );
+						
+						
+						$tbody.append(
+						  '<tr>' +
+						  '<td data-label="Ticket No."><strong>' + t.TICKET_NO + '</strong></td>' +
+						  '<td data-label="Machine Category">' + (t.MACHINE_DESCRIPTION||'') + '</td>' +
+						  '<td data-label="Machine">' + (t.MACHINE_SUBCODE||'') + '</td>' +
+						  '<td data-label="Issue Type"><span style="font-size:11px;font-weight:600;color:#37499A;">'+(t.WHAT_BROKE||'')+'</span></td>' +
+						  '<td data-label="Description" title="'+(t.PROBLEM_DESC||'')+'">' + (shortDesc||'') + '</td>' +
+						  '<td data-label="Date & Time">' + dateStr + '</td>' +
+						  '<td data-label="Status">' + statusLabel + '</td>' +
+						  '<td data-label="Track"><button class="btn-track-ticket" onclick="openTrackModal('+t.TICKET_ID+')"><i class="fas fa-search-location"></i> Track</button></td>' +
+						  '</tr>'
+						);
+            });
+        },
+        error: function () { console.error('Failed to load my tickets'); }
+    });
+}*/
+
+
+function loadMyTickets(page) {
+    var userId    = parseInt(sessionStorage.getItem('id') || '0');
+    var factoryId = parseInt(sessionStorage.getItem('selectedFactoryId') || '0');
+    if (!userId || !factoryId) return;
+
+    tickerCurrentPage = page || tickerCurrentPage;
+
+    $.ajax({
+        url: new URL('/api/ticket/myTickets', baseUrl).toString(),
+        type: 'GET',
+        data: { factoryId: factoryId, userId: userId,
+                page: tickerCurrentPage, pageSize: tickerPageSize },
+        xhrFields: { withCredentials: true },
+        success: function (res) {
+            var tickets = res.tickets || [];
+            var $tbody = $('#ticketTbody');
+            $tbody.empty();
+            $('#ticketPagination').remove();
+
+            if (!tickets.length) {
+                $tbody.append(
+                    '<tr id="emptyRow"><td colspan="8">' +
+                    '<div class="empty-state"><i class="fas fa-inbox"></i>' +
+                    '<p>No problems reported yet. Click <strong>Report a Problem</strong> to log an issue.</p>' +
+                    '</div></td></tr>');
+                return;
+            }
+
+            $.each(tickets, function (i, t) {
+                var statusLabel = getStatusLabel(t.STATUS);
+                var shortDesc   = t.PROBLEM_DESC && t.PROBLEM_DESC.length > 55
+                    ? t.PROBLEM_DESC.substring(0, 55) + '...' : t.PROBLEM_DESC;
+                var dateStr = t.REPORTED_DATE
+                    ? new Date(t.REPORTED_DATE).toLocaleString('en-IN', { hour12: true }) : '';
+
                 $tbody.append(
                     '<tr>' +
-                    '<td><strong>' + t.TICKET_NO + '</strong></td>' +
-                    '<td>' + (t.MACHINE_DESCRIPTION || '') + '</td>' +
-                    '<td>' + (t.MACHINE_SUBCODE || '') + '</td>' +
-                    '<td><span style="font-size:11px;font-weight:600;color:#37499A;">' + (t.WHAT_BROKE || '') + '</span></td>' +
-                    '<td title="' + (t.PROBLEM_DESC || '') + '">' + (shortDesc || '') + '</td>' +
-                    '<td>' + dateStr + '</td>' +
-                    '<td>' + statusLabel + '</td>' +
-                    '<td>' +
+                    '<td data-label="Ticket No."><strong>' + t.TICKET_NO + '</strong></td>' +
+                    '<td data-label="Machine Category">' + (t.MACHINE_DESCRIPTION || '') + '</td>' +
+                    '<td data-label="Machine">' + (t.MACHINE_SUBCODE || '') + '</td>' +
+                    '<td data-label="Issue Type"><span style="font-size:11px;font-weight:600;color:#37499A;">' + (t.WHAT_BROKE || '') + '</span></td>' +
+                    '<td data-label="Description" title="' + (t.PROBLEM_DESC || '') + '">' + (shortDesc || '') + '</td>' +
+                    '<td data-label="Date & Time">' + dateStr + '</td>' +
+                    '<td data-label="Status">' + statusLabel + '</td>' +
+                    '<td data-label="Track">' +
                     '  <button class="btn-track-ticket" onclick="openTrackModal(' + t.TICKET_ID + ')" title="Track Status">' +
                     '    <i class="fas fa-search-location"></i> Track' +
                     '  </button>' +
@@ -283,9 +476,43 @@ function loadMyTickets() {
                     '</tr>'
                 );
             });
+
+            renderTickerPagination(res.totalPages, res.page);
         },
         error: function () { console.error('Failed to load my tickets'); }
     });
+}
+
+function renderTickerPagination(total, current) {
+    $('#ticketPagination').remove();
+    if (total <= 1) return;
+
+    var html = '<div id="ticketPagination" style="display:flex;align-items:center;justify-content:flex-end;' +
+               'gap:6px;padding:12px 16px;border-top:1px solid #e3e6f0;flex-wrap:wrap;">';
+
+    html += '<button class="page-btn" onclick="loadMyTickets(' + (current - 1) + ')" ' +
+            (current === 1 ? 'disabled' : '') + '>' +
+            '<i class="fas fa-chevron-left"></i></button>';
+
+    for (var i = 1; i <= total; i++) {
+        if (i === 1 || i === total || (i >= current - 1 && i <= current + 1)) {
+            html += '<button class="page-btn ' + (i === current ? 'page-btn-active' : '') + '" ' +
+                    'onclick="loadMyTickets(' + i + ')">' + i + '</button>';
+        } else if (i === current - 2 || i === current + 2) {
+            html += '<span style="color:#aaa;padding:0 4px;">…</span>';
+        }
+    }
+
+    html += '<button class="page-btn" onclick="loadMyTickets(' + (current + 1) + ')" ' +
+            (current === total ? 'disabled' : '') + '>' +
+            '<i class="fas fa-chevron-right"></i></button>';
+
+    html += '<span style="font-size:11px;color:#888;margin-left:8px;">' +
+            'Page ' + current + ' of ' + total + '</span>';
+
+    html += '</div>';
+
+    $('.content-card').append(html);
 }
 
 function getStatusLabel(status) {
@@ -399,7 +626,7 @@ function renderTrackTimeline(data) {
                                ' <i class="fas fa-spinner fa-spin" style="font-size:10px;"></i></span>';
             }
 
-            html += '<div class="work-log-row" style="padding-left:10px;">' +
+         /*   html += '<div class="work-log-row" style="padding-left:10px;">' +
                 '<span style="font-weight:600;min-width:150px;">' +
                 '<i class="fas fa-user-wrench mr-1" style="color:#37499A;"></i>' +
                 (l.WORKER_NAME || '') + '</span>' +
@@ -407,7 +634,28 @@ function renderTrackTimeline(data) {
                 'font-weight:' + (isTransfer ? '600' : 'normal') + ';font-size:12px;">' +
                 (isTransfer ? 'Transfer' : (l.WHAT_FIXED || 'Working...')) + '</span>' +
                 hoursDisplay +
-                '</div>';
+                '</div>';*/
+				
+				var descText;
+				if (isTransfer) {
+				    descText = 'Transfer';
+				} else if (l.WHAT_FIXED) {
+				    descText = l.WHAT_FIXED;
+				} else if (isStillWorking && status !== 5) {
+				    descText = 'Working...';
+				} else {
+				    descText = ''; // ticket closed / log ended, nothing to show
+				}
+
+				html += '<div class="work-log-row" style="padding-left:10px;">' +
+				    '<span style="font-weight:600;min-width:150px;">' +
+				    '<i class="fas fa-user-wrench mr-1" style="color:#37499A;"></i>' +
+				    (l.WORKER_NAME || '') + '</span>' +
+				    '<span style="flex:1;color:' + (isTransfer ? '#f39c12' : '#555') + ';' +
+				    'font-weight:' + (isTransfer ? '600' : 'normal') + ';font-size:12px;">' +
+				    descText + '</span>' +
+				    hoursDisplay +
+				    '</div>';
         });
         html += '</div>';
     } else {
@@ -501,10 +749,28 @@ function markNotifRead(notifId, el) {
 }
 
 /* ── RESET MODAL ─────────────────────────────────────────────────────────── */
+/*function resetModal() {
+    $('#empCodeSelect').val('').trigger('change.select2');
+    $('#mobileInput').val('');
+    $('#empNameHidden').val('');
+    $('#catSelect').val('');
+    $('#machineSelect').empty()
+        .append('<option value="">-- Select Machine --</option>')
+        .prop('disabled', true);
+    $('#problemDesc').val('');
+    selectedBrokeSet.clear();
+    $('.broke-chip').removeClass('sel-elec sel-mech sel-hydr');
+    $('#brokeSelectionSummary').text('').hide();
+    $('#successAlert').hide();
+    resetSubmitButton();
+}*/
+
+
 function resetModal() {
     $('#empCodeSelect').val('').trigger('change.select2');
     $('#mobileInput').val('');
     $('#empNameHidden').val('');
+    $('#bkLocationInput').val('');   // ← add this line
     $('#catSelect').val('');
     $('#machineSelect').empty()
         .append('<option value="">-- Select Machine --</option>')

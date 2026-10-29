@@ -226,6 +226,64 @@ body.has-active-timer #content-wrapper {
     background: #eef1fb;
     border-left: 3px solid #37499A;
 }
+
+@media (max-width: 768px) {
+  .table-responsive table thead { display: none; }
+  .table-responsive table, .table-responsive tbody, .table-responsive tr, .table-responsive td {
+    display: block; width: 100%;
+  }
+  .table-responsive tr {
+    margin-bottom: 12px; border: 1px solid #e3e6f0; border-radius: 10px;
+    padding: 8px 12px; box-shadow: 0 1px 4px rgba(0,0,0,.06);
+  }
+  .table-responsive td {
+    border: none !important; padding: 6px 0 !important;
+    display: flex; justify-content: space-between; align-items: center; gap: 10px;
+    text-align: right;
+  }
+  .table-responsive td::before {
+    content: attr(data-label);
+    font-weight: 600; color: #37499A; font-size: 11px; text-align: left;
+  }
+  .table-responsive td[data-label="Actions"] {
+    flex-direction: column; align-items: stretch; text-align: left; gap: 6px;
+  }
+  .table-responsive td[data-label="Actions"] button,
+  .table-responsive td[data-label="Actions"] .btn-close-action,
+  .table-responsive td[data-label="Actions"] .badge-resolved {
+    width: 100%; text-align: center; margin: 0 !important;
+  }
+}
+
+
+@media (max-width: 576px) {
+  #floatingTimer {
+    height: auto; min-height: 56px;
+    flex-wrap: wrap; padding: 8px 12px; gap: 8px;
+  }
+  #ft-info { flex: 1 1 100%; order: 1; font-size: 12px; }
+  #ft-center { order: 2; }
+  #ft-actions { order: 3; flex: 1 1 100%; justify-content: center; }
+  #ft-clock { font-size: 18px; }
+}
+
+
+@media (max-width: 768px) {
+  #activeTimerPills {
+    max-width: 55vw; overflow-x: auto; flex-wrap: nowrap !important;
+    -webkit-overflow-scrolling: touch;
+  }
+  #activeTimerPills > div { flex-shrink: 0; }
+}
+
+@media (max-width: 400px) {
+  .notif-dropdown { width: 88vw; right: -60px; }
+}
+
+@media (max-width: 480px) {
+  .modal-footer { flex-direction: column; }
+  .btn-cancel-modal, .btn-submit-modal { width: 100%; justify-content: center; }
+}
 </style>
 </head>
 <body>
@@ -242,7 +300,7 @@ body.has-active-timer #content-wrapper {
                 <ul class="navbar-nav ml-auto" style="align-items:center; gap:16px;">
                     <li class="nav-item">
                         <div class="notif-bell-wrap" onclick="toggleNotifDropdown()">
-                            <i class="fas fa-bell text-white" style="font-size:18px;"></i>
+                            <i class="fas fa-bell text-white" style="font-size:18px;" hidden></i>
                             <span class="notif-badge" id="notifBadge" style="display:none;">0</span>
                             <div class="notif-dropdown" id="notifDropdown">
                                 <div style="padding:10px 14px;font-weight:700;font-size:12px;color:#37499A;border-bottom:1px solid #f0f3fa;">
@@ -396,7 +454,7 @@ body.has-active-timer #content-wrapper {
 
     <div class="alert alert-info" style="font-size:12px; border-radius:8px; margin-top:12px;">
         <i class="fas fa-info-circle mr-1"></i>
-        Your work end time will be recorded now and hours calculated automatically.
+        Your work end time will be recorded Now, And Work hours calculated automatically.
     </div>
 </div>
             <div class="modal-footer d-flex justify-content-end" style="gap:10px;">

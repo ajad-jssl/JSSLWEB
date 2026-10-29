@@ -14,6 +14,38 @@ var activeSessions     = {};
 var WORKER_EMP_VERIFIED = false;
 var heartbeatInterval  = null;
 
+
+
+
+
+
+let allowedActions = [];
+
+async function loadActions() {
+    const MainPage = window.location.pathname.split("/").pop()+'.jsp'; // e.g. "Maintenanceworker.jsp"
+    const UserId   = sessionStorage.getItem('username');
+
+    try {
+        const response = await fetch(
+            `${baseUrl}/api/page/actions?userId=${encodeURIComponent(UserId)}&pageName=${encodeURIComponent(MainPage)}`,
+            {
+                method: "GET",
+                credentials: "include",
+                headers: { "Content-Type": "application/json" }
+            }
+        );
+
+        if (!response.ok) throw new Error("Failed to fetch actions");
+
+        allowedActions = await response.json();
+    } catch (error) {
+        console.error("Error loading permitted actions:", error);
+        allowedActions = [];
+    }
+}
+
+
+
 function getWorkerId()  { return sessionStorage.getItem('worker_emp_code') || ''; }
 function getFactoryId() { return parseInt(sessionStorage.getItem('selectedFactoryId') || '0'); }
 
@@ -21,9 +53,7 @@ function getFactoryId() { return parseInt(sessionStorage.getItem('selectedFactor
 // BOOT
 // ═══════════════════════════════════════════════════════════════════════════
 $(document).ready(function () {
-	$('#sidebarToggleTop').click(function () {
-	     $('#accordionSidebar').toggleClass('toggled');
-	 });
+	loadActions();  
     checkEmpVerification();
     setInterval(function () {
         if (WORKER_EMP_VERIFIED) { loadWorkerTickets(); loadNotifications(); }
@@ -208,7 +238,7 @@ function loadWorkerTickets() {
                 var actions   = buildActionButtons(t, aStatus);
                 var shortDesc = t.PROBLEM_DESC
                     ? t.PROBLEM_DESC.substring(0, 55) + (t.PROBLEM_DESC.length > 55 ? '...' : '') : '';
-                $tbody.append(
+               /* $tbody.append(
                     '<tr class="' + getWorkerRowClass(aStatus) + '" id="row-assign-' + t.ASSIGN_ID + '">' +
                     '<td><strong>' + (t.TICKET_NO || '') + '</strong></td>' +
                     '<td>' + (t.MACHINE_DESCRIPTION || '') + '</td>' +
@@ -218,7 +248,19 @@ function loadWorkerTickets() {
                     '<td>' + getAssignStatusLabel(aStatus) + '</td>' +
                     '<td id="actions-' + t.ASSIGN_ID + '">' + actions + '</td>' +
                     '</tr>'
-                );
+                );*/
+				
+				$tbody.append(
+				  '<tr class="' + getWorkerRowClass(aStatus) + '" id="row-assign-' + t.ASSIGN_ID + '">' +
+				  '<td data-label="Ticket No.">' + '<strong>' + (t.TICKET_NO||'') + '</strong>' + '</td>' +
+				  '<td data-label="Machine Category">' + (t.MACHINE_DESCRIPTION||'') + '</td>' +
+				  '<td data-label="Machine">' + (t.MACHINE_SUBCODE||'') + '</td>' +
+				  '<td data-label="Issue Type">' + '<span style="font-size:11px;font-weight:600;color:#37499A;">'+(t.WHAT_BROKE||'')+'</span>' + '</td>' +
+				  '<td data-label="Description" title="'+(t.PROBLEM_DESC||'')+'">' + shortDesc + '</td>' +
+				  '<td data-label="Status">' + getAssignStatusLabel(aStatus) + '</td>' +
+				  '<td data-label="Actions" id="actions-' + t.ASSIGN_ID + '">' + actions + '</td>' +
+				  '</tr>'
+				);
             });
         },
         error: function () { console.error('Failed to load worker tickets'); }
@@ -309,7 +351,7 @@ function transferButton(assignId, ticketId, logId) {
            '<i class="fas fa-random"></i> Release</button>';
 }
 
-function openTransferModal(
+/*function openTransferModal(
     assignId,
     ticketId,
     logId
@@ -332,7 +374,37 @@ function openTransferModal(
     $('#transferReason').val('');
 
     $('#transferModal').modal('show');
+}*/
+
+function openTransferModal(assignId, ticketId, logId) {
+    const allowed = typeof allowedActions !== "undefined" ? allowedActions : [];
+
+    if (!allowed.includes("Release")) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Access Denied',
+            text: 'You do not have permission to release this ticket.',
+            confirmButtonColor: '#37499A'
+        });
+        return;
+    }
+
+    let factoryId = sessionStorage.getItem("selectedFactoryId");
+
+    _transferCtx = {
+        assignId: assignId,
+        ticketId: ticketId,
+        logId: logId,
+        factoryId: factoryId,
+    };
+
+    console.log("teh transfer ticket is this ", _transferCtx);
+    $('#transferReason').val('');
+
+    $('#transferModal').modal('show');
 }
+
+
 function submitTransferRequest() {
  
     var reason = $('#transferReason').val().trim();
@@ -402,7 +474,7 @@ function submitTransferRequest() {
 
 
 // ── CLOSE TICKET (Normal — all workers done) ──────────────────────────────
-function confirmClose(ticketId, reportedBy) {
+/*function confirmClose(ticketId, reportedBy) {
     Swal.fire({
         title: 'Close Ticket?',
         html: '<p style="color:#555;margin-bottom:10px;">Are you sure you want to close this ticket? This action is final.</p>' +
@@ -432,6 +504,114 @@ function confirmClose(ticketId, reportedBy) {
 
 // ── FORCE CLOSE (Some workers still active) ───────────────────────────────
 function confirmForceClose(btn) {
+    var ticketId   = $(btn).data('ticket');
+    var reportedBy = $(btn).data('reported');
+    var workers    = $(btn).data('workers');
+
+    if (typeof workers === 'string') {
+        workers = JSON.parse(workers);
+    }
+
+    var workerRows = workers.map(function (w) {
+        var stage = getWorkerStageLabel(w.status);
+        return '<div style="display:flex;align-items:center;gap:10px;padding:6px 10px;margin:5px 0;' +
+               'background:#f9f9f9;border-radius:8px;border-left:4px solid ' + stage.color + ';">' +
+               '<i class="fas fa-user-wrench" style="color:#555;"></i>' +
+               '<span style="flex:1;font-weight:600;font-size:13px;">' + w.name + '</span>' +
+               '<span style="background:' + stage.color + ';color:#fff;font-size:11px;font-weight:600;' +
+               'padding:2px 8px;border-radius:12px;">' +
+               '<i class="fas ' + stage.icon + ' mr-1"></i>' + stage.label + '</span>' +
+               '</div>';
+    }).join('');
+
+    Swal.fire({
+        title: 'Workers Still Active!',
+        html: '<p style="color:#555;margin-bottom:8px;">These workers have not finished yet:</p>' +
+              workerRows +
+              '<p style="margin-top:12px;color:#e74c3c;font-size:12px;">' +
+              '<i class="fas fa-exclamation-triangle mr-1"></i>Force closing will end all active work.</p>' +
+              '<textarea id="swal-force-remarks" class="swal2-textarea mt-2" ' +
+              'placeholder="Enter closing remarks (optional)..." ' +
+              'style="font-size:13px;border-radius:6px;border:1px solid #d1d5e8;width:100%;"></textarea>',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#e67e22',
+        cancelButtonColor: '#aaa',
+        confirmButtonText: '<i class="fas fa-lock mr-1"></i> Force Close',
+        cancelButtonText: 'Cancel',
+        preConfirm: function () {
+            var remarks = $('#swal-force-remarks').val().trim();
+            if (!remarks) {
+                Swal.showValidationMessage('Please enter closing remarks before force closing.');
+                return false;
+            }
+            return remarks;
+        }
+    }).then(function (result) {
+        if (result.isConfirmed) {
+            doCloseTicket(ticketId, reportedBy, result.value);
+        }
+    });
+}*/
+
+
+
+
+// ── CLOSE TICKET (Normal — all workers done) ──────────────────────────────
+function confirmClose(ticketId, reportedBy) {
+    const allowed = typeof allowedActions !== "undefined" ? allowedActions : [];
+
+    if (!allowed.includes("Close")) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Access Denied',
+            text: 'You do not have permission to close this ticket.',
+            confirmButtonColor: '#37499A'
+        });
+        return;
+    }
+
+    Swal.fire({
+        title: 'Close Ticket?',
+        html: '<p style="color:#555;margin-bottom:10px;">Are you sure you want to close this ticket? This action is final.</p>' +
+              '<textarea id="swal-close-remarks" class="swal2-textarea" ' +
+              'placeholder="Enter closing remarks (optional)..." ' +
+              'style="font-size:13px;border-radius:6px;border:1px solid #d1d5e8;width:100%;"></textarea>',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#27ae60',
+        cancelButtonColor: '#aaa',
+        confirmButtonText: '<i class="fas fa-lock mr-1"></i> Yes, Close',
+        cancelButtonText: 'Cancel',
+        preConfirm: function () {
+            var remarks = $('#swal-close-remarks').val().trim();
+            if (!remarks) {
+                Swal.showValidationMessage('Please enter closing remarks before closing.');
+                return false;
+            }
+            return remarks;
+        }
+    }).then(function (result) {
+        if (result.isConfirmed) {
+            doCloseTicket(ticketId, reportedBy, result.value);
+        }
+    });
+}
+
+// ── FORCE CLOSE (Some workers still active) ───────────────────────────────
+function confirmForceClose(btn) {
+    const allowed = typeof allowedActions !== "undefined" ? allowedActions : [];
+
+    if (!allowed.includes("Close")) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Access Denied',
+            text: 'You do not have permission to close this ticket.',
+            confirmButtonColor: '#37499A'
+        });
+        return;
+    }
+
     var ticketId   = $(btn).data('ticket');
     var reportedBy = $(btn).data('reported');
     var workers    = $(btn).data('workers');
@@ -646,7 +826,7 @@ function resumeWork(assignId, logId) {
 // ═══════════════════════════════════════════════════════════════════════════
 // OPEN MARK FIXED MODAL
 // ═══════════════════════════════════════════════════════════════════════════
-var _fixedCtx = {};
+/*var _fixedCtx = {};
 var _transferCtx = {};
 
 function openFixedModal(assignId, ticketId, reportedBy, assignedBy, logId) {
@@ -669,6 +849,46 @@ function openFixedModal(assignId, ticketId, reportedBy, assignedBy, logId) {
     $('#itemsCheckList').html('<div style="text-align:center;color:#aaa;font-size:12px;padding:10px;"><i class="fas fa-spinner fa-spin"></i> Loading items...</div>');
 
     // Load machine items for this ticket
+    loadMachineItems(ticketId);
+
+    $('#fixedModal').modal('show');
+}*/
+
+
+var _fixedCtx = {};
+var _transferCtx = {};
+
+function openFixedModal(assignId, ticketId, reportedBy, assignedBy, logId) {
+    const allowed = typeof allowedActions !== "undefined" ? allowedActions : [];
+
+    if (!allowed.includes("Insert")) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Access Denied',
+            text: 'You do not have permission to mark this ticket as fixed.',
+            confirmButtonColor: '#37499A'
+        });
+        return;
+    }
+
+    if (!logId || logId === 'null') {
+        var s2 = getSessionByAssignId(assignId);
+        logId = s2 ? s2.logId : null;
+    }
+    _fixedCtx = { assignId: assignId, ticketId: ticketId,
+                  reportedBy: reportedBy, assignedBy: assignedBy, logId: logId };
+
+    // Reset all fields
+    $('#whatFixed').val('');
+    $('#fixRemarks').val('');
+    $('#itemSearchInput').val('');
+    $('#itemSearchCount').text('');
+    $('#chkPartsReplaced').prop('checked', false);
+    $('#partsSection').hide();
+    $('#selectedItemsTable').hide();
+    $('#selectedItemsBody').empty();
+    $('#itemsCheckList').html('<div style="text-align:center;color:#aaa;font-size:12px;padding:10px;"><i class="fas fa-spinner fa-spin"></i> Loading items...</div>');
+
     loadMachineItems(ticketId);
 
     $('#fixedModal').modal('show');
@@ -987,7 +1207,7 @@ function sendHeartbeat() {
 // NOTIFICATIONS
 // ═══════════════════════════════════════════════════════════════════════════
 function loadNotifications() {
-    var userId    = parseInt(sessionStorage.getItem('id') || '0');
+ /*   var userId    = parseInt(sessionStorage.getItem('id') || '0');
     var factoryId = getFactoryId();
     if (!userId || !factoryId) return;
     $.ajax({
@@ -999,7 +1219,7 @@ function loadNotifications() {
             $('#notifBadge').text(count).toggle(count > 0);
             renderNotifDropdown(data.notifications || []);
         }, error: function () {}
-    });
+    });*/
 }
 
 function renderNotifDropdown(notifications) {

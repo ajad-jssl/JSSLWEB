@@ -444,7 +444,7 @@ $(document).ready(function() {
 	    flexDiv.style.cursor = 'pointer';
 	    flexDiv.onclick = () => {
 	    	  isTabClosing = false;
-	    	  if (moduleName !== "User Access" && moduleName !=="DO Time Sheet") {
+	    	  if (moduleName !== "User Access" && moduleName !=="DO Time Sheet" && moduleName !=="Sales CRM" ) {
 
 	    	  let selectedFactoryId = sessionStorage.getItem('selectedFactoryId');
 	          if (!selectedFactoryId) {
@@ -470,7 +470,7 @@ $(document).ready(function() {
 	   	      
 	   	      
 	   	      
-	   	      window.location.href = 'MaintenanceDashBorad';
+	   	      window.location.href = 'MaintenanceDashBoard.jsp';
 	   	      return;
 	        }
 	        
@@ -577,6 +577,17 @@ $(document).ready(function() {
 		   	      
 		   	      
 		   	      window.location.href = 'AMSDashBoard.jsp';
+		   	      return;
+	        }
+	        
+	        if(moduleName==="Sales CRM"){
+	         	 sessionStorage.setItem('selectedModule', moduleName);
+		   	      sessionStorage.setItem('selectedPage', pageUrl);
+		   	      
+		   	      
+		   	      
+		   	      
+		   	      window.location.href = 'SaleDashBoard.jsp';
 		   	      return;
 	        }
 	        

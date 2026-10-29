@@ -46,7 +46,7 @@ async function loadActions() {
    Single source of truth for the table, Excel export and PDF export
    so all three always stay in sync.
 ============================= */
-const REPORT_COLUMNS = [
+/*const REPORT_COLUMNS = [
     { key: "project_name",             label: "Project Name",      align: "left" },
     { key: "client_name",              label: "Client Name",       align: "left" },
     { key: "zone_name",                label: "Zone" },
@@ -60,8 +60,29 @@ const REPORT_COLUMNS = [
     { key: "quarter",                  label: "Quarter" },
     { key: "sales_person",             label: "Sales Person" },
     { key: "remark",                   label: "Remarks",           align: "left" }
-];
+];*/
 
+
+
+
+
+
+const REPORT_COLUMNS = [
+    { key: "lead_no",                  label: "Lead No" },
+    { key: "enq_no",                   label: "Enq No" },
+    { key: "project_name",             label: "Project Name",      align: "left" },
+    { key: "client_name",              label: "Client Name",       align: "left" },
+    { key: "zone_name",                label: "Zone" },
+    { key: "segment_name",             label: "Segment" },
+    { key: "design_basis_name",        label: "Design Basis" },
+    { key: "stage_name",               label: "Current Stage" },
+    { key: "tonnage",                  label: "Tonnage",           numeric: true },
+    { key: "probable_value",           label: "Probable Value",    numeric: true },
+    { key: "location",                 label: "Location" },
+    { key: "tentative_closure_month",  label: "Tentative Closure" },
+    { key: "sales_person",             label: "Sales Person" },
+    { key: "remark",                   label: "Remarks",           align: "left" }
+];
 const PAGE_SIZE = 10;
 
 /* Holds the currently bound report so Excel/PDF export always
@@ -108,11 +129,19 @@ document.addEventListener("DOMContentLoaded", function () {
         document.getElementById("container1").style.display = "none";
 
         if (!summaryType) return;
-
+/*
         document.getElementById("filterValueLabel").textContent =
             summaryType === "quarter" ? "Select Quarter" :
             summaryType === "zone"    ? "Select Zone"    :
-                                         "Select Segment";
+                                         "Select Segment";*/
+										 
+										 document.getElementById("filterValueLabel").textContent =
+										     summaryType === "stage"       ? "Select Current Stage" :
+										     summaryType === "zone"        ? "Select Zone" :
+										     summaryType === "segment"     ? "Select Segment" :
+										                                     "Select Sales Person";
+											 
+											 
 
         loadFilterValues(summaryType);
         document.getElementById("filterValueWrap").style.display = "block";
@@ -123,10 +152,20 @@ document.addEventListener("DOMContentLoaded", function () {
         const summaryType = document.getElementById("summaryBy").value; // quarter | zone | segment
         const value = this.value;
         const valueLabel = this.selectedOptions[0]?.text || "";
-        const summaryLabel =
+/*        const summaryLabel =
             summaryType === "quarter" ? "Quarter Wise Summary" :
             summaryType === "zone"    ? "Zone Wise Summary"    :
-                                         "Segment Wise Summary";
+                                         "Segment Wise Summary";*/
+										 
+										/* const summaryLabel =
+										     summaryType === "stage" ? "Stage Wise Summary" :
+										     summaryType === "zone"  ? "Zone Wise Summary"  : "Segment Wise Summary";*/
+											 
+											 const summaryLabel =
+											     summaryType === "stage"       ? "Current Stage Wise Summary" :
+											     summaryType === "zone"        ? "Zone Wise Summary" :
+											     summaryType === "segment"     ? "Segment Wise Summary" :
+											                                     "Sales Person Wise Summary";
 
         if (!value) {
             document.getElementById("container1").style.display = "none";
@@ -137,6 +176,21 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
 });
+
+
+const cells = REPORT_COLUMNS.map(col => {
+    const raw = row[col.key];
+    const display = col.numeric ? fmtNum(raw) : (raw || "-");
+    const cls = col.numeric ? ' class="num"' : "";
+    const style = col.align === "left" ? ' style="text-align:left;white-space:normal;"' : "";
+    return `<td${cls}${style}>${display}</td>`;
+}).join("");
+
+
+function fmtNum(n) {
+    if (n === null || n === undefined || n === "" || isNaN(n)) return "-";
+    return Number(n).toLocaleString("en-IN", { maximumFractionDigits: 2 });
+}
 
 /* =============================
    DROPDOWN 1: REPORT TYPE (static)
@@ -169,11 +223,24 @@ function loadSummaryByOptions() {
 
     ddl.innerHTML = `<option value="">Select summary type</option>`;
 
-    const options = [
+/*    const options = [
         { value: "quarter", text: "Quarter Wise Summary" },
         { value: "zone",    text: "Zone Wise Summary" },
         { value: "segment", text: "Segment Wise Summary" }
-    ];
+    ];*/
+	
+	/*const options = [
+	    { value: "stage",   text: "Stage Wise Summary" },
+	    { value: "zone",    text: "Zone Wise Summary" },
+	    { value: "segment", text: "Segment Wise Summary" }
+	];*/
+	
+	const options = [
+	    { value: "stage",       text: "Current Stage Wise Summary" },
+	    { value: "zone",        text: "Zone Wise Summary" },
+	    { value: "segment",     text: "Segment Wise Summary" },
+	    { value: "salesperson", text: "Sales Person Wise Summary" }
+	];
 
     options.forEach(o => {
         const opt = document.createElement("option");
@@ -188,10 +255,21 @@ function loadSummaryByOptions() {
 ============================= */
 function loadFilterValues(summaryType) {
 
-    const endpoint =
+/*    const endpoint =
         summaryType === "quarter" ? "/api/sale/crm/report/quarters" :
         summaryType === "zone"    ? "/api/sale/crm/report/zones"    :
-                                     "/api/sale/crm/report/segments";
+                                     "/api/sale/crm/report/segments";*/
+						/*			 
+									 const endpoint =
+									     summaryType === "stage" ? "/api/sale/crm/report/stage-categories" :
+									     summaryType === "zone"  ? "/api/sale/crm/report/zones" :
+									                               "/api/sale/crm/report/segments";*/
+																   
+																   const endpoint =
+																       summaryType === "stage"       ? "/api/sale/crm/report/stages" :
+																       summaryType === "zone"        ? "/api/sale/crm/report/zones" :
+																       summaryType === "segment"     ? "/api/sale/crm/report/segments" :
+																                                       "/api/sale/crm/report/sales-persons";
 
     const ddl = document.getElementById("filterValue");
     ddl.innerHTML = `<option value="">Select value</option>`;
@@ -393,12 +471,26 @@ function exportToExcel() {
         []
     ];
 
-    const totalsRow = [
+/*    const totalsRow = [
         "Total", "", "", "", "", "", "",
         lastReportRows.reduce((s, r) => s + (Number(r.tonnage) || 0), 0),
         lastReportRows.reduce((s, r) => s + (Number(r.probable_value) || 0), 0),
         "", "", "", "", ""
-    ];
+    ];*/
+	
+/*	const totalsRow = [
+	    "Total", "", "", "", "", "", "", "", "", "",
+	    lastReportRows.reduce((s, r) => s + (Number(r.tonnage) || 0), 0),
+	    lastReportRows.reduce((s, r) => s + (Number(r.probable_value) || 0), 0),
+	    "", "", "", ""
+	];*/
+	
+	const totalsRow = [
+	    "Total", "", "", "", "", "", "", "", "",
+	    lastReportRows.reduce((s, r) => s + (Number(r.tonnage) || 0), 0),
+	    lastReportRows.reduce((s, r) => s + (Number(r.probable_value) || 0), 0),
+	    "", "", "", ""
+	];
 
     const sheetData = [...infoRows, header, ...body, totalsRow];
 

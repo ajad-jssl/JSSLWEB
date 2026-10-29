@@ -5,9 +5,7 @@
     response.setHeader("Pragma", "no-cache"); // HTTP 1.0
     response.setDateHeader("Expires", 0); // Proxies
 %>
-<%
-long ts = System.currentTimeMillis();
-%>
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -18,7 +16,7 @@ long ts = System.currentTimeMillis();
 <meta name="description" content="">
 <meta name="author" content="">
 <link href="img/logo/download.png" rel="icon">
-<title>JSSL</title>
+<title>Sales Master</title>
 <link href="vendor/fontawesome-free/css/all.min.css" rel="stylesheet"
 	type="text/css" />
 <link href="vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet"
@@ -26,12 +24,15 @@ long ts = System.currentTimeMillis();
 <link href="css/ruang-admin.min.css" rel="stylesheet" />
 <link href="vendor/datatables/dataTables.bootstrap4.min.css"
 	rel="stylesheet">
-<!-- <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css" /> -->
-<link rel="stylesheet"
-	href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css" />
+
+<!-- <link rel="stylesheet"
+	href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css" /> -->
+	
+	<link rel="stylesheet"
+	href="externalLibrary/cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css" />
 <link rel="stylesheet" href="css/main.css">
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="js/sidebar.js"></script>
+
+
 <style>
 .error-message {
 	color: red;
@@ -288,7 +289,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 <body onload="fetchUserList();">
 	<div id="wrapper">
 		<!-- Sidebar -->
-		<%@ include file="SaleSidebar.jsp" %>
+		<%@ include file="SaleSidebar.jsp"%>
 		<!-- Sidebar -->
 
 		<div id="content-wrapper" class="d-flex flex-column">
@@ -336,8 +337,8 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 						class="d-sm-flex align-items-center justify-content-between mb-4">
 						<h1 class="h3 mb-0 text-gray-800"></h1>
 						<ol class="breadcrumb">
-							<li class="breadcrumb-item"><a href="VehicleDashboard.jsp">Home</a></li>
-							<li class="breadcrumb-item"><a href="SaleMaster.jsp">Vehicle
+							<li class="breadcrumb-item"><a href="SaleDashBoard.jsp">Home</a></li>
+							<li class="breadcrumb-item"><a href="SaleMaster.jsp">Sales
 									Master</a></li>
 						</ol>
 					</div>
@@ -362,8 +363,9 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 									<i class="fas fa-map-marker-alt mr-2"></i> Zone
 								</label> <input class="form-check-input" type="radio"
 									name="vehicleSelection" id="subZoneRadio" value="subzone"
-									onchange="toggleTables()"> <label for="subZoneRadio">
-									<i class="fas fa-map-signs mr-2"></i> Sub Zone
+									onchange="toggleTables()" hidden> <label
+									for="subZoneRadio" hidden> <i
+									class="fas fa-map-signs mr-2"></i> Sub Zone
 								</label> <input class="form-check-input" type="radio"
 									name="vehicleSelection" id="designRadio" value="design"
 									onchange="toggleTables()"> <label for="designRadio">
@@ -388,6 +390,11 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 									name="vehicleSelection" id="projectRadio" value="project"
 									onchange="toggleTables()"> <label for="projectRadio">
 									<i class="fas fa-project-diagram mr-2"></i> Project Name
+								</label><input class="form-check-input" type="radio"
+									name="vehicleSelection" id="UserMappingRadio" value="project"
+									onchange="toggleTables()"> <label
+									for="UserMappingRadio"> <i
+									class=" fa fa-user-plus mr-2"></i> UserMapping
 								</label>
 							</div>
 
@@ -525,6 +532,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 									<thead>
 										<tr>
 											<th>Sl. No.</th>
+											<th>Client Code</th>
 											<th>Client Name</th>
 											<th>Contact No.</th>
 											<th>Email Address</th>
@@ -619,10 +627,18 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 									id="tableID7" width="100%">
 									<thead>
 										<tr>
+
+
 											<th>Sl. No.</th>
+											<th>Project Code</th>
+											<th>Client Name</th>
+											<th>Zone</th>
+											<th>Project Location</th>
 											<th>Project Name</th>
 											<th>Actions</th>
 										</tr>
+
+
 									</thead>
 									<tbody>
 									</tbody>
@@ -650,6 +666,38 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 											<th>Zone</th>
 											<th>Sub Zone</th>
 											<th>Actions</th>
+										</tr>
+									</thead>
+									<tbody>
+									</tbody>
+								</table>
+							</div>
+						</div>
+					</div>
+
+
+
+					<!-- Sub Zone Table -->
+					<div class="row mb-3" id="UserMappingTable" style="display: none;">
+						<div class="table-responsive p-3">
+							<div
+								class="card-header py-3 d-flex flex-row align-items-center justify-content-between"
+								style="background-color: #f8f9fc;">
+								<button data-toggle="modal" id="UserMappingBtn">
+									<i class="fas fa-plus"></i> Create
+								</button>
+							</div>
+							<div class="table-responsive p-3">
+								<table class="table table-striped table-bordered table-sm"
+									id="tableID9" width="100%">
+									<thead>
+										<tr>
+											<th>Sl. No.</th>
+											<th>User</th>
+											<th>Zone's</th>
+											<th>FollowUp Access</th>
+											<th>Action</th>
+
 										</tr>
 									</thead>
 									<tbody>
@@ -1215,8 +1263,8 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 												<div id="clientNameError" class="error-message"
 													style="display: none;">Client Name is required</div>
 											</div>
-											
-													<div class="col-md-6 mb-3">
+
+											<div class="col-md-6 mb-3">
 												<label for="Clienttype" class="form-label"> <b>Client
 														Type:</b>
 												</label> <select class="form-control form-control-sm"
@@ -1231,12 +1279,12 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 												<div id="clienttypeError" class="error-message"
 													style="display: none;">Client Type is required</div>
 											</div>
-											
-														<div class="col-md-6 mb-3">
-												<label for="clientCountry" class="form-label"><b>Client Segment:</b></label>
-												<select class="form-control form-control-sm"
+
+											<div class="col-md-6 mb-3">
+												<label for="clientCountry" class="form-label"><b>Client
+														Segment:</b></label> <select class="form-control form-control-sm"
 													id="clientSegment">
-													<option value="">Select Client Segment </option>
+													<option value="">Select Client Segment</option>
 												</select>
 												<div id="clientSegmentError" class="error-message"
 													style="display: none;">Client Segment is required</div>
@@ -1261,10 +1309,9 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 													style="display: none;">Valid Email Address is
 													required</div>
 											</div>
-														<div class="col-md-6 mb-3">
+											<div class="col-md-6 mb-3">
 												<label for="clientCountry" class="form-label"><b>Zone:</b></label>
-												<select class="form-control form-control-sm"
-													id="clientZone">
+												<select class="form-control form-control-sm" id="clientZone">
 													<option value="">Select Zone</option>
 												</select>
 												<div id="clientzoneError" class="error-message"
@@ -1319,7 +1366,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 												<div id="clienttypeError" class="error-message"
 													style="display: none;">City is required</div>
 											</div> -->
-									
+
 											<div class="col-md-12 mb-3">
 												<label for="clientAddress" class="form-label"><b>Address:</b></label>
 												<textarea class="form-control form-control-sm"
@@ -1389,8 +1436,8 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 												<div id="clientName1Error" class="error-message"
 													style="display: none;">Client Name is required</div>
 											</div>
-											
-												<div class="col-md-6 mb-3">
+
+											<div class="col-md-6 mb-3">
 												<label for="ClienttypeUp" class="form-label"> <b>Client
 														Type:</b>
 												</label> <select class="form-control form-control-sm"
@@ -1404,12 +1451,12 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 												<div id="clienttypeErrorUp" class="error-message"
 													style="display: none;">Client Type is required</div>
 											</div>
-											
-												<div class="col-md-6 mb-3">
-												<label for="clientCountry" class="form-label"><b>Client Segment:</b></label>
-												<select class="form-control form-control-sm"
+
+											<div class="col-md-6 mb-3">
+												<label for="clientCountry" class="form-label"><b>Client
+														Segment:</b></label> <select class="form-control form-control-sm"
 													id="clientSegment1">
-													<option value="">Select Client Segment </option>
+													<option value="">Select Client Segment</option>
 												</select>
 												<div id="clientSegmentError1" class="error-message"
 													style="display: none;">Client Segment is required</div>
@@ -1435,7 +1482,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 													style="display: none;">Valid Email Address is
 													required</div>
 											</div>
-														<div class="col-md-6 mb-3">
+											<div class="col-md-6 mb-3">
 												<label for="clientCountry" class="form-label"><b>Zone:</b></label>
 												<select class="form-control form-control-sm"
 													id="clientZone1">
@@ -1484,7 +1531,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 													style="display: none;">Valid 6-digit Pincode is
 													required</div>
 											</div>
-										
+
 											<div class="col-md-12 mb-3">
 												<label for="clientAddress1" class="form-label"><b>Address:</b></label>
 												<textarea class="form-control form-control-sm"
@@ -1959,6 +2006,27 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 								<div class="modal-body">
 									<form id="productForm">
 										<div class="form-row">
+
+											<div class="col-md-6">
+												<label for="clientSelectInput" class="form-label"><b>Client
+														Name:</b></label> <select class="form-control form-control-sm"
+													id="clientSelectInput">
+													<option value="">-- Select Client --</option>
+												</select>
+												<div id="clientSelectInputError" class="error-message"
+													style="display: none;">Client is required</div>
+											</div>
+
+
+											<div class="col-md-6">
+												<label for="clientSelectInput" class="form-label"><b>Zone
+														Name:</b></label> <select class="form-control form-control-sm"
+													id="ZoneSelectInput">
+													<option value="">-- Select Zone --</option>
+												</select>
+												<div id="ZoneSelectInputError" class="error-message"
+													style="display: none;">Zone is required</div>
+											</div>
 											<div class="col-md-6">
 												<label for="projectNameInput" class="form-label"><b>Project
 														Name:</b></label> <input type="text"
@@ -1966,6 +2034,15 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 													placeholder="Project Name">
 												<div id="projectNameInputError" class="error-message"
 													style="display: none;">Project Name is required</div>
+											</div>
+
+											<div class="col-md-6">
+												<label for="projectLocationInput" class="form-label"><b>Project
+														Location:</b></label> <input type="text"
+													class="form-control form-control-sm"
+													id="projectLocationInput" placeholder="Project Location">
+												<div id="projectLocationInputError" class="error-message"
+													style="display: none;">Project Location is required</div>
 											</div>
 										</div>
 									</form>
@@ -2020,6 +2097,27 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 								<div class="modal-body">
 									<form>
 										<div class="form-row">
+
+											<div class="col-md-6">
+												<label for="clientSelectInput1" class="form-label"><b>Client
+														Name:</b></label> <select class="form-control form-control-sm"
+													id="clientSelectInput1">
+													<option value="">-- Select Client --</option>
+												</select>
+												<div id="clientSelectInput1Error" class="error-message"
+													style="display: none;">Client is required</div>
+											</div>
+
+											<div class="col-md-6">
+												<label for="clientSelectInput" class="form-label"><b>Zone
+														Name:</b></label> <select class="form-control form-control-sm"
+													id="ZoneSelectInput1">
+													<option value="">-- Select Zone --</option>
+												</select>
+												<div id="ZoneSelectInput1Error" class="error-message"
+													style="display: none;">Zone is required</div>
+											</div>
+
 											<div class="col-md-6">
 												<label for="projectNameInput1" class="form-label"><b>Project
 														Name:</b></label> <input type="text"
@@ -2027,6 +2125,14 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 													placeholder="Project Name">
 												<div id="projectNameInput1Error" class="error-message"
 													style="display: none;">Project Name is required</div>
+											</div>
+											<div class="col-md-6">
+												<label for="projectLocationInput1" class="form-label"><b>Project
+														Location:</b></label> <input type="text"
+													class="form-control form-control-sm"
+													id="projectLocationInput1" placeholder="Project Location">
+												<div id="projectLocationInput1Error" class="error-message"
+													style="display: none;">Project Location is required</div>
 											</div>
 										</div>
 									</form>
@@ -2207,6 +2313,188 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 					</div>
 
 
+					<!-- Create User Mapping -->
+					<div class="modal fade" id="userMappingModal" tabindex="-1"
+						role="dialog">
+						<div class="modal-dialog modal-lg" role="document">
+							<div class="modal-content">
+
+								<div class="modal-header">
+									<h5>
+										<b>Create User Mapping</b>
+									</h5>
+									<button type="button" class="close" data-dismiss="modal">
+										<span>&times;</span>
+									</button>
+								</div>
+
+								<div class="modal-body">
+									<div class="row">
+
+										<div class="col-md-6 mb-3">
+											<label><b>User</b></label> <select
+												class="form-control form-control-sm" id="usermapUserSelect">
+												<option value="">Select User</option>
+											</select> <small id="usermapUserError" class="text-danger d-none"></small>
+										</div>
+
+										<div class="col-md-6 mb-3">
+											<label><b>Zone's</b></label>
+											<div style="position: relative;">
+												<button class="btn btn-sm btn-light" type="button"
+													id="usermapZoneDropdown"
+													style="width: 100%; background-color: white; text-align: left; border: 1px solid #ced4da;">
+													Select Zone's <span style="float: right;">&#9662;</span>
+												</button>
+												<div id="usermapZoneDropdownMenu"
+													style="display: none; border: 1px solid #ccc; max-height: 200px; overflow-y: auto; background: white; position: absolute; width: 100%; z-index: 2000;">
+												</div>
+											</div>
+											<small id="usermapZoneError" class="text-danger d-none"></small>
+										</div>
+
+
+									</div>
+
+									<div class="row">
+										<div class="col-md-6 mb-3">
+											<label><b>Follow-up Access</b></label> <select
+												class="form-control form-control-sm" id="followupAccess">
+												<option value="">Select Follow-up Access</option>
+												<option value="1">Own Follow-up (Create, Edit,
+													Delete)</option>
+												<option value="2">Within Zone Follow-up (Create,
+													Edit, Delete)</option>
+											</select> <small id="followupAccessError" class="text-danger d-none"></small>
+										</div>
+									</div>
+								</div>
+
+								<div class="modal-footer">
+									<button type="button" class="btn btn-danger btn-sm"
+										data-dismiss="modal">Close</button>
+									<button type="button" class="btn btn-success btn-sm"
+										id="createUserMapping">Create</button>
+								</div>
+
+							</div>
+						</div>
+					</div>
+
+					<!-- Update User Mapping -->
+					<div class="modal fade" id="userMappingUpdateModal" tabindex="-1"
+						role="dialog">
+						<div class="modal-dialog modal-lg" role="document">
+							<div class="modal-content">
+
+								<div class="modal-header">
+									<h5>
+										<b>Update User Mapping</b>
+									</h5>
+									<button type="button" class="close" data-dismiss="modal">
+										<span>&times;</span>
+									</button>
+								</div>
+
+								<div class="modal-body">
+									<input type="hidden" id="userMappingIdUp">
+									<div class="row">
+
+
+
+
+										<div class="col-md-6 mb-3">
+											<label><b>User</b></label> <input type="text"
+												class="form-control form-control-sm"
+												id="usermapUserSelectUp" readonly> <input
+												type="hidden" id="usermapUserIdUp"> <small
+												id="usermapUserUpError" class="text-danger d-none"></small>
+										</div>
+										<div class="col-md-6 mb-3">
+											<label><b>Zone's</b></label>
+											<div style="position: relative;">
+												<button class="btn btn-sm btn-light" type="button"
+													id="usermapZoneDropdownUp"
+													style="width: 100%; background-color: white; text-align: left; border: 1px solid #ced4da;">
+													Select Zone's <span style="float: right;">&#9662;</span>
+												</button>
+												<div id="usermapZoneDropdownMenuUp"
+													style="display: none; border: 1px solid #ccc; max-height: 200px; overflow-y: auto; background: white; position: absolute; width: 100%; z-index: 2000;">
+												</div>
+											</div>
+											<small id="usermapZoneUpError" class="text-danger d-none"></small>
+										</div>
+
+									</div>
+
+									<div class="row">
+										<div class="col-md-6 mb-3">
+											<label><b>Follow-up Access</b></label> <select
+												class="form-control form-control-sm" id="followupAccessUp">
+												<option value="">Select Follow-up Access</option>
+												<option value="1">Own Follow-up (Create, Edit,
+													Delete)</option>
+												<option value="2">Within Zone Follow-up (Create,
+													Edit, Delete)</option>
+											</select> <small id="followupAccessUpError" class="text-danger d-none"></small>
+										</div>
+									</div>
+								</div>
+
+								<div class="modal-footer">
+									<button type="button" class="btn btn-danger btn-sm"
+										data-dismiss="modal">Close</button>
+									<button type="button" class="btn btn-success btn-sm"
+										id="updateUserMapping">Update</button>
+								</div>
+
+							</div>
+						</div>
+					</div>
+
+					<!-- Confirm Update User Mapping -->
+					<div class="modal fade" id="exampleModalCenter105" tabindex="-1"
+						role="dialog" aria-labelledby="exampleModalCenterTitle"
+						aria-hidden="true">
+						<div class="modal-dialog modal-dialog-centered" role="document">
+							<div class="modal-content"
+								style="width: 54%; right: -22%; border-width: thick; border-color: #eaecf4;">
+								<div class="modal-header1"></div>
+								<div class="modal-body">
+									<b>Are you sure you want to update?</b>
+								</div>
+								<div class="modal-footer">
+									<button type="button" class="btn btn-secondary btn-sm"
+										id="cancellusermappingmodal">NO</button>
+									<button type="button" class="btn btn-info btn-sm"
+										id="confirmusermappingupd">YES</button>
+								</div>
+							</div>
+						</div>
+					</div>
+
+					<!-- Confirm Create User Mapping -->
+					<div class="modal fade" id="exampleModalCenter104" tabindex="-1"
+						role="dialog" aria-labelledby="exampleModalCenterTitle"
+						aria-hidden="true">
+						<div class="modal-dialog modal-dialog-centered" role="document">
+							<div class="modal-content"
+								style="width: 54%; right: -22%; border-width: thick; border-color: #eaecf4;">
+								<div class="modal-header1"></div>
+								<div class="modal-body">
+									<b>Are you sure you want to create?</b>
+								</div>
+								<div class="modal-footer">
+									<button type="button" class="btn btn-secondary btn-sm"
+										data-dismiss="modal">NO</button>
+									<button type="button" class="btn btn-info btn-sm"
+										id="confirmusermappingYes">YES</button>
+								</div>
+							</div>
+						</div>
+					</div>
+
+
 				</div>
 			</div>
 		</div>
@@ -2215,47 +2503,45 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 	<a class="scroll-to-top rounded" href="#page-top"> <i
 		class="fas fa-angle-up"></i>
 	</a>
-	<script src="js/config.js"></script>
+
 	<script src="vendor/jquery/jquery.min.js"></script>
 	<script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
 	<script src="vendor/jquery-easing/jquery.easing.min.js"></script>
-	<script src="js/ruang-admin.min.js"></script>
-	<!-- Page level plugins -->
+
 	<script src="vendor/datatables/jquery.dataTables.min.js"></script>
 	<script src="vendor/datatables/dataTables.bootstrap4.min.js"></script>
-	<!-- <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script> -->
+			<script src="js/config.js?v=<%=jsVersion%>"></script>
 	<script
-		src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
-	<script
-		src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-	<script
-		src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
-	<script
-		src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
-	<script
-		src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
-	<script
-		src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
-	<!-- <script src="js/SaleMaster.js"></script> -->
+			src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
+		<script
+			src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+		<script
+			src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
+		<script
+			src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
+		<script
+			src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
+		<script
+			src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
 
-	<script src="js/SaleMaster.js?v=<%=ts%>"></script>
-	<script src="js/logout.js"></script>
-	<script src="js/username.js"></script>
-	<script src="js/factoryid.js"></script>
-	<script src="js/modifiedby.js"></script>
-	<script src="js/createdby.js"></script>
-	<script src="js/Sessionfilter.js"></script>
+	
+	<script src="js/SaleMaster.js?v=<%=jsVersion%>"></script>
+	<script src="js/logout.js?v=<%=jsVersion%>"></script>
+	<script src="js/username.js?v=<%=jsVersion%>"></script>
+
+	<script src="js/modifiedby.js?v=<%=jsVersion%>"></script>
+	<script src="js/createdby.js?v=<%=jsVersion%>"></script>
+	<script src="js/Sessionfilter.js?v=<%=jsVersion%>"></script>
 	<script>
-/* const moduleId = localStorage.getItem("selectedModuleId"); */
-  // This maps action names from the API to button IDs on this page
+
   window.actionElementMap = {
   };
 </script>
-	<script src="js/permissions.js"></script>
+	<script src="js/permissions.js?v=<%=jsVersion%>"></script>
 	<script>
 	function toggleTables() {
 	    const tables = ['registerTable', 'vehicleTable', 'designTable', 'segmentTable',
-	                     'clientTable', 'stageTable', 'contactTable', 'projectTable', 'subZoneTable'];
+	                     'clientTable', 'stageTable', 'contactTable', 'projectTable', 'subZoneTable','UserMappingTable'];
 	    tables.forEach(tableId => {
 	        document.getElementById(tableId).style.display = 'none';
 	    });
@@ -2286,6 +2572,10 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 	    } else if (document.getElementById('subZoneRadio').checked) {
 	        fetchsubzones();
 	        document.getElementById('subZoneTable').style.display = 'block';
+	    }
+	    else if (document.getElementById('UserMappingRadio').checked) {
+	    	fetchusermapping();
+	        document.getElementById('UserMappingTable').style.display = 'block';
 	    }
 	}
 

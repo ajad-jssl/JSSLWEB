@@ -229,6 +229,69 @@ button.close { padding:0; background:transparent; border:0; }
 }
 
 
+@media (max-width: 768px) {
+  /* Technician chips: let them wrap naturally instead of being squeezed right-aligned */
+  .table-responsive td[data-label="Technician Assigned"] {
+    flex-direction: column; align-items: flex-start; text-align: left;
+  }
+  .table-responsive td[data-label="Technician Assigned"] .worker-chip {
+    width: 100%; margin-bottom: 4px;
+  }
+
+  /* Actions cell: Assign/Close/View buttons stack full width */
+  .table-responsive td[data-label="Actions"] {
+    flex-direction: column; align-items: stretch; text-align: left; gap: 6px;
+  }
+  .table-responsive td[data-label="Actions"] button {
+    width: 100%; margin: 0 !important; justify-content: center; display: flex; align-items: center; gap: 6px;
+  }
+
+  /* Description can be long — allow it to wrap instead of truncating oddly */
+  .table-responsive td[data-label="Description"] {
+    white-space: normal; text-align: left; flex-direction: column; align-items: flex-start;
+  }
+}
+
+
+@media (max-width: 576px) {
+  #ticketPagination { justify-content: center !important; }
+  .page-btn { min-width: 30px; padding: 4px 8px; }
+}
+
+
+@media (max-width: 576px) {
+  #workerSelect option { padding: 8px 6px; font-size:13px; }
+}
+
+
+@media (max-width: 576px) {
+  .detail-info-grid { grid-template-columns: 1fr; }
+  .detail-info-grid .span-2 { grid-column: span 1; }
+  .work-log-row { flex-wrap: wrap; gap: 4px 8px; }
+  .work-log-row .worker-name { min-width: 100%; }
+  .log-hours { margin-left: 0; }
+}
+
+@media (max-width: 768px) {
+  .table-responsive table thead { display: none; }
+  .table-responsive table, .table-responsive tbody, .table-responsive tr, .table-responsive td {
+    display: block; width: 100%;
+  }
+  .table-responsive tr {
+    margin-bottom: 12px; border: 1px solid #e3e6f0; border-radius: 10px;
+    padding: 8px 12px; box-shadow: 0 1px 4px rgba(0,0,0,.06);
+  }
+  .table-responsive td {
+    border: none !important; padding: 6px 0 !important;
+    display: flex; justify-content: space-between; align-items: center; gap: 10px;
+    text-align: right;
+  }
+  .table-responsive td::before {
+    content: attr(data-label);
+    font-weight: 600; color: #37499A; font-size: 11px; text-align: left;
+  }
+}
+
 </style>
 </head>
 <body>

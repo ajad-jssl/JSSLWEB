@@ -20,10 +20,8 @@ response.setDateHeader("Expires", 0);
 <!-- Bootstrap -->
 <link href="vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet"
 	type="text/css">
-
-<!-- Bootstrap Icons -->
-<link
-	href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.5.0/font/bootstrap-icons.min.css"
+	<link
+	href="externalLibrary/cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.5.0/font/bootstrap-icons.min.css"
 	rel="stylesheet">
 
 <!-- Font Awesome -->
@@ -36,14 +34,9 @@ response.setDateHeader("Expires", 0);
 <!-- Main CSS -->
 <link rel="stylesheet" href="css/main.css">
 
-<script src="js/sidebar.js"></script>
 
-<!-- jsPDF + autoTable -->
-<script
-	src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script
-	src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
-
+	<link rel="stylesheet"
+	href="externalLibrary/cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css" />
 <style>
 .error-message {
 	color: red;
@@ -275,6 +268,14 @@ keyframes dots { 0% {
 
 
 
+
+
+
+
+
+
+
+
 %
 {
 content
@@ -292,7 +293,23 @@ content
 
 
 
+
+
+
+
+
+
+
+
 :
+
+
+
+
+
+
+
+
 
 
 
@@ -324,6 +341,14 @@ content
 
 
 
+
+
+
+
+
+
+
+
 %
 {
 content
@@ -341,7 +366,23 @@ content
 
 
 
+
+
+
+
+
+
+
+
 :
+
+
+
+
+
+
+
+
 
 
 
@@ -373,6 +414,14 @@ content
 
 
 
+
+
+
+
+
+
+
+
 %
 {
 content
@@ -390,7 +439,23 @@ content
 
 
 
+
+
+
+
+
+
+
+
 :
+
+
+
+
+
+
+
+
 
 
 
@@ -559,6 +624,18 @@ textarea.enquiry-input {
 		padding: 16px 18px;
 	}
 }
+
+.enquiry-field.has-error .enquiry-input {
+	border-color: #dc3545;
+	box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.12);
+}
+
+.field-error-msg {
+	color: #dc3545;
+	font-size: 11.5px;
+	margin-top: 4px;
+	line-height: 1.3;
+}
 </style>
 </head>
 
@@ -566,7 +643,7 @@ textarea.enquiry-input {
 	<div id="wrapper">
 
 		<!-- Sidebar -->
-		<%@ include file="SaleSidebar.jsp" %>
+		<%@ include file="SaleSidebar.jsp"%>
 
 		<!-- Content Wrapper -->
 		<div id="content-wrapper" class="d-flex flex-column">
@@ -606,7 +683,7 @@ textarea.enquiry-input {
 					class="d-sm-flex align-items-center justify-content-between mb-4">
 					<h1 class="h3 mb-0 text-gray-800">CRM Enquire Entry</h1>
 					<ol class="breadcrumb">
-						<li class="breadcrumb-item"><a href="Dashboard.jsp">Home</a></li>
+						<li class="breadcrumb-item"><a href="SaleDashBoard.jsp">Home</a></li>
 						<li class="breadcrumb-item active" aria-current="page">Crm
 							Entry</li>
 
@@ -629,9 +706,10 @@ textarea.enquiry-input {
 
 
 
+
 							<div class="table-responsive p-3">
 								<table class="table table-striped table-bordered table-sm"
-									id="tableID" width="100%">
+									id="EnquiryTableID" width="100%">
 									<thead>
 										<tr>
 											<th>Sl. No.</th>
@@ -639,7 +717,9 @@ textarea.enquiry-input {
 											<th>Lead No</th>
 											<th>Area/Qty</th>
 											<th>Suggestedbidvalue</th>
-											<th>Status</th>
+											<th>client Name</th>
+											<th>ProjectName</th>
+											<th>Current Stage</th>
 											<th>Edit</th>
 											<th>Follow-up</th>
 										</tr>
@@ -675,229 +755,212 @@ textarea.enquiry-input {
 							</div>
 							<!-- Body -->
 							<div class="modal-body enquiry-modal-body">
-    <div class="form-row">
+								<div class="form-row">
 
-        <!-- Lead No -->
-<div class="form-group col-md-4 enquiry-field">
-    <label>
-        <i class="fas fa-hashtag enquiry-icon"></i> Lead No <span class="text-danger">*</span>
-    </label>
+									<!-- Lead No -->
+									<div class="form-group col-md-4 enquiry-field">
+										<label> <i class="fas fa-hashtag enquiry-icon"></i>
+											Lead No <span class="text-danger">*</span>
+										</label> <select id="leadNo"
+											class="form-control form-control-sm enquiry-input" required>
+											<option value="">Select Lead No</option>
+										</select>
+									</div>
 
-    <select id="leadNo"
-            class="form-control form-control-sm enquiry-input"
-            required>
-        <option value="">Select Lead No</option>
-    </select>
-</div>
+									<!-- Project Name -->
+									<div class="form-group col-md-4 enquiry-field">
+										<label><i class="fas fa-project-diagram enquiry-icon"></i>
+											Project Name</label> <input type="text" id="projectName"
+											class="form-control form-control-sm enquiry-input"
+											placeholder="Enter Project Name" readonly="readonly">
+									</div>
 
-        <!-- Project Name -->
-        <div class="form-group col-md-4 enquiry-field">
-            <label><i class="fas fa-project-diagram enquiry-icon"></i> Project Name</label>
-            <input type="text" id="projectName"
-                class="form-control form-control-sm enquiry-input"
-                placeholder="Enter Project Name" readonly="readonly">
-        </div>
+									<!-- Client Name -->
+									<div class="form-group col-md-4 enquiry-field">
+										<label><i class="fas fa-building enquiry-icon"></i>
+											Client Name</label> <input type="text" id="clientName"
+											class="form-control form-control-sm enquiry-input"
+											placeholder="Enter Client Name" readonly="readonly">
+									</div>
 
-        <!-- Client Name -->
-        <div class="form-group col-md-4 enquiry-field">
-            <label><i class="fas fa-building enquiry-icon"></i> Client Name</label>
-            <input type="text" id="clientName"
-                class="form-control form-control-sm enquiry-input"
-                placeholder="Enter Client Name" readonly="readonly">
-        </div>
+									<!-- Site Location -->
+									<div class="form-group col-md-4 enquiry-field">
+										<label><i class="fas fa-map-marker-alt enquiry-icon"></i>
+											Site Location</label> <input type="text" id="siteLocation"
+											class="form-control form-control-sm enquiry-input"
+											placeholder="Enter Site Location" readonly="readonly">
+									</div>
 
-        <!-- Site Location -->
-        <div class="form-group col-md-4 enquiry-field">
-            <label><i class="fas fa-map-marker-alt enquiry-icon"></i> Site Location</label>
-            <input type="text" id="siteLocation"
-                class="form-control form-control-sm enquiry-input"
-                placeholder="Enter Site Location" readonly="readonly">
-        </div>
+									<!-- Zone -->
+									<div class="form-group col-md-4 enquiry-field">
+										<label><i class="fas fa-globe enquiry-icon"></i> Zone</label>
+										<input type="text" id="zone"
+											class="form-control form-control-sm enquiry-input"
+											placeholder="Enter Zone" readonly="readonly">
+									</div>
 
-        <!-- Zone -->
-        <div class="form-group col-md-4 enquiry-field">
-            <label><i class="fas fa-globe enquiry-icon"></i> Zone</label>
-            <input type="text" id="zone"
-                class="form-control form-control-sm enquiry-input"
-                placeholder="Enter Zone" readonly="readonly">
-        </div>
+									<!-- Area / Qty -->
+									<div class="form-group col-md-4 enquiry-field">
+										<label><i class="fas fa-ruler-combined enquiry-icon"></i>
+											Area / Qty(MT) <span class="text-danger">*</span> </label> <input type="text" id="areaQty"
+											class="form-control form-control-sm enquiry-input"
+											placeholder="Enter Area / Qty">
+									</div>
 
-        <!-- Area / Qty -->
-        <div class="form-group col-md-4 enquiry-field">
-            <label><i class="fas fa-ruler-combined enquiry-icon"></i> Area / Qty</label>
-            <input type="text" id="areaQty"
-                class="form-control form-control-sm enquiry-input"
-                placeholder="Enter Area / Qty">
-        </div>
+									<!-- Suggested Bid Value -->
+									<div class="form-group col-md-4 enquiry-field">
+										<label>  <i class="fas fa-rupee-sign enquiry-icon"></i>
+											Suggested Bid Value (Cr) <span class="text-danger">*</span> </label> <input type="text"
+											id="suggestedBidValue"
+											class="form-control form-control-sm enquiry-input"
+											placeholder="Enter Suggested Bid Value">
+									</div>
 
-        <!-- Suggested Bid Value -->
-        <div class="form-group col-md-4 enquiry-field">
-            <label><i class="fas fa-rupee-sign enquiry-icon"></i> Suggested Bid Value (Cr)</label>
-            <input type="text" id="suggestedBidValue"
-                class="form-control form-control-sm enquiry-input"
-                placeholder="Enter Suggested Bid Value">
-        </div>
+									<!-- Segment -->
+									<div class="form-group col-md-4 enquiry-field">
+										<label><i class="fas fa-layer-group enquiry-icon"></i>
+											Segment <span class="text-danger">*</span> </label> <select id="segment"
+											class="form-control form-control-sm enquiry-input">
+										</select>
+									</div>
 
-        <!-- Segment -->
-        <div class="form-group col-md-4 enquiry-field">
-            <label><i class="fas fa-layer-group enquiry-icon"></i> Segment</label>
-            <select id="segment" class="form-control form-control-sm enquiry-input">
-            </select>
-        </div>
+									<!-- Design Basis -->
+									<div class="form-group col-md-4 enquiry-field">
+										<label><i class="fas fa-drafting-compass enquiry-icon"></i>
+											Design Basis <span class="text-danger">*</span></label> <select id="designBasis"
+											class="form-control form-control-sm enquiry-input">
+											<option value="">Select Design Basis</option>
+											<option value="1">Design and Build Basis</option>
+											<option value="2">Client Design</option>
+										</select>
+									</div>
 
-        <!-- Design Basis -->
-        <div class="form-group col-md-4 enquiry-field">
-            <label><i class="fas fa-drafting-compass enquiry-icon"></i> Design Basis</label>
-            <select id="designBasis" class="form-control form-control-sm enquiry-input">
-                <option value="">Select Design Basis</option>
-                <option value="1">Design and Build Basis</option>
-                <option value="2">Client Design</option>
-            </select>
-        </div>
 
-        <!-- Painting Requirement -->
-        <div class="form-group col-md-4 enquiry-field">
-            <label><i class="fas fa-paint-roller enquiry-icon"></i> Painting Requirement</label>
-            <select id="paintingRequirement" class="form-control form-control-sm enquiry-input">
-                <option value="">Select Painting Requirement</option>
-                <option value="1">Primer Only</option>
-                <option value="2">Primer + Finish Coat</option>
-                <option value="3">Primer + Intermediary + Finish Coat</option>
-            </select>
-        </div>
+									<div class="form-group col-md-4 enquiry-field">
+										<label><i class="fas fa-tasks enquiry-icon"></i>
+											Current Stage </label> <select id="currentStage"
+											class="form-control form-control-sm enquiry-input enquiry-readonly"
+											disabled></select>
+									</div>
+								
 
-        <!-- Type of Enquiry -->
-        <div class="form-group col-md-4 enquiry-field">
-            <label><i class="fas fa-file-alt enquiry-icon"></i> Type of Enquiry</label>
-            <select id="enquiryType" class="form-control form-control-sm enquiry-input">
-                <option value="">Select Type</option>
-                <option value="1">Budgetary</option>
-                <option value="2">Firm for Finalization</option>
-            </select>
-        </div>
+									<div class="form-group col-md-4 enquiry-field">
+										<label><i class="fas fa-calendar-check enquiry-icon"></i>
+											Tentative Closure Month</label> <input type="month"
+											id="tentClosureMon"
+											class="form-control form-control-sm enquiry-input">
+									</div>
 
-        <!-- Fire Proofing -->
-        <div class="form-group col-md-4 enquiry-field">
-            <label><i class="fas fa-fire-extinguisher enquiry-icon"></i> Fire Proofing Required</label>
-            <select id="fireProofing" class="form-control form-control-sm enquiry-input">
-                <option value="">Select</option>
-                <option value="1">Yes</option>
-                <option value="0">No</option>
-            </select>
-        </div>
+									<!-- Painting Requirement -->
+									<div class="form-group col-md-4 enquiry-field">
+										<label><i class="fas fa-paint-roller enquiry-icon"></i>
+											Painting Requirement <span class="text-danger">*</span> </label> <select id="paintingRequirement"
+											class="form-control form-control-sm enquiry-input">
+											<option value="">Select Painting Requirement</option>
+											<option value="1">Primer Only</option>
+											<option value="2">Primer + Finish Coat</option>
+											<option value="3">Primer + Intermediary + Finish
+												Coat</option>
+										</select>
+									</div>
 
-        <!-- Client Payment Terms -->
-<!--         <div class="form-group col-md-4 enquiry-field">
-            <label><i class="fas fa-money-check-alt enquiry-icon"></i> Client's Payment Terms</label>
-            <select id="paymentTerms" class="form-control form-control-sm enquiry-input">
-                <option value="">Select Payment Terms</option>
-                <option value="1">Advance</option>
-                <option value="2">Stage 1</option>
-                <option value="3">Stage 2</option>
-                <option value="4">Stage 3</option>
-            </select>
-        </div> -->
-        <div class="form-group col-md-12 enquiry-field">
-    <label>
-        <i class="fas fa-money-check-alt enquiry-icon"></i>
-        Client's Payment Terms
-    </label>
+									<!-- Type of Enquiry -->
+									<div class="form-group col-md-4 enquiry-field">
+										<label><i class="fas fa-file-alt enquiry-icon"></i>
+											Type of Enquiry <span class="text-danger">*</span> </label> <select id="enquiryType"
+											class="form-control form-control-sm enquiry-input">
+											<option value="">Select Type</option>
+											<option value="1">Budgetary</option>
+											<option value="2">Firm for Finalization</option>
+										</select>
+									</div>
 
-    <div id="paymentTerms" style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
+									<!-- Fire Proofing -->
+									<div class="form-group col-md-4 enquiry-field">
+										<label><i
+											class="fas fa-fire-extinguisher enquiry-icon"></i> Fire
+											Proofing Required <span class="text-danger">*</span> </label> <select id="fireProofing"
+											class="form-control form-control-sm enquiry-input">
+											<option value="">Select</option>
+											<option value="1">Yes</option>
+											<option value="0">No</option>
+										</select>
+									</div>
 
-        <div class="payment-term-row">
-            <label>
-                <input type="checkbox" class="payment-term" value="1">
-                Advance
-            </label>
-            <input type="number"
-                   class="payment-percentage"
-                   data-value="1"
-                   min="0"
-                   max="100"
-                   step="0.01"
-                   placeholder="%"
-                   disabled>
-        </div>
 
-        <div class="payment-term-row">
-            <label>
-                <input type="checkbox" class="payment-term" value="2">
-                Stage 1
-            </label>
-            <input type="number"
-                   class="payment-percentage"
-                   data-value="2"
-                   min="0"
-                   max="100"
-                   step="0.01"
-                   placeholder="%"
-                   disabled>
-        </div>
+									<div class="form-group col-md-12 enquiry-field">
+										<label> <i class="fas fa-money-check-alt enquiry-icon"></i>
+											Client's Payment Terms
+										</label>
 
-        <div class="payment-term-row">
-            <label>
-                <input type="checkbox" class="payment-term" value="3">
-                Stage 2
-            </label>
-            <input type="number"
-                   class="payment-percentage"
-                   data-value="3"
-                   min="0"
-                   max="100"
-                   step="0.01"
-                   placeholder="%"
-                   disabled>
-        </div>
+										<div id="paymentTerms"
+											style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
 
-        <div class="payment-term-row">
-            <label>
-                <input type="checkbox" class="payment-term" value="4">
-                Stage 3
-            </label>
-            <input type="number"
-                   class="payment-percentage"
-                   data-value="4"
-                   min="0"
-                   max="100"
-                   step="0.01"
-                   placeholder="%"
-                   disabled>
-        </div>
+											<div class="payment-term-row">
+												<label> <input type="checkbox" class="payment-term"
+													value="1"> Advance
+												</label> <input type="number" class="payment-percentage"
+													data-value="1" min="0" max="100" step="0.01"
+													placeholder="%" disabled>
+											</div>
 
-    </div>
+											<div class="payment-term-row">
+												<label> <input type="checkbox" class="payment-term"
+													value="2"> Stage 1
+												</label> <input type="number" class="payment-percentage"
+													data-value="2" min="0" max="100" step="0.01"
+													placeholder="%" disabled>
+											</div>
 
-    <small id="paymentTotalMessage" class="text-muted">
-        Total: 0%
-    </small>
-</div>
+											<div class="payment-term-row">
+												<label> <input type="checkbox" class="payment-term"
+													value="3"> Stage 2
+												</label> <input type="number" class="payment-percentage"
+													data-value="3" min="0" max="100" step="0.01"
+													placeholder="%" disabled>
+											</div>
 
-        <!-- Attachments -->
-        <div class="form-group col-md-12 enquiry-field">
-            <label><i class="fas fa-paperclip enquiry-icon"></i> Attachments</label>
-            <input type="file" id="attachments"
-                class="form-control form-control-sm enquiry-input"
-                multiple>
-        </div>
+											<div class="payment-term-row">
+												<label> <input type="checkbox" class="payment-term"
+													value="4"> Stage 3
+												</label> <input type="number" class="payment-percentage"
+													data-value="4" min="0" max="100" step="0.01"
+													placeholder="%" disabled>
+											</div>
 
-        <!-- Attachment Remarks -->
-        <div class="form-group col-md-12 enquiry-field">
-            <label><i class="fas fa-comment-dots enquiry-icon"></i> Attachment Remarks</label>
-            <textarea id="attachmentRemarks" rows="3"
-                class="form-control form-control-sm enquiry-input"
-                placeholder="Enter Attachment Remarks"></textarea>
-        </div>
+										</div>
 
-        <!-- Fire Proofing Remarks -->
-        <div class="form-group col-md-12 enquiry-field">
-            <label><i class="fas fa-sticky-note enquiry-icon"></i> Fire Proofing Remarks</label>
-            <textarea id="fireProofingRemarks" rows="3"
-                class="form-control form-control-sm enquiry-input"
-                placeholder="Enter Fire Proofing Remarks"></textarea>
-        </div>
+										<small id="paymentTotalMessage" class="text-muted">
+											Total: 0% </small>
+									</div>
 
-    </div>
-</div>
+									<!-- Attachments -->
+									<div class="form-group col-md-12 enquiry-field">
+										<label><i class="fas fa-paperclip enquiry-icon"></i>
+											Attachments</label> <input type="file" id="attachments"
+											class="form-control form-control-sm enquiry-input" multiple>
+									</div>
+
+									<!-- Attachment Remarks -->
+									<div class="form-group col-md-12 enquiry-field">
+										<label><i class="fas fa-comment-dots enquiry-icon"></i>
+											Attachment Remarks</label>
+										<textarea id="attachmentRemarks" rows="3"
+											class="form-control form-control-sm enquiry-input"
+											placeholder="Enter Attachment Remarks"></textarea>
+									</div>
+
+									<!-- Fire Proofing Remarks -->
+									<div class="form-group col-md-12 enquiry-field">
+										<label><i class="fas fa-sticky-note enquiry-icon"></i>
+											Fire Proofing Remarks</label>
+										<textarea id="fireProofingRemarks" rows="3"
+											class="form-control form-control-sm enquiry-input"
+											placeholder="Enter Fire Proofing Remarks"></textarea>
+									</div>
+
+								</div>
+							</div>
 
 
 							<!-- Footer -->
@@ -933,221 +996,189 @@ textarea.enquiry-input {
 							</div>
 
 							<div class="modal-body enquiry-modal-body">
-    <div class="form-row">
+								<div class="form-row">
 
-        <!-- Enquiry No -->
-        <div class="form-group col-md-4 enquiry-field">
-            <label><i class="fas fa-hashtag enquiry-icon"></i> Enquiry No</label>
-            <input type="text" id="enqNo1"
-                class="form-control form-control-sm enquiry-input enquiry-readonly"
-                readonly>
-        </div>
+									<!-- Enquiry No -->
+									<div class="form-group col-md-4 enquiry-field">
+										<label><i class="fas fa-hashtag enquiry-icon"></i>
+											Enquiry No</label> <input type="text" id="enqNo1"
+											class="form-control form-control-sm enquiry-input enquiry-readonly"
+											readonly>
+									</div>
 
-<!-- Lead No -->
-<div class="form-group col-md-4 enquiry-field">
-    <label><i class="fas fa-hashtag enquiry-icon"></i> Lead No</label>
-    <input type="text" id="leadNo1"
-        class="form-control form-control-sm enquiry-input enquiry-readonly"
-        readonly>
-</div>
+									<!-- Lead No -->
+									<div class="form-group col-md-4 enquiry-field">
+										<label><i class="fas fa-hashtag enquiry-icon"></i>
+											Lead No</label> <input type="text" id="leadNo1"
+											class="form-control form-control-sm enquiry-input enquiry-readonly"
+											readonly>
+									</div>
 
-<!-- Area Qty -->
-<div class="form-group col-md-4 enquiry-field">
-    <label><i class="fas fa-ruler-combined enquiry-icon"></i> Area / Qty</label>
-    <input type="text" id="areaQty1"
-        class="form-control form-control-sm enquiry-input">
-</div>
+									<!-- Area Qty -->
+									<div class="form-group col-md-4 enquiry-field">
+										<label><i class="fas fa-ruler-combined enquiry-icon"></i>
+											Area / Qty(MT)  <span class="text-danger">*</span> </label> <input type="text" id="areaQty1"
+											class="form-control form-control-sm enquiry-input">
+									</div>
 
-<!-- Suggested Bid Value -->
-<div class="form-group col-md-4 enquiry-field">
-    <label><i class="fas fa-rupee-sign enquiry-icon"></i> Suggested Bid Value (Cr)</label>
-    <input type="text" id="suggestedBidValue1"
-        class="form-control form-control-sm enquiry-input">
-</div>
+									<!-- Suggested Bid Value -->
+									<div class="form-group col-md-4 enquiry-field">
+										<label><i class="fas fa-rupee-sign enquiry-icon"></i>
+											Suggested Bid Value (Cr) <span class="text-danger">*</span> </label> <input type="text"
+											id="suggestedBidValue1"
+											class="form-control form-control-sm enquiry-input">
+									</div>
 
-<!-- Segment -->
-<div class="form-group col-md-4 enquiry-field">
-    <label><i class="fas fa-layer-group enquiry-icon"></i> Segment</label>
-    <select id="segment1"
-        class="form-control form-control-sm enquiry-input">
-    </select>
-</div>
+									<!-- Segment -->
+									<div class="form-group col-md-4 enquiry-field">
+										<label><i class="fas fa-layer-group enquiry-icon"></i>
+											Segment <span class="text-danger">*</span> </label> <select id="segment1"
+											class="form-control form-control-sm enquiry-input">
+										</select>
+									</div>
 
-<!-- Design Basis -->
-<div class="form-group col-md-4 enquiry-field">
-    <label><i class="fas fa-drafting-compass enquiry-icon"></i> Design Basis</label>
-    <select id="designBasis1"
-        class="form-control form-control-sm enquiry-input">
-        <option value="">Select Design Basis</option>
-        <option value="1">Design and Build Basis</option>
-        <option value="2">Client Design</option>
-    </select>
-</div>
+									<!-- Design Basis -->
+									<div class="form-group col-md-4 enquiry-field">
+										<label><i class="fas fa-drafting-compass enquiry-icon"></i>
+											Design Basis <span class="text-danger">*</span> </label> <select id="designBasis1"
+											class="form-control form-control-sm enquiry-input">
+											<option value="">Select Design Basis</option>
+											<option value="1">Design and Build Basis</option>
+											<option value="2">Client Design</option>
+										</select>
+									</div>
 
-<!-- Painting Requirement -->
-<div class="form-group col-md-4 enquiry-field">
-    <label><i class="fas fa-paint-roller enquiry-icon"></i> Painting Requirement</label>
-    <select id="paintingRequirement1"
-        class="form-control form-control-sm enquiry-input">
-        <option value="">Select Painting Requirement</option>
-        <option value="1">Primer Only</option>
-        <option value="2">Primer + Finish Coat</option>
-        <option value="3">Primer + Intermediary + Finish Coat</option>
-    </select>
-</div>
+									<div class="form-group col-md-4 enquiry-field">
+										<label><i class="fas fa-tasks enquiry-icon"></i>
+											Current Stage</label> <select id="currentStage1"
+											class="form-control form-control-sm enquiry-input enquiry-readonly"
+											disabled></select>
+									</div>
+									<div class="form-group col-md-4 enquiry-field">
+										<label><i class="fas fa-calendar-check enquiry-icon"></i>
+											Tentative Closure Month</label> <input type="month"
+											id="tentClosureMon1"
+											class="form-control form-control-sm enquiry-input">
+									</div>
 
-<!-- Type of Enquiry -->
-<div class="form-group col-md-4 enquiry-field">
-    <label><i class="fas fa-file-alt enquiry-icon"></i> Type of Enquiry</label>
-    <select id="enquiryType1"
-        class="form-control form-control-sm enquiry-input">
-        <option value="">Select Type</option>
-        <option value="1">Budgetary</option>
-        <option value="2">Firm for Finalization</option>
-    </select>
-</div>
+									<!-- Painting Requirement -->
+									<div class="form-group col-md-4 enquiry-field">
+										<label><i class="fas fa-paint-roller enquiry-icon"></i>
+											Painting Requirement  <span class="text-danger">*</span> </label> <select id="paintingRequirement1"
+											class="form-control form-control-sm enquiry-input">
+											<option value="">Select Painting Requirement</option>
+											<option value="1">Primer Only</option>
+											<option value="2">Primer + Finish Coat</option>
+											<option value="3">Primer + Intermediary + Finish
+												Coat</option>
+										</select>
+									</div>
 
-<!-- Fire Proofing -->
-<div class="form-group col-md-4 enquiry-field">
-    <label><i class="fas fa-fire-extinguisher enquiry-icon"></i> Fire Proofing Required</label>
-    <select id="fireProofing1"
-        class="form-control form-control-sm enquiry-input">
-        <option value="">Select</option>
-        <option value="1">Yes</option>
-        <option value="0">No</option>
-    </select>
-</div>
+									<!-- Type of Enquiry -->
+									<div class="form-group col-md-4 enquiry-field">
+										<label><i class="fas fa-file-alt enquiry-icon"></i>
+											Type of Enquiry <span class="text-danger">*</span> </label> <select id="enquiryType1"
+											class="form-control form-control-sm enquiry-input">
+											<option value="">Select Type</option>
+											<option value="1">Budgetary</option>
+											<option value="2">Firm for Finalization</option>
+										</select>
+									</div>
 
-<!-- Payment Terms -->
-<!-- <div class="form-group col-md-4 enquiry-field">
-    <label><i class="fas fa-money-check-alt enquiry-icon"></i> Client's Payment Terms</label>
-    <select id="paymentTerms1"
-        class="form-control form-control-sm enquiry-input">
-        <option value="">Select Payment Terms</option>
-        <option value="1">Advance</option>
-        <option value="2">Stage 1</option>
-        <option value="3">Stage 2</option>
-        <option value="4">Stage 3</option>
-    </select>
-</div> -->
+									<!-- Fire Proofing -->
+									<div class="form-group col-md-4 enquiry-field">
+										<label><i
+											class="fas fa-fire-extinguisher enquiry-icon"></i> Fire
+											Proofing Required <span class="text-danger">*</span> </label> <select id="fireProofing1"
+											class="form-control form-control-sm enquiry-input">
+											<option value="">Select</option>
+											<option value="1">Yes</option>
+											<option value="0">No</option>
+										</select>
+									</div>
 
-<div class="form-group col-md-12 enquiry-field">
-    <label>
-        <i class="fas fa-money-check-alt enquiry-icon"></i>
-        Client's Payment Terms
-    </label>
 
-    <div id="paymentTerms1"
-         style="display:flex; align-items:center; gap:15px; flex-wrap:nowrap;">
 
-        <div style="display:flex; align-items:center; gap:5px; white-space:nowrap;">
-            <label style="margin:0;">
-                <input type="checkbox" class="payment-term1" value="1">
-                Advance
-            </label>
-            <input type="number"
-                   class="payment-percentage1"
-                   data-value="1"
-                   min="0"
-                   max="100"
-                   step="0.01"
-                   placeholder="%"
-                   disabled
-                   style="width:60px;">
-        </div>
+									<div class="form-group col-md-12 enquiry-field">
+										<label> <i class="fas fa-money-check-alt enquiry-icon"></i>
+											Client's Payment Terms
+										</label>
 
-        <div style="display:flex; align-items:center; gap:5px; white-space:nowrap;">
-            <label style="margin:0;">
-                <input type="checkbox" class="payment-term1" value="2">
-                Stage 1
-            </label>
-            <input type="number"
-                   class="payment-percentage1"
-                   data-value="2"
-                   min="0"
-                   max="100"
-                   step="0.01"
-                   placeholder="%"
-                   disabled
-                   style="width:60px;">
-        </div>
+										<div id="paymentTerms1"
+											style="display: flex; align-items: center; gap: 15px; flex-wrap: nowrap;">
 
-        <div style="display:flex; align-items:center; gap:5px; white-space:nowrap;">
-            <label style="margin:0;">
-                <input type="checkbox" class="payment-term1" value="3">
-                Stage 2
-            </label>
-            <input type="number"
-                   class="payment-percentage1"
-                   data-value="3"
-                   min="0"
-                   max="100"
-                   step="0.01"
-                   placeholder="%"
-                   disabled
-                   style="width:60px;">
-        </div>
+											<div
+												style="display: flex; align-items: center; gap: 5px; white-space: nowrap;">
+												<label style="margin: 0;"> <input type="checkbox"
+													class="payment-term1" value="1"> Advance
+												</label> <input type="number" class="payment-percentage1"
+													data-value="1" min="0" max="100" step="0.01"
+													placeholder="%" disabled style="width: 60px;">
+											</div>
 
-        <div style="display:flex; align-items:center; gap:5px; white-space:nowrap;">
-            <label style="margin:0;">
-                <input type="checkbox" class="payment-term1" value="4">
-                Stage 3
-            </label>
-            <input type="number"
-                   class="payment-percentage1"
-                   data-value="4"
-                   min="0"
-                   max="100"
-                   step="0.01"
-                   placeholder="%"
-                   disabled
-                   style="width:60px;">
-        </div>
+											<div
+												style="display: flex; align-items: center; gap: 5px; white-space: nowrap;">
+												<label style="margin: 0;"> <input type="checkbox"
+													class="payment-term1" value="2"> Stage 1
+												</label> <input type="number" class="payment-percentage1"
+													data-value="2" min="0" max="100" step="0.01"
+													placeholder="%" disabled style="width: 60px;">
+											</div>
 
-    </div>
+											<div
+												style="display: flex; align-items: center; gap: 5px; white-space: nowrap;">
+												<label style="margin: 0;"> <input type="checkbox"
+													class="payment-term1" value="3"> Stage 2
+												</label> <input type="number" class="payment-percentage1"
+													data-value="3" min="0" max="100" step="0.01"
+													placeholder="%" disabled style="width: 60px;">
+											</div>
 
-    <small id="paymentTotalMessage1" class="text-muted">
-        Total: 0%
-    </small>
-</div>
+											<div
+												style="display: flex; align-items: center; gap: 5px; white-space: nowrap;">
+												<label style="margin: 0;"> <input type="checkbox"
+													class="payment-term1" value="4"> Stage 3
+												</label> <input type="number" class="payment-percentage1"
+													data-value="4" min="0" max="100" step="0.01"
+													placeholder="%" disabled style="width: 60px;">
+											</div>
 
-<!-- Attachment -->
-<!-- <div class="form-group col-md-12 enquiry-field">
-    <label><i class="fas fa-paperclip enquiry-icon"></i> Attachments</label>
-    <input type="file" id="attachments1"
-        class="form-control form-control-sm enquiry-input"
-        multiple>
-</div> -->
-<div class="form-group col-md-12 enquiry-field">
+										</div>
 
-    <label>
-        <i class="fas fa-paperclip enquiry-icon"></i>
-        Attachment
-    </label>
+										<small id="paymentTotalMessage1" class="text-muted">
+											Total: 0% </small>
+									</div>
 
-    <input type="file"
-           id="attachments1"
-           class="form-control form-control-sm enquiry-input">
 
-    <div id="existingAttachment1" class="mt-2"></div>
 
-</div>
+									<div class="form-group col-md-12 enquiry-field">
 
-<!-- Attachment Remarks -->
-<div class="form-group col-md-12 enquiry-field">
-    <label><i class="fas fa-comment-dots enquiry-icon"></i> Attachment Remarks</label>
-    <textarea id="attachmentRemarks1" rows="3"
-        class="form-control form-control-sm enquiry-input"></textarea>
-</div>
+										<label> <i class="fas fa-paperclip enquiry-icon"></i>
+											Attachment
+										</label> <input type="file" id="attachments1"
+											class="form-control form-control-sm enquiry-input">
 
-<!-- Fire Proofing Remarks -->
-<div class="form-group col-md-12 enquiry-field">
-    <label><i class="fas fa-sticky-note enquiry-icon"></i> Fire Proofing Remarks</label>
-    <textarea id="fireProofingRemarks1" rows="3"
-        class="form-control form-control-sm enquiry-input"></textarea>
-</div>
-    </div>
-</div>
+										<div id="existingAttachment1" class="mt-2"></div>
+
+									</div>
+
+									<!-- Attachment Remarks -->
+									<div class="form-group col-md-12 enquiry-field">
+										<label><i class="fas fa-comment-dots enquiry-icon"></i>
+											Attachment Remarks</label>
+										<textarea id="attachmentRemarks1" rows="3"
+											class="form-control form-control-sm enquiry-input"></textarea>
+									</div>
+
+									<!-- Fire Proofing Remarks -->
+									<div class="form-group col-md-12 enquiry-field">
+										<label><i class="fas fa-sticky-note enquiry-icon"></i>
+											Fire Proofing Remarks</label>
+										<textarea id="fireProofingRemarks1" rows="3"
+											class="form-control form-control-sm enquiry-input"></textarea>
+									</div>
+								</div>
+							</div>
 
 							<div class="modal-footer enquiry-modal-footer">
 								<button type="button" class="btn btn-sm enquiry-btn-secondary"
@@ -1273,7 +1304,7 @@ textarea.enquiry-input {
 												<th>Contact Person</th>
 												<th>Next Follow-up</th>
 												<th>Comments</th>
-												<th>Edit</th>
+												<th>Actions</th>
 											</tr>
 										</thead>
 										<tbody id="activityHistoryBody">
@@ -1282,6 +1313,10 @@ textarea.enquiry-input {
 								</div>
 
 							</div>
+
+
+							<button type="button" class="btn btn-sm enquiry-btn-secondary"
+								id="cancelEditBtn" style="display: none;">Cancel Edit</button>
 							<div class="modal-footer enquiry-modal-footer">
 								<button type="button" class="btn btn-sm enquiry-btn-secondary"
 									data-dismiss="modal">Close</button>
@@ -1393,20 +1428,69 @@ textarea.enquiry-input {
 					</div>
 				</div>
 
+				<div class="modal fade" id="followupMsgModal" tabindex="-1"
+					role="dialog" aria-hidden="true" data-backdrop="static"
+					style="z-index: 1100;">
+					<div class="modal-dialog modal-dialog-centered"
+						style="max-width: 420px;" role="document">
+						<div class="modal-content enquiry-modal-content">
+							<div class="modal-body text-center"
+								style="padding: 28px 24px; background: #fff;">
+								<div id="fmIcon" style="font-size: 46px; margin-bottom: 10px;"></div>
+								<h5 id="fmTitle" class="mb-2"></h5>
+								<p id="fmText" class="mb-0"
+									style="color: #4b5563; font-size: 14px; white-space: pre-line;"></p>
+							</div>
+							<div
+								class="modal-footer enquiry-modal-footer justify-content-center">
+								<button type="button" class="btn btn-sm enquiry-btn-secondary"
+									id="fmCancel" style="display: none;">Cancel</button>
+								<button type="button" class="btn btn-sm enquiry-btn-primary"
+									id="fmOk">OK</button>
+							</div>
+						</div>
+					</div>
+				</div>
+
 
 
 				<!-- JS FILES -->
 				<script src="vendor/jquery/jquery.min.js"></script>
 				<script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
 				<script src="vendor/jquery-easing/jquery.easing.min.js"></script>
-				<script src="js/ruang-admin.min.js"></script>
+			
+			
+			
+				<script src="vendor/datatables/jquery.dataTables.min.js"></script>
+				<script src="vendor/datatables/dataTables.bootstrap4.min.js"></script>
+				<script src="js/config.js?v=<%=jsVersion%>"></script>
+				
 				<script
-					src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-				<script src="js/config.js"></script>
-				<script src="js/logout.js"></script>
-				<script src="js/username.js"></script>
-				<script src="js/Sessionfilter.js"></script>
-				<script src="js/CRMEnquiry.js"></script>
-				<script src="js/createdby.js"></script>
+			src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
+		<script
+			src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+		<script
+			src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
+		<script
+			src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
+		<script
+			src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
+		<script
+			src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
+				
+				
+			
+			<!-- 	<script
+					src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script> -->
+					
+					
+					
+					
+				
+				<script src="js/logout.js?v=<%=jsVersion%>"></script>
+				<script src="js/username.js?v=<%=jsVersion%>"></script>
+				<script src="js/Sessionfilter.js?v=<%=jsVersion%>"></script>
+				<script src="js/CRMEnquiry.js?v=<%=jsVersion%>"></script>
+				<script src="js/createdby.js?v=<%=jsVersion%>"></script>
 </body>
 </html>

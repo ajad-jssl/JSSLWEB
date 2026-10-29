@@ -1,8 +1,159 @@
-/*let editingEnquiryId = null;
-let currentSubqueryEnquiryId = null;
+const MainPage = window.location.pathname.split("/").pop() +'.jsp';
+
+
+const UserId = sessionStorage.getItem('username');
+
+let allowedActions = [];
+
+async function loadActions() {
+    try {
+        const response = await fetch(
+            `${baseUrl}/api/page/actions?userId=${encodeURIComponent(UserId)}&pageName=${encodeURIComponent(MainPage)}`,
+            {
+                method: "GET",
+                credentials: "include",
+                headers: {
+                    "Content-Type": "application/json"
+                }
+            }
+        );
+
+        if (!response.ok) {
+            throw new Error("Failed to fetch actions");
+        }
+
+        allowedActions = await response.json();
+
+    } catch (error) {
+        console.error("Error:", error);
+    }
+}
 
 // ==============================
-// SESSION HELPERS
+// INLINE VALIDATION
+// ==============================
+function clearFieldErrors(modalSel) {
+    $(modalSel).find(".enquiry-field.has-error").removeClass("has-error");
+    $(modalSel).find(".field-error-msg").remove();
+}
+
+// returns true if value is a number greater than 0
+function validatePositiveNumber(selector, label) {
+    const v = parseFloat($(selector).val());
+    if (isNaN(v) || v <= 0) {
+        showFieldError(selector, label + " must be a number greater than 0");
+        $(selector)[0].scrollIntoView({ behavior: "smooth", block: "center" });
+        return false;
+    }
+    return true;
+}
+
+$("#exampleModalScrollable, #exampleModalScrollableUp, #exampleModalActivity").on("hidden.bs.modal", function () {
+    clearFieldErrors(this);
+});
+
+function showFieldError(selector, message) {
+    const $field = $(selector).closest(".enquiry-field");
+    $field.addClass("has-error");
+    $field.find(".field-error-msg").remove();
+    $field.append('<div class="field-error-msg">' + message + '</div>');
+}
+
+function validateRequired(modalSel, requiredFields) {
+    clearFieldErrors(modalSel);
+    let first = null;
+    requiredFields.forEach(([selector, label]) => {
+        const val = String($(selector).val() ?? "").trim();
+        if (!val) {
+            showFieldError(selector, label + " is required");
+            if (!first) first = $(selector);
+        }
+    });
+    if (first) {
+        first[0].scrollIntoView({ behavior: "smooth", block: "center" });
+        if (!first.prop("disabled")) first[0].focus({ preventScroll: true });
+        return false;
+    }
+    return true;
+}
+
+$(document).on("input change", ".enquiry-field.has-error .enquiry-input", function () {
+    $(this).closest(".enquiry-field").removeClass("has-error").find(".field-error-msg").remove();
+});
+
+$("#exampleModalActivity").on("hidden.bs.modal", function () {
+    clearFieldErrors(this);
+});
+
+// ==============================
+// MESSAGE / CONFIRM MODAL
+// ==============================
+function showMessage(message, type, onClose) {
+    const cfg = {
+        error:   { icon: "fa-times-circle",         color: "text-danger",  title: "Error" },
+        warning: { icon: "fa-exclamation-triangle", color: "text-warning", title: "Not Allowed" },
+        success: { icon: "fa-check-circle",         color: "text-success", title: "Success" },
+        info:    { icon: "fa-info-circle",          color: "text-info",    title: "Information" }
+    }[type || "error"];
+
+    $("#fmIcon").html('<i class="fas ' + cfg.icon + ' ' + cfg.color + '"></i>');
+    $("#fmTitle").text(cfg.title);
+    $("#fmText").text(message);
+    $("#fmCancel").hide();
+
+    $("#fmOk").off("click").on("click", function () {
+        $("#followupMsgModal").one("hidden.bs.modal", function () {
+            if (onClose) onClose();
+        }).modal("hide");
+    });
+    $("#followupMsgModal").modal("show");
+}
+
+function showConfirm(message, onYes) {
+    $("#fmIcon").html('<i class="fas fa-question-circle text-primary"></i>');
+    $("#fmTitle").text("Please Confirm");
+    $("#fmText").text(message);
+    $("#fmCancel").show();
+
+    $("#fmCancel").off("click").on("click", function () {
+        $("#followupMsgModal").modal("hide");
+    });
+    $("#fmOk").off("click").on("click", function () {
+        $("#followupMsgModal").one("hidden.bs.modal", function () {
+            if (onYes) onYes();
+        }).modal("hide");
+    });
+    $("#followupMsgModal").modal("show");
+}
+
+// keep the lower modal scrollable after this one closes
+$("#followupMsgModal").on("hidden.bs.modal", function () {
+    if ($(".modal.show").length) $("body").addClass("modal-open");
+});
+
+// ==============================
+// BACK-DATE RULE
+// ==============================
+function applyFollowupMinDate(editId) {
+    const dates = followupHistoryCache
+        .filter(x => editId == null || Number(x.activityId) < Number(editId))
+        .map(x => String(x.activityDate || "").substring(0, 10))
+        .filter(Boolean)
+        .sort();
+
+    const min = dates.length ? dates[dates.length - 1] : "";
+
+    if (min) $("#activityDate").attr("min", min);
+    else $("#activityDate").removeAttr("min");
+
+    $("#activityDate").data("minDate", min);
+}
+
+function toMonthValue(v) { return v ? String(v).substring(0, 7) : ""; }
+const toInt = v => (v ? parseInt(v) : null);
+
+// ==============================
+// SESSION / SHARED HELPERS
 // ==============================
 function getCurrentUsername() {
     return sessionStorage.getItem('username') || 'Guest';
@@ -21,51 +172,23 @@ function stageBadgeClass(stageName) {
     }
 }
 
-// ==============================
-// FETCH + RENDER MAIN TABLE
-// ==============================
-async function fetchEnquiries() {
-
-    try {
-        const apiUrl = new URL('/api/salescrm/enquiry', baseUrl1);
-
-        const response = await fetch(apiUrl, {
-            method: "GET",
-            credentials: "include"
+function showPopup(message, redirectUrl) {
+    var popup = $('<div class="popup">' + message + '</div>').appendTo('body').hide().fadeIn(400);
+    setTimeout(function () {
+        popup.fadeOut(400, function () {
+            $(this).remove();
+            if (redirectUrl) {
+                window.location = redirectUrl;
+            }
         });
+    }, 2000);
+}
 
-        if (!response.ok) throw new Error("Failed to fetch Enquiries");
-
-        const enquiries = await response.json();
-
-        let rows = '';
-
-        enquiries.forEach((item, index) => {
-            const stageName = item.currentStageName || 'Enquired';
-            rows += `
-                <tr>
-                    <td>${index + 1}</td>
-                    <td>${item.enqNo}</td>
-                    <td>${item.projectName || ''}</td>
-                    <td>${item.clientName || ''}</td>
-                    <td><span class="badge ${stageBadgeClass(stageName)}">${stageName}</span></td>
-                    <td>
-                        <i class="fa fa-pen text-primary cursor-pointer" style="cursor:pointer;"
-                           title="Edit" onclick="openEditEnquiry(${item.id})"></i>
-                    </td>
-                    <td>
-                        <i class="fa fa-list-alt text-success cursor-pointer" style="cursor:pointer;"
-                           title="Follow-up" onclick="openSubquery(${item.id})"></i>
-                    </td>
-                </tr>
-            `;
-        });
-
-        document.getElementById("enquiryTableBody").innerHTML = rows;
-
-    } catch (error) {
-        console.error('Error fetching Enquiries:', error);
-    }
+function formatDate(dateString) {
+    if (!dateString) return "";
+    const parts = dateString.split("-");
+    if (parts.length !== 3) return dateString;
+    return `${parts[2]}-${parts[1]}-${parts[0]}`;
 }
 
 // ==============================
@@ -98,482 +221,821 @@ async function loadDropdown(url, selector, valueField, textField, placeholder) {
     }
 }
 
-async function loadLocationDropdown(selector) {
-    await loadDropdown('/api/location/cities', selector, 'cityId', 'cityName', 'Select Location');
+async function loadSegmentDropdown(selector, defaultText = "Select Segment") {
+    await loadDropdown('/api/salescrm/segment', selector, 'id', 'segmentName', defaultText);
+}
+
+// NEW — this was never being called anywhere, which is why Design Basis
+// never reflected the saved value: the select had no options to match against.
+async function loadDesignBasisDropdown(selector, defaultText = "Select Design Basis") {
+    await loadDropdown('/api/salescrm/design-basis', selector, 'id', 'designBasisName', defaultText);
 }
 
 // ==============================
-// LOAD ALL MASTER DROPDOWNS (suffix '' for Create, '1' for Update)
+// LEAD NO DROPDOWN (Create modal)
 // ==============================
-async function loadEnquiryFormDropdowns(suffix) {
-    await Promise.all([
-        loadDropdown('/api/salescrm/client', '#clientName' + suffix, 'id', 'clientName', 'Select Client'),
-        loadDropdown('/api/salescrm/project', '#projectName' + suffix, 'id', 'projectName', 'Select Project'),
-        loadDropdown('/api/salescrm/subzone', '#zone' + suffix, 'id', 'subZoneName', 'Select Zone'),
-        loadDropdown('/api/salescrm/opportunity-source', '#enquirySource' + suffix, 'id', 'opportunityName', 'Select Enquiry Source'),
-        loadDropdown('/api/salescrm/segment', '#segment' + suffix, 'id', 'segmentName', 'Select Segment'),
-        loadDropdown('/api/salescrm/design-basis', '#designBasis' + suffix, 'id', 'designBasisName', 'Select Design Basis'),
-        loadLocationDropdown('#location' + suffix)
-    ]);
+
+function selectStageByName(selector, name) {
+    const $opt = $(selector).find("option").filter(function () {
+        return $(this).text().trim().toLowerCase() === name.toLowerCase();
+    });
+    if ($opt.length) $(selector).val($opt.val());
 }
 
-async function loadActivityFormDropdowns() {
-    await Promise.all([
-        loadDropdown('/api/salescrm/opportunity-source', '#activitySource', 'id', 'opportunityName', 'Select Source'),
-        loadDropdown('/api/salescrm/current-stage', '#activityStage', 'id', 'stageName', 'Select Stage'),
-        loadDropdown('/api/salescrm/contact-person', '#activityContactPerson', 'id', 'contactName', 'Select Contact Person')
-    ]);
-}
 
-// ==============================
-// PREVIEW NEXT ENQ NO (client-side preview only; backend assigns the real one on save)
-// ==============================
-async function previewNextEnqNo() {
+let leadData = [];
+
+async function loadLeadNos(selector) {
 
     try {
-        const apiUrl = new URL('/api/salescrm/enquiry', baseUrl1);
+        const apiUrl = new URL('/api/lead/leadnos', baseUrl1);
 
         const response = await fetch(apiUrl, {
             method: "GET",
             credentials: "include"
         });
 
-        if (!response.ok) throw new Error("Failed to fetch Enquiries for preview");
+        if (!response.ok) {
+            throw new Error("Failed to fetch Lead Nos");
+        }
+
+        const result = await response.json();
+
+        let options = '<option value="">Select Lead No</option>';
+
+        result.forEach(lead => {
+            options += `
+                <option value="${lead.leadId}"
+                        data-clientid="${lead.client}"
+                        data-leadno="${lead.leadNo}">
+                    ${lead.leadNo}
+                </option>`;
+        });
+
+        $(selector).html(options);
+
+    } catch (error) {
+        console.error("Error fetching Lead Nos:", error);
+    }
+}
+
+$("#leadNo").change(async function () {
+
+    const leadId = $(this).val();
+    const clientId = $(this).find(":selected").data("clientid");
+
+    if (!clientId) {
+        return;
+    }
+
+    try {
+        const clientApi = new URL('/api/salescrm/client', baseUrl1);
+
+        const clientResponse = await fetch(clientApi, {
+            method: "GET",
+            credentials: "include"
+        });
+
+        if (!clientResponse.ok) {
+            throw new Error("Failed to fetch client details");
+        }
+
+        const clients = await clientResponse.json();
+        const client = clients.find(c => c.id == clientId);
+
+        if (client) {
+            $("#projectName").val(client.clientName + " - " + client.address);
+            $("#clientName").val(client.clientName);
+            $("#siteLocation").val(client.address);
+            $("#zone").val(client.zone_name);
+	
+        }
+
+        if (leadId) {
+            const leadApi = new URL(`/api/lead/${leadId}`, baseUrl1);
+
+            const leadResponse = await fetch(leadApi, {
+                method: "GET",
+                credentials: "include"
+            });
+
+            if (!leadResponse.ok) {
+                throw new Error("Failed to fetch lead details");
+            }
+
+            const lead = await leadResponse.json();
+
+            $("#suggestedBidValue").val(lead.suggestedBidValue);
+            $("#segment").val(lead.segmentId);
+            $("#areaQty").val(lead.areaQty);
+			$("#designBasis").val(lead.designBasisId);
+			
+			//$("#currentStage").val(lead.currentStageId || "");
+			
+			selectStageByName("#currentStage", "Enquiry");
+			$("#tentClosureMon").val(toMonthValue(lead.tentativeClosureMonth));
+        }
+
+    } catch (error) {
+        console.error(error);
+    }
+});
+
+// ==============================
+// CREATE — open modal (single handler)
+// ==============================
+document.getElementById("modalScroll1").addEventListener("click", async function () {
+	
+	
+	const allowed =allowedActions || [];
+
+	if (!allowed.includes("Insert")) {
+	  alert(" You do not have permission to Insert.");
+	  $('#exampleModalScrollableIN').modal('hide');
+	  return;
+	}
+
+    await loadLeadNos("#leadNo");
+    await loadSegmentDropdown("#segment", "Select Segment");
+    await loadDesignBasisDropdown("#designBasis", "Select Design Basis");
+
+    $("#areaQty").val("");
+    $("#suggestedBidValue").val("");
+    $("#segment").val("");
+    $("#designBasis").val("");
+    $("#clientName").val("");
+    $("#projectName").val("");
+    $("#siteLocation").val("");
+    $("#zone").val("");
+	
+	await loadDropdown('/api/salescrm/current-stage', '#currentStage', 'id', 'stageName', 'Current Stage');
+	$("#currentStage").val("");
+	$("#tentClosureMon").val("");
+
+
+    $('#exampleModalScrollable').modal('show');
+});
+
+// ==============================
+// CREATE SAVE — single POST handler
+// ==============================
+document.getElementById("createEnquiryBtn").addEventListener("click", async function () {
+
+    try {
+		
+		const createRequired = [
+		    ["#leadNo", "Lead No"],
+		    ["#areaQty", "Area / Qty"],
+		    ["#suggestedBidValue", "Suggested Bid Value"],
+		    ["#segment", "Segment"],
+		    ["#designBasis", "Design Basis"],
+		    ["#paintingRequirement", "Painting Requirement"],
+		    ["#enquiryType", "Type of Enquiry"],
+		    ["#fireProofing", "Fire Proofing Required"]
+		];
+		if (!validateRequired("#exampleModalScrollable", createRequired)) return;
+		if (!validatePositiveNumber("#areaQty", "Area / Qty")) return;
+		if (!validatePositiveNumber("#suggestedBidValue", "Suggested Bid Value")) return;
+		
+		
+        const paymentData = {
+            advancePercentage: 0,
+            stage1Percentage: 0,
+            stage2Percentage: 0,
+            stage3Percentage: 0
+        };
+
+        document.querySelectorAll("#paymentTerms .payment-term:checked").forEach(function (checkbox) {
+            const container = checkbox.parentElement.parentElement;
+            const percentageInput = container.querySelector(".payment-percentage");
+            const percentage = parseFloat(percentageInput.value) || 0;
+
+            switch (checkbox.value) {
+                case "1": paymentData.advancePercentage = percentage; break;
+                case "2": paymentData.stage1Percentage = percentage; break;
+                case "3": paymentData.stage2Percentage = percentage; break;
+                case "4": paymentData.stage3Percentage = percentage; break;
+            }
+        });
+
+        const totalPercentage =
+            paymentData.advancePercentage +
+            paymentData.stage1Percentage +
+            paymentData.stage2Percentage +
+            paymentData.stage3Percentage;
+
+        if (totalPercentage > 100) {
+            showPopup("Payment terms percentage cannot exceed 100%", "");
+            return;
+        }
+
+        const enquiry = {
+            leadNo: $("#leadNo option:selected").text().trim(),
+            segmentId: $("#segment").val() || null,
+            designBasisId: $("#designBasis").val() || null,
+            areaQty: $("#areaQty").val() || 0,
+            suggestedBidValue: $("#suggestedBidValue").val() || 0,
+            attachmentRemarks: $("#attachmentRemarks").val(),
+            paintingRequirement: $("#paintingRequirement").val(),
+            enquiryType: $("#enquiryType").val(),
+         /*   fireProofingRequired: $("#fireProofingRequired").val() === "Yes",*/
+			fireProofingRequired: $("#fireProofing").val() === "1",
+            fireProofingRemarks: $("#fireProofingRemarks").val(),
+            advancePercentage: paymentData.advancePercentage,
+            stage1Percentage: paymentData.stage1Percentage,
+            stage2Percentage: paymentData.stage2Percentage,
+            stage3Percentage: paymentData.stage3Percentage,
+            status: true,
+            createdBy: parseInt(createdById),
+			currentStageId: $("#currentStage").val() ? parseInt($("#currentStage").val()) : null,
+			tentativeClosureMonth: $("#tentClosureMon").val() ? $("#tentClosureMon").val() + "-01" : null
+        };
+
+        const formData = new FormData();
+        formData.append("enquiry", new Blob([JSON.stringify(enquiry)], { type: "application/json" }));
+
+        const fileInput = document.getElementById("attachments");
+
+        if (fileInput.files.length > 0) {
+            const file = fileInput.files[0];
+            const maxSize = 1 * 1024 * 1024;
+
+            if (file.size > maxSize) {
+                showPopup("File size cannot exceed 1 MB.", "");
+                return;
+            }
+
+            formData.append("file", file);
+        }
+
+        const apiUrl = new URL("/api/enquiry", baseUrl1);
+
+        const response = await fetch(apiUrl, {
+            method: "POST",
+            credentials: "include",
+            body: formData
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(errorText);
+        }
+
+        $("#exampleModalScrollable").modal("hide");
+        showPopup("Enquiry created successfully", "EnquiryEntry.jsp");
+
+    } catch (error) {
+        console.error(error);
+        showPopup("Failed to save enquiry", "");
+    }
+});
+
+
+
+
+async function fetchEnquiries() {
+
+    try {
+        const [response, stageResponse] = await Promise.all([
+            fetch(new URL('/api/enquiry', baseUrl1), { method: "GET", credentials: "include" }),
+            fetch(new URL('/api/salescrm/current-stage', baseUrl1), { method: "GET", credentials: "include" })
+        ]);
+
+        if (!response.ok) {
+            throw new Error("Failed to fetch Enquiries");
+        }
 
         const enquiries = await response.json();
 
-        const nums = enquiries.map(e => {
-            const match = String(e.enqNo).match(/(\d+)$/);
-            return match ? parseInt(match[1], 10) : 1000;
+        // id -> name map; if the stage call fails, rows show "-" instead of breaking the table
+        const stageMap = {};
+        if (stageResponse.ok) {
+            const stages = await stageResponse.json();
+            stages.forEach(s => { stageMap[s.id] = s.stageName; });
+        }
+
+        let rows = "";
+
+        enquiries.forEach((item, index) => {
+            const stageName = stageMap[item.currentStageId] || '-';
+
+            rows += `
+                <tr>
+                    <td>${index + 1}</td>
+                    <td>${item.enqNo}</td>
+                    <td>${item.leadNo}</td>
+                    <td>${item.areaQty}</td>
+                    <td>${item.suggestedBidValue}</td>
+					<td>${item.clientName}</td>
+					<td>${item.projectName}</td>
+                    <td><span class="badge ${stageBadgeClass(stageName)}">${stageName}</span></td>
+                    <td>
+                        <i class="fa fa-pen text-primary"
+                           style="cursor:pointer"
+                           onclick="openEditEnquiry(${item.id})"></i>
+                    </td>
+                    <td>
+                        <i class="fa fa-list-alt text-success"
+                           style="cursor:pointer"
+                           onclick="openSubquery(${item.id})"></i>
+                    </td>
+                </tr>
+            `;
         });
 
-        const maxNum = nums.length ? Math.max(...nums) : 1000;
+        $("#enquiryTableBody").html(rows);
 
-        return "ENQ-" + (maxNum + 1);
+        // Destroy existing DataTable
+        if ($.fn.DataTable.isDataTable('#EnquiryTableID')) {
+            $('#EnquiryTableID').DataTable().destroy();
+        }
+
+        // Initialize DataTable
+        $('#EnquiryTableID').DataTable({
+            dom: '<"d-flex justify-content-between align-items-center"Bf>rt<"d-flex justify-content-between align-items-center"ip>',
+            scrollX: false,
+            info: true,
+            paging: true,
+            pageLength: 10,
+            lengthMenu: [
+                [10, 25, 50, 100],
+                [10, 25, 50, 100]
+            ],
+            buttons: [{
+                extend: 'excel',
+                text: 'Export to Excel',
+                title: 'Enquiry List'
+            }]
+        });
 
     } catch (error) {
-        console.error('Error previewing next Enq No:', error);
-        return "ENQ-????";
+        console.error(error);
     }
 }
 
 // ==============================
-// CREATE — open modal
+// EDIT — fetch enquiry by id, prefill update modal
 // ==============================
-document.getElementById("modalScroll1").addEventListener("click", async function () {
+let enquiryId = 0;
+let originalEnquiryData = {};
 
-    clearEnquiryForm();
-    await loadEnquiryFormDropdowns('');
-
-    $('#name').val(getCurrentUsername());
-    $('#enqNo').val(await previewNextEnqNo());
-
-    $('#exampleModalScrollable').modal('show');
-});
-
-// ==============================
-// CLIENT CHANGE -> LOAD CONTACT PERSONS FOR THAT CLIENT (CREATE MODAL)
-// ==============================
-$(document).on('change', '#clientName', async function () {
-
-    const clientId = $(this).val();
-
-    $('#contactPersonCreate').html('<option value="">Select Contact Person</option>').prop('disabled', true);
-
-    if (!clientId) return;
-
-    await loadDropdown(
-        `/api/salescrm/contact-person/client/${clientId}`,
-        '#contactPersonCreate', 'id', 'contactName', 'Select Contact Person'
-    );
-
-    $('#contactPersonCreate').prop('disabled', false);
-});
-
-document.getElementById("modalScroll1").addEventListener("click", async function () {
-
-    clearEnquiryForm();
-    await loadEnquiryFormDropdowns('');
-
-    $('#contactPersonCreate').html('<option value="">Select Contact Person</option>').prop('disabled', true);
-
-    $('#name').val(getCurrentUsername());
-    $('#enqNo').val(await previewNextEnqNo());
-
-    $('#exampleModalScrollable').modal('show');
-});
-
-function clearEnquiryForm() {
-    $('#clientName, #projectName, #location, #zone, #enquirySource, #segment, #designBasis').val('');
-    $('#enquiryDate, #qty, #expectedBidValue, #awardMonth, #comments').val('');
-	$('#contactPersonCreate, #nextFollowUpDateCreate').val('');
-}
-
-// ==============================
-// EDIT — fetch enquiry by id, prefill separate update modal
-// ==============================
 async function openEditEnquiry(id) {
+	
+	
+	const allowed =allowedActions || [];
 
-    try {
-        const apiUrl = new URL(`/api/salescrm/enquiry/${id}`, baseUrl1);
-
-        const response = await fetch(apiUrl, {
-            method: "GET",
-            credentials: "include"
-        });
-
-        if (!response.ok) throw new Error("Failed to fetch Enquiry");
-
-        const item = await response.json();
-
-        editingEnquiryId = id;
-
-        $('#name1').val(getCurrentUsername());
-        $('#enqNo1').val(item.enqNo);
-
-        await loadEnquiryFormDropdowns('1');
-
-        $('#clientName1').val(item.clientId);
-        $('#projectName1').val(item.projectId);
-        $('#location1').val(item.cityId);
-        $('#zone1').val(item.zoneId);
-        $('#enquirySource1').val(item.enquirySourceId);
-        $('#segment1').val(item.segmentId);
-        $('#designBasis1').val(item.designBasisId);
-
-        $('#enquiryDate1').val(item.enquiryDate);
-        $('#qty1').val(item.qty);
-        $('#expectedBidValue1').val(item.expectedBidValue);
-        $('#awardMonth1').val(item.awardMonth);
-		const today = new Date().toISOString().split('T')[0];
-		const existingAwardMonth = item.awardMonth;
-
-		// Set the existing value
-		$('#awardMonth1').val(existingAwardMonth);
-
-		// If existing date is in the past,
-		// allow it as the minimum date for editing
-		if (existingAwardMonth < today) {
-
-		    $('#awardMonth1').attr('min', existingAwardMonth);
-
-		} else {
-
-		    $('#awardMonth1').attr('min', today);
+		if (!allowed.includes("Edit")) {
+		  alert(" You do not have permission to Edit.");
+		  $('#exampleModalScrollableIN').modal('hide');
+		  return;
 		}
-        $('#comments1').val(item.comments);
-		originalEnquiryData = {
-		        clientId: String(item.clientId || ''),
-		        projectId: String(item.projectId || ''),
-		        cityId: String(item.cityId || ''),
-		        zoneId: String(item.zoneId || ''),
-		        enquiryDate: item.enquiryDate || '',
-		        enquirySourceId: String(item.enquirySourceId || ''),
-		        segmentId: String(item.segmentId || ''),
-		        designBasisId: String(item.designBasisId || ''),
-		        qty: (item.qty || '').toString(),
-		        expectedBidValue: (item.expectedBidValue || '').toString(),
-		        awardMonth: item.awardMonth || '',
-		        comments: (item.comments || '').trim()
-		    };
-        $('#exampleModalScrollableUp').modal('show');
 
-    } catch (error) {
-        console.error("Error fetching Enquiry:", error);
-        alert("Unable to fetch Enquiry");
-    }
-}
-
-
-
-// ==============================
-// CREATE SAVE — POST to backend
-// ==============================
-document.getElementById("createEnquiryBtn").addEventListener("click", function () {
-
-    const clientId = $('#clientName').val();
-    const projectId = $('#projectName').val();
-
-    if (!clientId || !projectId) {
-        alert("Client Name and Project Name are required");
-        return;
-    }
-
-    const payload = {
-        clientId: clientId,
-        projectId: projectId,
-        cityId: $('#location').val(),
-        zoneId: $('#zone').val(),
-        enquiryDate: $('#enquiryDate').val(),
-        enquirySourceId: $('#enquirySource').val(),
-        segmentId: $('#segment').val(),
-        designBasisId: $('#designBasis').val(),
-        qty: $('#qty').val(),
-        expectedBidValue: $('#expectedBidValue').val(),
-        awardMonth: $('#awardMonth').val(),
-        comments: $('#comments').val(),
-        createdBy: getCurrentUserId()
-    };
-
-    $.ajax({
-        url: baseUrl + '/api/salescrm/enquiry',
-        type: 'POST',
-        contentType: 'application/json',
-        data: JSON.stringify(payload),
-		xhrFields: { withCredentials: true },
-        success: function (response) {
-            console.log('Enquiry created successfully', response);
-            $('#exampleModalScrollable').modal('hide');
-			showPopup('Enquiry created successfully (' + response.enqNo + ')', 'EnquiryEntry.jsp');
-            fetchEnquiries();
-         
-        },
-        error: function (xhr) {
-			$('#exampleModalScrollable').modal('hide');
-            console.error('Error creating Enquiry:', xhr.responseText);
-			$("#modalMessage").text(xhr.responseText);
-			$("#messageModal").modal("show");
-           // alert(xhr.responseText || 'Error creating Enquiry');
-        }
-    });
-});
-
-
-document.getElementById("createEnquiryBtn").addEventListener("click", function () {
-
-    const clientId = $('#clientName').val();
-    const projectId = $('#projectName').val();
-
-    if (!clientId || !projectId) {
-        alert("Client Name and Project Name are required");
-        return;
-    }
-
-    const payload = {
-        clientId: clientId,
-        projectId: projectId,
-        cityId: $('#location').val(),
-        zoneId: $('#zone').val(),
-        enquiryDate: $('#enquiryDate').val(),
-        enquirySourceId: $('#enquirySource').val(),
-        segmentId: $('#segment').val(),
-        designBasisId: $('#designBasis').val(),
-        qty: $('#qty').val(),
-        expectedBidValue: $('#expectedBidValue').val(),
-        awardMonth: $('#awardMonth').val(),
-        comments: $('#comments').val(),
-        contactPersonId: $('#contactPersonCreate').val(),
-        nextFollowUpDate: $('#nextFollowUpDateCreate').val(),
-        createdBy: getCurrentUserId()
-    };
-
-    $.ajax({
-        url: baseUrl + '/api/salescrm/enquiry',
-        type: 'POST',
-        contentType: 'application/json',
-        data: JSON.stringify(payload),
-        xhrFields: { withCredentials: true },
-        success: function (response) {
-            console.log('Enquiry created successfully', response);
-            $('#exampleModalScrollable').modal('hide');
-            showPopup('Enquiry created successfully (' + response.enqNo + ')', 'EnquiryEntry.jsp');
-            fetchEnquiries();
-        },
-        error: function (xhr) {
-            $('#exampleModalScrollable').modal('hide');
-            console.error('Error creating Enquiry:', xhr.responseText);
-            $("#modalMessage").text(xhr.responseText);
-            $("#messageModal").modal("show");
-        }
-    });
-});
-
-// ==============================
-// UPDATE SAVE — PUT to backend
-// ==============================
-document.getElementById("updateEnquiryBtn").addEventListener("click", function () {
-
-    const clientId = $('#clientName1').val();
-    const projectId = $('#projectName1').val();
-
-    if (!clientId || !projectId) {
-        alert("Client Name and Project Name are required");
-        return;
-    }
-
-    const current = {
-        clientId: String(clientId),
-        projectId: String(projectId),
-        cityId: String($('#location1').val() || ''),
-        zoneId: String($('#zone1').val() || ''),
-        enquiryDate: $('#enquiryDate1').val() || '',
-        enquirySourceId: String($('#enquirySource1').val() || ''),
-        segmentId: String($('#segment1').val() || ''),
-        designBasisId: String($('#designBasis1').val() || ''),
-        qty: $('#qty1').val() || '',
-        expectedBidValue: $('#expectedBidValue1').val() || '',
-        awardMonth: $('#awardMonth1').val() || '',
-        comments: $('#comments1').val().trim()
-    };
-
-    const noChange = Object.keys(current).every(key => current[key] === originalEnquiryData[key]);
-
-    if (noChange) {
-        $('#exampleModalScrollableUp').modal('hide');
-        showPopup('No Feilds are changes', 'EnquiryEntry.jsp');
-        return;
-    }
-
-    const payload = {
-        clientId: clientId,
-        projectId: projectId,
-        cityId: $('#location1').val(),
-        zoneId: $('#zone1').val(),
-        enquiryDate: $('#enquiryDate1').val(),
-        enquirySourceId: $('#enquirySource1').val(),
-        segmentId: $('#segment1').val(),
-        designBasisId: $('#designBasis1').val(),
-        qty: $('#qty1').val(),
-        expectedBidValue: $('#expectedBidValue1').val(),
-        awardMonth: $('#awardMonth1').val(),
-        comments: $('#comments1').val(),
-        modifiedBy: getCurrentUserId()
-    };
-
-    $.ajax({
-        url: baseUrl1 + '/api/salescrm/enquiry/' + editingEnquiryId,
-        type: 'PUT',
-        contentType: 'application/json',
-        data: JSON.stringify(payload),
-        xhrFields: { withCredentials: true },
-        success: function (response) {
-            console.log('Enquiry updated successfully', response);
-            $('#exampleModalScrollableUp').modal('hide');
-            fetchEnquiries();
-            showPopup('Enquiry updated successfully', 'EnquiryEntry.jsp');
-        },
-        error: function (xhr) {
-            console.error('Error updating Enquiry:', xhr.responseText);
-            alert(xhr.responseText || 'Error updating Enquiry');
-        }
-    });
-});
-
-// ==============================
-// SUBQUERY / FOLLOW-UP — fetch enquiry summary + activity history
-// ==============================
-async function openSubquery(enquiryId) {
-
-    currentSubqueryEnquiryId = enquiryId;
+    enquiryId = id;
 
     try {
-        const apiUrl = new URL(`/api/salescrm/enquiry/${enquiryId}`, baseUrl1);
+        // FIX: design basis dropdown must be populated BEFORE setting its value,
+        // exactly like segment already does — this was missing entirely before.
+        await Promise.all([
+            loadSegmentDropdown("#segment1", "Select Segment"),
+            loadDesignBasisDropdown("#designBasis1", "Select Design Basis"),
+			loadDropdown('/api/salescrm/current-stage', '#currentStage1', 'id', 'stageName', 'Current Stage')
+        ]);
+
+        const apiUrl = new URL(`/api/enquiry/${id}`, baseUrl1);
 
         const response = await fetch(apiUrl, {
             method: "GET",
             credentials: "include"
         });
 
-        if (!response.ok) throw new Error("Failed to fetch Enquiry");
+        if (!response.ok) {
+            throw new Error("Failed to fetch enquiry");
+        }
 
         const item = await response.json();
 
-        $('#sqEnqNo').text(item.enqNo);
-        $('#sqProjectName').text(item.projectName || '');
-        $('#sqClientName').text(item.clientName || '');
-        $('#sqCurrentStage').text(item.currentStageName || 'Enquired');
+        const attachmentContainer = document.getElementById("existingAttachment1");
+        attachmentContainer.innerHTML = "";
 
-        await loadActivityFormDropdowns();
+        if (item.attachmentPath) {
+            const fileName = item.attachmentPath.split("\\").pop().split("/").pop();
+            attachmentContainer.innerHTML = `
+                <div>
+                    <i class="fas fa-paperclip"></i>
+                    <strong>${fileName}</strong>
+                    <button type="button"
+                            class="btn btn-sm btn-primary ml-2"
+                            onclick="viewEnquiryAttachment('${item.id}')">
+                        <i class="fas fa-eye"></i>
+                        View
+                    </button>
+                </div>
+            `;
+        }
 
-        $('#activitySource').val('');
-        $('#activityDate').val('');
-        $('#activityAttendedBy').val(getCurrentUsername());
-        $('#activityStage').val(item.currentStageId || '');
-        $('#activityContactPerson').val('');
-        $('#nextFollowUpDate').val('');
-        $('#activityRemarks').val('');
+        $("#updateEnquiryBtn").data("id", item.id);
 
-        await fetchActivityHistory(enquiryId);
+        $("#enqNo1").val(item.enqNo);
+        $("#leadNo1").val(item.leadNo);
+        $("#areaQty1").val(item.areaQty);
+        $("#suggestedBidValue1").val(item.suggestedBidValue);
+        $("#segment1").val(item.segmentId);
+        $("#designBasis1").val(item.designBasisId);
+        $("#paintingRequirement1").val(item.paintingRequirement);
+        $("#enquiryType1").val(item.enquiryType);
+        $("#fireProofing1").val(item.fireProofingRequired ? "1" : "0");
 
-        $('#exampleModalActivity').modal('show');
+        loadPaymentTerms1(item);
+
+        $("#attachmentRemarks1").val(item.attachmentRemarks || "");
+        $("#fireProofingRemarks1").val(item.fireProofingRemarks || "");
+        $("#attachments1").val("");
+		
+		$("#currentStage1").val(item.currentStageId || "");
+		$("#tentClosureMon1").val(toMonthValue(item.tentativeClosureMonth));
+
+        // NEW — snapshot for "no changes" detection on update
+        originalEnquiryData = {
+            segmentId: String(item.segmentId || ''),
+            designBasisId: String(item.designBasisId || ''),
+            areaQty: (item.areaQty || '').toString(),
+            suggestedBidValue: (item.suggestedBidValue || '').toString(),
+            paintingRequirement: item.paintingRequirement || '',
+            enquiryType: item.enquiryType || '',
+            fireProofingRequired: !!item.fireProofingRequired,
+            fireProofingRemarks: (item.fireProofingRemarks || '').trim(),
+            attachmentRemarks: (item.attachmentRemarks || '').trim(),
+            advancePercentage: item.advancePercentage || 0,
+            stage1Percentage: item.stage1Percentage || 0,
+            stage2Percentage: item.stage2Percentage || 0,
+            stage3Percentage: item.stage3Percentage || 0,
+			tentativeClosureMonth: toMonthValue(item.tentativeClosureMonth)
+        };
+
+        $("#exampleModalScrollableUp").modal("show");
 
     } catch (error) {
-        console.error("Error opening Follow-up:", error);
-        alert("Unable to load Enquiry Follow-up");
+        console.error(error);
+        alert("Failed to load enquiry");
     }
 }
 
-let currentSubqueryClientId = null; // add alongside your other module-level lets
-
-async function openSubquery(enquiryId) {
-
-    currentSubqueryEnquiryId = enquiryId;
+async function viewEnquiryAttachment(id) {
 
     try {
-        const apiUrl = new URL(`/api/salescrm/enquiry/${enquiryId}`, baseUrl1);
+        const apiUrl = new URL(`/api/enquiry/${id}/attachment`, baseUrl1);
 
         const response = await fetch(apiUrl, {
             method: "GET",
             credentials: "include"
         });
 
-        if (!response.ok) throw new Error("Failed to fetch Enquiry");
+        if (!response.ok) {
+            throw new Error(await response.text());
+        }
 
-        const item = await response.json();
+        const blob = await response.blob();
+        const blobUrl = URL.createObjectURL(blob);
 
-        currentSubqueryClientId = item.clientId; // NEW: remember for contact person filtering
+        window.open(blobUrl, "_blank");
 
-        $('#sqEnqNo').text(item.enqNo);
-        $('#sqProjectName').text(item.projectName || '');
-        $('#sqClientName').text(item.clientName || '');
-        $('#sqCurrentStage').text(item.currentStageName || 'Enquired');
+    } catch (error) {
+        console.error(error);
+        showPopup("Unable to preview attachment", "");
+    }
+}
 
-        await loadDropdown('/api/salescrm/opportunity-source', '#activitySource', 'id', 'opportunityName', 'Select Source');
-        await loadDropdown('/api/salescrm/current-stage', '#activityStage', 'id', 'stageName', 'Select Stage');
-        await loadDropdown(
-            `/api/salescrm/contact-person/client/${currentSubqueryClientId}`,
-            '#activityContactPerson', 'id', 'contactName', 'Select Contact Person'
+// ==============================
+// UPDATE SAVE — single PUT handler, with "no changes" detection
+// ==============================
+document.getElementById("updateEnquiryBtn").addEventListener("click", async function () {
+
+    try {
+		const updateRequired = [
+		    ["#areaQty1", "Area / Qty"],
+		    ["#suggestedBidValue1", "Suggested Bid Value"],
+		    ["#segment1", "Segment"],
+		    ["#designBasis1", "Design Basis"],
+		    ["#paintingRequirement1", "Painting Requirement"],
+		    ["#enquiryType1", "Type of Enquiry"],
+		    ["#fireProofing1", "Fire Proofing Required"]
+		];
+		if (!validateRequired("#exampleModalScrollableUp", updateRequired)) return;
+		if (!validatePositiveNumber("#areaQty1", "Area / Qty")) return;
+		if (!validatePositiveNumber("#suggestedBidValue1", "Suggested Bid Value")) return;
+		
+        const paymentData = {
+            advancePercentage: 0,
+            stage1Percentage: 0,
+            stage2Percentage: 0,
+            stage3Percentage: 0
+        };
+
+        document.querySelectorAll("#paymentTerms1 .payment-term1:checked").forEach(function (checkbox) {
+            const container = checkbox.parentElement.parentElement;
+            const percentageInput = container.querySelector(".payment-percentage1");
+            const percentage = parseFloat(percentageInput.value) || 0;
+
+            switch (checkbox.value) {
+                case "1": paymentData.advancePercentage = percentage; break;
+                case "2": paymentData.stage1Percentage = percentage; break;
+                case "3": paymentData.stage2Percentage = percentage; break;
+                case "4": paymentData.stage3Percentage = percentage; break;
+            }
+        });
+
+        const totalPercentage =
+            paymentData.advancePercentage +
+            paymentData.stage1Percentage +
+            paymentData.stage2Percentage +
+            paymentData.stage3Percentage;
+
+        if (totalPercentage > 100) {
+            showPopup("Payment terms percentage cannot exceed 100%", "");
+            return;
+        }
+
+        let invalidPayment = false;
+
+        document.querySelectorAll("#paymentTerms1 .payment-term1:checked").forEach(function (checkbox) {
+            const container = checkbox.parentElement.parentElement;
+            const percentageInput = container.querySelector(".payment-percentage1");
+            const percentage = parseFloat(percentageInput.value) || 0;
+            if (percentage <= 0) invalidPayment = true;
+        });
+
+        if (invalidPayment) {
+            showPopup("Please enter percentage for all selected payment terms", "");
+            return;
+        }
+
+        const current = {
+            segmentId: String($("#segment1").val() || ''),
+            designBasisId: String($("#designBasis1").val() || ''),
+            areaQty: ($("#areaQty1").val() || '').toString(),
+            suggestedBidValue: ($("#suggestedBidValue1").val() || '').toString(),
+            paintingRequirement: $("#paintingRequirement1").val() || '',
+            enquiryType: $("#enquiryType1").val() || '',
+            fireProofingRequired: $("#fireProofing1").val() === "1",
+            fireProofingRemarks: $("#fireProofingRemarks1").val().trim(),
+            attachmentRemarks: $("#attachmentRemarks1").val().trim(),
+            advancePercentage: paymentData.advancePercentage,
+            stage1Percentage: paymentData.stage1Percentage,
+            stage2Percentage: paymentData.stage2Percentage,
+            stage3Percentage: paymentData.stage3Percentage,
+	      tentativeClosureMonth: $("#tentClosureMon1").val() || '',
+        };
+
+        const fileInput = document.getElementById("attachments1");
+        const fileChanged = fileInput.files.length > 0;
+
+        const noChange = !fileChanged && Object.keys(current).every(
+            key => String(current[key]) === String(originalEnquiryData[key])
         );
 
-        $('#activitySource').val('');
-        $('#activityDate').val('');
+        if (noChange) {
+            $("#exampleModalScrollableUp").modal("hide");
+            showPopup("No Feilds are changes", "EnquiryEntry.jsp");
+            return;
+        }
+
+        const payload = {
+            leadNo: $("#leadNo1").val().trim(),
+            segmentId: $("#segment1").val() || null,
+            designBasisId: $("#designBasis1").val() || null,
+            areaQty: $("#areaQty1").val() || 0,
+            suggestedBidValue: $("#suggestedBidValue1").val() || 0,
+            paintingRequirement: current.paintingRequirement,
+            enquiryType: current.enquiryType,
+            fireProofingRequired: current.fireProofingRequired,
+            fireProofingRemarks: current.fireProofingRemarks,
+            advancePercentage: paymentData.advancePercentage,
+            stage1Percentage: paymentData.stage1Percentage,
+            stage2Percentage: paymentData.stage2Percentage,
+            stage3Percentage: paymentData.stage3Percentage,
+            attachmentRemarks: current.attachmentRemarks,
+            status: true,
+            modifiedBy: parseInt(createdById)
+        };
+
+        const formData = new FormData();
+        formData.append("enquiry", new Blob([JSON.stringify(payload)], { type: "application/json" }));
+
+        if (fileChanged) {
+            const file = fileInput.files[0];
+            const maxSize = 1 * 1024 * 1024;
+
+            if (file.size > maxSize) {
+                showPopup("File size cannot exceed 1 MB", "");
+                return;
+            }
+
+            formData.append("file", file);
+        }
+
+        const apiUrl = new URL(`/api/enquiry/${enquiryId}`, baseUrl1);
+
+        const response = await fetch(apiUrl, {
+            method: "PUT",
+            credentials: "include",
+            body: formData
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(errorText);
+        }
+
+        $("#exampleModalScrollableUp").modal("hide");
+        showPopup("Enquiry updated successfully", "EnquiryEntry.jsp");
+
+    } catch (err) {
+        console.error(err);
+        showPopup("Unable to update enquiry", "");
+    }
+});
+
+// ==============================
+// PAYMENT TERMS — Create modal
+// ==============================
+document.querySelectorAll(".payment-term").forEach(function (checkbox) {
+    checkbox.addEventListener("change", function () {
+        const row = this.closest(".payment-term-row");
+        const percentage = row.querySelector(".payment-percentage");
+        percentage.disabled = !this.checked;
+        if (!this.checked) percentage.value = "";
+        updatePaymentTotal();
+    });
+});
+
+document.querySelectorAll(".payment-percentage").forEach(function (input) {
+    input.addEventListener("input", function () {
+        let total = 0;
+        document.querySelectorAll(".payment-percentage").forEach(function (item) {
+            total += parseFloat(item.value) || 0;
+        });
+        if (total > 100) {
+            const currentValue = parseFloat(this.value) || 0;
+            const otherTotal = total - currentValue;
+            this.value = Math.max(0, 100 - otherTotal);
+        }
+        updatePaymentTotal();
+    });
+});
+
+function updatePaymentTotal() {
+    let total = 0;
+    document.querySelectorAll(".payment-percentage").forEach(function (input) {
+        if (!input.disabled) total += parseFloat(input.value) || 0;
+    });
+    const message = document.getElementById("paymentTotalMessage");
+    message.textContent = "Total: " + total.toFixed(2) + "%";
+    message.className = total === 100 ? "text-success" : "text-muted";
+}
+
+// ==============================
+// PAYMENT TERMS — Update modal
+// ==============================
+function loadPaymentTerms1(enquiry) {
+
+    const percentages = {
+        "1": enquiry.advancePercentage || 0,
+        "2": enquiry.stage1Percentage || 0,
+        "3": enquiry.stage2Percentage || 0,
+        "4": enquiry.stage3Percentage || 0
+    };
+
+    document.querySelectorAll("#paymentTerms1 .payment-term1").forEach(function (checkbox) {
+        const value = checkbox.value;
+        const container = checkbox.parentElement.parentElement;
+        const percentageInput = container.querySelector(".payment-percentage1");
+        const percentage = percentages[value] || 0;
+
+        if (percentage > 0) {
+            checkbox.checked = true;
+            percentageInput.disabled = false;
+            percentageInput.value = percentage;
+        } else {
+            checkbox.checked = false;
+            percentageInput.disabled = true;
+            percentageInput.value = "";
+        }
+    });
+
+    updatePaymentTotal1();
+}
+
+function updatePaymentTotal1() {
+    let total = 0;
+    document.querySelectorAll("#paymentTerms1 .payment-percentage1").forEach(function (input) {
+        if (!input.disabled) total += parseFloat(input.value) || 0;
+    });
+    const message = document.getElementById("paymentTotalMessage1");
+    if (!message) return;
+    message.textContent = "Total: " + total.toFixed(2) + "%";
+    message.className = total === 100 ? "text-success" : "text-muted";
+}
+
+document.querySelectorAll("#paymentTerms1 .payment-term1").forEach(function (checkbox) {
+    checkbox.addEventListener("change", function () {
+        const container = checkbox.parentElement.parentElement;
+        const percentageInput = container.querySelector(".payment-percentage1");
+        percentageInput.disabled = !checkbox.checked;
+        if (!checkbox.checked) percentageInput.value = "";
+        updatePaymentTotal1();
+    });
+});
+
+document.querySelectorAll("#paymentTerms1 .payment-percentage1").forEach(function (input) {
+    input.addEventListener("input", function () {
+        let total = 0;
+        document.querySelectorAll("#paymentTerms1 .payment-percentage1").forEach(function (item) {
+            if (!item.disabled) total += parseFloat(item.value) || 0;
+        });
+        if (total > 100) {
+            const currentValue = parseFloat(this.value) || 0;
+            const otherTotal = total - currentValue;
+            this.value = Math.max(0, 100 - otherTotal);
+        }
+        updatePaymentTotal1();
+    });
+});
+
+
+
+
+
+/*let currentSubqueryEnquiryId = null;
+let editingActivityId = null;
+let followupHistoryCache = [];
+let currentEnquiryStageId = null;
+
+async function openSubquery(enquiryId) {
+    currentSubqueryEnquiryId = enquiryId;
+    try {
+        const response = await fetch(new URL(`/api/enquiry/${enquiryId}`, baseUrl1),
+                                     { method: "GET", credentials: "include" });
+        if (!response.ok) throw new Error("Failed to fetch Enquiry");
+        const item = await response.json();
+
+
+		
+		$('#sqEnqNo').text(item.enqNo || '');
+		$('#sqProjectName').text(item.projectName || '');
+		$('#sqClientName').text(item.clientName || '');
+		$('#sqCurrentStage').text(item.currentStageName || '-');
+
+        currentEnquiryStageId = item.currentStageId || null;
+
+        await loadDropdown('/api/salescrm/opportunity-source', '#activitySource', 'id', 'opportunityName', 'Select Source');
+        await loadEnquiryStages('#activityStage', currentEnquiryStageId);
+       
+		if (item.clientId) {
+		    await loadDropdown(`/api/salescrm/contact-person/by-client/${item.clientId}`,
+		                       '#activityContactPerson', 'id', 'contactName', 'Select Contact Person');
+		} else {
+		    $('#activityContactPerson').html('<option value="">Select Contact Person</option>');
+		}
+		
+		// await loadDropdown('/api/salescrm/contact-person', '#activityContactPerson', 'id', 'contactName', 'Select Contact Person');
+
+        resetFollowupForm();
         $('#activityAttendedBy').val(getCurrentUsername());
-        $('#activityStage').val(item.currentStageId || '');
-        $('#activityContactPerson').val('');
-        $('#nextFollowUpDate').val('');
-        $('#activityRemarks').val('');
 
         await fetchActivityHistory(enquiryId);
-
         $('#exampleModalActivity').modal('show');
-
     } catch (error) {
         console.error("Error opening Follow-up:", error);
         alert("Unable to load Enquiry Follow-up");
     }
 }
 
-// ==============================
-// FETCH + RENDER FOLLOW-UP HISTORY
-// ==============================
+function resetFollowupForm() {
+    editingActivityId = null;
+    $('#activitySource').val('');
+    $('#activityDate').val('');
+    $('#activityStage').val(currentEnquiryStageId || '');
+    $('#activityContactPerson').val('');
+    $('#nextFollowUpDate').val('');
+    $('#activityRemarks').val('');
+    $('#saveActivityBtn').text('Save Follow-up');
+    $('#cancelEditBtn').hide();
+}
+
 async function fetchActivityHistory(enquiryId) {
-
     try {
-        const apiUrl = new URL(`/api/salescrm/enquiry/${enquiryId}/activity`, baseUrl1);
+        const apiUrl = new URL(`/api/lead/${enquiryId}/followups`, baseUrl1);
+        apiUrl.searchParams.set("enquiry", "true");
 
-        const response = await fetch(apiUrl, {
-            method: "GET",
-            credentials: "include"
-        });
-
+        const response = await fetch(apiUrl, { method: "GET", credentials: "include" });
         if (!response.ok) throw new Error("Failed to fetch Follow-ups");
 
         const activities = await response.json();
+        followupHistoryCache = activities;
 
         let rows = '';
-
         if (activities.length === 0) {
-            rows = `<tr><td colspan="7" class="text-center text-muted">No follow-ups recorded yet</td></tr>`;
+            rows = `<tr><td colspan="8" class="text-center text-muted">No follow-ups recorded yet</td></tr>`;
         } else {
             activities.forEach(a => {
                 const stageName = a.stageName || '';
@@ -586,28 +1048,60 @@ async function fetchActivityHistory(enquiryId) {
                         <td>${a.contactPersonName || ''}</td>
                         <td>${formatDate(a.nextFollowUpDate) || '-'}</td>
                         <td>${a.comments || '-'}</td>
-						
-						<td>
-						    <i class="fa fa-pen text-primary"
-						       style="cursor:pointer;"
-						       title="Edit"
-						       onclick="editfollowup('${a.id}')"></i>
-						</td>
-                    </tr>
-                `;
+                        <td>
+                            <i class="fa fa-pen text-primary mr-2" style="cursor:pointer;" title="Edit"
+                               onclick="editFollowup(${a.activityId})"></i>
+                            <i class="fa fa-trash text-danger" style="cursor:pointer;" title="Delete"
+                               onclick="deleteFollowup(${a.activityId})"></i>
+                        </td>
+                    </tr>`;
             });
+            // header stage = latest non-deleted follow-up (matches what the server syncs)
+            currentEnquiryStageId = activities[0].stageId || currentEnquiryStageId;
+            $('#sqCurrentStage').text(activities[0].stageName || '-');
         }
-
         document.getElementById("activityHistoryBody").innerHTML = rows;
-
     } catch (error) {
         console.error('Error fetching Follow-up history:', error);
     }
 }
 
-// ==============================
-// SAVE FOLLOW-UP — POST to backend
-// ==============================
+function editFollowup(activityId) {
+    const f = followupHistoryCache.find(x => String(x.activityId) === String(activityId));
+    if (!f) return;
+
+    editingActivityId = f.activityId;
+    $('#activitySource').val(f.sourceId || '');
+    $('#activityDate').val(f.activityDate || '');
+    $('#activityStage').val(f.stageId || '');
+    $('#activityContactPerson').val(f.contactPersonId || '');
+    $('#nextFollowUpDate').val(f.nextFollowUpDate || '');
+    $('#activityRemarks').val(f.comments || '');
+
+    $('#saveActivityBtn').text('Update Follow-up');
+    $('#cancelEditBtn').show();
+}
+
+$("#cancelEditBtn").on("click", resetFollowupForm);
+
+function deleteFollowup(activityId) {
+    if (!confirm("Are you sure you want to delete this follow-up?")) return;
+
+    $.ajax({
+        url: baseUrl1 + "/api/lead/followup/" + activityId,
+        type: "DELETE",
+        xhrFields: { withCredentials: true },
+        success: async function () {
+            if (String(editingActivityId) === String(activityId)) resetFollowupForm();
+            await fetchActivityHistory(currentSubqueryEnquiryId);
+            showPopup("Follow-up deleted successfully", "");
+        },
+        error: function (xhr) {
+            alert(xhr.responseText || "Unable to delete follow-up.");
+        }
+    });
+}
+
 document.getElementById("saveActivityBtn").addEventListener("click", function () {
 
     const stageId = $('#activityStage').val();
@@ -618,179 +1112,249 @@ document.getElementById("saveActivityBtn").addEventListener("click", function ()
         return;
     }
 
+    const isEdit = editingActivityId !== null;
+
     const payload = {
-        sourceId: $('#activitySource').val(),
+        enquiryId: currentSubqueryEnquiryId,
+        isEnquiry: true,
+        sourceId: toInt($('#activitySource').val()),
         activityDate: activityDate,
-        stageId: stageId,
-        contactPersonId: $('#activityContactPerson').val(),
-        nextFollowUpDate: $('#nextFollowUpDate').val(),
+        stageId: parseInt(stageId),
+        contactPersonId: toInt($('#activityContactPerson').val()),
+        nextFollowUpDate: $('#nextFollowUpDate').val() || null,
         comments: $('#activityRemarks').val().trim(),
-        createdBy: getCurrentUserId()
+        createdBy: getCurrentUserId(),
+        modifiedBy: getCurrentUserId()
     };
 
     $.ajax({
-        url: baseUrl + '/api/salescrm/enquiry/' + currentSubqueryEnquiryId + '/activity',
-        type: 'POST',
-        contentType: 'application/json',
+        url: isEdit
+            ? baseUrl1 + "/api/lead/followup/" + editingActivityId
+            : new URL("/api/lead/followup", baseUrl1).toString(),
+        type: isEdit ? "PUT" : "POST",
+        contentType: "application/json",
         data: JSON.stringify(payload),
-		xhrFields: { withCredentials: true },
+        xhrFields: { withCredentials: true },
         success: async function () {
-            console.log('Follow-up saved successfully');
-
+            resetFollowupForm();
             await fetchActivityHistory(currentSubqueryEnquiryId);
-            fetchEnquiries();
-
-            const stageName = $('#activityStage option:selected').text();
-            $('#sqCurrentStage').text(stageName);
-
-            $('#activitySource').val('');
-            $('#activityDate').val('');
-            $('#activityContactPerson').val('');
-            $('#nextFollowUpDate').val('');
-            $('#activityRemarks').val('');
+            showPopup(isEdit ? "Follow-up updated successfully" : "Follow-up saved successfully", "");
         },
         error: function (xhr) {
-            console.error('Error saving Follow-up:', xhr.responseText);
-            alert(xhr.responseText || 'Error saving Follow-up');
+            alert(xhr.responseText || "Unable to save follow-up.");
+        }
+    });
+});*/
+
+
+
+let currentSubqueryEnquiryId = null;
+let editingActivityId = null;
+let followupHistoryCache = [];
+let currentEnquiryStageId = null;
+
+async function openSubquery(enquiryId) {
+	const allowed =allowedActions || [];
+
+		if (!allowed.includes("FollowUp")) {
+		  alert(" You do not have permission to FollowUp.");
+		  $('#exampleModalScrollableIN').modal('hide');
+		  return;
+		}
+	
+	
+    currentSubqueryEnquiryId = enquiryId;
+    try {
+        const response = await fetch(new URL(`/api/enquiry/${enquiryId}`, baseUrl1),
+                                     { method: "GET", credentials: "include" });
+        if (!response.ok) throw new Error("Failed to fetch Enquiry");
+        const item = await response.json();
+
+        $('#sqEnqNo').text(item.enqNo || '');
+        $('#sqProjectName').text(item.projectName || '');
+        $('#sqClientName').text(item.clientName || '');
+        $('#sqCurrentStage').text(item.currentStageName || '-');
+
+        currentEnquiryStageId = item.currentStageId || null;
+
+        await loadDropdown('/api/salescrm/opportunity-source', '#activitySource', 'id', 'opportunityName', 'Select Source');
+        await loadEnquiryStages('#activityStage', currentEnquiryStageId);
+
+        if (item.clientId) {
+            await loadDropdown(`/api/salescrm/contact-person/by-client/${item.clientId}`,
+                               '#activityContactPerson', 'id', 'contactName', 'Select Contact Person');
+        } else {
+            $('#activityContactPerson').html('<option value="">Select Contact Person</option>');
+        }
+
+        followupHistoryCache = [];        // NEW: never reuse the previous enquiry's dates
+        resetFollowupForm();
+        $('#activityAttendedBy').val(getCurrentUsername());
+
+        await fetchActivityHistory(enquiryId);
+        $('#exampleModalActivity').modal('show');
+    } catch (error) {
+        console.error("Error opening Follow-up:", error);
+        showMessage("Unable to load Enquiry Follow-up", "error");
+    }
+}
+
+function resetFollowupForm() {
+    clearFieldErrors("#exampleModalActivity");      // NEW
+    editingActivityId = null;
+    $('#activitySource').val('');
+    $('#activityDate').val('');
+    $('#activityStage').val(currentEnquiryStageId || '');
+    $('#activityContactPerson').val('');
+    $('#nextFollowUpDate').val('');
+    $('#activityRemarks').val('');
+    $('#saveActivityBtn').text('Save Follow-up');
+    $('#cancelEditBtn').hide();
+    applyFollowupMinDate(null);                     // NEW
+}
+
+async function fetchActivityHistory(enquiryId) {
+    try {
+        const apiUrl = new URL(`/api/lead/${enquiryId}/followups`, baseUrl1);
+        apiUrl.searchParams.set("enquiry", "true");
+
+        const response = await fetch(apiUrl, { method: "GET", credentials: "include" });
+        if (!response.ok) throw new Error("Failed to fetch Follow-ups");
+
+        const activities = await response.json();
+        followupHistoryCache = activities;
+        applyFollowupMinDate(editingActivityId);    // NEW
+
+        let rows = '';
+        if (activities.length === 0) {
+            rows = `<tr><td colspan="8" class="text-center text-muted">No follow-ups recorded yet</td></tr>`;
+        } else {
+            activities.forEach(a => {
+                const stageName = a.stageName || '';
+                rows += `
+                    <tr>
+                        <td>${formatDate(a.activityDate) || ''}</td>
+                        <td>${a.sourceName || ''}</td>
+                        <td>${a.createdBy || ''}</td>
+                        <td><span class="badge ${stageBadgeClass(stageName)}">${stageName}</span></td>
+                        <td>${a.contactPersonName || ''}</td>
+                        <td>${formatDate(a.nextFollowUpDate) || '-'}</td>
+                        <td>${a.comments || '-'}</td>
+                        <td>
+                            <i class="fa fa-pen text-primary mr-2" style="cursor:pointer;" title="Edit"
+                               onclick="editFollowup(${a.activityId})"></i>
+                            <i class="fa fa-trash text-danger" style="cursor:pointer;" title="Delete"
+                               onclick="deleteFollowup(${a.activityId})"></i>
+                        </td>
+                    </tr>`;
+            });
+            currentEnquiryStageId = activities[0].stageId || currentEnquiryStageId;
+            $('#sqCurrentStage').text(activities[0].stageName || '-');
+        }
+        document.getElementById("activityHistoryBody").innerHTML = rows;
+    } catch (error) {
+        console.error('Error fetching Follow-up history:', error);
+    }
+}
+
+function editFollowup(activityId) {
+    const f = followupHistoryCache.find(x => String(x.activityId) === String(activityId));
+    if (!f) return;
+
+    clearFieldErrors("#exampleModalActivity");      // NEW
+    editingActivityId = f.activityId;
+    applyFollowupMinDate(f.activityId);             // NEW
+
+    $('#activitySource').val(f.sourceId || '');
+    $('#activityDate').val(String(f.activityDate || '').substring(0, 10));
+    $('#activityStage').val(f.stageId || '');
+    $('#activityContactPerson').val(f.contactPersonId || '');
+    $('#nextFollowUpDate').val(String(f.nextFollowUpDate || '').substring(0, 10));
+    $('#activityRemarks').val(f.comments || '');
+
+    $('#saveActivityBtn').text('Update Follow-up');
+    $('#cancelEditBtn').show();
+}
+
+$("#cancelEditBtn").on("click", resetFollowupForm);
+
+function deleteFollowup(activityId) {
+    showConfirm("Are you sure you want to delete this follow-up?", function () {
+        $.ajax({
+            url: baseUrl1 + "/api/lead/followup/" + activityId + "?userId=" + getCurrentUserId(),   // CHANGED
+            type: "DELETE",
+            xhrFields: { withCredentials: true },
+            success: async function () {
+                if (String(editingActivityId) === String(activityId)) resetFollowupForm();
+                await fetchActivityHistory(currentSubqueryEnquiryId);
+                showPopup("Follow-up deleted successfully", "");
+            },
+            error: function (xhr) {
+                showMessage(xhr.responseText || "Unable to delete follow-up.", "warning");
+            }
+        });
+    });
+}
+
+document.getElementById("saveActivityBtn").addEventListener("click", function () {
+
+    const activityDate = $('#activityDate').val();
+
+    // NEW: all fields mandatory
+    const requiredFields = [
+        ["#activitySource", "Source"],
+        ["#activityDate", "Date"],
+        ["#activityStage", "Stage"],
+        ["#activityContactPerson", "Contact Person"],
+        ["#nextFollowUpDate", "Next Follow-up Date"],
+        ["#activityRemarks", "Comments"]
+    ];
+    if (!validateRequired("#exampleModalActivity", requiredFields)) return;
+
+    // NEW: back-date check (also catches dates typed by hand)
+    const minDate = $("#activityDate").data("minDate");
+    if (minDate && activityDate < minDate) {
+        showFieldError("#activityDate",
+            "Date cannot be earlier than the last follow-up (" + formatDate(minDate) + ")");
+        document.getElementById("activityDate").scrollIntoView({ behavior: "smooth", block: "center" });
+        return;
+    }
+
+    const isEdit = editingActivityId !== null;
+
+    const payload = {
+        enquiryId: currentSubqueryEnquiryId,
+        isEnquiry: true,
+        sourceId: toInt($('#activitySource').val()),
+        activityDate: activityDate,
+        stageId: parseInt($('#activityStage').val()),
+        contactPersonId: toInt($('#activityContactPerson').val()),
+        nextFollowUpDate: $('#nextFollowUpDate').val() || null,
+        comments: $('#activityRemarks').val().trim(),
+        createdBy: getCurrentUserId(),
+        modifiedBy: getCurrentUserId()
+    };
+
+    $.ajax({
+        url: isEdit
+            ? baseUrl1 + "/api/lead/followup/" + editingActivityId
+            : new URL("/api/lead/followup", baseUrl1).toString(),
+        type: isEdit ? "PUT" : "POST",
+        contentType: "application/json",
+        data: JSON.stringify(payload),
+        xhrFields: { withCredentials: true },
+        success: async function () {
+            resetFollowupForm();
+            await fetchActivityHistory(currentSubqueryEnquiryId);
+            fetchEnquiries();
+            showPopup(isEdit ? "Follow-up updated successfully" : "Follow-up saved successfully", "");
+        },
+        error: function (xhr) {
+            showMessage(xhr.responseText || "Unable to save follow-up.", "warning");
         }
     });
 });
 
-// ==============================
-// INITIAL LOAD
-// ==============================
-$(document).ready(function () {
-	const today = new Date().toISOString().split('T')[0];
-	    $("#enquiryDate").attr("max", today).val(today);
-		$("#activityDate").attr("max", today).val(today);
-		$("#activityDate1").attr("max", today).val(today);
-		$("#enquiryDate1").attr("max", today).val(today);
-		$("#nextFollowUpDate").attr("min", today).val(today);
-		$("#nextFollowUpDate1").attr("min", today).val(today);
-		$("#nextFollowUpDateCreate").attr("min", today).val(today);
-		$("#awardMonth").attr("min", today).val(today);
-		
-    fetchEnquiries();
-});
-
-
-
-function showPopup(message, redirectUrl) {
-	var popup = $('<div class="popup">' + message + '</div>').appendTo('body').hide().fadeIn(400);
-	setTimeout(function() {
-		popup.fadeOut(400, function() {
-			$(this).remove();
-			window.location = redirectUrl;
-		});
-	}, 2000);
-}
-
-
-let editingFollowupId = null;
-let originalFollowupData = {};
-let originalEnquiryData = {}; 
-
-
-// ==============================
-// EDIT FOLLOW-UP — fetch by id, prefill update modal
-// ==============================
-async function editfollowup(id) {
-
-    try {
-        const apiUrl = new URL(`/api/salescrm/activity/${id}`, baseUrl1);
-
-        const response = await fetch(apiUrl, {
-            method: "GET",
-            credentials: "include"
-        });
-
-        if (!response.ok) throw new Error("Failed to fetch Follow-up");
-
-        const item = await response.json();
-
-        editingFollowupId = id;
-
-        await loadDropdown('/api/salescrm/opportunity-source', '#activitySource1', 'id', 'opportunityName', 'Select Source');
-        await loadDropdown('/api/salescrm/current-stage', '#activityStage1', 'id', 'stageName', 'Select Stage');
-        await loadDropdown('/api/salescrm/contact-person', '#activityContactPerson1', 'id', 'contactName', 'Select Contact Person');
-
-        $('#activitySource1').val(item.sourceId || '');
-        $('#activityDate1').val(item.activityDate || '');
-        $('#activityAttendedBy1').val(item.createdBy || '');
-        $('#activityStage1').val(item.stageId || '');
-        $('#activityContactPerson1').val(item.contactPersonId || '');
-        $('#nextFollowUpDate1').val(item.nextFollowUpDate || '');
-        $('#activityRemarks1').val(item.comments || '');
-
-        // Snapshot original values for "no changes" comparison
-        originalFollowupData = {
-            sourceId: String(item.sourceId || ''),
-            activityDate: item.activityDate || '',
-            stageId: String(item.stageId || ''),
-            contactPersonId: String(item.contactPersonId || ''),
-            nextFollowUpDate: item.nextFollowUpDate || '',
-            comments: (item.comments || '').trim()
-        };
-
-        $('#exampleModalActivityUp').modal('show');
-
-    } catch (error) {
-        console.error("Error fetching Follow-up:", error);
-        alert("Unable to fetch Follow-up");
-    }
-}
-
-async function editfollowup(id) {
-
-    try {
-        const apiUrl = new URL(`/api/salescrm/activity/${id}`, baseUrl1);
-
-        const response = await fetch(apiUrl, {
-            method: "GET",
-            credentials: "include"
-        });
-
-        if (!response.ok) throw new Error("Failed to fetch Follow-up");
-
-        const item = await response.json();
-
-        editingFollowupId = id;
-
-        await loadDropdown('/api/salescrm/opportunity-source', '#activitySource1', 'id', 'opportunityName', 'Select Source');
-        await loadDropdown('/api/salescrm/current-stage', '#activityStage1', 'id', 'stageName', 'Select Stage');
-        await loadDropdown(
-            `/api/salescrm/contact-person/client/${currentSubqueryClientId}`,
-            '#activityContactPerson1', 'id', 'contactName', 'Select Contact Person'
-        );
-
-        $('#activitySource1').val(item.sourceId || '');
-        $('#activityDate1').val(item.activityDate || '');
-        $('#activityAttendedBy1').val(item.user_name || '');
-        $('#activityStage1').val(item.stageId || '');
-        $('#activityContactPerson1').val(item.contactPersonId || '');
-        $('#nextFollowUpDate1').val(item.nextFollowUpDate || '');
-        $('#activityRemarks1').val(item.comments || '');
-
-        originalFollowupData = {
-            sourceId: String(item.sourceId || ''),
-            activityDate: item.activityDate || '',
-            stageId: String(item.stageId || ''),
-            contactPersonId: String(item.contactPersonId || ''),
-            nextFollowUpDate: item.nextFollowUpDate || '',
-            comments: (item.comments || '').trim()
-        };
-
-        $('#exampleModalActivityUp').modal('show');
-
-    } catch (error) {
-        console.error("Error fetching Follow-up:", error);
-        alert("Unable to fetch Follow-up");
-    }
-}
-
-// ==============================
-// UPDATE FOLLOW-UP SAVE — with no-change detection
-// ==============================
 document.getElementById("updateFollowupBtn").addEventListener("click", function () {
 
     const stageId = $('#activityStage1').val();
@@ -829,14 +1393,12 @@ document.getElementById("updateFollowupBtn").addEventListener("click", function 
     };
 
     $.ajax({
-        url: baseUrl1 + '/api/salescrm/activity/' + editingFollowupId,
+        url: baseUrl1 + '/api/activity/' + editingFollowupId,
         type: 'PUT',
         contentType: 'application/json',
         data: JSON.stringify(payload),
         xhrFields: { withCredentials: true },
         success: async function () {
-            console.log('Follow-up updated successfully');
-
             $('#exampleModalActivityUp').modal('hide');
 
             await fetchActivityHistory(currentSubqueryEnquiryId);
@@ -852,1230 +1414,56 @@ document.getElementById("updateFollowupBtn").addEventListener("click", function 
     });
 });
 
-function formatDate(dateString) {
-    if (!dateString) return "";
-
-    const parts = dateString.split("-");
-
-    if (parts.length !== 3) return dateString;
-
-    return `${parts[2]}-${parts[1]}-${parts[0]}`;
-}*/
-
-document.getElementById("modalScroll1").addEventListener("click", async function () {
-
-await loadLeadNos("#leadNo");
-loadSegmentDropdown("#segment", "Select Segment");
-$("#areaQty").val("");
-$("#suggestedBidValue").val("");
-$("#segment").val("");
-$("#clientName").val("");
-$("#projectName").val("");
-$("#siteLocation").val("");
-$("#zone").val("");
-    $('#exampleModalScrollable').modal('show');
-});
-
-$(document).ready(function () {
-	fetchEnquiries();
-	});
-
-
-let leadData = [];	
-
-async function loadLeadNos(selector) {
-
-    try {
-
-        const apiUrl = new URL('/api/lead/leadnos', baseUrl1);
-
-        const response = await fetch(apiUrl, {
-            method: "GET",
-            credentials: "include"
-        });
-
-        if (!response.ok) {
-            throw new Error("Failed to fetch Lead Nos");
-        }
-
-        const result = await response.json();
-
-        let options = '<option value="">Select Lead No</option>';
-
-        result.forEach(lead => {
-
-            options += `
-                <option value="${lead.leadId}"
-                        data-clientid="${lead.client}"
-                        data-leadno="${lead.leadNo}">
-                    ${lead.leadNo}
-                </option>`;
-
-        });
-
-        $(selector).html(options);
-
-    } catch (error) {
-        console.error("Error fetching Lead Nos:", error);
-    }
-}
-
-$("#leadNo").change(async function () {
-
-    const leadId = $(this).val();
-    const clientId = $(this).find(":selected").data("clientid");
-
-    if (!clientId) {
-        return;
-    }
-
-    try {
-
-        // Fetch Client Details
-        const clientApi = new URL('/api/salescrm/client', baseUrl1);
-
-        const clientResponse = await fetch(clientApi, {
-            method: "GET",
-            credentials: "include"
-        });
-
-        if (!clientResponse.ok) {
-            throw new Error("Failed to fetch client details");
-        }
-
-        const clients = await clientResponse.json();
-        const client = clients.find(c => c.id == clientId);
-
-        if (client) {
-            $("#projectName").val(client.clientName + " - " + client.address);
-            $("#clientName").val(client.clientName);
-            $("#siteLocation").val(client.address);
-            $("#zone").val(client.zone_name);
-        }
-
-        // Fetch Lead Details
-        if (leadId) {
-
-            const leadApi = new URL(`/api/lead/${leadId}`, baseUrl1);
-
-            const leadResponse = await fetch(leadApi, {
-                method: "GET",
-                credentials: "include"
-            });
-
-            if (!leadResponse.ok) {
-                throw new Error("Failed to fetch lead details");
-            }
-
-            const lead = await leadResponse.json();
-
-            $("#suggestedBidValue").val(lead.suggestedBidValue);
-            $("#segment").val(lead.segmentId);
-            $("#areaQty").val(lead.areaQty);
-        }
-
-    } catch (error) {
-        console.error(error);
-    }
-
-});
-
-function showPopup(message, redirectUrl) {
-	var popup = $('<div class="popup">' + message + '</div>').appendTo('body').hide().fadeIn(400);
-	setTimeout(function() {
-		popup.fadeOut(400, function() {
-			$(this).remove();
-			window.location = redirectUrl;
-		});
-	}, 2000);
-}
-
-async function loadSegmentDropdown(selector, defaultText = "Select Segment") {
-
-    try {
-
-        const apiUrl = new URL('/api/salescrm/segment', baseUrl1);
-
-        const response = await fetch(apiUrl, {
-            method: "GET",
-            credentials: "include"
-        });
-
-        if (!response.ok) {
-            throw new Error("Failed to fetch Segments");
-        }
-
-        const result = await response.json();
-
-        let options = `<option value="">${defaultText}</option>`;
-
-        result.forEach(segment => {
-            options += `
-                <option value="${segment.id}">
-                    ${segment.segmentName}
-                </option>`;
-        });
-
-        $(selector).html(options);
-
-    } catch (error) {
-
-        console.error("Error fetching Segments:", error);
-
-    }
-}
-
-/*document.getElementById("createEnquiryBtn").addEventListener("click", async function () {
-
-    try {
-
-        const enquiry = {
-           leadNo: $("#leadNo option:selected").text().trim(),
-            segmentId: $("#segment").val(),
-            designBasisId: $("#designBasis").val(),
-
-            areaQty: parseFloat($("#areaQty").val()) || 0,
-            suggestedBidValue: parseFloat($("#suggestedBidValue").val()) || 0,
-
-            attachmentRemarks: $("#attachmentRemarks").val(),
-            attachmentPath: $("#attachmentPath").val(),
-
-            paintingRequirement: $("#paintingRequirement").val(),
-            enquiryType: $("#enquiryType").val(),
-
-            fireProofingRequired: $("#fireProofingRequired").val() === "Yes",
-            fireProofingRemarks: $("#fireProofingRemarks").val(),
-
-            paymentTerms: $("#paymentTerms").val(),
-            status: true,
-            createdBy: parseInt(createdById)
-        };
-
-        const apiUrl = new URL("/api/enquiry", baseUrl1);
-
-        const response = await fetch(apiUrl, {
-            method: "POST",
-            credentials: "include",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify(enquiry)
-        });
-
-        if (!response.ok) {
-            throw new Error(await response.text());
-        }
-		$("#exampleModalScrollable").modal("hide");
-        showPopup("Enquiry created successfully", "EnquiryEntry.jsp");
-
-    } catch (error) {
-
-        console.error(error);
-        showPopup("Failed to save enquiry", "");
-
-    }
-
-});*/
-
-
-document.getElementById("createEnquiryBtn").addEventListener("click", async function () {
-
-    try {
-
-        // ==========================================
-        // PAYMENT DATA
-        // ==========================================
-
-        const paymentData = {
-
-            advancePercentage: 0,
-            stage1Percentage: 0,
-            stage2Percentage: 0,
-            stage3Percentage: 0
-
-        };
-
-        document.querySelectorAll(
-            "#paymentTerms .payment-term:checked"
-        ).forEach(function (checkbox) {
-
-            const container =
-                checkbox.parentElement.parentElement;
-
-            const percentageInput =
-                container.querySelector(".payment-percentage");
-
-            const percentage =
-                parseFloat(percentageInput.value) || 0;
-
-            switch (checkbox.value) {
-
-                case "1":
-                    paymentData.advancePercentage = percentage;
-                    break;
-
-                case "2":
-                    paymentData.stage1Percentage = percentage;
-                    break;
-
-                case "3":
-                    paymentData.stage2Percentage = percentage;
-                    break;
-
-                case "4":
-                    paymentData.stage3Percentage = percentage;
-                    break;
-            }
-
-        });
-
-
-        // ==========================================
-        // CHECK TOTAL PERCENTAGE
-        // ==========================================
-
-        const totalPercentage =
-            paymentData.advancePercentage +
-            paymentData.stage1Percentage +
-            paymentData.stage2Percentage +
-            paymentData.stage3Percentage;
-
-        if (totalPercentage > 100) {
-
-            showPopup(
-                "Payment terms percentage cannot exceed 100%",
-                ""
-            );
-
-            return;
-        }
-
-
-        // ==========================================
-        // ENQUIRY DATA
-        // ==========================================
-
-        const enquiry = {
-
-            leadNo:
-                $("#leadNo option:selected").text().trim(),
-
-            segmentId:
-                $("#segment").val() || null,
-
-            designBasisId:
-                $("#designBasis").val() || null,
-
-            areaQty:
-                $("#areaQty").val() || 0,
-
-            suggestedBidValue:
-                $("#suggestedBidValue").val() || 0,
-
-            attachmentRemarks:
-                $("#attachmentRemarks").val(),
-
-            paintingRequirement:
-                $("#paintingRequirement").val(),
-
-            enquiryType:
-                $("#enquiryType").val(),
-
-            fireProofingRequired:
-                $("#fireProofingRequired").val() === "Yes",
-
-            fireProofingRemarks:
-                $("#fireProofingRemarks").val(),
-
-            advancePercentage:
-                paymentData.advancePercentage,
-
-            stage1Percentage:
-                paymentData.stage1Percentage,
-
-            stage2Percentage:
-                paymentData.stage2Percentage,
-
-            stage3Percentage:
-                paymentData.stage3Percentage,
-
-            status: true,
-
-            createdBy:
-                parseInt(createdById)
-
-        };
-
-
-        console.log("Enquiry Data:", enquiry);
-
-
-        // ==========================================
-        // FORM DATA
-        // ==========================================
-
-        const formData = new FormData();
-
-        // Add enquiry JSON
-        formData.append(
-            "enquiry",
-            new Blob(
-                [JSON.stringify(enquiry)],
-                { type: "application/json" }
-            )
-        );
-
-
-        // ==========================================
-        // ADD ONE FILE
-        // ==========================================
-
-		const fileInput = document.getElementById("attachments");
-
-		if (fileInput.files.length > 0) {
-
-		    const file = fileInput.files[0];
-
-		    const maxSize = 1 * 1024 * 1024; // 1 MB
-
-		    if (file.size > maxSize) {
-
-		        showPopup(
-		            "File size cannot exceed 1 MB.",
-		            ""
-		        );
-
-		        return;
-		    }
-
-		    formData.append("file", file);
-
-		    console.log("File:", file.name);
-		    console.log(
-		        "File Size:",
-		        (file.size / 1024 / 1024).toFixed(2) + " MB"
-		    );
-		}
-
-
-        // ==========================================
-        // API CALL
-        // ==========================================
-
-        const apiUrl =
-            new URL("/api/enquiry", baseUrl1);
-
-        const response = await fetch(apiUrl, {
-
-            method: "POST",
-
-            credentials: "include",
-
-            body: formData
-
-        });
-
-
-        if (!response.ok) {
-
-            const errorText =
-                await response.text();
-
-            console.error(errorText);
-
-            throw new Error(errorText);
-        }
-
-
-        // ==========================================
-        // SUCCESS
-        // ==========================================
-
-        $("#exampleModalScrollable").modal("hide");
-
-        showPopup(
-            "Enquiry created successfully",
-            "EnquiryEntry.jsp"
-        );
-
-
-    } catch (error) {
-
-        console.error(error);
-
-        showPopup(
-            "Failed to save enquiry",
-            ""
-        );
-    }
-
+// ==============================
+// INITIAL LOAD (single ready handler)
+// ==============================
+$(document).ready( async function () {
+	
+	
+await	loadActions();
+    const today = new Date().toISOString().split('T')[0];
+	
+	const currentMonth = today.slice(0, 7);
+	$("#tentClosureMon").attr("min", currentMonth);
+	$("#tentClosureMon1").attr("min", currentMonth);
+	
+    $("#enquiryDate").attr("max", today).val(today);
+    $("#activityDate").attr("max", today).val(today);
+    $("#activityDate1").attr("max", today).val(today);
+    $("#enquiryDate1").attr("max", today).val(today);
+    $("#nextFollowUpDate").attr("min", today).val(today);
+    $("#nextFollowUpDate1").attr("min", today).val(today);
+    $("#nextFollowUpDateCreate").attr("min", today).val(today);
+    $("#awardMonth").attr("min", today).val(today);
+
+    fetchEnquiries();
 });
 
 // ==============================
-// FETCH + RENDER MAIN TABLE
+// STAGE DROPDOWN FOR ENQUIRY FOLLOW-UP
+// Excludes "Lead" — once an Enquiry exists, Lead is not a valid stage.
 // ==============================
-async function fetchEnquiries() {
-
+async function loadEnquiryStages(selector, selectedId) {
     try {
+        const apiUrl = new URL('/api/salescrm/current-stage', baseUrl1);
+        const response = await fetch(apiUrl, { method: "GET", credentials: "include" });
 
-        const apiUrl = new URL('/api/enquiry', baseUrl1);
+        if (!response.ok) throw new Error("Failed to fetch Current Stages");
 
-        const response = await fetch(apiUrl, {
-            method: "GET",
-            credentials: "include"
-        });
+        const result = await response.json();
 
-        if (!response.ok) {
-            throw new Error("Failed to fetch Enquiries");
-        }
+        let options = '<option value="">Select Stage</option>';
 
-        const enquiries = await response.json();
-
-        let rows = "";
-
-        enquiries.forEach((item, index) => {
-
-            rows += `
-                <tr>
-                    <td>${index + 1}</td>
-                    <td>${item.enqNo}</td>
-                    <td>${item.leadNo}</td>
-                    <td>${item.areaQty}</td>
-                    <td>${item.suggestedBidValue}</td>
-                    <td>${item.status ? "Active" : "Inactive"}</td>
-                    <td>
-                        <i class="fa fa-pen text-primary"
-                           style="cursor:pointer"
-                           onclick="openEditEnquiry(${item.id})"></i>
-                    </td>
-                    <td>
-                        <i class="fa fa-list-alt text-success"
-                           style="cursor:pointer"
-                           onclick="openSubquery(${item.id})"></i>
-                    </td>
-                </tr>
-            `;
-
-        });
-
-        $("#enquiryTableBody").html(rows);
-
-    } catch (error) {
-
-        console.error(error);
-
-    }
-
-}
-let enquiryId = 0;
-/*async function openEditEnquiry(id) {
-	enquiryId = id;
-    try {
-
-        await loadSegmentDropdown("#segment1", "Select Segment");
-
-        const apiUrl = new URL(`/api/enquiry/${id}`, baseUrl1);
-
-        const response = await fetch(apiUrl, {
-            method: "GET",
-            credentials: "include"
-        });
-
-        if (!response.ok) {
-            throw new Error("Failed to fetch enquiry");
-        }
-
-        const item = await response.json();
-
-        $("#updateEnquiryBtn").data("id", item.id);
-
-        // Readonly
-		$("#enqNo1").val(item.enqNo);
-        $("#leadNo1").val(item.leadNo);
-
-        // Textboxes
-        $("#areaQty1").val(item.areaQty);
-        $("#suggestedBidValue1").val(item.suggestedBidValue);
-
-        // Dropdowns
-        $("#segment1").val(item.segmentId);
-        $("#designBasis1").val(item.designBasisId);
-        $("#paintingRequirement1").val(item.paintingRequirement);
-        $("#enquiryType1").val(item.enquiryType);
-        $("#fireProofing1").val(item.fireProofingRequired ? "1" : "0");
-        $("#paymentTerms1").val(item.paymentTerms);
-
-        // Remarks
-        $("#attachmentRemarks1").val(item.attachmentRemarks || "");
-        $("#fireProofingRemarks1").val(item.fireProofingRemarks || "");
-
-        // File input cannot be prefilled
-        $("#attachments1").val("");
-
-        $("#exampleModalScrollableUp").modal("show");
-
-    } catch (error) {
-
-        console.error(error);
-        alert("Failed to load enquiry", "");
-
-    }
-
-}*/
-
-async function openEditEnquiry(id) {
-
-    enquiryId = id;
-
-    try {
-
-        await loadSegmentDropdown("#segment1", "Select Segment");
-
-        const apiUrl = new URL(`/api/enquiry/${id}`, baseUrl1);
-
-        const response = await fetch(apiUrl, {
-
-            method: "GET",
-
-            credentials: "include"
-
-        });
-
-        if (!response.ok) {
-
-            throw new Error("Failed to fetch enquiry");
-
-        }
-
-        const item = await response.json();
-		
-		const attachmentContainer =
-		    document.getElementById("existingAttachment1");
-
-		attachmentContainer.innerHTML = "";
-
-		if (item.attachmentPath) {
-
-		    const fileName =
-		        item.attachmentPath.split("\\").pop().split("/").pop();
-
-		    attachmentContainer.innerHTML = `
-		        <div>
-		            <i class="fas fa-paperclip"></i>
-		            <strong>${fileName}</strong>
-
-		            <button type="button"
-		                    class="btn btn-sm btn-primary ml-2"
-		                    onclick="viewEnquiryAttachment('${item.id}')">
-		                <i class="fas fa-eye"></i>
-		                View
-		            </button>
-		        </div>
-		    `;
-
-		}
-
-        console.log("Enquiry Data:", item);
-
-        $("#updateEnquiryBtn").data("id", item.id);
-
-        // Readonly
-        $("#enqNo1").val(item.enqNo);
-        $("#leadNo1").val(item.leadNo);
-
-        // Textboxes
-        $("#areaQty1").val(item.areaQty);
-        $("#suggestedBidValue1").val(item.suggestedBidValue);
-
-        // Dropdowns
-        $("#segment1").val(item.segmentId);
-        $("#designBasis1").val(item.designBasisId);
-        $("#paintingRequirement1").val(item.paintingRequirement);
-        $("#enquiryType1").val(item.enquiryType);
-        $("#fireProofing1").val(
-            item.fireProofingRequired ? "1" : "0"
-        );
-
-        // ==========================================
-        // PAYMENT TERMS
-        // ==========================================
-
-        loadPaymentTerms1(item);
-
-        // Remarks
-        $("#attachmentRemarks1").val(
-            item.attachmentRemarks || ""
-        );
-
-        $("#fireProofingRemarks1").val(
-            item.fireProofingRemarks || ""
-        );
-
-        // File input cannot be prefilled
-        $("#attachments1").val("");
-
-        $("#exampleModalScrollableUp").modal("show");
-
-    } catch (error) {
-
-        console.error(error);
-
-        alert("Failed to load enquiry");
-
-    }
-}
-
-async function viewEnquiryAttachment(id) {
-
-    try {
-
-        const apiUrl = new URL(
-            `/api/enquiry/${id}/attachment`,
-            baseUrl1
-        );
-
-        const response = await fetch(apiUrl, {
-            method: "GET",
-            credentials: "include"
-        });
-
-        if (!response.ok) {
-            throw new Error(
-                await response.text()
-            );
-        }
-
-        const blob = await response.blob();
-
-        const blobUrl =
-            URL.createObjectURL(blob);
-
-        window.open(blobUrl, "_blank");
-
-    } catch (error) {
-
-        console.error(error);
-
-        showPopup(
-            "Unable to preview attachment",
-            ""
-        );
-    }
-}
-/*document.getElementById("updateEnquiryBtn").addEventListener("click", async function () {
-
-    try {
-
-        const payload = {
-
-            leadNo: $("#leadNo1").val().trim(),
-            segmentId: $("#segment1").val() || null,
-            designBasisId: $("#designBasis1").val() || null,
-            areaQty: $("#areaQty1").val() || 0,
-            suggestedBidValue: $("#suggestedBidValue1").val() || 0,
-
-            paintingRequirement: $("#paintingRequirement1").val(),
-            enquiryType: $("#enquiryType1").val(),
-           	fireProofingRequired: $("#fireProofing1").val() === "1",
-            fireProofingRemarks: $("#fireProofingRemarks1").val(),
-            paymentTerms: $("#paymentTerms1").val(),
-
-            attachmentPath: null,
-            attachmentRemarks: $("#attachmentRemarks1").val(),
-
-            status: true,
-            modifiedBy: parseInt(createdById)
-        };
-
-        const apiUrl = new URL(`/api/enquiry/${enquiryId}`, baseUrl1);
-
-        const response = await fetch(apiUrl, {
-            method: "PUT",
-            credentials: "include",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify(payload)
-        });
-
-        if (!response.ok)
-            throw new Error("Update failed");
-
-        $("#exampleModalScrollableUp").modal("hide");
-
-		showPopup("Enquiry updated successfully", "EnquiryEntry.jsp");
-    
-
-    } catch (err) {
-        console.error(err);
-        alert("Unable to update enquiry");
-    }
-
-});*/
-
-document.getElementById("updateEnquiryBtn").addEventListener("click", async function () {
-
-    try {
-
-        // ==========================================
-        // PAYMENT TERMS
-        // ==========================================
-
-        const paymentData = {
-
-            advancePercentage: 0,
-            stage1Percentage: 0,
-            stage2Percentage: 0,
-            stage3Percentage: 0
-
-        };
-
-        document.querySelectorAll(
-            "#paymentTerms1 .payment-term1:checked"
-        ).forEach(function (checkbox) {
-
-            const container =
-                checkbox.parentElement.parentElement;
-
-            const percentageInput =
-                container.querySelector(".payment-percentage1");
-
-            const percentage =
-                parseFloat(percentageInput.value) || 0;
-
-            switch (checkbox.value) {
-
-                case "1":
-                    paymentData.advancePercentage = percentage;
-                    break;
-
-                case "2":
-                    paymentData.stage1Percentage = percentage;
-                    break;
-
-                case "3":
-                    paymentData.stage2Percentage = percentage;
-                    break;
-
-                case "4":
-                    paymentData.stage3Percentage = percentage;
-                    break;
-            }
-        });
-
-
-        // ==========================================
-        // CHECK TOTAL
-        // ==========================================
-
-        const totalPercentage =
-            paymentData.advancePercentage +
-            paymentData.stage1Percentage +
-            paymentData.stage2Percentage +
-            paymentData.stage3Percentage;
-
-        if (totalPercentage > 100) {
-
-            showPopup(
-                "Payment terms percentage cannot exceed 100%",
-                ""
-            );
-
-            return;
-        }
-
-
-        // ==========================================
-        // CHECK SELECTED TERMS HAVE PERCENTAGE
-        // ==========================================
-
-        let invalidPayment = false;
-
-        document.querySelectorAll(
-            "#paymentTerms1 .payment-term1:checked"
-        ).forEach(function (checkbox) {
-
-            const container =
-                checkbox.parentElement.parentElement;
-
-            const percentageInput =
-                container.querySelector(".payment-percentage1");
-
-            const percentage =
-                parseFloat(percentageInput.value) || 0;
-
-            if (percentage <= 0) {
-                invalidPayment = true;
-            }
-        });
-
-        if (invalidPayment) {
-
-            showPopup(
-                "Please enter percentage for all selected payment terms",
-                ""
-            );
-
-            return;
-        }
-
-
-        // ==========================================
-        // PAYLOAD
-        // ==========================================
-
-        const payload = {
-
-            leadNo:
-                $("#leadNo1").val().trim(),
-
-            segmentId:
-                $("#segment1").val() || null,
-
-            designBasisId:
-                $("#designBasis1").val() || null,
-
-            areaQty:
-                $("#areaQty1").val() || 0,
-
-            suggestedBidValue:
-                $("#suggestedBidValue1").val() || 0,
-
-            paintingRequirement:
-                $("#paintingRequirement1").val(),
-
-            enquiryType:
-                $("#enquiryType1").val(),
-
-            fireProofingRequired:
-                $("#fireProofing1").val() === "1",
-
-            fireProofingRemarks:
-                $("#fireProofingRemarks1").val(),
-
-            // Payment percentages
-            advancePercentage:
-                paymentData.advancePercentage,
-
-            stage1Percentage:
-                paymentData.stage1Percentage,
-
-            stage2Percentage:
-                paymentData.stage2Percentage,
-
-            stage3Percentage:
-                paymentData.stage3Percentage,
-
-            attachmentRemarks:
-                $("#attachmentRemarks1").val(),
-
-            status: true,
-
-            modifiedBy:
-                parseInt(createdById)
-        };
-
-
-        console.log("Update Payload:", payload);
-
-
-        // ==========================================
-        // FORM DATA
-        // ==========================================
-
-        const formData = new FormData();
-
-        formData.append(
-            "enquiry",
-            new Blob(
-                [JSON.stringify(payload)],
-                {
-                    type: "application/json"
-                }
-            )
-        );
-
-
-        // ==========================================
-        // FILE UPLOAD
-        // ==========================================
-
-        const fileInput =
-            document.getElementById("attachments1");
-
-        if (fileInput.files.length > 0) {
-
-            const file =
-                fileInput.files[0];
-
-            // Maximum 1 MB
-            const maxSize =
-                1 * 1024 * 1024;
-
-            if (file.size > maxSize) {
-
-                showPopup(
-                    "File size cannot exceed 1 MB",
-                    ""
-                );
-
-                return;
-            }
-
-            formData.append(
-                "file",
-                file
-            );
-
-            console.log(
-                "New file:",
-                file.name
-            );
-        }
-
-
-        // ==========================================
-        // API CALL
-        // ==========================================
-
-        const apiUrl =
-            new URL(
-                `/api/enquiry/${enquiryId}`,
-                baseUrl1
-            );
-
-        const response =
-            await fetch(apiUrl, {
-
-                method: "PUT",
-
-                credentials: "include",
-
-                body: formData
+        result
+            .filter(stage => stage.stageName.trim().toLowerCase() !== "lead")
+            .forEach(stage => {
+                options += `<option value="${stage.id}">${stage.stageName}</option>`;
             });
 
+        $(selector).html(options);
+        if (selectedId) $(selector).val(selectedId);
 
-        // ==========================================
-        // RESPONSE
-        // ==========================================
-
-        if (!response.ok) {
-
-            const errorText =
-                await response.text();
-
-            console.error(errorText);
-
-            throw new Error(errorText);
-        }
-
-
-        // ==========================================
-        // SUCCESS
-        // ==========================================
-
-        $("#exampleModalScrollableUp").modal("hide");
-
-        showPopup(
-            "Enquiry updated successfully",
-            "EnquiryEntry.jsp"
-        );
-
-
-    } catch (err) {
-
-        console.error(err);
-
-        showPopup(
-            "Unable to update enquiry",
-            ""
-        );
-    }
-
-});
-
-document.querySelectorAll(".payment-term").forEach(function (checkbox) {
-
-    checkbox.addEventListener("change", function () {
-
-        const row = this.closest(".payment-term-row");
-        const percentage = row.querySelector(".payment-percentage");
-
-        percentage.disabled = !this.checked;
-
-        if (!this.checked) {
-            percentage.value = "";
-        }
-
-        updatePaymentTotal();
-    });
-});
-
-
-document.querySelectorAll(".payment-percentage").forEach(function (input) {
-
-    input.addEventListener("input", function () {
-
-        let total = 0;
-
-        document.querySelectorAll(".payment-percentage").forEach(function (item) {
-            total += parseFloat(item.value) || 0;
-        });
-
-        if (total > 100) {
-
-            const currentValue = parseFloat(this.value) || 0;
-
-            const otherTotal = total - currentValue;
-
-            this.value = Math.max(0, 100 - otherTotal);
-        }
-
-        updatePaymentTotal();
-    });
-});
-
-
-function updatePaymentTotal() {
-
-    let total = 0;
-
-    document.querySelectorAll(".payment-percentage").forEach(function (input) {
-        if (!input.disabled) {
-            total += parseFloat(input.value) || 0;
-        }
-    });
-
-    const message = document.getElementById("paymentTotalMessage");
-
-    message.textContent = "Total: " + total.toFixed(2) + "%";
-
-    if (total === 100) {
-        message.className = "text-success";
-    } else {
-        message.className = "text-muted";
+    } catch (error) {
+        console.error("Error fetching Current Stages:", error);
     }
 }
-
-function loadPaymentTerms1(enquiry) {
-
-    const percentages = {
-        "1": enquiry.advancePercentage || 0,
-        "2": enquiry.stage1Percentage || 0,
-        "3": enquiry.stage2Percentage || 0,
-        "4": enquiry.stage3Percentage || 0
-    };
-
-    document.querySelectorAll("#paymentTerms1 .payment-term1").forEach(function (checkbox) {
-
-        const value = checkbox.value;
-
-        // Parent div contains both checkbox and percentage input
-        const container = checkbox.parentElement.parentElement;
-
-        const percentageInput =
-            container.querySelector(".payment-percentage1");
-
-        const percentage = percentages[value] || 0;
-
-        if (percentage > 0) {
-
-            checkbox.checked = true;
-            percentageInput.disabled = false;
-            percentageInput.value = percentage;
-
-        } else {
-
-            checkbox.checked = false;
-            percentageInput.disabled = true;
-            percentageInput.value = "";
-        }
-    });
-
-    updatePaymentTotal1();
-}
-
-
-function updatePaymentTotal1() {
-
-    let total = 0;
-
-    document.querySelectorAll(
-        "#paymentTerms1 .payment-percentage1"
-    ).forEach(function (input) {
-
-        if (!input.disabled) {
-            total += parseFloat(input.value) || 0;
-        }
-    });
-
-    const message =
-        document.getElementById("paymentTotalMessage1");
-
-    if (!message) {
-        return;
-    }
-
-    message.textContent =
-        "Total: " + total.toFixed(2) + "%";
-
-    if (total === 100) {
-        message.className = "text-success";
-    } else {
-        message.className = "text-muted";
-    }
-}
-
-document.querySelectorAll("#paymentTerms1 .payment-term1").forEach(function (checkbox) {
-
-    checkbox.addEventListener("change", function () {
-
-        const container = checkbox.parentElement.parentElement;
-
-        const percentageInput =
-            container.querySelector(".payment-percentage1");
-
-        if (checkbox.checked) {
-
-            percentageInput.disabled = false;
-
-        } else {
-
-            percentageInput.disabled = true;
-            percentageInput.value = "";
-        }
-
-        updatePaymentTotal1();
-    });
-});
-
-
-document.querySelectorAll("#paymentTerms1 .payment-percentage1").forEach(function (input) {
-
-    input.addEventListener("input", function () {
-
-        let total = 0;
-
-        document.querySelectorAll(
-            "#paymentTerms1 .payment-percentage1"
-        ).forEach(function (item) {
-
-            if (!item.disabled) {
-                total += parseFloat(item.value) || 0;
-            }
-
-        });
-
-        // Don't allow more than 100
-        if (total > 100) {
-
-            const currentValue = parseFloat(this.value) || 0;
-
-            const otherTotal = total - currentValue;
-
-            this.value = Math.max(0, 100 - otherTotal);
-        }
-
-        updatePaymentTotal1();
-    });
-});

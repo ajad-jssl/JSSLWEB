@@ -1,19 +1,118 @@
 
-$("#modaltype").click(function (){
+
+const MainPage = 'MaintenanceMasterRegister.jsp';
+const UserId = sessionStorage.getItem('username');
+
+let allowedActions = [];
+
+async function loadActions() {
+    try {
+        const response = await fetch(
+            `${baseUrl}/api/page/actions?userId=${encodeURIComponent(UserId)}&pageName=${encodeURIComponent(MainPage)}`,
+            {
+                method: "GET",
+                credentials: "include",
+                headers: {
+                    "Content-Type": "application/json"
+                }
+            }
+        );
+
+        if (!response.ok) {
+            throw new Error("Failed to fetch actions");
+        }
+
+        allowedActions = await response.json();
+
+    } catch (error) {
+        console.error("Error:", error);
+    }
+}
+
+
+/* Select2 helper – same convention as subconassign.js */
+function initSelect2(selector, modalId, placeholder) {
+    const $el = $(selector);
+    if ($el.hasClass("select2-hidden-accessible")) {
+        $el.select2('destroy');   // safe re-init, options are rebuilt on every load
+    }
+    $el.select2({
+        theme          : "bootstrap4",
+        width          : "100%",
+        dropdownParent : $(modalId),
+        placeholder    : placeholder || "Select",
+        allowClear     : true
+    });
+}
+
+/*$("#modaltype").click(function (){
 	$("#exampleModalScrollablestype1").modal("show");
-})
+})*/
 
-$("#modalpage").click(function (){
+
+$("#modaltype").click(function () {
+
+    const allowed = allowedActions || [];
+
+    if (!allowed.includes("Insert")) {
+        alert("You do not have permission to Insert.");
+        $("#exampleModalScrollablestype1").modal("hide");
+        return;
+    }
+
+    $("#exampleModalScrollablestype1").modal("show");
+});
+/*$("#modalpage").click(function (){
 	$("#exampleModalScrollablePages").modal("show");
-})
+})*/
 
-$("#usertype").click(function (){
+
+$("#modalpage").click(function () {
+
+    const allowed = allowedActions || [];
+
+    if (!allowed.includes("Insert")) {
+        alert("You do not have permission to Insert.");
+        $("#exampleModalScrollablePages").modal("hide");
+        return;
+    }
+
+    $("#exampleModalScrollablePages").modal("show");
+});
+
+/*$("#usertype").click(function (){
 	$("#workerMappingModal").modal("show");
-})
+})*/
 
-$("#designatype").click(function (){
+$("#usertype").click(function () {
+
+    const allowed = allowedActions || [];
+
+    if (!allowed.includes("Insert")) {
+        alert("You do not have permission to Insert.");
+        $("#workerMappingModal").modal("hide");
+        return;
+    }
+
+    $("#workerMappingModal").modal("show");
+});
+
+/*$("#designatype").click(function (){
 	$("#exampleModalScrollabledesignation").modal("show");
-})
+})*/
+
+$("#designatype").click(function () {
+
+    const allowed = allowedActions || [];
+
+    if (!allowed.includes("Insert")) {
+        alert("You do not have permission to Insert.");
+        $("#exampleModalScrollabledesignation").modal("hide");
+        return;
+    }
+
+    $("#exampleModalScrollabledesignation").modal("show");
+});
 
 function allowTodayAndFuture(id){
     const today = new Date().toISOString().split("T")[0];
@@ -24,7 +123,7 @@ function allowTodayAndFuture(id){
 
 
 $(document).ready(function () {
-	
+	loadActions();
 	allowTodayAndFuture("purchaseDate");
 	allowTodayAndFuture("warranteStartDate");
 	loadCountries();
@@ -53,8 +152,9 @@ loadMachines();
 
 	loadDepartmentDropdown();
 	loadMachineDescriptionDropdown();
-		loadEmployees(3);
-	loadEmployeesUp(3);
+	/*	loadEmployees(3);
+	loadEmployeesUp(3);*/
+	loadEmployeesBoth(3);
 		loadWorkerMappings();
 		loaddesignationmappings();
 });
@@ -114,7 +214,8 @@ $("#createModule").click(function () {
         },
 
         data: {
-            machineDescription: machineDescription
+            machineDescription: machineDescription,
+			createdBy :sessionStorage.getItem('id')
         },
 
         success: function (response) {
@@ -147,68 +248,67 @@ $("#createModule").click(function () {
 
 
 
+
+
+
 function fetchMachineDescriptions() {
 
+
+    const apiUrl = new URL("/api/machine-description/getAll", baseUrl);
+
     $.ajax({
-        url: new URL(
-            "/api/machine-description/getAll",
-            baseUrl
-        ).toString(),
-
+        url: apiUrl.toString(),
         type: "GET",
+        xhrFields: { withCredentials: true },
 
-        xhrFields: {
-            withCredentials: true
-        },
+        success: function (data) {
 
-        success: function(data) {
+            let tableRows = '';
 
-            let tbody = $("#typeSelectionTableBody");
+            for (let index = 0; index < data.length; index++) {
 
-            tbody.empty();
+                const item = data[index];
 
-            if (!data || data.length === 0) {
-
-                tbody.append(`
-                    <tr>
-                        <td colspan="3" class="text-center">
-                            No Records Found
-                        </td>
-                    </tr>
-                `);
-
-                return;
-            }
-
-            $.each(data, function(index, item) {
-
-                tbody.append(`
-                    <tr>
+                tableRows += `
+                    <tr id="${item.machineDescId}">
                         <td>${index + 1}</td>
                         <td>${(item.machineDescription || '').toUpperCase()}</td>
                         <td>
-                            <i class="fa fa-pen text-primary cursor-pointer" 
+                            <i class="fa fa-pen text-primary cursor-pointer"
                                title="Edit"
+                               style="cursor:pointer;"
                                onclick="editMachineDescription(${item.machineDescId})">
                             </i>
                         </td>
                     </tr>
-                `);
-            });
+                `;
+            }
+
+            document.querySelector("#typeSelectionTableBody").innerHTML = tableRows;
 
             if ($.fn.DataTable.isDataTable('#TypeSelectiontableID')) {
                 $('#TypeSelectiontableID').DataTable().destroy();
             }
 
             $('#TypeSelectiontableID').DataTable({
+                dom: 'Bfrtip',
+                scrollX: false,
+                info: true,
                 paging: true,
                 pageLength: 10,
-                searching: true,
-                ordering: true
+                lengthMenu: [
+                    [10, 25, 50, 100],
+                    [10, 25, 50, 100]
+                ],
+                buttons: [{
+                    extend: 'excel',
+                    text: 'Export to Excel',
+                    title: 'Machine Category List'
+                }]
             });
         },
 
-        error: function(xhr) {
+        error: function (xhr) {
             console.error(xhr);
             alert("Failed to load data");
         }
@@ -219,6 +319,14 @@ let selectedMachineDescId = null;
 let originalMachineDescription = "";
 
 function editMachineDescription(machineDescId) {
+	
+	const allowed = allowedActions || [];
+
+	 if (!allowed.includes("Edit")) {
+	     alert("You do not have permission to edit.");
+	     return;
+	 }
+
 
     $.ajax({
 
@@ -283,7 +391,8 @@ $("#createtypeUp").click(function () {
 
         data: {
             machineDescId: selectedMachineDescId,
-            machineDescription: machineDescription
+            machineDescription: machineDescription,
+			createdBy :sessionStorage.getItem('id') ?? ''
         },
 
         success: function(response) {
@@ -347,7 +456,8 @@ $("#createPage").click(function () {
 
         data: {
             departmentName: departmentName,
-            factory_id: selectedFactory
+            factory_id: selectedFactory,
+			createdBy:sessionStorage.getItem('id')
         },
 
         success: function(response) {
@@ -381,7 +491,7 @@ $("#createPage").click(function () {
 });
 
 
-function loadDepartments() {
+/*function loadDepartments() {
 
     let factory_id = sessionStorage.getItem("selectedFactoryId");
 
@@ -447,11 +557,84 @@ function loadDepartments() {
         }
     });
 }
+*/
 
+
+function loadDepartments() {
+
+    let factory_id = sessionStorage.getItem("selectedFactoryId");
+    const apiUrl = new URL("/api/department/getAll", baseUrl);
+
+    $.ajax({
+        url: apiUrl.toString(),
+        type: "GET",
+        data: { factoryId: factory_id },
+        xhrFields: { withCredentials: true },
+
+        success: function (data) {
+
+            let tableRows = '';
+
+            for (let index = 0; index < data.length; index++) {
+
+                const item = data[index];
+
+                tableRows += `
+                    <tr id="${item.DEPT_ID}">
+                        <td>${index + 1}</td>
+                        <td>${item.DEPT_NAME || ''}</td>
+                        <td>
+                            <i class="fa fa-pen text-primary cursor-pointer"
+                               title="Edit"
+                               style="cursor:pointer;"
+                               onclick="editDept(${item.DEPT_ID}, '${item.DEPT_NAME}')">
+                            </i>
+                        </td>
+                    </tr>
+                `;
+            }
+
+            document.querySelector("#pageSelctionOuterbody").innerHTML = tableRows;
+
+            if ($.fn.DataTable.isDataTable('#pageSelectionOuterTable')) {
+                $('#pageSelectionOuterTable').DataTable().destroy();
+            }
+
+            $('#pageSelectionOuterTable').DataTable({
+                dom: 'Bfrtip',
+                scrollX: false,
+                info: true,
+                paging: true,
+                pageLength: 10,
+                lengthMenu: [
+                    [10, 25, 50, 100],
+                    [10, 25, 50, 100]
+                ],
+                buttons: [{
+                    extend: 'excel',
+                    text: 'Export to Excel',
+                    title: 'Machine Location List'
+                }]
+            });
+        },
+
+        error: function (xhr) {
+            console.error(xhr);
+            alert("Failed to load departments");
+        }
+    });
+}
 let selectedDeptId = null;
 let originalDepartmentName = "";
 
 function editDept(deptId, departmentName) {
+	
+	const allowed = allowedActions || [];
+
+	if (!allowed.includes("Edit")) {
+	    alert("You do not have permission to edit.");
+	    return;
+	}
 
     selectedDeptId = deptId;
 
@@ -503,7 +686,8 @@ $("#createPageUp").click(function () {
         data: {
 
             deptId: selectedDeptId,
-            departmentName: departmentName
+            departmentName: departmentName,
+			createdBy:sessionStorage.getItem('id')
         },
 
         success: function(response) {
@@ -540,12 +724,25 @@ $("#createPageUp").click(function () {
 
 
 
-
+/*
 
 $("#modalpageAction").click(function (){
 	$("#machineModal").modal("show");
-})
+})*/
 
+
+$("#modalpageAction").click(function () {
+
+    const allowed = allowedActions || [];
+
+    if (!allowed.includes("Insert")) {
+        alert("You do not have permission to Insert.");
+        $("#machineModal").modal("hide");
+        return;
+    }
+
+    $("#machineModal").modal("show");
+});
 
 $("#createMachine").click(function () {
 
@@ -754,7 +951,7 @@ $("#createMachine").click(function () {
         }
     });
 });
-function loadMachines() {
+/*function loadMachines() {
 
     let factoryId = sessionStorage.getItem("selectedFactoryId");
 
@@ -828,6 +1025,80 @@ function loadMachines() {
             });
         }
     });
+}*/
+
+
+
+
+function loadMachines() {
+
+    let factoryId = sessionStorage.getItem("selectedFactoryId");
+    const apiUrl = new URL("/api/machine/getAll", baseUrl);
+
+    $.ajax({
+        url: apiUrl.toString(),
+        type: "GET",
+        data: { factoryId: factoryId },
+        xhrFields: { withCredentials: true },
+
+        success: function (response) {
+
+            let tableRows = '';
+
+            for (let index = 0; index < response.length; index++) {
+
+                const item = response[index];
+
+                tableRows += `
+                    <tr id="${item.MACHINE_ID}">
+                        <td>${index + 1}</td>
+                        <td>${item.MACHINE_CODE || ''}</td>
+                        <td>${item.MACHINE_SUBCODE || ''}</td>
+                        <td>${item.MACHINE_DESCRIPTION || ''}</td>
+                        <td>${item.DEPT_NAME || ''}</td>
+                        <td>${item.MODEL_NO || ''}</td>
+                        <td>${item.SERIAL_NO || ''}</td>
+                        <td>${item.MANUFACTURER_NAME || ''}</td>
+                        <td>
+                            <i class="fa fa-pen text-primary cursor-pointer"
+                               title="Edit"
+                               style="cursor:pointer;"
+                               onclick="editMachine(${item.MACHINE_ID})">
+                            </i>
+                        </td>
+                    </tr>
+                `;
+            }
+
+            document.querySelector("#machineTableBody").innerHTML = tableRows;
+
+            if ($.fn.DataTable.isDataTable('#machineTable')) {
+                $('#machineTable').DataTable().destroy();
+            }
+
+            $('#machineTable').DataTable({
+                dom: 'Bfrtip',
+                scrollX: false,
+                info: true,
+                paging: true,
+                pageLength: 10,
+                lengthMenu: [
+                    [10, 25, 50, 100],
+                    [10, 25, 50, 100]
+                ],
+                buttons: [{
+                    extend: 'excel',
+                    text: 'Export to Excel',
+                    title: 'Machine Details List'
+                }]
+            });
+        },
+
+        error: function (xhr) {
+            console.error(xhr);
+            alert("Failed to load machines");
+        }
+    });
 }
 
 // Store originals for "no fields changed" check
@@ -836,6 +1107,15 @@ let originalMachineData = {};
 let originalItemIds = [];  // ADD THIS
 
 function editMachine(machineId) {
+	
+	const allowed = allowedActions || [];
+
+	  if (!allowed.includes("Edit")) {
+	      alert("You do not have permission to edit.");
+	      return;
+	  }
+	
+	
     $.ajax({
         url: new URL("api/machine/getById", baseUrl).toString(),
         type: "GET",
@@ -1497,48 +1777,141 @@ function getSelectedItemIds1() {
     ).map(item => item.value);
 }
 
-function loadEmployees(locid) {
 
+
+
+let employeeCache = [];            // [{id, text, empcode, mobile}]
+let employeeMap   = new Map();     // id -> employee, for fast lookup
+
+function loadEmployeesBoth(locid) {
     $.ajax({
         url: baseUrl + "/api/websmartuser/getEmployeesByLocation",
         type: "GET",
-        data: {
-            locid: locid
+        data: { locid: locid },
+        xhrFields: { withCredentials: true },
+        success: function (response) {
+
+            employeeCache = response.map(emp => ({
+                id:      String(emp.EmpId),
+                text:    emp.EmployeeDisplay,
+                empcode: emp.EmpCode,
+                mobile:  emp.telephone || ''
+            }));
+            employeeMap = new Map(employeeCache.map(e => [e.id, e]));
+
+            initEmployeeSelect2("#employeeSelect",   "#workerMappingModal");
+            initEmployeeSelect2("#employeeSelectUp", "#workerMappingUpdateModal");
         },
-        xhrFields: {
-            withCredentials: true
-        },
-        success: function(response) {
-
-            $("#employeeSelect").empty();
-						
-						   
-	  
-
-            $("#employeeSelect").append(
-                '<option value="">Select Employee</option>'
-							
-            );
-
-            $.each(response, function(index, emp) {
-				  
-   
-
-                $("#employeeSelect").append(
-                    $('<option>', {
-                        value: emp.EmpId, // dropdown value = EmpId
-                        text: emp.EmployeeDisplay,
-                        'data-empcode': emp.EmpCode,
-                        'data-mobile': emp.telephone || ''
-                    })
-                );
-
-            });
-        }
+        error: function (xhr) { console.error("Failed to load employees", xhr); }
     });
 }
 
-$("#employeeSelect").on("change", function() {
+/*function initEmployeeSelect2(selector, modalId) {
+    const $el = $(selector);
+
+    if ($el.hasClass("select2-hidden-accessible")) {
+        $el.select2('destroy');
+    }
+    // only a blank option in the DOM; the 8000 live in employeeCache
+    $el.empty().append('<option value=""></option>');
+
+    const PAGE_SIZE = 50;
+
+    $el.select2({
+        theme          : "bootstrap4",
+        width          : "100%",
+        dropdownParent : $(modalId),
+        placeholder    : "Select Employee",
+        allowClear     : true,
+        ajax: {
+            delay: 200,   // debounce typing
+            // search and paginate the in-memory array instead of calling the server
+            transport: function (params, success) {
+                const term = (params.data.term || "").toLowerCase();
+                const page = params.data.page || 1;
+
+                const filtered = term
+                    ? employeeCache.filter(e => e.text.toLowerCase().includes(term))
+                    : employeeCache;
+
+                success({
+                    results: filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
+                    pagination: { more: page * PAGE_SIZE < filtered.length }
+                });
+            }
+        }
+    });
+}*/
+
+
+let employeeAdapterReady = false;
+
+function getEmployeeAdapter() {
+    if (!employeeAdapterReady) {
+        $.fn.select2.amd.define(
+            'select2/data/employeeAdapter',
+            ['select2/data/array', 'select2/utils'],
+            function (ArrayAdapter, Utils) {
+
+                function EmployeeAdapter($element, options) {
+                    EmployeeAdapter.__super__.constructor.call(this, $element, options);
+                }
+                Utils.Extend(EmployeeAdapter, ArrayAdapter);
+
+                EmployeeAdapter.prototype.query = function (params, callback) {
+                    const PAGE_SIZE = 50;
+                    const term = (params.term || "").toLowerCase();
+                    const page = params.page || 1;
+
+                    const filtered = term
+                        ? employeeCache.filter(e => e.text.toLowerCase().includes(term))
+                        : employeeCache;
+
+                    callback({
+                        results: filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
+                        pagination: { more: page * PAGE_SIZE < filtered.length }
+                    });
+                };
+
+                return EmployeeAdapter;
+            }
+        );
+        employeeAdapterReady = true;
+    }
+    return $.fn.select2.amd.require('select2/data/employeeAdapter');
+}
+
+function initEmployeeSelect2(selector, modalId) {
+    const $el = $(selector);
+
+    if ($el.hasClass("select2-hidden-accessible")) {
+        $el.select2('destroy');
+    }
+    $el.empty().append('<option value=""></option>');
+
+    $el.select2({
+        theme          : "bootstrap4",
+        width          : "100%",
+        dropdownParent : $(modalId),
+        placeholder    : "Select Employee",
+        allowClear     : true,
+        dataAdapter    : getEmployeeAdapter()
+    });
+}
+
+// Pre-select a value from code (needed for edit)
+function setEmployeeSelection(selector, empId) {
+    const $el = $(selector);
+    const emp = employeeMap.get(String(empId));
+
+    $el.empty().append('<option value=""></option>');
+    if (emp) {
+        $el.append(new Option(emp.text, emp.id, true, true));
+    }
+    $el.trigger("change.select2");   // redraw only, doesn't fire your change handler
+}
+
+/*$("#employeeSelect").on("change", function() {
 
     let selectedOption = $(this).find("option:selected");
 
@@ -1551,6 +1924,20 @@ $("#employeeSelect").on("change", function() {
 								 
 											 
 				 
+});*/
+
+function fillEmployeeDetails(empId, codeSel, mobileSel) {
+    const emp = employeeMap.get(String(empId));
+    $(codeSel).val(emp ? emp.empcode : "");
+    $(mobileSel).val(emp ? emp.mobile : "");
+}
+
+$("#employeeSelect").on("change", function () {
+    fillEmployeeDetails($(this).val(), "#workerEmpId", "#workerMobileNo");
+});
+
+$("#employeeSelectUp").on("change", function () {
+    fillEmployeeDetails($(this).val(), "#workerEmpIdUp", "#workerMobileNoUp");
 });
 
 
@@ -1620,10 +2007,10 @@ $("#createWorkerMapping").click(function () {
         isValid = false;
     }
 
-    if (!wokeremail) {
+/*   if (!wokeremail) {
         showError("workerMoemailNoError", "Please enter an Email.");
         isValid = false;
-    }
+    }*/
 
     // ── Job Type validation ──────────────────────────────────────
     if (selectedDesignations.length === 0) {
@@ -1680,7 +2067,7 @@ function showCenterMessage(message) {
 		 
 												   
 
-function loadWorkerMappings() {
+/*function loadWorkerMappings() {
 
     var Factoryid = sessionStorage.getItem('selectedFactoryId');
 
@@ -1746,10 +2133,77 @@ function loadWorkerMappings() {
             alert("Failed to load worker mappings.");
         }
     });
+}*/
+
+
+
+
+
+function loadWorkerMappings() {
+
+    var Factoryid = sessionStorage.getItem('selectedFactoryId');
+
+    $.ajax({
+        url: baseUrl + "/api/getAllWorkerMappings?Factoryid=" + encodeURIComponent(Factoryid),
+        type: "GET",
+        xhrFields: { withCredentials: true },
+
+        success: function (response) {
+
+            let tableRows = '';
+
+            for (let index = 0; index < response.length; index++) {
+
+                const item = response[index];
+
+                tableRows += `
+                    <tr id="${item.id}">
+                        <td>${index + 1}</td>
+                        <td>${item.employee_name || ''}</td>
+                        <td>${item.machineDescription || ''}</td>
+                        <td>
+                            <i class="fa fa-pen text-primary cursor-pointer"
+                               title="Edit"
+                               style="cursor:pointer;"
+                               onclick="editWorkerMapping(${item.id})">
+                            </i>
+                        </td>
+                    </tr>
+                `;
+            }
+
+            document.querySelector("#userSelectionTableBody").innerHTML = tableRows;
+
+            if ($.fn.DataTable.isDataTable('#UserSelectiontableID')) {
+                $('#UserSelectiontableID').DataTable().destroy();
+            }
+
+            $('#UserSelectiontableID').DataTable({
+                dom: 'Bfrtip',
+                scrollX: false,
+                info: true,
+                paging: true,
+                pageLength: 10,
+                lengthMenu: [
+                    [10, 25, 50, 100],
+                    [10, 25, 50, 100]
+                ],
+                buttons: [{
+                    extend: 'excel',
+                    text: 'Export to Excel',
+                    title: 'Technician List'
+                }]
+            });
+        },
+
+        error: function (xhr) {
+            console.error(xhr);
+            alert("Failed to load worker mappings.");
+        }
+    });
 }
 
-
-function loaddesignationmappings() {
+/*function loaddesignationmappings() {
 						  
 								  
 		   
@@ -1832,11 +2286,73 @@ function loaddesignationmappings() {
             alert("Failed to load worker mappings.");
         }
     });
+}*/
+
+
+
+function loaddesignationmappings() {
+
+    $.ajax({
+        url: baseUrl + "/api/getAlldesignationrMappings",
+        type: "GET",
+        xhrFields: { withCredentials: true },
+
+        success: function (response) {
+
+            let tableRows = '';
+
+            for (let index = 0; index < response.length; index++) {
+
+                const item = response[index];
+
+                tableRows += `
+                    <tr id="${item.DESIGNATON_ID}">
+                        <td>${index + 1}</td>
+                        <td>${item.DESIGNATION_NAME || ''}</td>
+                        <td>
+                            <i class="fa fa-pen text-primary cursor-pointer"
+                               title="Edit"
+                               style="cursor:pointer;"
+                               onclick="editdesignationMapping(${item.DESIGNATON_ID})">
+                            </i>
+                        </td>
+                    </tr>
+                `;
+            }
+
+            document.querySelector("#designationTableBody").innerHTML = tableRows;
+
+            if ($.fn.DataTable.isDataTable('#designationtableID')) {
+                $('#designationtableID').DataTable().destroy();
+            }
+
+            $('#designationtableID').DataTable({
+                dom: 'Bfrtip',
+                scrollX: false,
+                info: true,
+                paging: true,
+                pageLength: 10,
+                lengthMenu: [
+                    [10, 25, 50, 100],
+                    [10, 25, 50, 100]
+                ],
+                buttons: [{
+                    extend: 'excel',
+                    text: 'Export to Excel',
+                    title: 'Job Type List'
+                }]
+            });
+        },
+
+        error: function (xhr) {
+            console.error(xhr);
+            alert("Failed to load worker mappings.");
+        }
+    });
 }
 
 
-
-$("#employeeSelectUp").on("change", function () {
+/*$("#employeeSelectUp").on("change", function () {
 
     let selectedOption =
         $(this).find("option:selected");
@@ -1852,13 +2368,22 @@ $("#employeeSelectUp").on("change", function () {
   
 												  
 
-});
+});*/
 
 // Store originals for no-change check
 let originalWorkerData       = {};
 let originalDesignationIdsUp = [];  // track original job types
 
 function editWorkerMapping(id) {
+	
+	
+	const allowed = allowedActions || [];
+
+	 if (!allowed.includes("Edit")) {
+	     alert("You do not have permission to edit.");
+	     return;
+	 }
+
 
     $.ajax({
         url:  baseUrl + "/api/getWorkerMappingById",
@@ -1870,10 +2395,14 @@ function editWorkerMapping(id) {
 
             $("#workerMappingIdUp").val(response.id);
             $("#employeeSelectUp").val(response.empId);
+			$("#employeeSelectUp").trigger("change.select2"); 
+			
             $("#workerEmpIdUp").val(response.workerEmpCode);
             $("#workerMobileNoUp").val(response.workerMobileNo);
             $("#workerEmailup").val(response.workerEmail);
             $("#machineCategoryIdUp").val(response.machineCategoryId);
+			
+			setEmployeeSelection("#employeeSelectUp", response.empId);
 
             // Load designations and pre-check them
             await loadSelectedDesignationsUp(response.id);
@@ -1906,7 +2435,7 @@ function editWorkerMapping(id) {
 }
 								
 
-function loadEmployeesUp(locid) {
+/*function loadEmployeesUp(locid) {
 
     $.ajax({
 
@@ -1945,8 +2474,38 @@ function loadEmployeesUp(locid) {
 
         }
     });
-}
+}*/
 
+
+
+
+/*function loadEmployeesUp(locid) {
+    $.ajax({
+        url: baseUrl + "/api/websmartuser/getEmployeesByLocation",
+        type: "GET",
+        data: { locid: locid },
+        xhrFields: { withCredentials: true },
+        success: function (response) {
+
+            $("#employeeSelectUp").empty();
+            $("#employeeSelectUp").append('<option value="">Select Employee</option>');
+
+            $.each(response, function (index, emp) {
+                $("#employeeSelectUp").append(
+                    $('<option>', {
+                        value: emp.EmpId,
+                        text: emp.EmployeeDisplay,
+                        'data-empcode': emp.EmpCode,
+                        'data-mobile': emp.telephone || ''
+                    })
+                );
+            });
+
+            // ADD THIS
+            initSelect2("#employeeSelectUp", "#workerMappingUpdateModal", "Select Employee");
+        }
+    });
+}*/
 
 function clearUpdateWorkerErrors() {
     const ids = [
@@ -1994,10 +2553,10 @@ $("#updateWorkerMapping").click(function () {
         isValid = false;
     }
 
-    if (!workerEmail) {
+ /*   if (!workerEmail) {
         showUpdateWorkerError("workerEmailUpError", "Please enter an email.");
         isValid = false;
-    }
+    }*/
 
     if (!machineCategoryId) {
         showUpdateWorkerError("machineCategoryUpError", "Please select a machine category.");
@@ -2146,6 +2705,14 @@ let originalDesignationName = "";
 let originalDesignationCode = "";
 
 function editdesignationMapping(designationId) {
+	
+	const allowed = allowedActions || [];
+
+	 if (!allowed.includes("Edit")) {
+	     alert("You do not have permission to edit.");
+	     return;
+	 }
+
 
     $.ajax({
 

@@ -176,9 +176,11 @@ function renderDetailsTable(data) {
                 <td>${row.PROBLEM_DESC || ''}</td>
                 <td>${row.WHAT_BROKE || ''}</td>
                 <td>${row.STATUS_NAME || ''}</td>
-                <td>${row.DOWNTIME || ''}</td>
-                <td>${row.CLOSED_BY || ''}</td>
+             
+				<td>${formatDate(row.START_TIME)}</td>
                 <td>${formatDate(row.CLOSED_DATE)}</td>
+				<td>${row.DOWNTIME || ''}</td>
+				<td>${row.CLOSED_BY || ''}</td>
                 <td>${row.CLOSE_REMARKS || ''}</td>
 				<td>${row.factory_name || ''}</td>
 				
@@ -204,4 +206,68 @@ function formatDate(dateString) {
         hour: '2-digit',
         minute: '2-digit'
     });
+}
+
+
+let allowedActions = [];
+
+async function loadActions() {
+    const MainPage = window.location.pathname.split("/").pop() + '.jsp'; // e.g. "Maintenanceassign.jsp"
+    const UserId   = sessionStorage.getItem('username');
+
+    try {
+        const response = await fetch(
+            `${baseUrl}/api/page/actions?userId=${encodeURIComponent(UserId)}&pageName=${encodeURIComponent(MainPage)}`,
+            {
+                method: "GET",
+                credentials: "include",
+                headers: { "Content-Type": "application/json" }
+            }
+        );
+
+        if (!response.ok) throw new Error("Failed to fetch actions");
+
+        allowedActions = await response.json();
+    } catch (error) {
+        console.error("Error loading permitted actions:", error);
+        allowedActions = [];
+    }
+}
+
+
+
+document.addEventListener("DOMContentLoaded", async function () {
+  await loadActions();
+  if (!allowedActions.includes("view")) {
+    blockUI();
+    return;
+  }
+});
+
+function blockUI() {
+  const container = document.getElementById("container-wrapper");
+  if (!container) return;
+
+  container.style.pointerEvents = "none";
+  container.style.userSelect = "none";
+  container.style.opacity = "0.5";
+  container.style.position = "relative";
+
+  const overlay = document.createElement("div");
+  overlay.id = "contentBlockOverlay";
+  overlay.style.cssText = `
+    position: absolute; top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.6); z-index: 999;
+    display: flex; justify-content: center;
+    align-items: center; color: white;
+    font-size: 22px; text-align: center;
+  `;
+  overlay.innerHTML = `
+    <div>
+      🚫 Access Denied <br>
+      <small>You don't have permission to view this page</small>
+    </div>
+  `;
+  container.appendChild(overlay);
 }

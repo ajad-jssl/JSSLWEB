@@ -196,16 +196,56 @@ keyframes livePulse { 0%,100% {
 }
 
 50
+
+
+
+
 %
 {
 transform
+
+
+
+
 :
-scale(
-1.5
-);
+
+
+
+
+scale
+
+
+(
+
+
+
+
+1
+
+
+.5
+
+
+
+
+)
+
+
+;
 opacity
+
+
+
+
 :
-.45;
+
+
+
+
+.45
+
+
+;
 }
 }
 .hero-right {
@@ -642,7 +682,7 @@ to {
 }
 
 /* ===== PANEL GRID: Zone Split + Lead + Enquire + Offer + Order + YoY, each its own
-       column. auto-fit lets it reflow naturally at any width — laptop, tablet, or phone —
+       column. auto-fit lets it reflow naturally at any width â laptop, tablet, or phone â
        without needing a separate hand-written breakpoint for every screen size. */
 .quad-body {
 	flex: 1;
@@ -697,7 +737,7 @@ to {
 	min-height: 0;
 }
 
-/* Mini horizontal bar rows (Lead/Enquire/Offer/Order breakdown) — styled like the
+/* Mini horizontal bar rows (Lead/Enquire/Offer/Order breakdown) â styled like the
        reference bar chart: label outside on the left, thick filled bar with the count
        written INSIDE it in white, and a small marker dot at the tip of the bar. */
 .mbar-row {
@@ -746,31 +786,6 @@ to {
 	white-space: nowrap;
 }
 
-/* .mbar-fill::after {
-	content: '';
-	position: absolute;
-	right: -4px;
-	top: 50%;
-	transform: translateY(-50%);
-	width: 6px;
-	height: 6px;
-	border-radius: 50%;
-	background: inherit;
-	box-shadow: 0 0 0 2px #fff;
-} */
-
-/* .mbar-fill::after {
-	content: '';
-	position: absolute;
-	right: -3px;
-	top: 50%;
-	transform: translateY(-50%);
-	width: 4px;
-	height: 4px;
-	
-	background: inherit;
-	box-shadow: 0 0 0 1px #fff;
-} */
 
 /* Col 4: YoY comparison, spans both rows */
 #qcYoy canvas {
@@ -844,7 +859,7 @@ to {
 }
 
 /* ============================================================
-       RESPONSIVE — LAPTOP TUNING (width AND height)
+       RESPONSIVE â LAPTOP TUNING (width AND height)
        ============================================================ */
 .dash-canvas {
 	min-height: 0;
@@ -985,7 +1000,7 @@ to {
 	min-height: 220px;
 }
 
-/* 13"–14" laptop widths, and any window narrower than ~1366px */
+/* 13"â14" laptop widths, and any window narrower than ~1366px */
 @media ( max-width : 1366px) {
 	.mod-row {
 		grid-auto-flow: row;
@@ -1063,29 +1078,30 @@ to {
 		padding-right: 28px;
 	}
 }
-.quad-body{
-    display:grid;
-    grid-template-columns:260px 1fr 260px;
-    gap:12px;
-    height:100%;
+
+.quad-body {
+	display: grid;
+	grid-template-columns: 260px 1fr 260px;
+	gap: 12px;
+	height: 100%;
 }
 
-.middle-panels{
-    display:grid;
-    grid-template-columns:1fr 1fr;
-    grid-template-rows:1fr 1fr;
-    gap:12px;
-    height:100%;
+.middle-panels {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	grid-template-rows: 1fr 1fr;
+	gap: 12px;
+	height: 100%;
 }
 
-.zone-panel{
-    display:flex;
-    flex-direction:column;
+.zone-panel {
+	display: flex;
+	flex-direction: column;
 }
 
-.yoy-panel{
-    display:flex;
-    flex-direction:column;
+.yoy-panel {
+	display: flex;
+	flex-direction: column;
 }
 
 .yoy-toggle {
@@ -1113,6 +1129,268 @@ to {
 	background: var(--p3);
 	border-color: var(--p3);
 	color: #fff;
+}
+
+.st {
+	border-radius: var(--r);
+	padding: 11px 13px;
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	flex-wrap: wrap;
+	/* NEW — allows wrapping instead of overflow/clipping when too narrow */
+	position: relative;
+	overflow: hidden;
+	cursor: pointer;
+	transition: all .18s;
+}
+
+.st-body {
+	position: relative;
+	z-index: 1;
+	flex: 1 1 200px;
+	/* NEW — body can shrink but won't go below 200px before wrapping */
+	min-width: 0;
+}
+
+.st-metrics {
+	font-size: 8.5px;
+	color: rgba(0, 0, 0, .62);
+	margin-top: 3px;
+	font-weight: 700;
+	display: flex;
+	gap: 5px;
+	flex-wrap: wrap;
+	/* NEW — tonnage/value drop to their own line if too tight */
+}
+
+@media ( max-width : 480px) {
+	.st {
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 6px;
+	}
+	.st-ico-wrap {
+		align-self: flex-start;
+	}
+}
+
+.st-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 10px;
+}
+
+.st-pills {
+	display: flex;
+	justify-content: space-between;
+	gap: 8px;
+	margin-top: 7px;
+}
+
+.st-pill {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	flex: 1;
+	padding: 3px 10px;
+	border-radius: 999px;
+	background: rgba(255, 255, 255, .55);
+	border: 1px solid rgba(0, 0, 0, .15);
+	font-size: 10.5px; /* bumped up from the old 8.5px st-metrics text */
+	font-weight: 800;
+	color: #161616;
+	white-space: nowrap;
+}
+
+.drill-modal-overlay {
+	position: fixed;
+	inset: 0;
+	background: rgba(12, 36, 97, .45);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	z-index: 2000;
+}
+
+.drill-modal {
+	background: #fff;
+	border-radius: var(--r);
+	width: min(900px, 92vw);
+	max-height: 80vh;
+	display: flex;
+	flex-direction: column;
+	box-shadow: var(--sh2);
+	overflow: hidden;
+}
+
+.drill-modal-head {
+	padding: 14px 18px;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	border-bottom: 1px solid var(--border);
+	flex-shrink: 0;
+}
+
+.drill-modal-title {
+	font-size: 15px;
+	font-weight: 800;
+	color: var(--text);
+}
+
+.drill-modal-close {
+	border: none;
+	background: transparent;
+	font-size: 22px;
+	line-height: 1;
+	cursor: pointer;
+	color: var(--muted);
+}
+
+.drill-modal-body {
+	overflow-y: auto;
+	padding: 10px 18px 18px;
+}
+
+.drill-table {
+	width: 100%;
+	border-collapse: collapse;
+	font-size: 12px;
+}
+
+.drill-table th {
+	text-align: left;
+	padding: 8px 10px;
+	background: var(--pl);
+	color: var(--p1);
+	font-weight: 800;
+	font-size: 10.5px;
+	text-transform: uppercase;
+	letter-spacing: .3px;
+	position: sticky;
+	top: 0;
+}
+
+.drill-table td {
+	padding: 7px 10px;
+	border-bottom: 1px solid var(--border);
+	color: var(--text);
+}
+
+.drill-table tr:hover td {
+	background: #f8faff;
+}
+
+.drill-modal-filters {
+	display: flex;
+	gap: 8px;
+	padding: 10px 18px;
+	border-bottom: 1px solid var(--border);
+	flex-wrap: wrap;
+	flex-shrink: 0;
+}
+
+.drill-filter-input, .drill-filter-select {
+	padding: 6px 10px;
+	border: 1.5px solid var(--border);
+	border-radius: var(--rs);
+	font-size: 11px;
+	font-family: inherit;
+	color: var(--text);
+}
+
+.drill-filter-input {
+	flex: 1;
+	min-width: 160px;
+}
+
+.drill-filter-select {
+	min-width: 120px;
+}
+
+.drill-table tfoot .drill-total-row td {
+	font-weight: 800;
+	background: var(--pl);
+	color: var(--p1);
+	border-top: 2px solid var(--p3);
+	border-bottom: none;
+	position: sticky;
+	bottom: 0;
+}
+
+.mb-count {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 18px;
+	padding: 1px 7px;
+	border-radius: 999px;
+	background: var(--mb-color, var(--p3));
+	color: #fff;
+	font-weight: 800;
+	font-size: 8px;
+}
+
+.status-row {
+	grid-template-columns: repeat(6, 1fr);
+}
+
+:root {
+	--c-hot: #d9480f;
+	--c-hot-l: #ffe8dc;
+	--c-lost: #c0392b;
+	--c-lost-l: #fbe3e0;
+}
+
+.st-hot {
+	background: linear-gradient(130deg, #f29b73 0%, #f7c3a8 55%, var(--c-hot-l)
+		100%);
+}
+
+.st-lost {
+	background: linear-gradient(130deg, #e68a80 0%, #f0b6af 55%, var(--c-lost-l)
+		100%);
+}
+
+/* 5 cells in the middle: Lost spans the full bottom row */
+.middle-panels {
+	grid-template-rows: repeat(3, 1fr);
+}
+
+#qcLost {
+	grid-column: 1/-1;
+}
+
+/* Zone card breakdown pills */
+.m-sub {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px;
+  margin-top: 8px;
+  padding: 0 2px;
+}
+
+.zp {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--zp-bg);
+  color: var(--zp-c);
+  border: 1px solid rgba(0, 0, 0, .08);
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.zp b {
+  font-weight: 800;
+  font-size: 10px;
 }
 </style>
 </head>
@@ -1187,7 +1465,7 @@ to {
   }
 
   function denyAccess() {
-    // .dash-canvas stays display:none (its default CSS) — nothing else happens
+    // .dash-canvas stays display:none (its default CSS) â nothing else happens
   }
 })();
 </script>
@@ -1268,66 +1546,138 @@ to {
 						</div>
 					</div>
 
-					<!-- ZONE CARDS ROW - built dynamically: All Zones + North/South/East/West -->
+					
 					<div class="mod-row" id="zoneCardsRow">
 						<!-- cards injected by JS -->
 					</div>
 
-					<!-- STATUS BANNERS: Total -> Lead -> Enquire -> Offer -> Order Received -->
+			
 					<div class="status-row">
+
+
 						<div class="st st-total" onclick="setMetric('total')">
-							<div class="st-ico-wrap">
-								<i class="fas fa-layer-group"></i>
-							</div>
 							<div class="st-body">
 								<div class="zone-label" id="zoneLabel">All Zones</div>
-								<div class="st-val" id="stTotal">0</div>
-								<div class="st-lbl">Total</div>
+								<div class="st-head">
+									<div class="st-ico-wrap">
+										<i class="fas fa-layer-group"></i>
+									</div>
+									<div class="st-val" id="stTotal">0</div>
+								</div>
+								<div class="st-lbl">Total Volume</div>
+								<div class="st-pills">
+									<span class="st-pill" id="stTotalTonnage">0 MT</span> <span
+										class="st-pill" id="stTotalValue">₹0Cr</span>
+								</div>
 							</div>
 						</div>
+
+
+
+
 						<div class="st st-lead" onclick="setMetric('lead')">
-							<div class="st-ico-wrap">
-								<i class="fas fa-user-plus"></i>
-							</div>
 							<div class="st-body">
-								<div class="st-val" id="stLead">0</div>
-								<div class="st-lbl">Leads</div>
-								<div class="st-pct" id="stLeadP">0% of Total</div>
+								<div class="zone-label">Leads</div>
+								<div class="st-head">
+									<div class="st-ico-wrap">
+										<i class="fas fa-user-plus"></i>
+									</div>
+									<div class="st-val" id="stLead">0</div>
+								</div>
+								<div class="st-lbl">Total Volume</div>
+
+								<div class="st-pills">
+									<span class="st-pill" id="stLeadTonnage">0 MT</span> <span
+										class="st-pill" id="stLeadValue">₹0Cr</span>
+								</div>
 							</div>
 						</div>
+
 						<div class="st st-enq" onclick="setMetric('enquire')">
-							<div class="st-ico-wrap">
-								<i class="fas fa-comments"></i>
-							</div>
 							<div class="st-body">
-								<div class="st-val" id="stEnq">0</div>
-								<div class="st-lbl">Enquiries</div>
-								<div class="st-pct" id="stEnqP">0% of Total</div>
+
+								<div class="zone-label">Enquiries</div>
+
+								<div class="st-head">
+									<div class="st-ico-wrap">
+										<i class="fas fa-comments"></i>
+									</div>
+									<div class="st-val" id="stEnq">0</div>
+								</div>
+
+								<div class="st-lbl">Total Volume</div>
+
+								<div class="st-pills">
+									<span class="st-pill" id="stEnqTonnage">0 MT</span> <span
+										class="st-pill" id="stEnqValue">₹0Cr</span>
+								</div>
+
 							</div>
 						</div>
-						<div class="st st-offer" onclick="setMetric('offer')">
-							<div class="st-ico-wrap">
-								<i class="fas fa-file-signature"></i>
-							</div>
+
+
+				
+
+						<div class="st st-hot" onclick="setMetric('hotcase')">
 							<div class="st-body">
-								<div class="st-val" id="stOffer">0</div>
-								<div class="st-lbl">Offers</div>
-								<div class="st-pct" id="stOfferP">0% of Total</div>
+								<div class="zone-label">Hot Cases</div>
+								<div class="st-head">
+									<div class="st-ico-wrap">
+										<i class="fas fa-fire"></i>
+									</div>
+									<div class="st-val" id="stHot">0</div>
+								</div>
+								<div class="st-lbl">Total Volume</div>
+								<div class="st-pills">
+									<span class="st-pill" id="stHotTonnage">0 MT</span> <span
+										class="st-pill" id="stHotValue">₹0Cr</span>
+								</div>
 							</div>
 						</div>
+
+
 						<div class="st st-order" onclick="setMetric('order')">
-							<div class="st-ico-wrap">
-								<i class="fas fa-box-open"></i>
-							</div>
 							<div class="st-body">
-								<div class="st-val" id="stOrder">0</div>
-								<div class="st-lbl">Orders Received</div>
-								<div class="st-pct" id="stOrderP">0% of Total</div>
+
+								<div class="zone-label">Orders Received</div>
+
+								<div class="st-head">
+									<div class="st-ico-wrap">
+										<i class="fas fa-box-open"></i>
+									</div>
+									<div class="st-val" id="stOrder">0</div>
+								</div>
+
+								<div class="st-lbl">Total Volume</div>
+
+								<div class="st-pills">
+									<span class="st-pill" id="stOrderTonnage">0 MT</span> <span
+										class="st-pill" id="stOrderValue">₹0Cr</span>
+								</div>
+
+							</div>
+
+
+						</div>
+
+						<div class="st st-lost" onclick="setMetric('lost')">
+							<div class="st-body">
+								<div class="zone-label">Lost</div>
+								<div class="st-head">
+									<div class="st-ico-wrap">
+										<i class="fas fa-times-circle"></i>
+									</div>
+									<div class="st-val" id="stLost">0</div>
+								</div>
+								<div class="st-lbl">Total Volume</div>
+								<div class="st-pills">
+									<span class="st-pill" id="stLostTonnage">0 MT</span> <span
+										class="st-pill" id="stLostValue">₹0Cr</span>
+								</div>
 							</div>
 						</div>
 					</div>
-
-					<!-- CHARTS ROW — single unified panel: Zone Split + Goal + Lead/Enquire/Offer/Order + YoY -->
+					<!-- CHARTS ROW â single unified panel: Zone Split + Goal + Lead/Enquire/Offer/Order + YoY -->
 					<div class="charts-row">
 						<div class="ch" style="flex: 1;">
 							<div class="ch-head">
@@ -1338,54 +1688,13 @@ to {
 								</div>
 								<span class="ch-tag ct-g">Live</span>
 							</div>
-							<!--        <div class="quad-body" id="quadBody">
 
-              Col1, spans both rows: Zone Split donut + legend
-              <div class="qcell" id="qcZoneSplit">
-                <div class="qcell-title">Zone Split</div>
-                <div class="zonesplit-body">
-                  <canvas id="donutChart"></canvas>
-                  <div class="dl" id="donutLegend"></div>
-                </div>
-              </div>
-
-              Leads bar chart
-              <div class="qcell" id="qcLead">
-                <div class="qcell-title">Top 5 Segments · Leads</div>
-                <div id="barsLead"></div>
-              </div>
-
-              Enquiries bar chart
-              <div class="qcell" id="qcEnquire">
-                <div class="qcell-title">Top 5 Segments · Enquiries</div>
-                <div id="barsEnquire"></div>
-              </div>
-
-              Offers bar chart
-              <div class="qcell" id="qcOffer">
-                <div class="qcell-title">Top 5 Segments · Offers</div>
-                <div id="barsOffer"></div>
-              </div>
-
-              Orders Received bar chart
-              <div class="qcell" id="qcOrder">
-                <div class="qcell-title">Top 5 Segments · Orders Received</div>
-                <div id="barsOrder"></div>
-              </div>
-
-              YoY comparison
-              <div class="qcell" id="qcYoy">
-                <div class="qcell-title">Previous FY vs Current FY</div>
-                <canvas id="yoyChart"></canvas>
-              </div>
-
-            </div> -->
 
 							<div class="quad-body">
 
 								<!-- Left -->
 								<div class="qcell zone-panel" id="qcZoneSplit">
-									<div class="qcell-title">Zone Split</div>
+									<div class="qcell-title">Zone-wise Tonnage (MT)</div>
 									<div class="zonesplit-body">
 										<canvas id="donutChart"></canvas>
 										<div class="dl" id="donutLegend"></div>
@@ -1405,15 +1714,25 @@ to {
 										<div id="barsEnquire"></div>
 									</div>
 
-									<div class="qcell" id="qcOffer">
+									<!-- 			<div class="qcell" id="qcOffer">
 										<div class="qcell-title">Top 5 Segments By Offers</div>
 										<div id="barsOffer"></div>
+									</div> -->
+
+									<div class="qcell" id="qcHot">
+										<div class="qcell-title">Top 5 Segments By Hot Cases</div>
+										<div id="barsHot"></div>
 									</div>
 
 									<div class="qcell" id="qcOrder">
 										<div class="qcell-title">Top 5 Segments By Orders
 											Received</div>
 										<div id="barsOrder"></div>
+									</div>
+
+									<div class="qcell" id="qcLost">
+										<div class="qcell-title">Top 5 Segments By Lost</div>
+										<div id="barsLost"></div>
 									</div>
 
 								</div>
@@ -1423,20 +1742,25 @@ to {
 									<div class="qcell-title">Previous FY vs Current FY</div>
 									<canvas id="yoyChart"></canvas>
 								</div> -->
-<div class="qcell yoy-panel" id="qcYoy">
-    <div class="qcell-title" style="display:flex; align-items:center; justify-content:space-between;">
-        <span>Previous FY vs Current FY</span>
-        <div class="yoy-toggle">
-            <button type="button" class="yoy-toggle-btn active" data-chart-type="bar" onclick="setYoyChartType('bar', this)">
-                <i class="fas fa-chart-bar"></i>
-            </button>
-            <button type="button" class="yoy-toggle-btn" data-chart-type="line" onclick="setYoyChartType('line', this)">
-                <i class="fas fa-chart-line"></i>
-            </button>
-        </div>
-    </div>
-    <canvas id="yoyChart"></canvas>
-</div>
+								<div class="qcell yoy-panel" id="qcYoy">
+									<div class="qcell-title"
+										style="display: flex; align-items: center; justify-content: space-between;">
+										<!-- <span>Previous FY vs Current FY</span> -->
+										 <span id="yoyTitle">JSW -JSW(MT)</span>
+										<div class="yoy-toggle">
+											<button type="button" class="yoy-toggle-btn active"
+												data-chart-type="bar" onclick="setYoyChartType('bar', this)">
+												<i class="fas fa-chart-bar"></i>
+											</button>
+											<button type="button" class="yoy-toggle-btn"
+												data-chart-type="line"
+												onclick="setYoyChartType('line', this)">
+												<i class="fas fa-chart-line"></i>
+											</button>
+										</div>
+									</div>
+									<canvas id="yoyChart"></canvas>
+								</div>
 							</div>
 						</div>
 					</div>
@@ -1446,6 +1770,67 @@ to {
 		</div>
 	</div>
 
+
+	<div id="drillModal" class="drill-modal-overlay" style="display: none;">
+		<div class="drill-modal">
+			<div class="drill-modal-head">
+				<div class="drill-modal-title" id="drillModalTitle">Leads</div>
+				<button class="drill-modal-close" onclick="closeDrillModal()">&times;</button>
+			</div>
+
+	
+
+
+			<div class="drill-modal-filters">
+				<input type="text" id="drillSearch" class="drill-filter-input"
+					placeholder="Search project / client..."> <select
+					id="drillZoneFilter" class="drill-filter-select"><option
+						value="ALL">All Zones</option></select> <select id="drillSegmentFilter"
+					class="drill-filter-select"><option value="ALL">All
+						Sectors</option></select> <select id="drillSalesmanFilter"
+					class="drill-filter-select"><option value="ALL">All
+						Salesmen</option></select> <select id="drillStageFilter" class="drill-filter-select"><option
+						value="ALL">All Stages</option></select> <input type="month"
+					id="drillMonthFilter" class="drill-filter-input"
+					style="flex: 0 0 auto; min-width: 150px;"
+					title="Closure month (mm-yyyy)">
+				<button type="button" id="drillMonthClear"
+					class="drill-filter-select" style="cursor: pointer;"
+					title="Clear month">Clear</button>
+			</div>
+
+			<div class="drill-modal-body">
+				<table class="drill-table">
+		
+
+					<thead>
+						<tr>
+							<th>Sl.No</th>
+							<th>Project Name</th>
+							<th>Client Name</th>
+							<th>Sector</th>
+							<th>Zone</th>
+							<th>Salesman</th>
+							<th>Stage</th>
+							<th>Closure Month</th>
+							<th>Tonnage (MT)</th>
+							<th>Probable Value (Cr)</th>
+						</tr>
+					</thead>
+					<tbody id="drillTableBody"></tbody>
+					<tfoot>
+						<tr class="drill-total-row">
+							<td colspan="8">Total</td>
+							<td id="drillTotalTonnage">0</td>
+							<td id="drillTotalValue">₹0.00Cr</td>
+						</tr>
+					</tfoot>
+				</table>
+			</div>
+
+
+		</div>
+	</div>
 	<a class="scroll-to-top rounded" href="#page-top"><i
 		class="fas fa-angle-up"></i></a>
 

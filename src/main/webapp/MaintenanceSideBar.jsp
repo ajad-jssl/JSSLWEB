@@ -3,7 +3,7 @@
 <script src="js/sidebar.js?v=<%=jsVersion%>"></script>
 <ul class="navbar-nav sidebar sidebar-light accordion" id="accordionSidebar">
   <!-- Logo -->
-  <a class="sidebar-brand d-flex align-items-center justify-content-center mb-3 mt-3" href="MaintenanceDashBorad.jsp" style="background-color: white;">
+  <a class="sidebar-brand d-flex align-items-center justify-content-center mb-3 mt-3" href="MaintenanceDashBoard.jsp" style="background-color: white;">
     <div class="sidebar-brand-icon">
       <img src="img/logo/download.png" style="max-height: 4.3rem;">
     </div>
@@ -13,7 +13,7 @@
   <hr class="sidebar-divider my-0">
 
   <li class="nav-item active">
-    <a class="nav-link" href="MaintenanceDashBorad.jsp">
+    <a class="nav-link" href="MaintenanceDashBoard.jsp">
       <i class="fas fa-home"></i>
       <span>Dashboard</span>
     </a>

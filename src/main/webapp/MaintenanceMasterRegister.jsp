@@ -31,6 +31,16 @@
 
 <link rel="stylesheet"
 	href="externalLibrary/cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css" />
+	
+	
+	
+	
+	<link
+	href="externalLibrary/cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css"
+	rel="stylesheet">
+<link
+	href="externalLibrary/cdn.jsdelivr.net/npm/@ttskch/select2-bootstrap4-theme@1.5.2/dist/select2-bootstrap4.min.css"
+	rel="stylesheet">
 
 <link rel="stylesheet" href="css/main.css">
 
@@ -200,6 +210,90 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 .status-checkbox:checked {
 	accent-color: #0d6efd; /* blue when checked */
 }
+
+.master-tabs-wrapper {
+	display: flex;
+	justify-content: flex-start;
+	width: 100%;
+	margin-bottom: 30px;
+	overflow-x: auto;
+	-webkit-overflow-scrolling: touch;
+	scrollbar-width: thin;
+}
+
+.master-tabs-wrapper::-webkit-scrollbar {
+	height: 4px;
+}
+
+.master-tabs-wrapper::-webkit-scrollbar-thumb {
+	background: #d1d5db;
+	border-radius: 4px;
+}
+
+.master-tabs {
+	display: flex;
+	align-items: center;
+	justify-content: flex-start;
+	gap: 8px;
+	padding: 6px;
+	background: #f8f9fc;
+	border: 1px solid #e3e6f0;
+	border-radius: 12px;
+	width: max-content;
+	flex-shrink: 0;
+}
+
+.master-tabs input[type="radio"] {
+	position: absolute;
+	opacity: 0;
+	pointer-events: none;
+}
+
+.master-tabs label {
+	margin: 0;
+	padding: 10px 20px;
+	border-radius: 8px;
+	color: #7c85a3;
+	background: transparent;
+	font-size: 14px;
+	font-weight: 600;
+	cursor: pointer;
+	white-space: nowrap;
+	flex-shrink: 0;
+	transition: all 0.2s ease;
+}
+
+.master-tabs label:hover {
+	color: #37499A;
+	background: #eef0fa;
+}
+
+.master-tabs input[type="radio"]:checked+label {
+	background-color: #37499A;
+	color: #ffffff;
+	box-shadow: 0 4px 10px rgba(55, 73, 154, 0.25);
+}
+
+@media ( max-width : 991px) {
+	.master-tabs-wrapper {
+		justify-content: flex-start;
+	}
+	.master-tabs label {
+		padding: 9px 16px;
+		font-size: 13px;
+	}
+}
+
+@media ( max-width : 480px) {
+	.master-tabs {
+		gap: 5px;
+		padding: 5px;
+	}
+	.master-tabs label {
+		padding: 8px 14px;
+		font-size: 12px;
+	}
+}
 </style>
 </head>
 <!-- <script>
@@ -260,7 +354,8 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 						class="d-sm-flex align-items-center justify-content-between mb-4">
 						<h1 class="h3 mb-0 text-gray-800"></h1>
 						<ol class="breadcrumb">
-							<li class="breadcrumb-item"><a href="DrawingDashBoard.jsp">Home</a></li>
+							<li class="breadcrumb-item"><a
+								href="MaintenanceDashBoard.jsp">Home</a></li>
 							<li class="breadcrumb-item"><a href="#">Maintenance
 									Master</a></li>
 						</ol>
@@ -270,44 +365,32 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 						<h3 class="text-center mb-4">Maintenance Master</h3>
 
 						<!-- Radio Buttons -->
-						<div
-							class="d-flex flex-wrap justify-content-center gap-3 gap-md-4 mb-4">
+						<div class="master-tabs-wrapper">
+							<div class="master-tabs">
 
-							<div class="form-check">
 								<input class="form-check-input" type="radio"
-									id="TypeSelectionRadio" name="drawingMaster" checked> <label
-									class="form-check-label" for="TypeSelectionRadio">
-									MachineCategory </label>
-							</div>
+									name="drawingMaster" id="TypeSelectionRadio" checked> <label
+									for="TypeSelectionRadio"> <i class="fas fa-cogs mr-2"></i>
+									MachineCategory
+								</label> <input class="form-check-input" type="radio"
+									name="drawingMaster" id="pageSelectionradio"> <label
+									for="pageSelectionradio"> <i
+									class="fas fa-map-marker-alt mr-2"></i> MachineLocation
+								</label> <input class="form-check-input" type="radio"
+									name="drawingMaster" id="pageActionradio"> <label
+									for="pageActionradio"> <i class="fas fa-industry mr-2"></i>
+									MachineDetails
+								</label> <input class="form-check-input" type="radio"
+									name="drawingMaster" id="UserMappingradio"> <label
+									for="UserMappingradio"> <i class="fas fa-user-cog mr-2"></i>
+									Technician
+								</label> <input class="form-check-input" type="radio"
+									name="drawingMaster" id="designationMappingradio"> <label
+									for="designationMappingradio"> <i
+									class="fas fa-briefcase mr-2"></i> JobType
+								</label>
 
-							<div class="form-check">
-								<input class="form-check-input" type="radio"
-									id="pageSelectionradio" name="drawingMaster"> <label
-									class="form-check-label" for="pageSelectionradio">
-									MachineLocation </label>
 							</div>
-
-							<div class="form-check">
-								<input class="form-check-input" type="radio"
-									id="pageActionradio" name="drawingMaster"> <label
-									class="form-check-label" for="pageActionradio">
-									MachineDetails </label>
-							</div>
-
-							<div class="form-check">
-								<input class="form-check-input" type="radio"
-									id="UserMappingradio" name="drawingMaster"> <label
-									class="form-check-label" for="UserMappingradio">
-									Technician </label>
-							</div>
-
-							<div class="form-check">
-								<input class="form-check-input" type="radio"
-									id="designationMappingradio" name="drawingMaster"> <label
-									class="form-check-label" for="designationMappingradio">
-									JobType </label>
-							</div>
-
 						</div>
 					</div>
 
@@ -1671,7 +1754,8 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 		<script src="js/MaintenanceMasterRegister.js?v=<%=jsVersion%>"></script>
 		<script src="js/logout.js?v=<%=jsVersion%>"></script>
 		<script src="js/username.js?v=<%=jsVersion%>"></script>
-
+<script
+		src="externalLibrary/cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 		<script src="js/modifiedby.js?v=<%=jsVersion%>"></script>
 		<script src="js/createdby.js?v=<%=jsVersion%>"></script>
 		<script src="js/Sessionfilter.js?v=<%=jsVersion%>"></script>
