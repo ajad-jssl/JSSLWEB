@@ -656,89 +656,123 @@
 
 <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
 <script src="vendor/jquery-easing/jquery.easing.min.js"></script>
-<script src="js/maintenanceDashboard.js?v=<%=jsVersion%>"></script>
-<script src="js/config.js?v=<%=jsVersion%>"></script>
+<script src="js/maintenanceDashboard.js?v=<%=ver(application, "/js/maintenanceDashboard.js")%>"></script>
+<script src="js/config.js?v=<%=ver(application, "/js/config.js")%>"></script>
 <script>
 
 (function () {
-  var userId = sessionStorage.getItem('user_id');
-  var username = sessionStorage.getItem('username'); // used by the actions API
-  var moduleName = 'Maintenance Tool';
-  var pageName = 'MaintenanceDashBoard.jsp'; // used for /api/page/actions
-  var currentPage = window.location.pathname.split("/").pop()+'.jsp';
-
-  if (!userId) {
-    window.location.href = 'newlogin.jsp';
-    return;
-  }
-
-  // --- Check 1: module/page permission ---
-  var permUrl = new URL('/api/user-permissions-module-details', baseUrl);
-  permUrl.searchParams.append('userId', userId);
-  permUrl.searchParams.append('moduleName', moduleName);
-
-  var permCheck = fetch(permUrl, { credentials: 'include' })
-    .then(function (res) { return res.json(); })
-    .then(function (data) {
-      if (!Array.isArray(data) || data.length === 0) return false;
-      return data.some(function (item) {
-        return (item.pageUrl || '').trim().toLowerCase() === currentPage.toLowerCase();
-      });
-    })
-    .catch(function (err) {
-      console.error('Permission check failed:', err);
-      return false;
-    });
-
-  // --- Check 2: action-level permission (must include "view") ---
-  var actionsUrl = baseUrl + '/api/page/actions?userId=' + encodeURIComponent(username) +
-                    '&pageName=' + encodeURIComponent(pageName);
-
-  var actionCheck = fetch(actionsUrl, { method: 'GET', credentials: 'include', headers: { 'Content-Type': 'application/json' } })
-    .then(function (res) {
-      if (!res.ok) throw new Error('Failed to fetch actions');
-      return res.json();
-    })
-    .then(function (allowedActions) {
-      if (!Array.isArray(allowedActions)) return false;
-      return allowedActions.some(function (action) {
-        return String(action).trim().toLowerCase() === 'view';
-      });
-    })
-    .catch(function (err) {
-      console.error('Action check failed:', err);
-      return false;
-    });
-
-  // --- Both must pass ---
-  Promise.all([permCheck, actionCheck]).then(function (results) {
-    var hasPagePermission = results[0];
-    var hasViewAction = results[1];
-
-    if (hasPagePermission && hasViewAction) {
-      grantAccess();
-    } else {
-      denyAccess();
-    }
-  });
-
-  function grantAccess() {
+	 
+	  var userId      = sessionStorage.getItem('user_id');
+	  var username    = sessionStorage.getItem('username');      // used by the actions API
+	  var moduleName  = 'Maintenance Tool';
+	  var pageName    = 'MaintenanceDashBoard.jsp';              // used for /api/page/actions
+	  var currentPage = window.location.pathname.split("/").pop() + '.jsp';
+	 
+	  if (!userId) {
+	    window.location.href = 'newlogin.jsp';
+	    return;
+	  }
+	 
+	  // Keep this value the same as the CSS breakpoint (767.98px) in the JSP
+	  var mobileQuery = window.matchMedia('(max-width: 767.98px)');
+	 
+	  var accessState = null;    // null = not checked yet | 'granted' | 'denied'
+	  var checking    = false;   // permission calls in progress
+	  var inited      = false;   // dashboard shown and data load started
+	 
+	  // ---- Check 1: action-level permission (must include "view") ----
+	  function checkViewAction() {
+	    var actionsUrl = baseUrl + '/api/page/actions?userId=' + encodeURIComponent(username) +
+	                     '&pageName=' + encodeURIComponent(pageName);
+	 
+	    return fetch(actionsUrl, { method: 'GET', credentials: 'include', headers: { 'Content-Type': 'application/json' } })
+	      .then(function (res) {
+	        if (!res.ok) throw new Error('Failed to fetch actions');
+	        return res.json();
+	      })
+	      .then(function (allowedActions) {
+	        if (!Array.isArray(allowedActions)) return false;
+	        return allowedActions.some(function (action) {
+	          return String(action).trim().toLowerCase() === 'view';
+	        });
+	      })
+	      .catch(function (err) {
+	        console.error('Action check failed:', err);
+	        return false;
+	      });
+	  }
+	 
+	  // ---- Check 2: module/page permission (only called when view is present) ----
+	  function checkPagePermission() {
+	    var permUrl = new URL('/api/user-permissions-module-details', baseUrl);
+	    permUrl.searchParams.append('userId', userId);
+	    permUrl.searchParams.append('moduleName', moduleName);
+	 
+	    return fetch(permUrl, { credentials: 'include' })
+	      .then(function (res) { return res.json(); })
+	      .then(function (data) {
+	        if (!Array.isArray(data) || data.length === 0) return false;
+	        return data.some(function (item) {
+	          return (item.pageUrl || '').trim().toLowerCase() === currentPage.toLowerCase();
+	        });
+	      })
+	      .catch(function (err) {
+	        console.error('Permission check failed:', err);
+	        return false;
+	      });
+	  }
+	 
+	  function runAccessCheck() {
+	    checking = true;
+	 
+	    checkViewAction().then(function (hasView) {
+	      if (!hasView) {                       // no "view" -> stop here, no more API calls
+	        accessState = 'denied';
+	        checking = false;
+	        return;
+	      }
+	 
+	      checkPagePermission().then(function (hasPage) {
+	        accessState = hasPage ? 'granted' : 'denied';
+	        checking = false;
+	        if (accessState === 'granted') showDashboardIfDesktop();
+	      });
+	    });
+	  }
+	 
+	  function showDashboardIfDesktop() {
+	    if (mobileQuery.matches) return;        // never show / load on mobile
 	    var canvas = document.querySelector('.dash-canvas');
 	    if (canvas) canvas.style.display = 'flex';
-
-	    if (typeof window.initInvoiceDashboard === 'function') {
-	      window.initInvoiceDashboard();
+	 
+	    if (!inited) {
+	      inited = true;
+	      if (typeof window.initInvoiceDashboard === 'function') {
+	        window.initInvoiceDashboard();      // the only place dashboard APIs start
+	      }
 	    }
 	  }
-
-	  function denyAccess() {
-	    // dash-canvas stays hidden — no API calls fire, no data loads
+	 
+	  function onScreenSize() {
+	    if (mobileQuery.matches) return;        // phone: hide everything, call nothing
+	    if (accessState === 'denied') return;
+	    if (accessState === 'granted') { showDashboardIfDesktop(); return; }
+	    if (!checking) runAccessCheck();
 	  }
-})();
+	 
+	  // run now, and again if the screen size changes (rotate / resize)
+	  onScreenSize();
+	  if (mobileQuery.addEventListener) {
+	    mobileQuery.addEventListener('change', onScreenSize);
+	  } else if (mobileQuery.addListener) {
+	    mobileQuery.addListener(onScreenSize);  // older Safari
+	  }
+	 
+	})();
 </script>
-<script src="js/username.js?v=<%=jsVersion%>"></script>
-<script src="js/logout.js?v=<%=jsVersion%>"></script>
-<script src="js/Sessionfilter.js?v=<%=jsVersion%>"></script>
+<script src="js/username.js?v=<%=ver(application, "/js/username.js")%>"></script>
+<script src="js/logout.js?v=<%=ver(application, "/js/logout.js")%>"></script>
+<script src="js/Sessionfilter.js?v=<%=ver(application, "/js/Sessionfilter.js")%>"></script>
 
 </body>
 </html>

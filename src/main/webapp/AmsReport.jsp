@@ -794,7 +794,7 @@ function exportToExcelHistroy() {
     
     <script src="vendor/datatables/jquery.dataTables.min.js"></script>
     <script src="vendor/datatables/dataTables.bootstrap4.min.js"></script>
-     <script src="js/config.js?v=<%=jsVersion%>"></script>
+     <script src="js/config.js?v=<%=ver(application, "/js/config.js")%>"></script>
     
     
     
@@ -808,11 +808,11 @@ function exportToExcelHistroy() {
 
 
        
-         <script src="js/AmsReport.js?v=<%=jsVersion%>"></script>
+         <script src="js/AmsReport.js?v=<%=ver(application, "/js/AmsReport.js")%>"></script>
   
-    <script src="js/outwardreturnable.js?v=<%=jsVersion%>"></script>
-     <script src="js/username.js?v=<%=jsVersion%>"></script>
-     <script src="js/logout.js?v=<%=jsVersion%>"></script>
+    <script src="js/outwardreturnable.js?v=<%=ver(application, "/js/outwardreturnable.js")%>"></script>
+     <script src="js/username.js?v=<%=ver(application, "/js/username.js")%>"></script>
+     <script src="js/logout.js?v=<%=ver(application, "/js/logout.js")%>"></script>
    
    
   <script src="externalLibrary/cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>

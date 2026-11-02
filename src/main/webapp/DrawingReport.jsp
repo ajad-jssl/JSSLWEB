@@ -474,7 +474,7 @@ table.table-bordered th, table.table-bordered td {
 
 	<script src="vendor/datatables/jquery.dataTables.min.js"></script>
 	<script src="vendor/datatables/dataTables.bootstrap4.min.js"></script>
-	<script src="js/config.js?v=<%=jsVersion%>"></script>
+	<script src="js/config.js?v=<%=ver(application, "/js/config.js")%>"></script>
 
 <script
 		src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
@@ -492,10 +492,10 @@ table.table-bordered th, table.table-bordered td {
 	<script
 		src="externalLibrary/cdn.sheetjs.com/0.20.3/xlsx.full.min.js"></script>
 
-	<script src="js/DrawingReport.js?v=<%=jsVersion%>"></script>
-	<script src="js/username.js?v=<%=jsVersion%>"></script>
-	<script src="js/logout.js?v=<%=jsVersion%>"></script>
-	<script src="js/Sessionfilter.js?v=<%=jsVersion%>"></script>
+	<script src="js/DrawingReport.js?v=<%=ver(application, "/js/DrawingReport.js")%>"></script>
+	<script src="js/username.js?v=<%=ver(application, "/js/username.js")%>"></script>
+	<script src="js/logout.js?v=<%=ver(application, "/js/logout.js")%>"></script>
+	<script src="js/Sessionfilter.js?v=<%=ver(application, "/js/Sessionfilter.js")%>"></script>
 		<script
 		src="externalLibrary/cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 

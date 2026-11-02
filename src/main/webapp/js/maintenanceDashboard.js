@@ -797,7 +797,7 @@ function closeDetailPanel() {
 // =====================================================
 // DOCUMENT READY
 // =====================================================
-$(document).ready(function () {
+/*$(document).ready(function () {
   populateMachineDropdown();
   loadData();
 
@@ -813,7 +813,32 @@ $(document).ready(function () {
   $('#machineSelect').on('change', function () { loadData(); });
   $('#btnApplyDate').on('click', function () { loadData(); });
   $('#dateFrom,#dateTo').on('keyup', function (e) { if (e.key === 'Enter') loadData(); });
-});
+});*/
+
+
+
+var _dashboardStarted = false;
+ 
+window.initInvoiceDashboard = function () {
+  if (_dashboardStarted) return;      // run only once
+  _dashboardStarted = true;
+ 
+  populateMachineDropdown();
+  loadData();
+ 
+  $('.regionFilter').on('change', function () {
+    $('.regionFilter').not(this).prop('checked', false);
+    if (!$('.regionFilter:checked').length) $('.regionFilter[value="ALL"]').prop('checked', true);
+    // Reset category selection on factory change
+    activeCategoryId   = null;
+    activeCategoryName = 'All Categories';
+    populateMachineDropdown();
+    loadData();
+  });
+  $('#machineSelect').on('change', function () { loadData(); });
+  $('#btnApplyDate').on('click', function () { loadData(); });
+  $('#dateFrom,#dateTo').on('keyup', function (e) { if (e.key === 'Enter') loadData(); });
+};
 
 // =====================================================
 // INACTIVITY LOGOUT (15 min)

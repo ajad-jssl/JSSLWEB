@@ -23,6 +23,16 @@
 
 <link rel="stylesheet" href="externalLibrary/cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
 <script src="externalLibrary/cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
+<link
+	href="externalLibrary/cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css"
+	rel="stylesheet" />
+<link
+	href="externalLibrary/cdnjs.cloudflare.com/ajax/libs/select2-bootstrap-theme/0.1.0-beta.10/select2-bootstrap.min.css"
+	rel="stylesheet" />
+	
+	
+	<link rel="stylesheet"
+	href="externalLibrary/cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css" />
 
 <link rel="stylesheet" href="css/main.css">
 
@@ -292,6 +302,9 @@ button.close { padding:0; background:transparent; border:0; }
   }
 }
 
+.swal2-container { z-index: 20000; }
+.select2-container { z-index: 20001; }
+
 </style>
 </head>
 <body>
@@ -464,15 +477,16 @@ button.close { padding:0; background:transparent; border:0; }
 
 <script src="vendor/datatables/jquery.dataTables.min.js"></script>
 <script src="vendor/datatables/dataTables.bootstrap4.min.js"></script>
-<script src="js/config.js?v=<%=jsVersion%>"></script>
-
-<script src="js/logout.js?v=<%=jsVersion%>"></script>
-<script src="js/username.js?v=<%=jsVersion%>"></script>
-<script src="js/factoryid.js?v=<%=jsVersion%>"></script>
-<script src="js/Sessionfilter.js?v=<%=jsVersion%>"></script>
+<script src="js/config.js?v=<%=ver(application, "/js/config.js")%>"></script>
+	<script
+		src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.full.min.js"></script>
+<script src="js/logout.js?v=<%=ver(application, "/js/logout.js")%>"></script>
+<script src="js/username.js?v=<%=ver(application, "/js/username.js")%>"></script>
+<script src="js/factoryid.js?v=<%=ver(application, "/js/factoryid.js")%>"></script>
+<script src="js/Sessionfilter.js?v=<%=ver(application, "/js/Sessionfilter.js")%>"></script>
 
 <script src="externalLibrary/cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
-<script src="js/Maintenanceassign.js?v=<%=jsVersion%>"></script>
+<script src="js/Maintenanceassign.js?v=<%=ver(application, "/js/Maintenanceassign.js")%>"></script>
 <script>
 function toggleNotifDropdown() {
     $('#notifDropdown').toggleClass('open');

@@ -247,7 +247,7 @@ body {
 	src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
 <script
 	src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
-<script src="js/reset.js?v=<%=jsVersion%>"></script>
+<script src="js/reset.js?v=<%=ver(application, "/js/reset.js")%>"></script>
 
 
 <script type="text/javascript">

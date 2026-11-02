@@ -1,6 +1,6 @@
 	<%@ include file="version.jsp" %>
 	<script src="externalLibrary/code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="js/sidebar.js?v=<%=jsVersion%>"></script>
+<script src="js/sidebar.js?v=<%=ver(application, "/js/sidebar.js")%>"></script>
 <ul class="navbar-nav sidebar sidebar-light accordion" id="accordionSidebar">
   <!-- Logo -->
   <a class="sidebar-brand d-flex align-items-center justify-content-center mb-3 mt-3" href="AMSDashBoard.jsp" style="background-color: white;">

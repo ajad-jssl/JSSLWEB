@@ -494,7 +494,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 
 		<script src="vendor/datatables/jquery.dataTables.min.js"></script>
 		<script src="vendor/datatables/dataTables.bootstrap4.min.js"></script>
-			<script src="js/config.js?v=<%=jsVersion%>"></script>
+			<script src="js/config.js?v=<%=ver(application, "/js/config.js")%>"></script>
 		
 		
 	<script
@@ -513,19 +513,19 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 			
 			
 			
-		<script src="js/milestone.js?v=<%=jsVersion%>"></script>
-		<script src="js/logout.js?v=<%=jsVersion%>"></script>
-		<script src="js/username.js?v=<%=jsVersion%>"></script>
+		<script src="js/milestone.js?v=<%=ver(application, "/js/milestone.js")%>"></script>
+		<script src="js/logout.js?v=<%=ver(application, "/js/logout.js")%>"></script>
+		<script src="js/username.js?v=<%=ver(application, "/js/username.js")%>"></script>
 
-		<script src="js/modifiedby.js?v=<%=jsVersion%>"></script>
-		<script src="js/createdby.js?v=<%=jsVersion%>"></script>
-		 <script src="js/Sessionfilter.js?v=<%=jsVersion%>"></script>
+		<script src="js/modifiedby.js?v=<%=ver(application, "/js/modifiedby.js")%>"></script>
+		<script src="js/createdby.js?v=<%=ver(application, "/js/createdby.js")%>"></script>
+		 <script src="js/Sessionfilter.js?v=<%=ver(application, "/js/Sessionfilter.js")%>"></script>
 		    	  <script>
 
   window.actionElementMap = {
   };
 </script>
-  <script src="js/permissions.js?v=<%=jsVersion%>"></script>
+  <script src="js/permissions.js?v=<%=ver(application, "/js/permissions.js")%>"></script>
 		
 		
 </body>

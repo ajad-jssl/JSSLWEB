@@ -821,19 +821,19 @@ body {
 	<script src="vendor/jquery/jquery.min.js"></script>
 	<script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
 	<script src="vendor/jquery-easing/jquery.easing.min.js"></script>
-		<script src="js/config.js?v=<%=jsVersion%>"></script>
+		<script src="js/config.js?v=<%=ver(application, "/js/config.js")%>"></script>
 
-	<script src="js/username.js?v=<%=jsVersion%>"></script>
-	<script src="js/logout.js?v=<%=jsVersion%>"></script>
+	<script src="js/username.js?v=<%=ver(application, "/js/username.js")%>"></script>
+	<script src="js/logout.js?v=<%=ver(application, "/js/logout.js")%>"></script>
 	<!-- <script src="js/assignPermissions.js"></script> -->
-	<script src="js/Sessionfilter.js?v=<%=jsVersion%>"></script>
+	<script src="js/Sessionfilter.js?v=<%=ver(application, "/js/Sessionfilter.js")%>"></script>
 	<script>
 
   window.actionElementMap = {
   };
 </script>
-	<script src="js/permissions.js?v=<%=jsVersion%>"></script>
-	<script src="js/UserReport.js?v=<%=jsVersion%>">
+	<script src="js/permissions.js?v=<%=ver(application, "/js/permissions.js")%>"></script>
+	<script src="js/UserReport.js?v=<%=ver(application, "/js/UserReport.js")%>">
   
  
   

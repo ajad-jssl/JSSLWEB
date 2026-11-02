@@ -384,11 +384,11 @@ body {
 <script src="vendor/jquery-easing/jquery.easing.min.js"></script>
 
 <script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/xlsx/0.20.3/xlsx.full.min.js"></script>
-<script src="js/config.js?v=<%=jsVersion%>"></script>
-<script src="js/logout.js?v=<%=jsVersion%>"></script>
-<script src="js/username.js?v=<%=jsVersion%>"></script>
-<script src="js/Sessionfilter.js?v=<%=jsVersion%>"></script>
-<script src="js/loadListReport.js?v=<%=jsVersion%>"></script>
+<script src="js/config.js?v=<%=ver(application, "/js/config.js")%>"></script>
+<script src="js/logout.js?v=<%=ver(application, "/js/logout.js")%>"></script>
+<script src="js/username.js?v=<%=ver(application, "/js/username.js")%>"></script>
+<script src="js/Sessionfilter.js?v=<%=ver(application, "/js/Sessionfilter.js")%>"></script>
+<script src="js/loadListReport.js?v=<%=ver(application, "/js/loadListReport.js")%>"></script>
 
 <script>
 // ═══════════════════════════════════════════════════════

@@ -1015,11 +1015,11 @@ $('.transportationButton').on('click', function(e) {
     <script src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
     <script src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
     
-      <script src="js/Packing.js?v=<%=jsVersion%>"></script>
-      <script src="js/config.js?v=<%=jsVersion%>"></script>
-        <script src="js/username.js?v=<%=jsVersion%>"></script>
-           <script src="js/createdby.js?v=<%=jsVersion%>"></script>
-           <script src="js/logout.js?v=<%=jsVersion%>"></script>
+      <script src="js/Packing.js?v=<%=ver(application, "/js/Packing.js")%>"></script>
+      <script src="js/config.js?v=<%=ver(application, "/js/config.js")%>"></script>
+        <script src="js/username.js?v=<%=ver(application, "/js/username.js")%>"></script>
+           <script src="js/createdby.js?v=<%=ver(application, "/js/createdby.js")%>"></script>
+           <script src="js/logout.js?v=<%=ver(application, "/js/logout.js")%>"></script>
         <script>
 /* const moduleId = localStorage.getItem("selectedModuleId"); */
   // This maps action names from the API to button IDs on this page
@@ -1028,6 +1028,6 @@ $('.transportationButton').on('click', function(e) {
  /*    "Edit": "updateitems"     // Update button */
   };
 </script>
-<script src="js/permissions.js?v=<%=jsVersion%>"></script>
+<script src="js/permissions.js?v=<%=ver(application, "/js/permissions.js")%>"></script>
 </body>
 </html>

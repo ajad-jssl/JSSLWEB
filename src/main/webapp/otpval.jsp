@@ -255,7 +255,7 @@ to {
 	type="text/css" />
 <link href="css/ruang-admin.min.css" rel="stylesheet" />
 
- <script src="js/config.js?v=<%=jsVersion%>"></script>
+ <script src="js/config.js?v=<%=ver(application, "/js/config.js")%>"></script>
 <script src="vendor/jquery/jquery.min.js"></script>
 <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
 
@@ -363,6 +363,6 @@ to {
 		</div>
 	</div>
 
-	<script src="js/otpval.js?v=<%=jsVersion%>"></script>
+	<script src="js/otpval.js?v=<%=ver(application, "/js/otpval.js")%>"></script>
 </body>
 </html>

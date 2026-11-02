@@ -338,6 +338,188 @@ word-wrap: break-word;     /* ❌ Prevent line break */
 #fetchsummaryOrdetails {
     white-space: nowrap;
 }
+
+
+
+html, body {
+	max-width: 100%;
+	overflow-x: hidden;               /* no sideways page scroll on phones */
+}
+
+@media screen and ( max-width : 767.98px) {
+
+	/* ---------- Page layout ---------- */
+	#content-wrapper, #content {
+		min-width: 0;
+	}
+	.topbar {
+		padding: 0 .75rem;
+	}
+	#container-wrapper {
+		padding-left: 12px;
+		padding-right: 12px;
+	}
+	#container-wrapper .h3 {
+		font-size: 1.25rem;
+	}
+	.breadcrumb {
+		width: 100%;
+		flex-wrap: wrap;
+		font-size: 13px;
+		padding: .5rem .75rem;
+		margin-bottom: 0;
+	}
+	.container.mt-5 {
+		margin-top: .5rem !important;
+		padding-left: 0;
+		padding-right: 0;
+	}
+
+	/* ---------- Filter form ---------- */
+	#container3 .modal-body {
+		padding: .5rem 0;
+	}
+
+	/* every filter on its own line (the 6 equal columns were squeezed side by side) */
+	#container3 .row>.col, #container3 .row>.col-auto {
+		flex: 0 0 100%;
+		max-width: 100%;
+		margin-bottom: .75rem;
+	}
+	/* Start Date and End Date side by side */
+	#container3 .row>.col:has(#fromDate), #container3 .row>.col:has(#toDate) {
+		flex: 0 0 50%;
+		max-width: 50%;
+	}
+
+	#container3 .form-control, #container3 .form-control-sm {
+		min-width: 0;                    /* cancels the desktop min-width:120px */
+		width: 100%;
+		font-size: 16px;                 /* stops iPhone auto-zoom on tap */
+		height: auto;
+		padding: .45rem .6rem;
+	}
+	#container3 label {
+		margin-bottom: .2rem;
+	}
+	#fetchsummaryOrdetails {
+		width: 100%;
+		min-height: 42px;
+		font-size: 15px;
+	}
+
+	/* ---------- Report box ---------- */
+	.container-report {
+		max-width: 100%;
+		width: 100%;
+		padding: 12px;
+		border-width: 1px;
+	}
+	.report-header {
+		font-size: 1rem;
+		margin-bottom: 12px;
+	}
+
+	/* fixed 600px scroll box is awkward on a phone - let the page scroll instead */
+	.table-wrapper {
+		height: auto;
+		max-height: none;
+		overflow: visible;
+		border: 0;
+	}
+	.table-wrapper .table-responsive {
+		overflow-x: visible;
+	}
+
+	/* ---------- Report table -> cards ---------- */
+	#detailsTable, #detailsTable tbody, #detailsTable tr, #detailsTable td {
+		display: block;
+		width: 100%;
+	}
+	#detailsTable {
+		height: auto !important;         /* cancels the inline height:10vh */
+		table-layout: auto;
+	}
+
+	/* headings become labels inside each card */
+	#detailsTable thead {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		overflow: hidden;
+		clip: rect(0, 0, 0, 0);
+		white-space: nowrap;
+	}
+
+	#detailsTable tbody tr {
+		background: #fff;
+		border: 1px solid #cfd4e6;
+		border-radius: 10px;
+		margin-bottom: .75rem;
+		overflow: hidden;
+		box-shadow: 0 2px 6px rgba(0, 0, 0, .06);
+	}
+
+	#detailsTable tbody td {
+		display: flex;
+		align-items: flex-start;
+		justify-content: space-between;
+		gap: .75rem;
+		min-width: 0;                    /* cancels min-width 120/150px */
+		max-width: none;                 /* cancels max-width 180px */
+		padding: .55rem .85rem;
+		border: 0 !important;            /* overrides the black !important grid border */
+		border-bottom: 1px solid #eceef5 !important;
+		font-size: 14px;
+		text-align: right;
+		white-space: normal;
+		word-break: break-word;
+		overflow: visible;
+		text-overflow: clip;
+	}
+	#detailsTable tbody td:last-child {
+		border-bottom: 0 !important;
+	}
+	#detailsTable tbody td::before {
+		content: attr(data-label);
+		flex: 0 0 42%;
+		max-width: 42%;
+		text-align: left;
+		font-weight: 600;
+		color: #37499A;
+	}
+	/* first cell (SL.No) = card header */
+	#detailsTable tbody td:first-child {
+		background: #f8f9fc;
+	}
+	/* long text fields read better left aligned under their label */
+	#detailsTable tbody td[data-label="Problem Description"], #detailsTable tbody td[data-label="Closed remarks"]
+		{
+		flex-direction: column;
+		text-align: left;
+		gap: .15rem;
+	}
+	#detailsTable tbody td[data-label="Problem Description"]::before,
+		#detailsTable tbody td[data-label="Closed remarks"]::before {
+		flex: none;
+		max-width: 100%;
+	}
+
+	/* Export button */
+	#detailsTableContainer .btn-success {
+		width: 100%;
+		min-height: 42px;
+	}
+
+	/* green success popup used on this page's scripts */
+	.popup {
+		left: 50%;
+		right: auto;
+		transform: translateX(-50%);
+		max-width: 90vw;
+		text-align: center;
+	}
+}
   </style>
 <!-- <script type="text/javascript">
     window.history.forward();
@@ -652,7 +834,7 @@ function printContainer1() {
 
     <script src="vendor/datatables/jquery.dataTables.min.js"></script>
     <script src="vendor/datatables/dataTables.bootstrap4.min.js"></script>
-    <script src="js/config.js?v=<%=jsVersion%>"></script>
+    <script src="js/config.js?v=<%=ver(application, "/js/config.js")%>"></script>
    
    
    
@@ -665,14 +847,14 @@ function printContainer1() {
    
    
    
-   <script src="js/maintenanceReport.js?v=<%=jsVersion%>"></script> 
+   <script src="js/maintenanceReport.js?v=<%=ver(application, "/js/maintenanceReport.js")%>"></script> 
    
-   <script src="js/config.js?v=<%=jsVersion%>"></script>
-     <script src="js/username.js?v=<%=jsVersion%>"></script>
-     <script src="js/logout.js?v=<%=jsVersion%>"></script>
-      <script src="js/createdby.js?v=<%=jsVersion%>"></script>
- 	<script src="js/modifiedby.js?v=<%=jsVersion%>"></script>
- 	<script src="js/factoryid.js?v=<%=jsVersion%>"></script>
+   <script src="js/config.js?v=<%=ver(application, "/js/config.js")%>"></script>
+     <script src="js/username.js?v=<%=ver(application, "/js/username.js")%>"></script>
+     <script src="js/logout.js?v=<%=ver(application, "/js/logout.js")%>"></script>
+      <script src="js/createdby.js?v=<%=ver(application, "/js/createdby.js")%>"></script>
+ 	<script src="js/modifiedby.js?v=<%=ver(application, "/js/modifiedby.js")%>"></script>
+ 	<script src="js/factoryid.js?v=<%=ver(application, "/js/factoryid.js")%>"></script>
  	
  	
  <script>
@@ -723,9 +905,6 @@ function printContainer1() {
 	    
 	    
 	
-	    $('#sidebarToggleTop').click(function () {
-	        $('#accordionSidebar').toggleClass('toggled');
-	    });
 
 	});
  

@@ -297,7 +297,7 @@ stroke-dashoffset
 	href="externalLibrary/cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css" />
 <link rel="stylesheet" href="css/main.css">
 
- <script src="js/config.js?v=<%=jsVersion%>"></script>
+ <script src="js/config.js?v=<%=ver(application, "/js/config.js")%>"></script>
 <script src="vendor/jquery/jquery.min.js"></script>
 <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
 <script src="vendor/jquery-easing/jquery.easing.min.js"></script>
@@ -318,7 +318,7 @@ stroke-dashoffset
 	src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
 <script
 	src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
-<script src="js/forgotpass.js?v=<%=jsVersion%>"></script>
+<script src="js/forgotpass.js?v=<%=ver(application, "/js/forgotpass.js")%>"></script>
 
 <script src="js/createdby.js"></script>
 <script type="text/javascript">

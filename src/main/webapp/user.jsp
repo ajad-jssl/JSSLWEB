@@ -1016,18 +1016,18 @@ stroke-dashoffset
 		src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
 	<script
 		src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
-	<script src="js/config.js?v=<%=jsVersion%>"></script>
-	<script src="js/logout.js?v=<%=jsVersion%>"></script>
-	<script src="js/username.js?v=<%=jsVersion%>"></script>
-	<script src="js/user.js?v=<%=jsVersion%>"></script>
-	<script src="js/createdby.js?v=<%=jsVersion%>"></script>
-	<script src="js/Sessionfilter.js?v=<%=jsVersion%>"></script>
+	<script src="js/config.js?v=<%=ver(application, "/js/config.js")%>"></script>
+	<script src="js/logout.js?v=<%=ver(application, "/js/logout.js")%>"></script>
+	<script src="js/username.js?v=<%=ver(application, "/js/username.js")%>"></script>
+	<script src="js/user.js?v=<%=ver(application, "/js/user.js")%>"></script>
+	<script src="js/createdby.js?v=<%=ver(application, "/js/createdby.js")%>"></script>
+	<script src="js/Sessionfilter.js?v=<%=ver(application, "/js/Sessionfilter.js")%>"></script>
 	   	  <script>
 
   window.actionElementMap = {
   };
 </script>
-  <script src="js/permissions.js?v=<%=jsVersion%>"></script>
+  <script src="js/permissions.js?v=<%=ver(application, "/js/permissions.js")%>"></script>
 	
 	<script>
 //Reset logic for the form when the close button is clicked
@@ -1050,7 +1050,7 @@ stroke-dashoffset
 
 
 
-	<script src="js/urlrestrictAccessScript.js?v=<%=jsVersion%>"></script>
+	<script src="js/urlrestrictAccessScript.js?v=<%=ver(application, "/js/urlrestrictAccessScript.js")%>"></script>
 
 <script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/xlsx/0.20.3/xlsx.full.min.js"></script>
 </body>

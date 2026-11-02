@@ -1,4 +1,52 @@
 
+
+/*
+ * Adds data-label="<column heading>" to every cell of the report table (#detailsTable)
+ * so the mobile card view can show the column name next to each value.
+ *
+ * Add inside a <script> tag at the very end of the page (after all other scripts).
+ *
+ * The rows are built by maintenanceReport.js (renderDetailsTable) after "Fetch Report"
+ * is clicked, so a MutationObserver labels them every time the table is refilled.
+ * maintenanceReport.js does not need any change, and "Export to Excel" still works.
+ */
+(function () {
+
+	function labelTable(table) {
+		var heads = Array.prototype.map.call(
+			table.querySelectorAll('thead th'),
+			function (th) { return th.textContent.replace(/\s+/g, ' ').trim(); }
+		);
+
+		table.querySelectorAll('tbody tr').forEach(function (tr) {
+			Array.prototype.forEach.call(tr.children, function (td, i) {
+				if (td.tagName !== 'TD' || td.colSpan > 1) return;
+				var label = heads[i] || '';
+				if (td.getAttribute('data-label') !== label) {
+					td.setAttribute('data-label', label);
+				}
+			});
+		});
+	}
+
+	function init() {
+		var table = document.getElementById('detailsTable');
+		if (!table) return;
+
+		labelTable(table);
+
+		// only childList is observed, so setting attributes can't re-trigger it
+		new MutationObserver(function () {
+			labelTable(table);
+		}).observe(table, { childList: true, subtree: true });
+	}
+
+	if (document.readyState === 'loading') {
+		document.addEventListener('DOMContentLoaded', init);
+	} else {
+		init();
+	}
+})();
 $(document).ready(function () {
     loadFactories();
 	MachineCategory();

@@ -467,7 +467,7 @@
 <a class="scroll-to-top rounded" href="#page-top"><i class="fas fa-angle-up"></i></a>
 <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
 <script src="vendor/jquery-easing/jquery.easing.min.js"></script>
-<script src="js/config.js?v=<%=jsVersion%>"></script>
+<script src="js/config.js?v=<%=ver(application, "/js/config.js")%>"></script>
 <script>
 (function () {
   var userId = sessionStorage.getItem('user_id');
@@ -548,10 +548,10 @@
 
 
 
-<script src="js/username.js?v=<%=jsVersion%>"></script>
-<script src="js/logout.js?v=<%=jsVersion%>"></script>
-<script src="js/Sessionfilter.js?v=<%=jsVersion%>"></script>
-<script src="js/doTimeSheetDashboard.js?v=<%=jsVersion%>"></script>
+<script src="js/username.js?v=<%=ver(application, "/js/username.js")%>"></script>
+<script src="js/logout.js?v=<%=ver(application, "/js/logout.js")%>"></script>
+<script src="js/Sessionfilter.js?v=<%=ver(application, "/js/Sessionfilter.js")%>"></script>
+<script src="js/doTimeSheetDashboard.js?v=<%=ver(application, "/js/doTimeSheetDashboard.js")%>"></script>
 
 </body>
 </html>

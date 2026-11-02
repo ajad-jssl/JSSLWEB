@@ -638,9 +638,9 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 	<script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
 	<script src="vendor/jquery-easing/jquery.easing.min.js"></script>
 
-	<script src="js/config.js?v=<%=jsVersion%>"></script>
-	<script src="js/logout.js?v=<%=jsVersion%>"></script>
-	<script src="js/username.js?v=<%=jsVersion%>"></script>
+	<script src="js/config.js?v=<%=ver(application, "/js/config.js")%>"></script>
+	<script src="js/logout.js?v=<%=ver(application, "/js/logout.js")%>"></script>
+	<script src="js/username.js?v=<%=ver(application, "/js/username.js")%>"></script>
 
 	
 	<script>
@@ -689,10 +689,10 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 	<!-- YOUR FILE LAST -->
 	
 	
-	<script src="js/subconassign.js?v=<%=jsVersion%>"></script>
+	<script src="js/subconassign.js?v=<%=ver(application, "/js/subconassign.js")%>"></script>
 	<script
 		src="externalLibrary/cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-	<script src="js/Sessionfilter.js?v=<%=jsVersion%>"></script>
-	<script src="js/createdby.js?v=<%=jsVersion%>"></script>
+	<script src="js/Sessionfilter.js?v=<%=ver(application, "/js/Sessionfilter.js")%>"></script>
+	<script src="js/createdby.js?v=<%=ver(application, "/js/createdby.js")%>"></script>
 </body>
 </html>

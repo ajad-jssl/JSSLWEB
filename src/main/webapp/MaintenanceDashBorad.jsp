@@ -656,11 +656,11 @@
 
 <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
 <script src="vendor/jquery-easing/jquery.easing.min.js"></script>
-<script src="js/maintenanceDashboard.js?v=<%=jsVersion%>"></script>
-<script src="js/config.js?v=<%=jsVersion%>"></script>
-<script src="js/username.js?v=<%=jsVersion%>"></script>
-<script src="js/logout.js?v=<%=jsVersion%>"></script>
-<script src="js/Sessionfilter.js?v=<%=jsVersion%>"></script>
+<script src="js/maintenanceDashboard.js?v=<%=ver(application, "/js/maintenanceDashboard.js")%>"></script>
+<script src="js/config.js?v=<%=ver(application, "/js/config.js")%>"></script>
+<script src="js/username.js?v=<%=ver(application, "/js/username.js")%>"></script>
+<script src="js/logout.js?v=<%=ver(application, "/js/logout.js")%>"></script>
+<script src="js/Sessionfilter.js?v=<%=ver(application, "/js/Sessionfilter.js")%>"></script>
 
 </body>
 </html>

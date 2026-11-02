@@ -31,11 +31,11 @@
 
 <link rel="stylesheet"
 	href="externalLibrary/cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css" />
-	
-	
-	
-	
-	<link
+
+
+
+
+<link
 	href="externalLibrary/cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css"
 	rel="stylesheet">
 <link
@@ -294,6 +294,192 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 		font-size: 12px;
 	}
 }
+
+
+
+html, body {
+	max-width: 100%;
+	overflow-x: hidden;               /* no sideways page scroll on phones */
+}
+
+@media ( max-width : 767.98px) {
+
+	/* ---------- Page layout ---------- */
+	#content-wrapper, #content {
+		min-width: 0;
+	}
+	.topbar {
+		padding: 0 .75rem;
+	}
+	#container-wrapper {
+		padding-left: 12px;
+		padding-right: 12px;
+	}
+
+	/* the desktop rule "margin-top: -5rem" makes the title overlap the breadcrumb on phones */
+	.mt-5, .my-5, .container.mt-5 {
+		margin-top: 0 !important;
+	}
+	.container.mt-5 h3 {
+		font-size: 1.25rem;
+		margin-bottom: .75rem !important;
+	}
+	.container.mt-5 {
+		padding-left: 0;
+		padding-right: 0;
+	}
+
+	.breadcrumb {
+		width: 100%;
+		flex-wrap: wrap;
+		font-size: 13px;
+		padding: .5rem .75rem;
+		margin-bottom: 0;
+	}
+
+	/* ---------- Tabs (MachineCategory / Location / ...) ---------- */
+	.master-tabs-wrapper {
+		margin-bottom: 16px;
+		padding-bottom: 4px;
+	}
+
+	/* ---------- Table sections ---------- */
+	.row.mb-3 {
+		margin-left: 0;
+		margin-right: 0;
+	}
+	.row.mb-3 .table-responsive.p-3 {
+		padding: .5rem !important;      /* two nested p-3 wasted a lot of width */
+		width: 100%;
+		-webkit-overflow-scrolling: touch;
+	}
+	.card-header {
+		padding: .6rem .75rem !important;
+	}
+	.table th, .table td {
+		white-space: nowrap;            /* keep rows tidy, table scrolls sideways inside its box */
+		font-size: 13px;
+		padding: .4rem .5rem;
+	}
+
+	/* DataTables: search / length / info / pagination / export buttons */
+	.dataTables_wrapper .row {
+		margin-left: 0;
+		margin-right: 0;
+	}
+	.dataTables_wrapper .row>[class*="col-"] {
+		padding-left: 0;
+		padding-right: 0;
+		overflow-x: auto;               /* the table scrolls, the controls stay put */
+		-webkit-overflow-scrolling: touch;
+	}
+	.dataTables_wrapper .dataTables_length, .dataTables_wrapper .dataTables_filter,
+		.dataTables_wrapper .dataTables_info, .dataTables_wrapper .dataTables_paginate
+		{
+		text-align: center !important;
+		float: none;
+		margin: .4rem 0;
+	}
+	.dataTables_wrapper .dataTables_filter input {
+		width: 100%;
+		max-width: 220px;
+		margin-left: 0;
+	}
+	.dataTables_wrapper .pagination {
+		justify-content: center;
+		flex-wrap: wrap;
+	}
+	div.dt-buttons {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: center;
+		gap: 6px;
+		float: none;
+		margin-bottom: .5rem;
+	}
+
+	/* ---------- Modals ---------- */
+	.modal-dialog {
+		margin: .5rem auto;
+		max-width: calc(100% - 1rem) !important;
+	}
+	/* create / update dialogs have an inline max-width:500px - keep that cap on bigger phones */
+	.modal-dialog[style*="500px"] {
+		max-width: min(500px, calc(100% - 1rem)) !important;
+	}
+	/* small confirm / message dialogs */
+	.modal-dialog-centered:not(.modal-lg) {
+		max-width: min(380px, calc(100% - 1rem)) !important;
+	}
+
+	/* "Are you sure...?" and duplicate popups have inline width:54%/70% and right:-22%,
+	   which pushes them off the screen on phones */
+	.modal-content[style*="right"] {
+		width: 100% !important;
+		right: 0 !important;
+	}
+
+	.modal-header {
+		height: auto;
+		min-height: 45px;
+		align-items: center;
+	}
+	.modal-title {
+		line-height: 1.3;
+		word-break: break-word;
+	}
+	.modal-body {
+		padding: 16px;
+	}
+	.modal-footer {
+		flex-wrap: wrap;
+		justify-content: flex-end;
+	}
+
+	/* form fields: 16px stops iPhone auto-zoom when tapping an input */
+	.modal .form-control, .modal .form-control-sm, .modal select {
+		font-size: 16px;
+		height: auto;
+		padding: .4rem .6rem;
+	}
+	.modal label {
+		margin-bottom: .25rem;
+	}
+
+	/* custom dropdowns (Items / Job type) had a fixed 300px width */
+	#itemsDropdownMenu, #items1DropdownMenu, #designationDropdownMenu,
+		#designationDropdownMenuUp {
+		width: 100% !important;
+		max-width: 100%;
+	}
+
+	/* select2 */
+	.select2-container {
+		width: 100% !important;
+	}
+
+	/* green success popup was positioned with a desktop offset */
+	.popup {
+		left: 50%;
+		right: auto;
+		transform: translateX(-50%);
+		max-width: 90vw;
+		text-align: center;
+	}
+}
+
+/* Very small phones */
+@media ( max-width : 360px) {
+	.master-tabs label {
+		padding: 7px 12px;
+		font-size: 12px;
+	}
+	.table th, .table td {
+		font-size: 12px;
+	}
+}
+
+
 </style>
 </head>
 <!-- <script>
@@ -394,12 +580,6 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 						</div>
 					</div>
 
-
-
-
-					<!-- Type Selection Table -->
-
-
 					<div class="row mb-3" id="TypeSelectionTableOuter"
 						style="display: block;">
 						<div class="table-responsive p-3">
@@ -435,11 +615,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 						</div>
 					</div>
 
-
-
-
-
-					<!-- This the Type Selection Creat Modal -->
+			
 
 					<div class="modal fade" id="exampleModalScrollablestype1"
 						tabindex="-1" role="dialog"
@@ -486,8 +662,6 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 						</div>
 					</div>
 
-
-
 					<div class="modal fade" id="confimationtypemodal" tabindex="-1"
 						role="dialog" aria-labelledby="exampleModalCenterTitle"
 						aria-hidden="true">
@@ -507,9 +681,6 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 							</div>
 						</div>
 					</div>
-
-
-
 
 					<div class="modal fade" id="duplicateTypeModal" tabindex="-1"
 						role="dialog" aria-labelledby="duplicateTypeTitle"
@@ -533,14 +704,6 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 							</div>
 						</div>
 					</div>
-
-
-
-
-
-
-
-
 
 					<div class="modal fade" id="exampleModalScrollablestypeUp"
 						tabindex="-1" role="dialog"
@@ -1734,7 +1897,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 		<script src="vendor/datatables/jquery.dataTables.min.js"></script>
 		<script src="vendor/datatables/dataTables.bootstrap4.min.js"></script>
 
-		<script src="js/config.js?v=<%=jsVersion%>"></script>
+		<script src="js/config.js?v=<%=ver(application, "/js/config.js")%>"></script>
 
 		<script
 			src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
@@ -1751,14 +1914,19 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 
 
 
-		<script src="js/MaintenanceMasterRegister.js?v=<%=jsVersion%>"></script>
-		<script src="js/logout.js?v=<%=jsVersion%>"></script>
-		<script src="js/username.js?v=<%=jsVersion%>"></script>
-<script
-		src="externalLibrary/cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-		<script src="js/modifiedby.js?v=<%=jsVersion%>"></script>
-		<script src="js/createdby.js?v=<%=jsVersion%>"></script>
-		<script src="js/Sessionfilter.js?v=<%=jsVersion%>"></script>
+		<script
+			src="js/MaintenanceMasterRegister.js?v=<%=ver(application, "/js/MaintenanceMasterRegister.js")%>"></script>
+		<script src="js/logout.js?v=<%=ver(application, "/js/logout.js")%>"></script>
+		<script
+			src="js/username.js?v=<%=ver(application, "/js/username.js")%>"></script>
+		<script
+			src="externalLibrary/cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+		<script
+			src="js/modifiedby.js?v=<%=ver(application, "/js/modifiedby.js")%>"></script>
+		<script
+			src="js/createdby.js?v=<%=ver(application, "/js/createdby.js")%>"></script>
+		<script
+			src="js/Sessionfilter.js?v=<%=ver(application, "/js/Sessionfilter.js")%>"></script>
 
 
 
@@ -1777,31 +1945,26 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 								.getElementById("UserMappingradio");
 
 						const designationmapping = document
-						.getElementById("designationMappingradio");
-						
+								.getElementById("designationMappingradio");
+
 						function hideAllTables() {
 							$("#TypeSelectionTableOuter").hide();
 							$("#pageSelectioOuter").hide();
 							$("#pageActionOuter").hide();
 							$("#UserSelectionTableOuter").hide();
 							$("#designationTableOuter").hide();
-	 
 
 						}
 
 						function toggleTables() {
 
 							hideAllTables();
-								
-												 
-		 
 
 							// Default Module tab
 							if (typeRadio.checked) {
 								$("#TypeSelectionTableOuter").show();
-						 
+
 							}
-	 
 
 							// Pages tab
 							if (pageradio.checked) {
@@ -1812,18 +1975,18 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 
 							if (pageActionradio.checked) {
 								$("#pageActionOuter").show();
-						
+
 								loadPageAndActions();
 							}
 							if (userMapping.checked) {
 								$("#UserSelectionTableOuter").show();
 
 							}
-							
+
 							if (designationmapping.checked) {
 								$("#designationTableOuter").show();
 							}
-							
+
 						}
 
 						// By default module checked
@@ -1834,7 +1997,8 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 						pageActionradio
 								.addEventListener("change", toggleTables);
 						userMapping.addEventListener("change", toggleTables);
-						designationmapping.addEventListener("change", toggleTables);
+						designationmapping.addEventListener("change",
+								toggleTables);
 
 						// Initial load
 						toggleTables();

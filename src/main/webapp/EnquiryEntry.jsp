@@ -1463,7 +1463,7 @@ textarea.enquiry-input {
 			
 				<script src="vendor/datatables/jquery.dataTables.min.js"></script>
 				<script src="vendor/datatables/dataTables.bootstrap4.min.js"></script>
-				<script src="js/config.js?v=<%=jsVersion%>"></script>
+				<script src="js/config.js?v=<%=ver(application, "/js/config.js")%>"></script>
 				
 				<script
 			src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
@@ -1487,10 +1487,10 @@ textarea.enquiry-input {
 					
 					
 				
-				<script src="js/logout.js?v=<%=jsVersion%>"></script>
-				<script src="js/username.js?v=<%=jsVersion%>"></script>
-				<script src="js/Sessionfilter.js?v=<%=jsVersion%>"></script>
-				<script src="js/CRMEnquiry.js?v=<%=jsVersion%>"></script>
-				<script src="js/createdby.js?v=<%=jsVersion%>"></script>
+				<script src="js/logout.js?v=<%=ver(application, "/js/logout.js")%>"></script>
+				<script src="js/username.js?v=<%=ver(application, "/js/username.js")%>"></script>
+				<script src="js/Sessionfilter.js?v=<%=ver(application, "/js/Sessionfilter.js")%>"></script>
+				<script src="js/CRMEnquiry.js?v=<%=ver(application, "/js/CRMEnquiry.js")%>"></script>
+				<script src="js/createdby.js?v=<%=ver(application, "/js/createdby.js")%>"></script>
 </body>
 </html>
