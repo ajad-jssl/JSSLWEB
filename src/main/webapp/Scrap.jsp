@@ -21,14 +21,10 @@
       <link href="vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css" />
       <link href="css/ruang-admin.min.css" rel="stylesheet" />
       <link href="vendor/datatables/dataTables.bootstrap4.min.css" rel="stylesheet">
-      
-      
-      
+
     <link rel="stylesheet" href="externalLibrary/cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css" />
      <link rel="stylesheet" href="css/main.css">
 
-
- 
   <style>
  .error-message {
     color: red;
@@ -36,7 +32,7 @@
     margin-top: 5px;
     display: none; /* Hidden by default */
 }
- 
+
  .popup {
     position: fixed;
     top: 20px;
@@ -48,10 +44,6 @@
     border-radius: 5px;
     z-index: 9999;
 }
-         .error-message {
-        color: red;
-        display: none;
-        }
         /* Add some basic styling to the button */
         button {
             padding: 5px 15px;
@@ -139,27 +131,19 @@
     .increased-height {
         height: 100px; /* Adjust the height value as needed */
     }
-    .popup {
-    position: fixed;
-    top: 20px;
-    right: -3%;
-    transform: translateX(-50%);
-    background-color: #4CAF50; /* Green */
-    color: white;
-    padding: 16px;
-    border-radius: 5px;
-    z-index: 9999;
-}
 div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-button:first-child {
     margin-left: 0;
     background-color: #336699 !important;
     color: white;
     padding: 4px 10px;
-  }  
-  
-  
-  
-  
+  }
+
+  /* line item tables (create + update) */
+  #saleOrderDetailsTable td, #saleOrderDetailsTableUP td { vertical-align: middle; }
+  #saleOrderDetailsTable .sl-no, #saleOrderDetailsTableUP .sl-no { width: 45px; text-align: center; }
+  .deleteRowBtn { background-color: #dc3545; }
+  .deleteRowBtn:hover { background-color: #bb2d3b; }
+
 </style>
   <script>
     const user_id = sessionStorage.getItem('user_id');
@@ -186,7 +170,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
                 <button id="sidebarToggleTop" class="btn btn-link rounded-circle mr-3">
                     <i class="fa fa-bars"></i>
                 </button>
-               
+
                 <ul class="navbar-nav ml-auto">
 
                     <button class="btn btn-link" onclick="window.location.href='Landingpage.jsp'" style="background-color: transparent; color: white; border: none;">
@@ -219,7 +203,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
               <li class="breadcrumb-item"><a href="InvoiceDashBoard.jsp">Home</a></li>
               <li class="breadcrumb-item"><a href="SidemenuScrap.jsp">Scrap Page</a></li>
              <li class="breadcrumb-item active" aria-current="page">Scrap</li>
-             
+
             </ol>
           </div>
           <div class="row mb-3">
@@ -240,12 +224,12 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
   </div>
 </div>
 
-
-
 </div>
           </div>
   </div>
   </div>
+
+ <!-- ===================== CREATE SALE ORDER MODAL ===================== -->
  <div class="modal fade" id="exampleModalScrollable123" tabindex="-1" role="dialog" aria-labelledby="exampleModalScrollableTitle" aria-hidden="true" onload="generateSaleOrderNumber();">
   <div class="modal-dialog modal-dialog-scrollable" style="max-width: 1540px;" role="document">
     <div class="modal-content">
@@ -261,7 +245,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
       <div class="modal-body">
         <!-- Sale Order Section -->
         <div class="border p-3 mb-3">
-          
+
           <div class="row">
             <div class="col-md-3">
               <label for="saleOrderNo">Sale Order No</label>
@@ -289,7 +273,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
   </div>
         </div>
 
-        <!-- Sale Order Details Section -->
+        <!-- Sale Order Details Section (multiple line items) -->
        <div class="border p-3 mb-3">
   <h5 class="form-control form-control-sm">Sale Order Details</h5>
   <table class="table table-bordered" id="saleOrderDetailsTable">
@@ -305,44 +289,18 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
         <th>Unit Price</th>
         <th>Total</th>
         <th>Tolerance</th>
-        <!-- <th>Delete</th> -->
+        <th>Delete</th>
       </tr>
     </thead>
-    <tbody>
-      <tr>
-        <td>1</td>
-        <td><input type="number" class="form-control form-control-sm" id="Auctionadd" autocomplete="off" min="0"></td>
-        <div id="productCodeError51" class="error-message"></div>
-        <td>
-    <select class="form-control form-control-sm" id="scrapType">
-     </select>
-     <div id="productCodeError5" class="error-message"></div>
-</td>
-<td>
-    <select class="form-control form-control-sm" id="scrapItem">
-        </select>
-        <div id="productCodeError6" class="error-message"></div>
-</td>
-        <td>
-          <select class="form-control form-control-sm uom" id="uom">
-          </select>
-          <div id="productCodeError7" class="error-message"></div>
-        </td>
-        <td><input type="number" class="form-control form-control-sm" id="qtyadd" autocomplete="off" min="0"></td>
-        <div id="productCodeError8" class="error-message"></div>
-        <td><input type="number" class="form-control form-control-sm" id="kg" autocomplete="off" min="0"></td>
-        <div id="productCodeError9" class="error-message"></div>
-        <td><input type="number" class="form-control form-control-sm" id="uprice" autocomplete="off" min="0"></td>
-        <div id="productCodeError10" class="error-message"></div>
-        <td><input type="number" class="form-control form-control-sm" id="toadd" readonly></td>
-        <td><input type="number" class="form-control form-control-sm" id="toleadd" autocomplete="off" min="0"></td>
-        <div id="productCodeError12" class="error-message"></div>
-        <!-- <td><button class="btn btn-danger btn-sm deleteRowBtn">Delete</button></td> -->
-      </tr>
-    </tbody>
+    <!-- rows are generated by Scrap.js (addItemRow) -->
+    <tbody id="itemRows"></tbody>
   </table>
+  <button type="button" class="btn btn-primary btn-sm" id="addItemBtn">
+    <i class="fas fa-plus"></i> Add New Item
+  </button>
+  <div id="itemsError" class="error-message"></div>
+
   <div class="d-flex align-items-center">
-    <!-- <button class="btn btn-primary" id="addRowBtn">Add Row</button> -->
     <div class="col-md-3 ms-3" style="margin-left: 68%;">
         <label for="totalNo">Total</label>
         <input type="text" id="totalNo" class="form-control form-control-sm" readonly>
@@ -438,19 +396,6 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
         </div>
 
         <!-- Terms & Conditions -->
- <!--        <div class="border p-3 mt-3">
-          <h5>Terms & Conditions</h5>
-          <table id="myTable" class="table">
-        <tbody>
-            <tr>
-                <td>
-                    <textarea class="form-control textarea" id="terms">Duration</textarea>
-                </td>
-            </tr>
-            </tbody>
-    </table>
-          <button type="button" class="btn btn-sm btn-secondary" onclick="addNewRow()">Add New Row</button>
-        </div> -->
         <div class="border p-3 mt-3">
     <h5>Terms & Conditions</h5>
 
@@ -479,7 +424,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
         Add New Row
     </button>
 </div>
-        
+
       </div>
 
       <!-- Modal Footer -->
@@ -495,33 +440,26 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
             aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered" role="document">
               <div class="modal-content" style="width: 54%;right: -22%;border-width: thick;border-color: #eaecf4;">
-                 <div class="modal-header1"> 
-                   <!-- <h5 class="modal-title" id="exampleModalCenterTitle">Modal Vertically Centered</h5> --> 
-                   <!-- <button type="button" class="close" data-dismiss="modal" aria-label="Close" >
-                    <span aria-hidden="true">&times;</span>
-                  </button>  -->
+                 <div class="modal-header1">
                  </div>
                 <div class="modal-body">
                   <b>Are you sure you want to create?</b>
                 </div>
                 <div class="modal-footer">
-                  <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">NO</button> 
+                  <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">NO</button>
                     <button type="button" class="btn btn-info btn-sm" onclick="addevent();">YES</button>
                 </div>
               </div>
             </div>
           </div>
-          		<div class="modal fade" id="exampleModalCenter16" tabindex="-1"
+
+		<div class="modal fade" id="exampleModalCenter16" tabindex="-1"
 			role="dialog" aria-labelledby="exampleModalCenterTitle"
 			aria-hidden="true">
 			<div class="modal-dialog modal-dialog-centered" role="document">
 				<div class="modal-content"
 					style="width: 54%; right: -22%; border-width: thick; border-color: #eaecf4;">
 					<div class="modal-header1">
-						<!-- <h5 class="modal-title" id="exampleModalCenterTitle">Modal Vertically Centered</h5> -->
-						<!-- <button type="button" class="close" data-dismiss="modal" aria-label="Close" >
-                    <span aria-hidden="true">&times;</span>
-                  </button>  -->
 					</div>
 					<div class="modal-body">
 						<b>Are you sure you want to Cancel Scrap Sale Order?</b>
@@ -536,14 +474,13 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 			</div>
 		</div>
 
-
-
+<!-- ===================== UPDATE SALE ORDER MODAL ===================== -->
 <div class="modal fade" id="exampleModalScrollable123Update" tabindex="-1" role="dialog" aria-labelledby="exampleModalScrollableTitle" aria-hidden="true">
   <div class="modal-dialog modal-dialog-scrollable" style="max-width: 1540px;" role="document">
     <div class="modal-content">
       <!-- Modal Header -->
       <div class="modal-header">
-        <h5 class="modal-title" id="exampleModalScrollableTitle">Update Sale Order</h5>
+        <h5 class="modal-title" id="exampleModalScrollableTitleUp">Update Sale Order</h5>
         <button type="button" class="close" data-dismiss="modal" aria-label="Close">
           <span aria-hidden="true">&times;</span>
         </button>
@@ -553,7 +490,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
       <div class="modal-body">
         <!-- Sale Order Section -->
         <div class="border p-3 mb-3">
-          
+
           <div class="row">
             <div class="col-md-3">
               <label for="saleOrderNoUP">Sale Order No</label>
@@ -581,65 +518,41 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
   </div>
         </div>
 
-        <!-- Sale Order Details Section -->
+        <!-- Sale Order Details Section (multiple line items) -->
        <div class="border p-3 mb-3">
   <h5 class="form-control form-control-sm">Sale Order Details</h5>
-  
-  <div class="row mb-3">
-    <div class="col-md-1">
-      <label>E-Auction No</label>
-      <input type="number" class="form-control form-control-sm" id="Auctionaddup" min="0" autocomplete="off">
-      <div id="productCodeError51up" class="error-message"></div>
-    </div>
-    <div class="col-md-2">
-      <label>Scrap Type</label>
-      <select class="form-control form-control-sm" id="scrapTypeup"></select>
-      <div id="productCodeError5up" class="error-message"></div>
-    </div>
-    <div class="col-md-2">
-      <label>Scrap Item</label>
-      <select class="form-control form-control-sm" id="scrapItemup"></select>
-      <div id="productCodeError6up" class="error-message"></div>
-    </div>
-    <div class="col-md-2">
-      <label>UOM</label>
-      <select class="form-control form-control-sm" id="uomup"></select>
-      <div id="productCodeError7up" class="error-message"></div>
-    </div>
-    <div class="col-md-1">
-      <label>Quantity</label>
-      <input type="number" class="form-control form-control-sm" id="qtyaddup" min="0" autocomplete="off">
-      <div id="productCodeError8up" class="error-message"></div>
-    </div>
-    <div class="col-md-1">
-      <label>Kgs</label>
-      <input type="number" class="form-control form-control-sm" id="kgup" min="0" autocomplete="off">
-      <div id="productCodeError9up" class="error-message"></div>
-    </div>
-    <div class="col-md-1">
-      <label>Unit Price</label>
-      <input type="number" class="form-control form-control-sm" id="upriceup" min="0" autocomplete="off">
-      <div id="productCodeError10up" class="error-message"></div>
-    </div>
-    <div class="col-md-1">
-      <label>Total</label>
-      <input type="text" class="form-control form-control-sm" id="toaddup" readonly>
-    </div>
-    <div class="col-md-1">
-      <label>Tolerance</label>
-      <input type="number" class="form-control form-control-sm" id="toleaddup" min="0" autocomplete="off">
-      <div id="productCodeError12up" class="error-message"></div>
-    </div>
-  </div>
+
+  <table class="table table-bordered" id="saleOrderDetailsTableUP">
+    <thead>
+      <tr>
+        <th>Sl No</th>
+        <th>E-Auction No</th>
+        <th>Scrap Type</th>
+        <th>Scrap Item</th>
+        <th>UOM</th>
+        <th>Quantity</th>
+        <th>Kgs</th>
+        <th>Unit Price</th>
+        <th>Total</th>
+        <th>Tolerance</th>
+        <th>Delete</th>
+      </tr>
+    </thead>
+    <!-- rows are generated by scrapedit.js (editRecord / addItemRowUp) -->
+    <tbody id="itemRowsUp"></tbody>
+  </table>
+  <button type="button" class="btn btn-primary btn-sm" id="addItemBtnUp">
+    <i class="fas fa-plus"></i> Add New Item
+  </button>
+  <div id="itemsErrorUp" class="error-message"></div>
 
   <div class="d-flex align-items-center">
-    <div class="col-md-3 ms-3" style="margin-left: 68%; display:none;">
-      <label for="totalNoup">Total</label>
+    <div class="col-md-3 ms-3" style="margin-left: 68%;">
+      <label for="totalNoUp">Total</label>
       <input type="text" id="totalNoUp" class="form-control form-control-sm" readonly>
     </div>
   </div>
 </div>
-
 
   <!-- Additional Details Section -->
         <div class="border p-3">
@@ -713,24 +626,21 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 
           <div class="row mt-3">
             <div class="col-md-4">
-              <label for="netAmount">Net Amount</label>
+              <label for="netAmountup">Net Amount</label>
               <input type="text" id="netAmountup" class="form-control form-control-sm" readonly>
             </div>
             <div class="col-md-4">
-              <label for="totalTax">Total Tax</label>
+              <label for="totalTaxup">Total Tax</label>
               <input type="text" id="totalTaxup" class="form-control form-control-sm" readonly>
             </div>
             <div class="col-md-4">
-              <label for="grandTotal">Grand Total</label>
+              <label for="grandTotalup">Grand Total</label>
               <input type="text" id="grandTotalup" class="form-control form-control-sm" readonly>
             </div>
+            <!-- header id of the sale order (hidden) -->
             <div class="col-md-4" style="display:none;">
-              <label for="grandTotal">ID</label>
+              <label for="soeid">ID</label>
               <input type="text" id="soeid" class="form-control form-control-sm">
-            </div>
-            <div class="col-md-4" style="display:none;">
-              <label for="grandTotal">ID</label>
-              <input type="text" id="soeiid" class="form-control form-control-sm">
             </div>
           </div>
         </div>
@@ -764,136 +674,55 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
             aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered" role="document">
               <div class="modal-content" style="width: 54%;right: -22%;border-width: thick;border-color: #eaecf4;">
-                 <div class="modal-header1"> 
-                   <!-- <h5 class="modal-title" id="exampleModalCenterTitle">Modal Vertically Centered</h5> --> 
-                   <!-- <button type="button" class="close" data-dismiss="modal" aria-label="Close" >
-                    <span aria-hidden="true">&times;</span>
-                  </button>  -->
+                 <div class="modal-header1">
                  </div>
                 <div class="modal-body">
                   <b>Are you sure you want to update?</b>
                 </div>
                 <div class="modal-footer">
-                  <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">NO</button> 
+                  <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">NO</button>
                     <button type="button" class="btn btn-info btn-sm" onclick="updateevent();">YES</button>
                 </div>
               </div>
             </div>
           </div>
- 
+
 <!-- Scroll to top -->
   <a class="scroll-to-top rounded" href="#page-top">
     <i class="fas fa-angle-up"></i>
   </a>
 
+    <script src="vendor/jquery/jquery.min.js"></script>
+        <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+        <script src="vendor/jquery-easing/jquery.easing.min.js"></script>
+        <script src="js/ruang-admin.min.js"></script>
 
+        <script src="vendor/datatables/jquery.dataTables.min.js"></script>
+        <script src="vendor/datatables/dataTables.bootstrap4.min.js"></script>
 
- 
-  <script src="vendor/jquery/jquery.min.js"></script>
-      <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
-      <script src="vendor/jquery-easing/jquery.easing.min.js"></script>
-      <script src="js/ruang-admin.min.js"></script>
- 
-      <script src="vendor/datatables/jquery.dataTables.min.js"></script>
-      <script src="vendor/datatables/dataTables.bootstrap4.min.js"></script>
-   
-    
-      <script src="js/config.js?v=<%=ver(application, "/js/config.js")%>"></script>
-   <script src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
-    <script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
-    <script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
-    <script src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
-    <script src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
-    <script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-  <script src="js/logout.js?v=<%=ver(application, "/js/logout.js")%>"></script>
-  <script src="js/Scrap.js?v=<%=ver(application, "/js/Scrap.js")%>"></script>
-  <script src="js/scrapedit.js?v=<%=ver(application, "/js/scrapedit.js")%>"></script>
- <script src="js/username.js?v=<%=ver(application, "/js/username.js")%>"></script>
- 
-  <script src="js/createdby.js?v=<%=ver(application, "/js/createdby.js")%>"></script>
- 	   <script src="js/modifiedby.js?v=<%=ver(application, "/js/modifiedby.js")%>"></script>
- 	  <script src="js/factoryid.js?v=<%=ver(application, "/js/factoryid.js")%>"></script>
- 	   <script src="js/Sessionfilter.js?v=<%=ver(application, "/js/Sessionfilter.js")%>"></script>
+        <script src="js/config.js?v=<%=ver(application, "/js/config.js")%>"></script>
+     <script src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
+      <script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+      <script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
+      <script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
+      <script src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
+      <script src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
+      <script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="js/logout.js?v=<%=ver(application, "/js/logout.js")%>"></script>
+    <!-- Scrap.js MUST load before scrapedit.js (scrapedit.js uses its helpers) -->
+    <script src="js/Scrap.js?v=<%=ver(application, "/js/Scrap.js")%>"></script>
+    <script src="js/scrapedit.js?v=<%=ver(application, "/js/scrapedit.js")%>"></script>
+   <script src="js/username.js?v=<%=ver(application, "/js/username.js")%>"></script>
+
+    <script src="js/createdby.js?v=<%=ver(application, "/js/createdby.js")%>"></script>
+ 	     <script src="js/modifiedby.js?v=<%=ver(application, "/js/modifiedby.js")%>"></script>
+ 	    <script src="js/factoryid.js?v=<%=ver(application, "/js/factoryid.js")%>"></script>
+ 	     <script src="js/Sessionfilter.js?v=<%=ver(application, "/js/Sessionfilter.js")%>"></script>
  	   	  <script>
-/* const moduleId = localStorage.getItem("selectedModuleId"); */
   // This maps action names from the API to button IDs on this page
   window.actionElementMap = {
   };
 </script>
-<script src="js/permissions.js?v=<%=ver(application, "/js/permissions.js")%>"></script>
-<!--  	  <script>
-// Track user activity and logout after 2 minutes (120000 ms)
-let inactivityTime = function () {
-    let timeout;
-
-    // Reset timer on any user activity
-    function resetTimer() {
-        clearTimeout(timeout);
-        timeout = setTimeout(triggerLogout, 900000); // 15 minutes
-    }
-
-    // Event listener for activity
-    window.onload = resetTimer;
-    document.onmousemove = resetTimer;
-    document.onkeydown = resetTimer;
-    document.onclick = resetTimer;
-    document.onscroll = resetTimer;
-
-    function triggerLogout() {
-        // Create a dummy event to pass to logoutUser
-        let dummyEvent = new Event('logout');
-        logoutUser(dummyEvent);
-    }
-};
-
-inactivityTime();
-
-function logoutUser(event) {
-    if (event && event.preventDefault) {
-        event.preventDefault();
-    }
-
-    var user_id = sessionStorage.getItem('user_id'); 
-    if (!user_id) {
-        alert("User ID not found. Please login first.");
-        return;
-    }
-
-    if (typeof baseUrl === 'undefined' || !baseUrl) {
-        console.error("baseUrl is not defined or is empty.");
-        return;
-    }
-
-    const url = baseUrl.endsWith('/') ? baseUrl + 'jssl/user/userlogout' : baseUrl + '/jssl/user/userlogout';
-
-    $.ajax({
-        url: url,
-        type: 'POST',
-        data: $.param({ user_id: user_id }),
-        contentType: 'application/x-www-form-urlencoded',
-        dataType: 'json',
-        cache: false,
-        success: function(data) {
-            console.log("Server response:", data);
-            
-            if (data.status === "yes" && data.message === "Logout Success") {
-                sessionStorage.removeItem("user_id");
-                sessionStorage.removeItem("username");
-                sessionStorage.removeItem("isLoggedIn");
-                localStorage.removeItem("selectedFactoryId");
-                window.location = "newlogin.jsp";
-            } else {
-                console.error("Logout failed.");
-            }
-        },
-        error: function(xhr, status, error) {
-            console.error("AJAX error:", error);
-            console.error("Response text:", xhr.responseText);
-            alert("Error: " + (xhr.responseText || "An error occurred."));
-        }
-    });
-}
-</script> -->
+  <script src="js/permissions.js?v=<%=ver(application, "/js/permissions.js")%>"></script>
 </body>
 </html>

@@ -28,8 +28,8 @@
      <link rel="stylesheet" href="externalLibrary/cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css" />
       <link rel="stylesheet" href="css/main.css">
        
-         <script src="externalLibrary/cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
-<script src="externalLibrary/cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.min.js"></script>
+           <script src="externalLibrary/cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+  <script src="externalLibrary/cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.min.js"></script>
 
   <script>
     const user_id = sessionStorage.getItem('user_id');
@@ -959,37 +959,37 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
   </a>
 
 
-  <script src="vendor/jquery/jquery.min.js"></script>
-  <script src="externalLibrary/cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-      <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
-      <script src="vendor/jquery-easing/jquery.easing.min.js"></script>
+    <script src="vendor/jquery/jquery.min.js"></script>
+    <script src="externalLibrary/cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+        <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+        <script src="vendor/jquery-easing/jquery.easing.min.js"></script>
     
-      <script src="vendor/datatables/jquery.dataTables.min.js"></script>
-      <script src="vendor/datatables/dataTables.bootstrap4.min.js"></script>
-       <script src="js/config.js?v=<%=ver(application, "/js/config.js")%>"></script>
+        <script src="vendor/datatables/jquery.dataTables.min.js"></script>
+        <script src="vendor/datatables/dataTables.bootstrap4.min.js"></script>
+         <script src="js/config.js?v=<%=ver(application, "/js/config.js")%>"></script>
     
-   <script src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
-    <script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
-    <script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
-    <script src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
-    <script src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
-    <script src="externalLibrary/html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
-    <script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-     <script src="js/contractorlist.js?v=<%=ver(application, "/js/contractorlist.js")%>"></script>
-     <script src="js/contractorlistedit.js?v=<%=ver(application, "/js/contractorlistedit.js")%>"></script>
-   	<script src="js/logout.js?v=<%=ver(application, "/js/logout.js")%>"></script>
- 	  <script src="js/username.js?v=<%=ver(application, "/js/username.js")%>"></script>
+     <script src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
+      <script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+      <script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
+      <script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
+      <script src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
+      <script src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
+      <script src="externalLibrary/html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+      <script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+       <script src="js/contractorlist.js?v=<%=ver(application, "/js/contractorlist.js")%>"></script>
+       <script src="js/contractorlistedit.js?v=<%=ver(application, "/js/contractorlistedit.js")%>"></script>
+   	  <script src="js/logout.js?v=<%=ver(application, "/js/logout.js")%>"></script>
+ 	    <script src="js/username.js?v=<%=ver(application, "/js/username.js")%>"></script>
  	  
- 	    <script src="js/modifiedby.js?v=<%=ver(application, "/js/modifiedby.js")%>"></script>
-   	  <script src="js/createdby.js?v=<%=ver(application, "/js/createdby.js")%>"></script>
-   	   <script src="js/Sessionfilter.js?v=<%=ver(application, "/js/Sessionfilter.js")%>"></script>
+ 	      <script src="js/modifiedby.js?v=<%=ver(application, "/js/modifiedby.js")%>"></script>
+   	    <script src="js/createdby.js?v=<%=ver(application, "/js/createdby.js")%>"></script>
+   	     <script src="js/Sessionfilter.js?v=<%=ver(application, "/js/Sessionfilter.js")%>"></script>
    	  <script>
 
   window.actionElementMap = {
   };
 </script>
-<script src="js/permissions.js?v=<%=ver(application, "/js/permissions.js")%>"></script>
+  <script src="js/permissions.js?v=<%=ver(application, "/js/permissions.js")%>"></script>
 <script>
 
 function redirectToMilestoneAssign() {

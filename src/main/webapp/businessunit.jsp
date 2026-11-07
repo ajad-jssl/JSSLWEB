@@ -299,11 +299,21 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 					<div class="modal-body">
 						<form id="productForm">
 							<div class="form-row">
-								<div class="form-group col-md-4">
+							<!-- 	<div class="form-group col-md-4">
 									<label for="categoryPrefix"><b>Business Unit Name:</b></label>
 									<input type="text" class="form-control form-control-sm"
 										id="categoryPrefix" placeholder="Enter Business Unit Name"
 										autocomplete="off">
+									<div id="productCodeErrorcreditss32" class="error-message"></div>
+								</div> -->
+										<div class="form-group col-md-4">
+									<label for="categoryPrefix"><b>Business Unit Name:</b></label>
+								<textarea
+   								 class="form-control form-control-sm"
+    								id="categoryPrefix"
+    									placeholder="Enter Business Unit Name"
+    									autocomplete="off"
+    									rows="2"></textarea>
 									<div id="productCodeErrorcreditss32" class="error-message"></div>
 								</div>
 								<div class="form-group col-md-4">
@@ -325,7 +335,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 								<div class="form-group col-md-4">
 									<label for="District"><b>District:</b></label> <input
 										type="text" class="form-control form-control-sm"
-										id="District" maxlength="10" placeholder="Enter District"
+										id="District" placeholder="Enter District"
 										autocomplete="off">
 									<div id="productCodeErrorcreditssDistrict" class="error-message"></div>
 								</div>
@@ -347,7 +357,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 								<div class="form-group col-md-4">
 									<label for="PinNo"><b>Pin No:</b></label> <input
 										type="text" class="form-control form-control-sm"
-										id="PinNo" maxlength="10" placeholder="Enter Pin No"
+										id="PinNo" maxlength="6" placeholder="Enter Pin No"
 										autocomplete="off">
 									<div id="productCodeErrorcreditssPinNo" class="error-message"></div>
 								</div>
@@ -434,11 +444,21 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 					<div class="modal-body">
 						<form id="productForm">
 							<div class="form-row">
-								<div class="form-group col-md-4">
+							<!-- 	<div class="form-group col-md-4">
 									<label for="categoryPrefix"><b>Business Unit Name:</b></label>
 									<input type="text" class="form-control form-control-sm"
 										id="categoryPrefix11" placeholder="Enter Business Unit Name"
 										autocomplete="off">
+									<div id="productCodeErrorcreditss3211" class="error-message"></div>
+								</div> -->
+									<div class="form-group col-md-4">
+									<label for="categoryPrefix"><b>Business Unit Name:</b></label>
+										<textarea
+   								 class="form-control form-control-sm"
+    								id="categoryPrefix11"
+    									placeholder="Enter Business Unit Name"
+    									autocomplete="off"
+    									rows="3"></textarea>
 									<div id="productCodeErrorcreditss3211" class="error-message"></div>
 								</div>
 									<div class="form-group col-md-4">
@@ -460,7 +480,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 								<div class="form-group col-md-4">
 									<label for="Districtup"><b>District:</b></label> <input
 										type="text" class="form-control form-control-sm"
-										id="Districtup" maxlength="10" placeholder="Enter District"
+										id="Districtup" placeholder="Enter District"
 										autocomplete="off">
 									<div id="productCodeErrorcreditssDistrictup" class="error-message"></div>
 								</div>
@@ -482,7 +502,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 								<div class="form-group col-md-4">
 									<label for="PinNoup"><b>Pin No:</b></label> <input
 										type="text" class="form-control form-control-sm"
-										id="PinNoup" maxlength="10" placeholder="Enter Pin No"
+										id="PinNoup" maxlength="6" placeholder="Enter Pin No"
 										autocomplete="off">
 									<div id="productCodeErrorcreditssPinNoup" class="error-message"></div>
 								</div>
@@ -634,45 +654,39 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 		</a>
 
 	
-		<script src="vendor/jquery/jquery.min.js"></script>
-		<script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
-		<script src="vendor/jquery-easing/jquery.easing.min.js"></script>
+		  <script src="vendor/jquery/jquery.min.js"></script>
+		  <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+		  <script src="vendor/jquery-easing/jquery.easing.min.js"></script>
 		
-		<script src="vendor/datatables/jquery.dataTables.min.js"></script>
-		<script src="vendor/datatables/dataTables.bootstrap4.min.js"></script>
+		  <script src="vendor/datatables/jquery.dataTables.min.js"></script>
+		  <script src="vendor/datatables/dataTables.bootstrap4.min.js"></script>
 	
-	<script src="js/config.js?v=<%=ver(application, "/js/config.js")%>"></script>
+	  <script src="js/config.js?v=<%=ver(application, "/js/config.js")%>"></script>
 	
-		<script
-			src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
-		<script
-			src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-		<script
-			src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
-		<script
-			src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
-		<script
-			src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
-		<script
-			src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
+		  <script src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
+		  <script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+		  <script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
+		  <script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
+		  <script src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
+		  <script src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
 			
 			
 			
 			
 		
-		<script src="js/busiessunits.js?v=<%=ver(application, "/js/busiessunits.js")%>"></script>
-		<script src="js/logout.js?v=<%=ver(application, "/js/logout.js")%>"></script>
-		<script src="js/username.js?v=<%=ver(application, "/js/username.js")%>"></script>
+		  <script src="js/busiessunits.js?v=<%=ver(application, "/js/busiessunits.js")%>"></script>
+		  <script src="js/logout.js?v=<%=ver(application, "/js/logout.js")%>"></script>
+		  <script src="js/username.js?v=<%=ver(application, "/js/username.js")%>"></script>
 
-		<script src="js/modifiedby.js?v=<%=ver(application, "/js/modifiedby.js")%>"></script>
-		<script src="js/createdby.js?v=<%=ver(application, "/js/createdby.js")%>"></script>
-		<script src="js/Sessionfilter.js?v=<%=ver(application, "/js/Sessionfilter.js")%>"></script>
+		  <script src="js/modifiedby.js?v=<%=ver(application, "/js/modifiedby.js")%>"></script>
+		  <script src="js/createdby.js?v=<%=ver(application, "/js/createdby.js")%>"></script>
+		  <script src="js/Sessionfilter.js?v=<%=ver(application, "/js/Sessionfilter.js")%>"></script>
 		   	  <script>
 
   window.actionElementMap = {
   };
 </script>
-  <script src="js/permissions.js?v=<%=ver(application, "/js/permissions.js")%>"></script>
+    <script src="js/permissions.js?v=<%=ver(application, "/js/permissions.js")%>"></script>
 		
 	
 </body>

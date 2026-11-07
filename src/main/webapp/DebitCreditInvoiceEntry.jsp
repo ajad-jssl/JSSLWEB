@@ -22,7 +22,7 @@
       <link href="css/ruang-admin.min.css" rel="stylesheet" />
       <link href="vendor/datatables/dataTables.bootstrap4.min.css" rel="stylesheet">
     
-    
+    <link rel="stylesheet" href="externalLibrary/cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">
     
  <link rel="stylesheet" href="externalLibrary/cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css" />
       <link rel="stylesheet" href="css/main.css">
@@ -497,7 +497,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
                 </div>
                 <div class="form-group col-md-3 col-sm-12">
                 <label for="unitPrice"><b>Percentage(%):</b></label>
-                <input type="text" class="form-control form-control-sm" id="percen" readonly>
+                <input type="text" class="form-control form-control-sm" id="percen">
                 </div>
             <!-- <div class="form-group col-md-3 col-sm-12">
             <label for="totalor"><b>Name & Address of Consignee:</b></label>
@@ -1211,7 +1211,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
                 </div>
                 <div class="form-group col-md-3 col-sm-12">
                 <label for="unitPrice"><b>Percentage(%):</b></label>
-                <input type="text" class="form-control form-control-sm" id="percenvup" readonly>
+                <input type="text" class="form-control form-control-sm" id="percenvup">
                 </div>
             <!-- <div class="form-group col-md-3 col-sm-12">
             <label for="totalor"><b>Name & Address of Consignee:</b></label>
@@ -3405,31 +3405,31 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 
  
 
-  <script src="vendor/jquery/jquery.min.js"></script>
-      <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
-      <script src="vendor/jquery-easing/jquery.easing.min.js"></script>
+    <script src="vendor/jquery/jquery.min.js"></script>
+        <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+        <script src="vendor/jquery-easing/jquery.easing.min.js"></script>
   
-      <script src="vendor/datatables/jquery.dataTables.min.js"></script>
-      <script src="vendor/datatables/dataTables.bootstrap4.min.js"></script>
- <script src="js/config.js?v=<%=ver(application, "/js/config.js")%>"></script>
+        <script src="vendor/datatables/jquery.dataTables.min.js"></script>
+        <script src="vendor/datatables/dataTables.bootstrap4.min.js"></script>
+   <script src="js/config.js?v=<%=ver(application, "/js/config.js")%>"></script>
  
  
-   <script src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
-    <script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
-    <script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
-    <script src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
-    <script src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
+     <script src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
+      <script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+      <script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
+      <script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
+      <script src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
+      <script src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
+    <script src="externalLibrary/cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
    
    
-   
-   <script src="js/logout.js?v=<%=ver(application, "/js/logout.js")%>"></script>
-  <script src="js/username.js?v=<%=ver(application, "/js/username.js")%>"></script>
-  <script src="js/DebitCreditInvoice.js?v=<%=ver(application, "/js/DebitCreditInvoice.js")%>"></script>
-   <script src="js/createdby.js?v=<%=ver(application, "/js/createdby.js")%>"></script>
- 	   <script src="js/modifiedby.js?v=<%=ver(application, "/js/modifiedby.js")%>"></script>
- 	  <script src="js/factoryid.js?v=<%=ver(application, "/js/factoryid.js")%>"></script>
- 	   <script src="js/Sessionfilter.js?v=<%=ver(application, "/js/Sessionfilter.js")%>"></script>
+     <script src="js/logout.js?v=<%=ver(application, "/js/logout.js")%>"></script>
+    <script src="js/username.js?v=<%=ver(application, "/js/username.js")%>"></script>
+    <script src="js/DebitCreditInvoice.js?v=<%=ver(application, "/js/DebitCreditInvoice.js")%>"></script>
+     <script src="js/createdby.js?v=<%=ver(application, "/js/createdby.js")%>"></script>
+ 	     <script src="js/modifiedby.js?v=<%=ver(application, "/js/modifiedby.js")%>"></script>
+ 	    <script src="js/factoryid.js?v=<%=ver(application, "/js/factoryid.js")%>"></script>
+ 	     <script src="js/Sessionfilter.js?v=<%=ver(application, "/js/Sessionfilter.js")%>"></script>
  	   
  	   
  	    
@@ -3439,7 +3439,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
   window.actionElementMap = {
   };
 </script>
-<script src="js/permissions.js?v=<%=ver(application, "/js/permissions.js")%>"></script>
+  <script src="js/permissions.js?v=<%=ver(application, "/js/permissions.js")%>"></script>
   <!-- Page level custom scripts -->
 <script>
     document.getElementById("toggleFields").addEventListener("click", function () {

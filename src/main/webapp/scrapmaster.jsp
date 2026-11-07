@@ -25,8 +25,8 @@ long ts = System.currentTimeMillis();
   <link href="css/ruang-admin.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" integrity="sha512-xxx" crossorigin="anonymous" />
   <link rel="stylesheet" href="css/main.css">
-   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-   <script src="js/sidebar.js"></script>
+     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+     <script src="js/sidebar.js"></script>
     <script>
     const user_id = sessionStorage.getItem('user_id');
     console.log(user_id);
@@ -397,12 +397,12 @@ long ts = System.currentTimeMillis();
     <i class="fas fa-angle-up"></i>
   </a>
 
-  <script src="vendor/jquery/jquery.min.js"></script>
-  <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
-  <script src="vendor/jquery-easing/jquery.easing.min.js"></script>
-  <script src="js/ruang-admin.min.js"></script>
-  <script src="js/master.js?v=<%=ts%>"></script>
-   <script src="js/config.js"></script>
+    <script src="vendor/jquery/jquery.min.js"></script>
+    <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src="vendor/jquery-easing/jquery.easing.min.js"></script>
+    <script src="js/ruang-admin.min.js"></script>
+    <script src="js/master.js?v=<%=ts%>"></script>
+     <script src="js/config.js"></script>
 <script>
 // Track user activity and logout after 2 minutes (120000 ms)
 let inactivityTime = function () {

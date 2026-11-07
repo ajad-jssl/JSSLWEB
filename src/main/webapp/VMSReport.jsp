@@ -370,6 +370,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
           <th>Address</th>
           <th>VisitorDate-InTime</th>
           <th>VisitorDate-OutTime</th>
+          <th>Duration</th>
           <th>Whom To Meet</th>
           <th>Department</th>     
           <th>Factory</th>     
@@ -464,6 +465,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
                                 <th>Contact No</th>
                                 <th>VisitorDate-InTime</th>
                                 <th>VisitorDate-OutTime</th>
+                                <th>Duration</th>
                                 <th>Whom To Meet</th>
                                 <th>Department</th>
                                 <th>In Remarks</th>
@@ -648,7 +650,25 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 </script>
 
 
+<script>
+// Local date (not UTC) in yyyy-MM-dd
+function getTodayLocal() {
+    const d = new Date();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${d.getFullYear()}-${month}-${day}`;
+}
 
+function setDefaultDates() {
+    const today = getTodayLocal();
+    const from = document.getElementById("fromDate");
+    const to = document.getElementById("toDate");
+    if (from) from.value = today;
+    if (to) to.value = today;
+}
+
+document.addEventListener("DOMContentLoaded", setDefaultDates);
+</script>
 <script>
  function exportToExcelvdr() {
   var table = document.getElementById("Table1");
@@ -694,10 +714,15 @@ function toggleTables(tab) {
         if (container1) container1.style.display = 'block';
         
     } else if (tab === 'range') {
+    	
         const container3 = document.getElementById('container3');
         if (container3) container3.style.display = 'block';
+        setDefaultDates(); 
         
-    } else if (tab === 'receipt') {
+    }
+    
+
+    else if (tab === 'receipt') {
         const container5 = document.getElementById('container5');
         if (container5) container5.style.display = 'block';
         
@@ -719,30 +744,7 @@ function toggleTables(tab) {
 }
 </script>
 
-<script>
-document.addEventListener("DOMContentLoaded", function () {
-    const fromDate = document.getElementById("start");
-    const toDate = document.getElementById("end");
-    const reportContainer = document.getElementById("container3");
 
-    function checkDates() {
-        if (fromDate.value && toDate.value) {
-            // Optional: Add validation to check if toDate >= fromDate
-            if (new Date(toDate.value) >= new Date(fromDate.value)) {
-                reportContainer.style.display = "block";
-            } else {
-                alert("To Date must be greater than or equal to From Date.");
-                reportContainer.style.display = "none";
-            }
-        } else {
-            reportContainer.style.display = "none";
-        }
-    }
-
-    fromDate.addEventListener("change", checkDates);
-    toDate.addEventListener("change", checkDates);
-});
-</script>
 
 <script>
 function printContainer1() {
@@ -800,7 +802,7 @@ function printContainer1() {
   
      <script src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
     <script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-  
+  <script src="externalLibrary/cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
     <script src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>  
     <script src="js/visitorrep.js?v=<%=ver(application, "/js/visitorrep.js")%>"></script>
@@ -810,7 +812,7 @@ function printContainer1() {
  	<script src="js/modifiedby.js?v=<%=ver(application, "/js/modifiedby.js")%>"></script>
  	<script src="js/factoryid.js?v=<%=ver(application, "/js/factoryid.js")%>"></script>
  	 <script src="js/Sessionfilter.js?v=<%=ver(application, "/js/Sessionfilter.js")%>"></script>
- 		<script src="externalLibrary/cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+ 		
 
 
 </body>

@@ -345,9 +345,22 @@ async function fetchcont(factoryId) {
                 selectElement.appendChild(option);
             }
         });
+		
+		initSelect2('cont', 'exampleModalScrollable123', 'Select contractor');
+
+		       $('#cont').off('change.cont').on('change.cont', function () {
+		           const selectedContractId = this.value;
+		           if (selectedContractId) {
+		               fetchmile(factoryId, selectedContractId);
+		           } else {
+		               $('#mile').html(`<option value="">Select milestone</option>`);
+		               initSelect2('mile', 'exampleModalScrollable123', 'Select milestone');
+		               $('#mile').val('').trigger('change');
+		           }
+		       });
 
         // Add event listener for contractor selection change
-        selectElement.addEventListener("change", function() {
+/*    selectElement.addEventListener("change", function() {
             const selectedContractId = selectElement.value;
 			const inputFieldsContainer = document.getElementById("inputFieldsContainer");
 			inputFieldsContainer.style.display = "none";
@@ -366,7 +379,7 @@ async function fetchcont(factoryId) {
 				
 				
             }
-        });
+        });*/
 
     } catch (error) {
         console.error("Error fetching contractors:", error);
@@ -474,6 +487,10 @@ async function fetchLoad(factoryId, contractId, milestoneName) {
 				
             }
         });
+		
+		initSelect2('load', 'exampleModalScrollable123', 'Select load');
+		
+	
     } catch (error) {
         console.error("Error fetching loads:", error);
     }
@@ -716,7 +733,7 @@ function fetchUserList(selectedFactoryId) {
 
 
 // Adding event listener for "Load" dropdown selection change
-document.getElementById('load').addEventListener('change', function() {
+/*document.getElementById('load').addEventListener('change', function() {
     const loadValue = this.value;  // Get the selected value of the "Load" dropdown
 
 	
@@ -730,6 +747,65 @@ document.getElementById('load').addEventListener('change', function() {
     } else {
         // If no load is selected, hide the "inputFieldsContainer"
         inputFieldsContainer.style.display = "none";
+    }
+});*/
+/*document.getElementById('load').addEventListener('change', function () {
+
+const loadValue = this.options[this.selectedIndex].text.trim().toUpperCase();
+    const inputFieldsContainer = document.getElementById("inputFieldsContainer");
+
+    const vehicleField = document.getElementById("vehi");
+    const transporterField = document.getElementById("trans");
+
+    if (loadValue) {
+        fectchtransportandvehcileno(this.value);
+        inputFieldsContainer.style.display = "block";
+
+        if (loadValue.includes("MSI")) {
+            vehicleField.readOnly = false;
+            transporterField.readOnly = false;
+        } else if (loadValue.includes("LOT")) {
+            vehicleField.readOnly = true;
+            transporterField.readOnly = true;
+        }
+    } else {
+        inputFieldsContainer.style.display = "none";
+        vehicleField.readOnly = true;
+        transporterField.readOnly = true;
+    }
+});*/
+
+$('#load').on('change', function () {
+
+    const loadValue = $(this).find('option:selected').text().trim().toUpperCase();
+
+    const $inputFieldsContainer = $('#inputFieldsContainer');
+    const $vehicleField = $('#vehi');
+    const $transporterField = $('#trans');
+
+    if (loadValue) {
+
+        fectchtransportandvehcileno(this.value);
+
+        $inputFieldsContainer.show();
+
+        if (loadValue.includes("MSI")) {
+
+            $vehicleField.prop('readonly', false);
+            $transporterField.prop('readonly', false);
+
+        } else if (loadValue.includes("LOT")) {
+
+            $vehicleField.prop('readonly', true);
+            $transporterField.prop('readonly', true);
+        }
+
+    } else {
+
+        $inputFieldsContainer.hide();
+
+        $vehicleField.prop('readonly', true);
+        $transporterField.prop('readonly', true);
     }
 });
 

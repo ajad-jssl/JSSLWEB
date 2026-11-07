@@ -1,7 +1,7 @@
 
 	<%@ include file="version.jsp" %>
-	<script src="externalLibrary/code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="js/sidebar.js?v=<%=ver(application, "/js/sidebar.js")%>"></script>
+	  <script src="externalLibrary/code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="js/sidebar.js?v=<%=ver(application, "/js/sidebar.js")%>"></script>
  
 <ul class="navbar-nav sidebar sidebar-light accordion" id="accordionSidebar">
     <a class="sidebar-brand d-flex align-items-center justify-content-center mb-3 mt-3" href="ContractDashboard.jsp" style="background-color: white;">

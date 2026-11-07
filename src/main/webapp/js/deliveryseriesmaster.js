@@ -133,7 +133,7 @@ async function fetchdelivery() {
     }
 }
 
-async function fetchSate() {
+/*async function fetchSate() {
     try {
         const url = new URL(`/jssl/seriesmaster/getClosedDeliverySeries`, baseUrl); // ✅ added leading /
 
@@ -162,6 +162,42 @@ async function fetchSate() {
                 selectElement.appendChild(option);
             }
         });
+
+    } catch (error) {
+        console.error("Error fetching states:", error);
+    }
+}*/
+
+async function fetchSate() {
+    try {
+        const url = new URL(`/jssl/seriesmaster/getClosedDeliverySeries`, baseUrl);
+        const response = await fetch(url, {
+            method: "GET",
+            credentials: "include"
+        });
+
+        const json = await response.json();
+
+        if (json.status !== "yes" || !json.ClosedDeliverySeriesList.length) {
+            console.warn("No sale order types found.");
+            return;
+        }
+
+        const selectElement = document.getElementById("state");
+        selectElement.innerHTML = `<option value="">Select State</option>`;
+
+		json.ClosedDeliverySeriesList.forEach((type) => {
+		    if (type.state_id && type.state_name) {
+		        const option = document.createElement("option");
+
+		        // Unique per business unit, since one state can have several BUs
+		        option.value = type.bu_code;
+		        option.textContent = type.state_name;
+		        option.dataset.stateIds = String(type.state_ids);
+		        option.dataset.buCode = type.bu_code;
+		        selectElement.appendChild(option);
+		    }
+		});
 
     } catch (error) {
         console.error("Error fetching states:", error);
@@ -362,7 +398,12 @@ document.getElementById("DeliveryseriesAdd").addEventListener("input", function 
 function addevent() {
     $('#exampleModalCenter66').modal('hide');
 
-    const state_id = document.getElementById('state').value; // ✅ real DB id
+    // state_id and bu_code both come from the selected <option>'s data attributes
+    const stateSelect = document.getElementById('state');
+    const selectedOption = stateSelect.options[stateSelect.selectedIndex];
+
+    const state_id = selectedOption.dataset.stateIds;   // e.g. 27
+    const bu_code  = selectedOption.dataset.buCode;     // e.g. JBU-2
 
     $.ajax({
         url: new URL('/jssl/seriesmaster/addDeliveryChallanMaster', baseUrl),
@@ -370,16 +411,16 @@ function addevent() {
         dataType: 'json',
         xhrFields: { withCredentials: true },
         data: jQuery.param({
-            state_id: state_id,                                                      // ✅ from DOM
+            state_id: state_id,
+            bu_code: bu_code,                                                        // new
             created_by: createdById,
-            invoice_series: document.getElementById('DeliveryseriesAdd').value,      // ✅ from DOM
-            start_date: document.getElementById('DeliverystartdateAdd').value,       // ✅ from DOM
-            end_date: document.getElementById('DeliveryenddateAdd').value            // ✅ from DOM
+            invoice_series: document.getElementById('DeliveryseriesAdd').value,
+            start_date: document.getElementById('DeliverystartdateAdd').value,
+            end_date: document.getElementById('DeliveryenddateAdd').value
         }),
         success: function(data) {
             if (data.message === "Success") {
-
-                sessionStorage.setItem('state_id', state_id); // ✅ store real state_id
+                sessionStorage.setItem('state_id', state_id);
 
                 const popup = $('<div class="popup">Delivery Series Master Created Successfully!</div>')
                     .appendTo('body').hide().fadeIn(400);

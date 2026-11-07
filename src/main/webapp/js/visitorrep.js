@@ -1,5 +1,7 @@
 document.addEventListener('DOMContentLoaded', fetchvisitorgatepassData);
 
+
+
 // ✅ userMap — unchanged
 let userMap = {};
 document.addEventListener("DOMContentLoaded", function () {
@@ -222,13 +224,13 @@ function authFetch(url, options = {}) {
 }
 
 // ✅ Set default dates — unchanged
-document.addEventListener("DOMContentLoaded", function () {
+/*document.addEventListener("DOMContentLoaded", function () {
   const today = new Date().toISOString().split('T')[0];
   const fromDate = document.getElementById("fromDate");
   const toDate   = document.getElementById("toDate");
   if (fromDate) fromDate.value = today;
   if (toDate)   toDate.value   = today;
-});
+});*/
 
 // ✅ fetchVisitorDetailsByDate — unchanged
 function fetchVisitorDetailsByDate() {
@@ -277,6 +279,7 @@ function fetchVisitorDetailsByDate() {
             <td>${row.Contact_no || ""}</td>
             <td>${row.VisitorDate_InTime || ""}</td>
             <td>${row.VisitorDate_OutTime || ""}</td>
+		<td>${row.duration || ""}</td>
             <td>${userMap[row.wtm] || ""}</td>
             <td>${departmentMap[row.department] || ""}</td>
             <td>${row.Remarks || ""}</td>
@@ -398,6 +401,7 @@ function populateVisitorTable(data) {
       <td>${visitor.Address || ''}</td>
       <td>${visitor.VisitorDate_InTime || ''}</td>
       <td>${visitor.VisitorDate_OutTime || ''}</td>
+	  <td>${visitor.duration || ''}</td>
       <td>${userMap[visitor.wtm] || ''}</td>
       <td>${departmentMap[visitor.department] || ''}</td>
       <td>${visitor.factory_name || ''}</td>

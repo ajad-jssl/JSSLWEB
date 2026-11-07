@@ -1,4 +1,3 @@
-
 let allowed = null;
 function loadAllowedActions() {
     // Get current JSP page name dynamically
@@ -36,25 +35,23 @@ function loadAllowedActions() {
             console.log("Allowed Actions:", actions);
 
             // Store globally
-           allowed = actions || [];
+            allowed = actions || [];
         })
         .catch(err => {
             console.error("Error fetching actions:", err);
-           allowed = []; // fallback
+            allowed = []; // fallback
         });
 }
 
 
 document.getElementById("modalScroll1").addEventListener("click", function () {
     // show custom message instead of opening modal
-	  //const allowed = window.allowedActions || [];
-
-	if (!allowed.includes("Insert")) {
-	  alert(" You do not have permission to Insert.");
-	  $('#exampleModalScrollable123').modal('hide');
-	  return;
-	}
-	$('#exampleModalScrollable123').modal('show');
+    if (!allowed.includes("Insert")) {
+        alert(" You do not have permission to Insert.");
+        $('#exampleModalScrollable123').modal('hide');
+        return;
+    }
+    $('#exampleModalScrollable123').modal('show');
 });
 
 
@@ -68,114 +65,6 @@ $(document).ready(function () {
         fetchUserList(factoryId);
     }
 });
-
-/*function fetchUserList(selectedFactoryId) {
-    // Create the URL and pass `selectedFactoryId` as a query parameter
-    const url = new URL(`/jssl/saleOrderPackingNote/allScrapPackingNoteDetailsNew`, baseUrl);
-    url.searchParams.append('factory_id', selectedFactoryId);  // Adding `factory_id` query parameter
-
-    // Make API call to fetch data
- fetch(url, { credentials: "include" })
-        .then(response => response.json())
-        .then(json => {
-            let li = '<thead><tr><th>Sale Order Code</th><th>Scrap Packing Note</th><th>Scrap Item Name</th><th>Scrap Type</th><th>Unit Name</th><th>Total Ordered</th><th>Total Sold</th></th><th>Balance</th><th>Vehicle Number</th><th>Status</th><th>Edit</th><th>Verify</th><th>View</th></tr></thead>';
-            const arr = json.AllScraPackingNoteDetailsNew;
-
-            // Loop through each data and add a table row
-            arr.forEach(item => {
-                let editIcon = `
-                    <td>
-                        <i class="fa fa-pen" style="color: blue;" onclick="reviewRecord('${item.scp_load}')"></i>
-                    </td>
-                `;
-                
-                let editIcon11 = `
-                    <td>
-                        <i class="fa fa-eye" style="color: green;" onclick="reviewRecord12('${item.scp_load}')"></i>
-                    </td>
-                `;
-                
-                let editPackage = `
-                    <td>
-                        <i class="fa fa-edit" style=" color: blue;" onclick="editPackage11('${item.scp_load}')"></i>
-                    </td>
-                `;
-
-                // If verification_status is 'Verified', disable the edit icon
-                if (item.verification_status === 'Verified') {
-                    editIcon = `
-                        <td>
-                            <i class="fa fa-pen" style="pointer-events: none; color: grey;" title="Cannot edit - Verified"></i>
-                        </td>
-                    `;
-                    editPackage = `
-                        <td>
-                            <i class="fa fa-edit" style="pointer-events: none; color: grey;" title="Cannot edit - Verified"></i>
-                        </td>
-                    `;
-                     document.getElementById('verify').style.display = 'none';
-                }
-                
-                if (item.verification_status === 'Not Verified') {
-                    editIcon11 = `
-                        <td>
-                             <i class="fa fa-eye" style="pointer-events: none; color: grey;" title="Cannot view -Not Verified"></i>
-                        </td>
-                    `;
-                    editPackage = `
-                        <td>
-                             <i class="fa fa-edit" style="pointer-events: none; color: grey;" title="Cannot view -Not Verified"></i>
-                        </td>
-                    `;
-                     document.getElementById('verify').style.display = 'none';
-                }
-
-                li += `
-                    <tr id="${item.scp_load}">
-                        <td>${item.sale_order_code}</td>
-                        <td>${item.scp_load}</td>
-                        <td>${item.scrapitemname}</td>
-                        <td>${item.scrap_type}</td>
-                        <td>${item.unit_name}</td>
-                        <td>${item.total_ordered}</td>
-                        <td>${item.total_sold}</td>
-                        <td>${item.balance}</td>
-                        <td>${item.vehicleno}</td>
-                        <td>${item.verification_status}</td>
-                        ${editPackage}
-                        ${editIcon} <!-- Dynamically disabled edit icon -->
-                        ${editIcon11}
-                    </tr>
-                `;
-            });
-
-            // Insert table content into the table body
-            document.getElementById("tableID").innerHTML = li;
-
-            // Destroy any existing DataTable instance before reinitializing
-            if ($.fn.DataTable.isDataTable('#tableID')) {
-                $('#tableID').DataTable().destroy();
-            }
-
-            // Initialize DataTable
-            $('#tableID').DataTable({
-                dom: 'Bfrtip',
-                scrollX: true,
-                info: false,
-                paging: false,
-                buttons: [
-                    {
-                        extend: 'excel',
-                        text: 'Export to Excel',
-                        title: 'Type List',
-                    },
-                ]
-            });
-        })
-        .catch(error => {
-            console.error('Error fetching data:', error);
-        });
-}*/
 
 
 let currentFactoryIdScrapPN = null;
@@ -281,13 +170,13 @@ function fetchUserList(selectedFactoryId) {
 
             const page = data.start / data.length;
             const size = data.length;
-			const searchValue = data.search.value;
+            const searchValue = data.search.value;
 
             const url = new URL(`/jssl/saleOrderPackingNote/allScrapPackingNoteDetailsNewPaged`, baseUrl);
             url.searchParams.append('factory_id', currentFactoryIdScrapPN);
             url.searchParams.append('page', page);
             url.searchParams.append('size', size);
-			url.searchParams.append('search', searchValue);
+            url.searchParams.append('search', searchValue);
 
             fetch(url, { credentials: "include" })
                 .then(response => response.json())
@@ -358,13 +247,8 @@ function fetchUserList(selectedFactoryId) {
 }
 
 
-
-
-
-
-
 document.addEventListener("DOMContentLoaded", function () {
-	loadAllowedActions();
+    loadAllowedActions();
     const selectedFactoryId = sessionStorage.getItem("selectedFactoryId"); // Get factory_id from sessionStorage
     if (selectedFactoryId) {
         fetchSaleOrderTypes(selectedFactoryId);
@@ -373,43 +257,64 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 });
 
+let latestSaleOrderRequestId = 0;
+
 async function fetchSaleOrderTypes(factoryId) {
+    // Used to ignore stale responses if this function is called again before an earlier call finishes
+    const requestId = ++latestSaleOrderRequestId;
+
     try {
-        
-        // Construct the API URL properly
+        // Construct the API URL
         const url = new URL(`/jssl/saleOrderEntry/getSaleOrderBasedOnFactoryId`, baseUrl);
         url.searchParams.append("factory_id", factoryId);
 
         // Fetch data from API
-		const response = await fetch(url,{
-						           method: "GET",
-						           credentials: "include"   // ✅ Always send JSESSIONID cookie
-						       });
+        const response = await fetch(url, {
+            method: "GET",
+            credentials: "include" // Always send JSESSIONID cookie
+        });
+
         if (!response.ok) throw new Error("Failed to fetch sale order types");
 
         const json = await response.json();
 
+        // A newer call has started, so ignore this response
+        if (requestId !== latestSaleOrderRequestId) return;
+
+        // Get the select element
+        const selectElement = document.getElementById("scrapSaleOrder");
+        if (!selectElement) {
+            console.warn("Dropdown #scrapSaleOrder not found.");
+            return;
+        }
+
+        // Always reset the dropdown first
+        selectElement.innerHTML = `<option value="">Select Sale Order number</option>`;
+
         // Check if the API response has valid data
-        if (json.status !== "yes" || !json.SaleOrderDetails.length) {
+        if (json.status !== "yes" || !Array.isArray(json.SaleOrderDetails) || json.SaleOrderDetails.length === 0) {
             console.warn("No sale order types found.");
             return;
         }
 
-        // Get the select element
-        const selectElement = document.getElementById("scrapSaleOrder");
+        // Populate dropdown options, skipping empty and duplicate sale order codes
+        const seenCodes = new Set();
 
-        // Clear existing options
-        selectElement.innerHTML = `<option value="">Select Sale Order number</option>`;
-
-        // Populate dropdown options using SalesOrderTypeDetails array
         json.SaleOrderDetails.forEach((type) => {
-            if (type.sale_order_code && type.sale_order_code) { // Ensure both values exist
-                const option = document.createElement("option");
-                option.value = type.sale_order_code; // Backend keeps saleorder_id
-                option.textContent = type.sale_order_code; // Display saleorder_typename
-                selectElement.appendChild(option);
+            const code = type.sale_order_code ? String(type.sale_order_code).trim() : "";
+
+            if (!code || seenCodes.has(code)) {
+                return; // skip empty or already-added codes
             }
+
+            seenCodes.add(code);
+
+            const option = document.createElement("option");
+            option.value = code;        // sale order code
+            option.textContent = code;  // displayed text
+            selectElement.appendChild(option);
         });
+
     } catch (error) {
         console.error("Error fetching sale order types:", error);
     }
@@ -424,17 +329,29 @@ document.addEventListener("DOMContentLoaded", function () {
         const saleOrderCode = scrapSaleOrderSelect.value;
 
         if (saleOrderCode) {
-			let errorElement = document.getElementById("productCodeError12");
-			errorElement.style.display = "none";
-		 document.getElementById("kgsMt").value="";
-		
+            let errorElement = document.getElementById("productCodeError12");
+            errorElement.style.display = "none";
+            document.getElementById("kgsMt").value = "";
+
             inputFieldsContainer.style.display = "block"; // Show the container
             fetchSaleOrderDetails(saleOrderCode); // Fetch and populate details based on selected sale order
         } else {
             inputFieldsContainer.style.display = "none"; // Hide the container
+            const extra = document.getElementById("extraItemRows");
+            if (extra) extra.innerHTML = "";
         }
     });
 });
+
+// Helper: sum a numeric field across all rows (non-numeric/empty values count as 0)
+function sumField(rows, field) {
+    if (!Array.isArray(rows)) return 0;
+    const total = rows.reduce((acc, row) => {
+        const val = parseFloat(row && row[field]);
+        return acc + (isNaN(val) ? 0 : val);
+    }, 0);
+    return Math.round(total * 1000) / 1000; // avoid floating point noise (e.g. 0.1 + 0.2)
+}
 
 async function fetchSaleOrderDetails(saleOrderCode) {
     try {
@@ -449,7 +366,7 @@ async function fetchSaleOrderDetails(saleOrderCode) {
 
         const json = await response.json();
 
-        // Populate order level fields
+        // Populate order level fields (unchanged)
         const orderDetails = json.orderLevel[0];
         document.getElementById("saleOrderDate").value = orderDetails.auction_date || '';
         document.getElementById("vendorName").value = orderDetails.address || '';
@@ -459,26 +376,140 @@ async function fetchSaleOrderDetails(saleOrderCode) {
         document.getElementById("vendorName11").value = orderDetails.sale_order_to_id || '';
         document.getElementById("locationTypeid").value = orderDetails.location_type_id || '';
 
-        // Populate order item level fields
-        const orderItemDetails = json.orderItemLevel[0];
-        document.getElementById("totalSteelQty").value = orderItemDetails.kg || '';
-        document.getElementById("scraptype").value = orderItemDetails.scrap_type || '';
-        document.getElementById("scrapitem").value = orderItemDetails.scrapitemname || '';
-        document.getElementById("uom").value = orderItemDetails.unit_name || '';
-        document.getElementById("scraptype11").value = orderItemDetails.scrap_type_id || '';
-        document.getElementById("scrapitem11").value = orderItemDetails.scrapitem_id || '';
-        document.getElementById("uom11").value = orderItemDetails.uom_id || '';
-        document.getElementById("unitPrice").value = orderItemDetails.unit_price || '';
+        const orderItems  = json.orderItemLevel || [];
+        const balanceRows = json.balanceInfo || [];
+        console.log("Line items:", orderItems.length, "Balance rows:", balanceRows.length);
 
-        // Populate balance info fields
-        const balanceInfo = json.balanceInfo[0];
-        document.getElementById("totalor").value = balanceInfo.dummy_balance || '';
-        document.getElementById("tolvalue").value = balanceInfo.tolerance        || '';
-        document.getElementById("balcal").value = balanceInfo.balance || '';
-        document.getElementById("bal").value = balanceInfo.balance || '';
+        const num = v => { const n = parseFloat(v); return isNaN(n) ? 0 : n; };
+        const r3  = v => Math.round(v * 1000) / 1000; // avoid floating point noise
 
-        // ✅ Store original balance for insert validation (fixed reference)
-        document.getElementById("originalBalanceInsert").value = balanceInfo.balance || '';
+        // Match each line item to its own balance row:
+        //  1) by scrapitem_id when both sides have it
+        //  2) by position when there is one balance row per line item
+        //  3) otherwise null
+        const balanceFor = (item, idx) => {
+            const byItem = balanceRows.find(b => b.scrapitem_id && item.scrapitem_id &&
+                                                 String(b.scrapitem_id) === String(item.scrapitem_id));
+            if (byItem) return byItem;
+            if (balanceRows.length === orderItems.length && balanceRows[idx]) return balanceRows[idx];
+            return null;
+        };
+
+        // ---- Figures for every line item ----
+        const itemData = orderItems.map((item, idx) => {
+            const bal = balanceFor(item, idx);
+            const ordered = num(item.kg);
+
+            if (!bal) {
+                console.warn("No balance row found for line item", idx + 1,
+                             "- assuming nothing sold yet (balance = ordered kg)");
+            }
+
+            return {
+                item,
+                ordered,
+                price: num(item.unit_price),
+                // tolerance: from the line item itself when present, else from its balance row
+                tolerance: (item.tolerance !== undefined && item.tolerance !== null && item.tolerance !== '')
+                            ? num(item.tolerance)
+                            : (bal ? num(bal.tolerance) : 0),
+                orderedBal: (bal && bal.dummy_balance !== undefined && bal.dummy_balance !== null)
+                            ? num(bal.dummy_balance) : ordered,
+                balance: bal ? num(bal.balance) : ordered
+            };
+        });
+
+        // ---- Combined figures across ALL line items ----
+        const totalKgAll    = r3(itemData.reduce((a, d) => a + d.ordered, 0));
+        // Combined unit price = sum of the line item unit prices (e.g. 435 + 34 = 469)
+        const sumPriceAll   = r3(itemData.reduce((a, d) => a + d.price, 0));
+        const toleranceAll  = r3(itemData.reduce((a, d) => a + d.tolerance, 0));
+        const orderedBalAll = r3(itemData.reduce((a, d) => a + d.orderedBal, 0));
+        const balanceAll    = r3(itemData.reduce((a, d) => a + d.balance, 0));
+
+        // Per-row layout is used only when the extra-rows container exists in the JSP
+        const container  = document.getElementById("extraItemRows");
+        const perRowMode = !!container && orderItems.length > 1;
+
+        // ---- Item 1 -> existing row (same IDs as before) ----
+        const first = orderItems[0] || {};
+
+        document.getElementById("scraptype").value   = first.scrap_type || '';
+        document.getElementById("scrapitem").value   = first.scrapitemname || '';
+        document.getElementById("uom").value         = first.unit_name || '';
+        document.getElementById("scraptype11").value = first.scrap_type_id || '';
+        document.getElementById("scrapitem11").value = first.scrapitem_id || '';
+        document.getElementById("uom11").value       = first.uom_id || '';
+
+        const kgInput = document.getElementById("kgsMt");
+
+        if (perRowMode) {
+            // Row 1 = item 1 with its own price and its own limit
+            document.getElementById("unitPrice").value = first.unit_price || '';
+            kgInput.dataset.balance   = itemData[0].balance;
+            kgInput.dataset.tolerance = itemData[0].tolerance;
+        } else {
+            // Single row for the whole order: combined unit price (sum of all line item prices),
+            // limit = combined balance + combined tolerance
+            document.getElementById("unitPrice").value = orderItems.length > 1
+                ? sumPriceAll.toFixed(2)
+                : (first.unit_price || '');
+            delete kgInput.dataset.balance;
+            delete kgInput.dataset.tolerance;
+        }
+
+        // ---- Items 2..n -> extra rows (rebuilt on every sale order change) ----
+        if (container) {
+            container.innerHTML = "";
+
+            if (perRowMode) {
+                orderItems.forEach((item, idx) => {
+                    if (idx === 0) return;
+
+                    const row = document.createElement("div");
+                    row.className = "form-row extra-item-row mt-2";
+                    row.innerHTML = `
+                        <input type="hidden" class="extra-type-id">
+                        <input type="hidden" class="extra-item-id">
+                        <input type="hidden" class="extra-uom-id">
+                        <div class="col-md"><input type="text" class="form-control extra-type" readonly></div>
+                        <div class="col-md"><input type="text" class="form-control extra-item" readonly></div>
+                        <div class="col-md"><input type="text" class="form-control extra-uom" readonly></div>
+                        <div class="col-md"><input type="text" class="form-control extra-qty" placeholder="Enter Quantity"></div>
+                        <div class="col-md">
+                            <input type="number" class="form-control extra-kg" placeholder="Enter Kgs/MT">
+                            <small class="text-danger extra-error" style="display:none;"></small>
+                        </div>
+                        <div class="col-md"><input type="text" class="form-control extra-price" readonly></div>
+                        <div class="col-md"><input type="text" class="form-control extra-total" readonly></div>`;
+
+                    row.querySelector(".extra-type-id").value = item.scrap_type_id || '';
+                    row.querySelector(".extra-item-id").value = item.scrapitem_id || '';
+                    row.querySelector(".extra-uom-id").value  = item.uom_id || '';
+                    row.querySelector(".extra-type").value    = item.scrap_type || '';
+                    row.querySelector(".extra-item").value    = item.scrapitemname || '';
+                    row.querySelector(".extra-uom").value     = item.unit_name || '';
+                    row.querySelector(".extra-price").value   = item.unit_price || '';
+
+                    const kg = row.querySelector(".extra-kg");
+                    kg.dataset.balance   = itemData[idx].balance;
+                    kg.dataset.tolerance = itemData[idx].tolerance;
+
+                    container.appendChild(row);
+                });
+            }
+        }
+
+        // ---- Summary fields (all line items combined) ----
+        document.getElementById("totalSteelQty").value = totalKgAll || first.kg || '';
+        document.getElementById("totalor").value  = orderedBalAll || '';
+        document.getElementById("tolvalue").value = toleranceAll   || '';
+        document.getElementById("balcal").value   = balanceAll     || '';
+        document.getElementById("bal").value      = balanceAll     || '';
+        document.getElementById("totalso").value  = '';
+
+        // Store original combined balance for insert validation
+        document.getElementById("originalBalanceInsert").value = balanceAll || '';
 
     } catch (error) {
         console.error("Error fetching sale order details:", error);
@@ -486,83 +517,146 @@ async function fetchSaleOrderDetails(saleOrderCode) {
 }
 
 
-// ✅ Insert Modal — kgsMt validation (balance + tolerance)
-document.getElementById("kgsMt").addEventListener("input", function () {
+// ✅ Insert Modal — kg validation (balance + tolerance)
+// Uses the item's own balance/tolerance when available, otherwise the combined values
+function limitKgInput(input, errorElement) {
+    const entered = parseFloat(input.value) || 0;
 
-    let enteredValue = parseFloat(this.value) || 0;
+    let balance, tolerance;
+    if (input.dataset.balance !== undefined) {
+        balance   = parseFloat(input.dataset.balance) || 0;
+        tolerance = parseFloat(input.dataset.tolerance) || 0;
+    } else {
+        // ✅ Always use originalBalanceInsert (fixed value, never recalculated)
+        balance   = parseFloat(document.getElementById("originalBalanceInsert").value) || 0;
+        tolerance = parseFloat(document.getElementById("tolvalue").value) || 0;
+    }
 
-    // ✅ Always use originalBalanceInsert (fixed value, never recalculated)
-    let originalBalance = parseFloat(document.getElementById("originalBalanceInsert").value) || 0;
-    let tolerance = parseFloat(document.getElementById("tolvalue").value) || 0;
+    const maxAllowed = balance + tolerance; // e.g. 180 + 3 = 183
 
-    let maxAllowed = originalBalance + tolerance; // e.g. 180 + 3 = 183
-
-    let errorElement = document.getElementById("productCodeError12");
-
-    if (enteredValue < 0) {
+    if (entered < 0) {
         errorElement.innerText = "Negative values are not allowed";
         errorElement.style.display = "block";
-        this.value = 0;
-    } else if (enteredValue > maxAllowed) {
-        errorElement.innerText = `Value cannot exceed ${maxAllowed} (Balance: ${originalBalance} + Tolerance: ${tolerance})`;
+        input.value = 0;
+    } else if (entered > maxAllowed) {
+        errorElement.innerText = `Value cannot exceed ${maxAllowed} (Balance: ${balance} + Tolerance: ${tolerance})`;
         errorElement.style.display = "block";
-        this.value = maxAllowed;
+        input.value = maxAllowed;
     } else {
         errorElement.innerText = "";
         errorElement.style.display = "none";
     }
+}
+
+document.getElementById("kgsMt").addEventListener("input", function () {
+    limitKgInput(this, document.getElementById("productCodeError12"));
 });
 
 
-// ✅ Edit Modal — kgsMtre00 validation (balance + tolerance)
+// Edit Modal — kgsMtre00 validation (balance + tolerance)
+
 document.getElementById("kgsMtre00").addEventListener("input", function () {
 
     let enteredValue = parseFloat(this.value) || 0;
 
-    // ✅ Always use originalBalanceEdit (fixed value set when modal opens)
-    let originalBalance = parseFloat(document.getElementById("originalBalanceEdit").value) || 0;
-    let tolerance = parseFloat(document.getElementById("tolvalueedit").value) || 0;
+    // Original balance available when the edit modal opens
+    let originalBalance =
+        parseFloat(document.getElementById("originalBalanceEdit").value) || 0;
 
-    let maxAllowed = originalBalance + tolerance; // e.g. 180 + 3 = 183
+    let tolerance =
+        parseFloat(document.getElementById("tolvalueedit").value) || 0;
 
-    let errorElement = document.getElementById("productCodeError91edit11");
+    // Quantity already saved for this record before editing
+    let previousQty =
+        parseFloat(document.getElementById("previousQtyEdit").value) || 0;
+
+    // Add back the existing quantity to calculate the editable limit
+    let maxAllowed = originalBalance + previousQty + tolerance;
+
+    let errorElement =
+        document.getElementById("productCodeError91edit11");
 
     if (enteredValue < 0) {
+
         errorElement.innerText = "Negative values are not allowed";
         errorElement.style.display = "block";
         this.value = 0;
+
     } else if (enteredValue > maxAllowed) {
-        errorElement.innerText = `Value cannot exceed ${maxAllowed} (Balance: ${originalBalance} + Tolerance: ${tolerance})`;
+
+        errorElement.innerText =
+            `Value cannot exceed ${maxAllowed} (Balance: ${originalBalance} + Previous Qty: ${previousQty} + Tolerance: ${tolerance})`;
+
         errorElement.style.display = "block";
         this.value = maxAllowed;
+
     } else {
+
         errorElement.innerText = "";
         errorElement.style.display = "none";
     }
+
 });
 
 
-// ✅ Insert Modal — calculate total and balance (balance never goes negative)
+// ✅ Insert Modal — all item rows: row 1 (existing IDs) + extra rows for the other line items
+function getInsertRows() {
+    const rows = [{
+        qty:    document.getElementById("quantity"),
+        kg:     document.getElementById("kgsMt"),
+        price:  document.getElementById("unitPrice"),
+        total:  document.getElementById("total"),
+        typeId: document.getElementById("scraptype11"),
+        itemId: document.getElementById("scrapitem11"),
+        uomId:  document.getElementById("uom11")
+    }];
+    document.querySelectorAll("#extraItemRows .extra-item-row").forEach(r => {
+        rows.push({
+            qty:    r.querySelector(".extra-qty"),
+            kg:     r.querySelector(".extra-kg"),
+            price:  r.querySelector(".extra-price"),
+            total:  r.querySelector(".extra-total"),
+            typeId: r.querySelector(".extra-type-id"),
+            itemId: r.querySelector(".extra-item-id"),
+            uomId:  r.querySelector(".extra-uom-id")
+        });
+    });
+    return rows;
+}
+
+// ✅ Insert Modal — calculate totals across all rows (balance never goes negative)
+function recalcInsertTotals() {
+    let sold = 0;
+
+    getInsertRows().forEach(r => {
+        const kg = parseFloat(r.kg.value) || 0;
+        const price = parseFloat(r.price.value) || 0;
+        r.total.value = (kg * price).toFixed(2);
+        sold += kg;
+    });
+
+    document.getElementById("totalso").value = sold.toFixed(2);
+
+    const totalOrdered = parseFloat(document.getElementById("totalor").value) || 0;
+    // ✅ Never show negative balance
+    document.getElementById("bal").value = Math.max(0, totalOrdered - sold).toFixed(2);
+}
+
 document.addEventListener("DOMContentLoaded", function () {
-    function calculateTotal() {
-        let kg = parseFloat(document.getElementById("kgsMt").value) || 0;
-        let uprice = parseFloat(document.getElementById("unitPrice").value) || 0;
+    document.getElementById("kgsMt").addEventListener("input", recalcInsertTotals);
+    document.getElementById("unitPrice").addEventListener("input", recalcInsertTotals);
+    document.getElementById("totalor").addEventListener("input", recalcInsertTotals);
 
-        document.getElementById("total").value = (kg * uprice).toFixed(2);
-        document.getElementById("totalso").value = (kg * 1).toFixed(2);
-
-        let total = parseFloat(document.getElementById("totalor").value) || 0;
-        let total11 = parseFloat(document.getElementById("totalso").value) || 0;
-
-        let bal = total - total11;
-        // ✅ Never show negative balance
-        document.getElementById("bal").value = Math.max(0, bal).toFixed(2);
+    // Extra rows are created dynamically, so use event delegation
+    const extraRows = document.getElementById("extraItemRows");
+    if (extraRows) {
+        extraRows.addEventListener("input", function (e) {
+            if (e.target.classList.contains("extra-kg")) {
+                limitKgInput(e.target, e.target.parentElement.querySelector(".extra-error"));
+                recalcInsertTotals();
+            }
+        });
     }
-
-    document.getElementById("kgsMt").addEventListener("input", calculateTotal);
-    document.getElementById("unitPrice").addEventListener("input", calculateTotal);
-    document.getElementById("totalor").addEventListener("input", calculateTotal);
-    document.getElementById("totalso").addEventListener("input", calculateTotal);
 });
 
 
@@ -600,8 +694,11 @@ function openModalAdd() {
     var order = document.getElementById('scrapSaleOrder').value.trim();
     var showError = false; // Initialize showError variable
 
-    // Username Validation
-    if (Quantity === '') {
+    // Rows where kg has been entered (any line item can be packed; at least one is required)
+    const filledRows = getInsertRows().filter(r => (parseFloat(r.kg.value) || 0) > 0);
+
+    // Quantity Validation (every row with kg needs a quantity)
+    if (filledRows.some(r => r.qty.value.trim() === '')) {
         document.getElementById('productCodeError1').innerText = "Please enter quantity.";
         document.getElementById('productCodeError1').style.display = "inline-block";
         showError = true;
@@ -609,17 +706,17 @@ function openModalAdd() {
         document.getElementById('productCodeError1').innerText = "";
         document.getElementById('productCodeError1').style.display = "none";
     }
-    
-    // Password Validation
-    if (kgsMt === '') {
+
+    // Kg Validation (at least one row must have kg)
+    if (filledRows.length === 0) {
         document.getElementById('productCodeError12').innerText = "Please enter kg.";
         document.getElementById('productCodeError12').style.display = "inline-block";
         showError = true;
-    } else {
+    } else if (document.getElementById('productCodeError12').innerText === "Please enter kg.") {
         document.getElementById('productCodeError12').innerText = "";
         document.getElementById('productCodeError12').style.display = "none";
     }
-    
+
     if (unitPrice === '') {
         document.getElementById('productCodeError13').innerText = "Please enter unit price.";
         document.getElementById('productCodeError13').style.display = "inline-block";
@@ -628,7 +725,7 @@ function openModalAdd() {
         document.getElementById('productCodeError13').innerText = "";
         document.getElementById('productCodeError13').style.display = "none";
     }
-    
+
     if (Name === '') {
         document.getElementById('productCodeError14').innerText = "Please enter Transporter Name.";
         document.getElementById('productCodeError14').style.display = "inline-block";
@@ -637,7 +734,7 @@ function openModalAdd() {
         document.getElementById('productCodeError14').innerText = "";
         document.getElementById('productCodeError14').style.display = "none";
     }
-    
+
     if (vehicleNo === '') {
         document.getElementById('productCodeError15').innerText = "Please enter vehicle No.";
         document.getElementById('productCodeError15').style.display = "inline-block";
@@ -646,7 +743,7 @@ function openModalAdd() {
         document.getElementById('productCodeError15').innerText = "";
         document.getElementById('productCodeError15').style.display = "none";
     }
-    
+
     if (weighbrid === '') {
         document.getElementById('productCodeError16').innerText = "Please enter Weighbridge Slip No.";
         document.getElementById('productCodeError16').style.display = "inline-block";
@@ -655,7 +752,7 @@ function openModalAdd() {
         document.getElementById('productCodeError16').innerText = "";
         document.getElementById('productCodeError16').style.display = "none";
     }
-    
+
     if (date === '') {
         document.getElementById('productCodeError17').innerText = "Please enter date.";
         document.getElementById('productCodeError17').style.display = "inline-block";
@@ -664,7 +761,7 @@ function openModalAdd() {
         document.getElementById('productCodeError17').innerText = "";
         document.getElementById('productCodeError17').style.display = "none";
     }
-    
+
     if (order === '') {
         document.getElementById('productCodeError18').innerText = "Please select sale order.";
         document.getElementById('productCodeError18').style.display = "inline-block";
@@ -673,7 +770,7 @@ function openModalAdd() {
         document.getElementById('productCodeError18').innerText = "";
         document.getElementById('productCodeError18').style.display = "none";
     }
-    
+
     // If no errors, proceed
     if (!showError) {
         $('#exampleModalCenter66').modal('show'); // Show the next modal (Ensure this modal exists)
@@ -681,49 +778,56 @@ function openModalAdd() {
 }
 
 function addevent() {
-	$('#exampleModalCenter66').modal('hide');
+    $('#exampleModalCenter66').modal('hide');
+
+    // Only the rows where kg was entered are sent
+    const itemRows = getInsertRows().filter(r => (parseFloat(r.kg.value) || 0) > 0);
+
     // Validate role code and role description
     $.ajax({
         url: new URL('/jssl/saleOrderPackingNote/addSaleOrderPackingNoteNew', baseUrl), // Move 'const' to the correct place
         type: 'POST',
-		xhrFields: {
-			    withCredentials: true
-			},
+        xhrFields: {
+            withCredentials: true
+        },
         dataType: 'json',
-        data: jQuery.param({sale_order_code: scrapSaleOrder.value, 
-        total_steel_qty: totalSteelQty.value, 
-        created_by: createdById,
-        factory_id:selectedFactoryId,
-        total_non_steel_qty:"0",
-        sale_order_validity:validityDate.value,
-        vendor_id:vendorName11.value,
-        weighbridge_no:weighbrid.value,
-        transportername:transporterName.value,
-        vehicle_no:vehicleNo.value,
-        scp_pn_date:date.value,
-        sale_order_date:saleOrderDate.value,
-        scrap_type_id:scraptype11.value,
-        scrapitem_id:scrapitem11.value,
-        uom_id:uom11.value,
-        quantity:quantity.value,
-        kg:kgsMt.value,
-        unit_price:unitPrice.value,
-        total:total.value,
-        total_ordered:totalor.value,
-        total_sold:totalso.value,
-        location_type_id:locationTypeid.value,
-        balance:bal.value
-        }),
-        success: function(data) {
+        data: jQuery.param({
+            sale_order_code: scrapSaleOrder.value,
+            total_steel_qty: totalSteelQty.value,
+            created_by: createdById,
+            factory_id: selectedFactoryId,
+            total_non_steel_qty: "0",
+            sale_order_validity: validityDate.value,
+            vendor_id: vendorName11.value,
+            weighbridge_no: weighbrid.value,
+            transportername: transporterName.value,
+            vehicle_no: vehicleNo.value,
+            scp_pn_date: date.value,
+            sale_order_date: saleOrderDate.value,
+            location_type_id: locationTypeid.value,
+            total_ordered: totalor.value,
+            total_sold: totalso.value,
+            balance: bal.value,
+
+            // line items: one value per filled row (same order in every list)
+            scrap_type_id: itemRows.map(r => r.typeId.value),
+            scrapitem_id:  itemRows.map(r => r.itemId.value),
+            uom_id:        itemRows.map(r => r.uomId.value),
+            quantity:      itemRows.map(r => r.qty.value),
+            kg:            itemRows.map(r => r.kg.value),
+            unit_price:    itemRows.map(r => r.price.value),
+            total:         itemRows.map(r => r.total.value)
+        }, true), // true = repeated params (kg=100&kg=50), which Spring binds to List<String>
+        success: function (data) {
             var result = data.message; // No need to stringify
-            
+
             if (result === "Success") {
                 // Store permissions in sessionStorage
                 const popup = $('<div class="popup">Scrap QS Packing Created Successfully!</div>')
                     .appendTo('body').hide().fadeIn(400);
 
-                setTimeout(function() {
-                    popup.fadeOut(400, function() {
+                setTimeout(function () {
+                    popup.fadeOut(400, function () {
                         $(this).remove();
                         window.location = 'ScrapQA.jsp'; // Redirect to role list page
                     });
@@ -733,7 +837,7 @@ function addevent() {
                 console.log(data.message || 'Failed to create module.');
             }
         },
-        error: function() {
+        error: function () {
             // Handle AJAX error
             console.error('Request failed.');
         }
@@ -741,19 +845,18 @@ function addevent() {
 }
 
 function reviewRecord(scp_load) {
-	  //const allowed = window.allowedActions || [];
 
-	if (!allowed.includes("Verify")) {
-	  alert(" You do not have permission to Verify.");
-	  return;
-	}
+    if (!allowed.includes("Verify")) {
+        alert(" You do not have permission to Verify.");
+        return;
+    }
     const url = new URL(`/jssl/saleOrderPackingNote/getPackingNoteScpLoad`, baseUrl);
     const params = [['scp_load', scp_load]];
     url.search = new URLSearchParams(params).toString();
 
     // Show loading spinner or disable fields here, if needed
 
-  fetch(url, { credentials: "include" })
+    fetch(url, { credentials: "include" })
         .then(response => response.json())
         .then(response => {
             console.log(JSON.stringify(response, null, 2)); // Pretty-print response for debugging
@@ -803,14 +906,14 @@ function reviewRecord(scp_load) {
                     }
 
                     $('#verify').val(response.PackingNoteDetails.verification_status);
-                  }
+                }
 
                 // Check if BalanceInfo exists and populate fields
                 if (response.BalanceInfo) {
                     $('#balre').val(response.BalanceInfo.balance);
                     $('#totalorre').val(response.BalanceInfo.total_ordered);
                     $('#totalsore').val(response.BalanceInfo.total_sold);
-                    
+
                 }
 
                 // Open the modal after populating fields
@@ -829,20 +932,19 @@ function reviewRecord(scp_load) {
 }
 
 function reviewRecord12(scp_load) {
-	//const allowed = window.allowedActions || [];
 
-			if (!allowed.includes("view")) {
-			  alert(" You do not have permission to view.");
-			    $("#exampleModalScrollable123REedit").modal("hide");
-			  return;
-			}
+    if (!allowed.includes("view")) {
+        alert(" You do not have permission to view.");
+        $("#exampleModalScrollable123REedit").modal("hide");
+        return;
+    }
     const url = new URL(`/jssl/saleOrderPackingNote/getPackingNoteScpLoad`, baseUrl);
     const params = [['scp_load', scp_load]];
     url.search = new URLSearchParams(params).toString();
 
     // Show loading spinner or disable fields here, if needed
 
-  fetch(url, { credentials: "include" })
+    fetch(url, { credentials: "include" })
         .then(response => response.json())
         .then(response => {
             console.log(JSON.stringify(response, null, 2)); // Pretty-print response for debugging
@@ -893,14 +995,14 @@ function reviewRecord12(scp_load) {
                     }
 
                     $('#verify').val(response.PackingNoteDetails.verification_status);
-                  }
+                }
 
                 // Check if BalanceInfo exists and populate fields
                 if (response.BalanceInfo) {
                     $('#balreedit').val(response.BalanceInfo.balance);
                     $('#totalorreedit').val(response.BalanceInfo.total_ordered);
                     $('#totalsoreedit').val(response.BalanceInfo.total_sold);
-                    
+
                 }
 
                 // Open the modal after populating fields
@@ -919,23 +1021,22 @@ function reviewRecord12(scp_load) {
 }
 
 function editPackage11(scp_load) {
-			 // const allowed = window.allowedActions || [];
 
-	if (!allowed.includes("Edit")) {
-	  alert(" You do not have permission to edit.");
-	  return;
-	}
+    if (!allowed.includes("Edit")) {
+        alert(" You do not have permission to edit.");
+        return;
+    }
 
     const url = new URL(`/jssl/saleOrderPackingNote/getPackingNoteScpLoad`, baseUrl);
     const params = [['scp_load', scp_load]];
     url.search = new URLSearchParams(params).toString();
-	let errorElement = document.getElementById("productCodeError91edit11");
-			errorElement.style.display = "none";
-			
-			
+    let errorElement = document.getElementById("productCodeError91edit11");
+    errorElement.style.display = "none";
+
+
     // Show loading spinner or disable fields here, if needed
 
-   fetch(url, { credentials: "include" })
+    fetch(url, { credentials: "include" })
         .then(response => response.json())
         .then(response => {
             console.log(JSON.stringify(response, null, 2)); // Pretty-print response for debugging
@@ -953,6 +1054,7 @@ function editPackage11(scp_load) {
                         $('#scraptype11re00').val(item.scrap_type_id);
                         $('#quantityre00').val(item.quantity);
                         $('#kgsMtre00').val(item.kg);
+                        $('#previousQtyEdit').val(item.kg);
                         $('#scrapitemre00').val(item.scrapitemname);
                         $('#scid00').val(item.scp_load);
                         $('#scrapitem11re00').val(item.scp_pnitems_id);
@@ -985,7 +1087,7 @@ function editPackage11(scp_load) {
                     $('#proref11').val(response.PackingNoteDetails.project_reference);
                     $('#cen11up').val(response.PackingNoteDetails.central_excise_tarrif_no);
                     $('#otreffup').val(response.PackingNoteDetails.other_reference);
-                  }
+                }
 
                 // Check if BalanceInfo exists and populate fields
                 if (response.BalanceInfo) {
@@ -993,7 +1095,7 @@ function editPackage11(scp_load) {
                     $('#totalorre00').val(response.BalanceInfo.total_ordered);
                     $('#totalsore00').val(response.BalanceInfo.total_sold);
                     $('#tolvalueedit').val(response.BalanceInfo.tolerance);
-					$('#originalBalanceEdit').val(response.BalanceInfo.balance); // ✅ ADD THIS LINE
+                    $('#originalBalanceEdit').val(response.BalanceInfo.balance); // ✅ ADD THIS LINE
                 }
 
                 // Open the modal after populating fields
@@ -1031,7 +1133,7 @@ function openModalAddRev() {
         document.getElementById('productCodeError90').innerText = "";
         document.getElementById('productCodeError90').style.display = "none";
     }
-    
+
     // Password Validation
     if (kgsMt === '') {
         document.getElementById('productCodeError91').innerText = "Please enter kg.";
@@ -1041,7 +1143,7 @@ function openModalAddRev() {
         document.getElementById('productCodeError91').innerText = "";
         document.getElementById('productCodeError91').style.display = "none";
     }
-    
+
     if (Name === '') {
         document.getElementById('productCodeError92').innerText = "Please enter Transporter Name.";
         document.getElementById('productCodeError92').style.display = "inline-block";
@@ -1050,7 +1152,7 @@ function openModalAddRev() {
         document.getElementById('productCodeError92').innerText = "";
         document.getElementById('productCodeError92').style.display = "none";
     }
-    
+
     if (vehicleNo === '') {
         document.getElementById('productCodeError93').innerText = "Please enter vehicle No.";
         document.getElementById('productCodeError93').style.display = "inline-block";
@@ -1059,7 +1161,7 @@ function openModalAddRev() {
         document.getElementById('productCodeError93').innerText = "";
         document.getElementById('productCodeError93').style.display = "none";
     }
-    
+
     if (weighbrid === '') {
         document.getElementById('productCodeError900').innerText = "Please enter Weighbridge Slip No.";
         document.getElementById('productCodeError900').style.display = "inline-block";
@@ -1068,7 +1170,7 @@ function openModalAddRev() {
         document.getElementById('productCodeError900').innerText = "";
         document.getElementById('productCodeError900').style.display = "none";
     }
-    
+
     if (date === '') {
         document.getElementById('productCodeError94').innerText = "Please enter date.";
         document.getElementById('productCodeError94').style.display = "inline-block";
@@ -1077,7 +1179,7 @@ function openModalAddRev() {
         document.getElementById('productCodeError94').innerText = "";
         document.getElementById('productCodeError94').style.display = "none";
     }
-    
+
     if (Buye === '') {
         document.getElementById('productCodeError95').innerText = "Please enter Buyer's Reference No.";
         document.getElementById('productCodeError95').style.display = "inline-block";
@@ -1086,7 +1188,7 @@ function openModalAddRev() {
         document.getElementById('productCodeError95').innerText = "";
         document.getElementById('productCodeError95').style.display = "none";
     }
-    
+
     if (remark === '') {
         document.getElementById('productCodeError96').innerText = "Please enter Remarks.";
         document.getElementById('productCodeError96').style.display = "inline-block";
@@ -1095,7 +1197,7 @@ function openModalAddRev() {
         document.getElementById('productCodeError96').innerText = "";
         document.getElementById('productCodeError96').style.display = "none";
     }
-    
+
     // If no errors, proceed
     if (!showError) {
         $('#exampleModalCenterverify').modal('show'); // Show the next modal (Ensure this modal exists)
@@ -1103,42 +1205,43 @@ function openModalAddRev() {
 }
 
 function verifyevent() {
-	$('#exampleModalCenterverify').modal('hide');
+    $('#exampleModalCenterverify').modal('hide');
     // Validate role code and role description
     $.ajax({
         url: new URL('/jssl/saleOrderPackingNote/verifyScrapPackingNoteNew', baseUrl), // Move 'const' to the correct place
         type: 'POST',
-		xhrFields: {
-			    withCredentials: true
-			},
+        xhrFields: {
+            withCredentials: true
+        },
         dataType: 'json',
-        data: jQuery.param({scp_load: scid.value, 
-        vendor_id: vendorName11re.value, 
-        weighbridge_no:weighbridre.value,
-        transportername:transporterNamere.value,
-        vehicle_no:vehicleNore.value,
-        scp_pn_date:datere.value,
-        verified_by:createdById,
-        remarks:remark.value,
-        quantity:quantityre.value,
-        kg:kgsMtre.value,
-        unit_price:unitPricere.value,
-        total:totalre.value,
-        total_ordered:totalorre.value,
-        total_sold:totalsore.value,
-        balance:balre.value,
-        scp_pnitems_id:scrapitem11re.value
+        data: jQuery.param({
+            scp_load: scid.value,
+            vendor_id: vendorName11re.value,
+            weighbridge_no: weighbridre.value,
+            transportername: transporterNamere.value,
+            vehicle_no: vehicleNore.value,
+            scp_pn_date: datere.value,
+            verified_by: createdById,
+            remarks: remark.value,
+            quantity: quantityre.value,
+            kg: kgsMtre.value,
+            unit_price: unitPricere.value,
+            total: totalre.value,
+            total_ordered: totalorre.value,
+            total_sold: totalsore.value,
+            balance: balre.value,
+            scp_pnitems_id: scrapitem11re.value
         }),
-        success: function(data) {
+        success: function (data) {
             var result = data.message; // No need to stringify
-            
+
             if (result === "Success") {
                 // Store permissions in sessionStorage
                 const popup = $('<div class="popup">Scrap QS Packing Verified Successfully!</div>')
                     .appendTo('body').hide().fadeIn(400);
 
-                setTimeout(function() {
-                    popup.fadeOut(400, function() {
+                setTimeout(function () {
+                    popup.fadeOut(400, function () {
                         $(this).remove();
                         window.location = 'ScrapQA.jsp'; // Redirect to role list page
                     });
@@ -1148,7 +1251,7 @@ function verifyevent() {
                 console.log(data.message || 'Failed to create module.');
             }
         },
-        error: function() {
+        error: function () {
             // Handle AJAX error
             console.error('Request failed.');
         }
@@ -1173,7 +1276,7 @@ function openModalEditUp() {
         document.getElementById('productCodeError90edit').innerText = "";
         document.getElementById('productCodeError90edit').style.display = "none";
     }
-    
+
     // Password Validation
     if (kgsMt === '') {
         document.getElementById('productCodeError91edit11').innerText = "Please enter kg.";
@@ -1183,7 +1286,7 @@ function openModalEditUp() {
         document.getElementById('productCodeError91edit11').innerText = "";
         document.getElementById('productCodeError91edit11').style.display = "none";
     }
-    
+
     if (Name === '') {
         document.getElementById('productCodeError92edit').innerText = "Please enter Transporter Name.";
         document.getElementById('productCodeError92edit').style.display = "inline-block";
@@ -1192,7 +1295,7 @@ function openModalEditUp() {
         document.getElementById('productCodeError92edit').innerText = "";
         document.getElementById('productCodeError92edit').style.display = "none";
     }
-    
+
     if (vehicleNo === '') {
         document.getElementById('productCodeError93edit').innerText = "Please enter vehicle No.";
         document.getElementById('productCodeError93edit').style.display = "inline-block";
@@ -1201,7 +1304,7 @@ function openModalEditUp() {
         document.getElementById('productCodeError93edit').innerText = "";
         document.getElementById('productCodeError93edit').style.display = "none";
     }
-    
+
     if (weighbrid === '') {
         document.getElementById('productCodeError900edit').innerText = "Please enter Weighbridge Slip No.";
         document.getElementById('productCodeError900edit').style.display = "inline-block";
@@ -1210,7 +1313,7 @@ function openModalEditUp() {
         document.getElementById('productCodeError900edit').innerText = "";
         document.getElementById('productCodeError900edit').style.display = "none";
     }
-    
+
     if (date === '') {
         document.getElementById('productCodeError94edit').innerText = "Please enter date.";
         document.getElementById('productCodeError94edit').style.display = "inline-block";
@@ -1226,56 +1329,56 @@ function openModalEditUp() {
 }
 
 function Updateevent() {
-	$('#exampleModalCenteEditup').modal('hide');
+    $('#exampleModalCenteEditup').modal('hide');
     // Validate role code and role description
     $.ajax({
         url: new URL('/jssl/saleOrderPackingNote/updateSaleOrderPackingNoteNew', baseUrl), // Move 'const' to the correct place
         type: 'POST',
         dataType: 'json',
-		xhrFields: {
-			    withCredentials: true
-			},
+        xhrFields: {
+            withCredentials: true
+        },
         data: jQuery.param({
-	    sale_order_code: scrapSaleOrderre00.value, 
-	    scp_load:scid00.value,
-	    total_steel_qty:totalSteelQtyre00.value,
-	    total_non_steel_qty:"0",
-	    sale_order_validity:validityDatere00.value,
-	    vendor_id:vendorName11re00.value,
-	    weighbridge_no:weighbridre00.value,
-	    transportername:transporterNamere00.value,
-	    vehicle_no:vehicleNore00.value,
-	    scp_pn_date:datere00.value,
-	    project_reference:proref11.value,
-	    central_excise_tarrif_no:cen11up.value,
-	    other_reference:otreffup.value,
-	    credit_reference:crell11.value,
-	    modified_by:createdById,
-	    scrap_type_id:scraptype11re00.value,
-	    scrapitem_id:scrapitem11re00id.value,
-	    uom_id:uom11re00.value,
-	    quantity:quantityre00.value,
-	    kg:kgsMtre00.value,
-	    unit_price:unitPricere00.value,
-	    total:totalre00.value,
-	    total_ordered:totalorre00.value,
-	    total_sold:totalsore00.value,
-	    balance:balre00.value,
-	    scp_pn_id:scppnid11.value,
-	    scp_pnitems_id:scrapitem11re00.value,
-	    location_type:locationTypere00id.value,
-	    sale_order_date:saleOrderDatere00.value
+            sale_order_code: scrapSaleOrderre00.value,
+            scp_load: scid00.value,
+            total_steel_qty: totalSteelQtyre00.value,
+            total_non_steel_qty: "0",
+            sale_order_validity: validityDatere00.value,
+            vendor_id: vendorName11re00.value,
+            weighbridge_no: weighbridre00.value,
+            transportername: transporterNamere00.value,
+            vehicle_no: vehicleNore00.value,
+            scp_pn_date: datere00.value,
+            project_reference: proref11.value,
+            central_excise_tarrif_no: cen11up.value,
+            other_reference: otreffup.value,
+            credit_reference: crell11.value,
+            modified_by: createdById,
+            scrap_type_id: scraptype11re00.value,
+            scrapitem_id: scrapitem11re00id.value,
+            uom_id: uom11re00.value,
+            quantity: quantityre00.value,
+            kg: kgsMtre00.value,
+            unit_price: unitPricere00.value,
+            total: totalre00.value,
+            total_ordered: totalorre00.value,
+            total_sold: totalsore00.value,
+            balance: balre00.value,
+            scp_pn_id: scppnid11.value,
+            scp_pnitems_id: scrapitem11re00.value,
+            location_type: locationTypere00id.value,
+            sale_order_date: saleOrderDatere00.value
         }),
-        success: function(data) {
+        success: function (data) {
             var result = data.message; // No need to stringify
-            
+
             if (result === "Success") {
                 // Store permissions in sessionStorage
                 const popup = $('<div class="popup">Scrap QS Packing Updated Successfully!</div>')
                     .appendTo('body').hide().fadeIn(400);
 
-                setTimeout(function() {
-                    popup.fadeOut(400, function() {
+                setTimeout(function () {
+                    popup.fadeOut(400, function () {
                         $(this).remove();
                         window.location = 'ScrapQA.jsp'; // Redirect to role list page
                     });
@@ -1285,7 +1388,7 @@ function Updateevent() {
                 console.log(data.message || 'Failed to create module.');
             }
         },
-        error: function() {
+        error: function () {
             // Handle AJAX error
             console.error('Request failed.');
         }

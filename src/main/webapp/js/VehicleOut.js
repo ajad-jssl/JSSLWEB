@@ -134,12 +134,12 @@ document.addEventListener("DOMContentLoaded", function() {
 	    .then(response => response.json())  // Parse the JSON response
 	    .then(data => {
 	      const vehicleSelect = document.getElementById("invoice_no");
-	      vehicleSelect.innerHTML = "<option value=''>Select</option>";
-		/*  vehicleSelect.innerHTML = "<option value='0'></option>";*/
+	      vehicleSelect.innerHTML = "<option value='0'>Select</option>";
+		 vehicleSelect.innerHTML = "<option value='NA'>NA</option>";
 	      
 	      data.forEach(vehicle => {
 	        const option = document.createElement("option");
-	        option.value = vehicle.id;
+	        option.value = vehicle.invoice_no;
 	        option.textContent = vehicle.invoice_no;
 	        vehicleSelect.appendChild(option);
 	      });
@@ -214,6 +214,25 @@ document.addEventListener("DOMContentLoaded", function() {
 		   
   let selectedIneId = null;
   
+  let selectedVehicleId = null;
+
+  function isLoadingVehicle(vid) {
+      return !!vid && vid.toUpperCase().startsWith("VL");
+  }
+
+  // VL -> invoice enabled + required | MI -> invoice empty + readonly
+  function applyInvoiceRule(vid) {
+      const $inv = $('#invoice_no');
+      $('#invoice_noError').hide();
+
+      if (isLoadingVehicle(vid)) {
+          $inv.prop('disabled', false);
+      } else {
+          $inv.val(null).trigger('change');   // clear selection (select2 aware)
+          $inv.prop('disabled', true);        // readonly for MI
+      }
+  }
+  
   function fetchVehicleDetails(vechile_id) {
       console.log("Fetching details for Vehicle ID:", vechile_id);
 
@@ -234,6 +253,9 @@ document.addEventListener("DOMContentLoaded", function() {
               const vehicle = data[0]; // First record
               selectedIneId = vehicle.ine_id;
 
+			  selectedVehicleId = vechile_id;
+			  applyInvoiceRule(vechile_id);
+			  
               const container = document.getElementById("container1");
               container.style.display = "block";
 
@@ -336,7 +358,7 @@ $("#btnsubmit").click(function () {
     validateAndConfirm(); // Perform validation first
 });
 
-function validateAndConfirm() {
+/*function validateAndConfirm() {
     const inv_no = document.getElementById("invoice_no").value;
     const Lrno = document.getElementById("lrno").value;
     const outrmks = document.getElementById("outremarks").value;
@@ -366,6 +388,40 @@ function validateAndConfirm() {
     // Store values for submission after confirmation
     $("#confirmvehoutyes").off('click').on('click', function () {
         $("#exampleModalCenter325").modal("hide"); // hide modal before submission
+        submitFunction(inv_no, Lrno, outrmks);
+    });
+}*/
+
+
+function validateAndConfirm() {
+    const isVL = isLoadingVehicle(selectedVehicleId);
+    const inv_no = isVL ? document.getElementById("invoice_no").value : null; // MI -> null
+    const Lrno = document.getElementById("lrno").value;
+    const outrmks = document.getElementById("outremarks").value;
+
+    let isValid = true;
+    $('.error-message').hide();
+
+    // Invoice required ONLY for VL
+    if (isVL && !inv_no) {
+        $('#invoice_noError').show();
+        isValid = false;
+    }
+    if (!Lrno) {
+        $('#lrnoError').show();
+        isValid = false;
+    }
+    if (!outrmks) {
+        $('#outremarksError').show();
+        isValid = false;
+    }
+
+    if (!isValid) return;
+
+    $("#exampleModalCenter325").modal("show");
+
+    $("#confirmvehoutyes").off('click').on('click', function () {
+        $("#exampleModalCenter325").modal("hide");
         submitFunction(inv_no, Lrno, outrmks);
     });
 }
@@ -451,7 +507,7 @@ function getIndianTimeOnly(date) {
   const vehicleSelect = document.getElementById("Vehicleid");
   
 	
-	$(vehicleSelect).on('change', function () {
+/*	$(vehicleSelect).on('change', function () {
     const selectedVehicleID = vehicleSelect.value;
     console.log("Selected Vehicle ID:", selectedVehicleID);
     
@@ -460,6 +516,18 @@ function getIndianTimeOnly(date) {
     } else {
       document.getElementById("container1").style.display = "none";  // Hide the container if no vehicle selected
     }
+  });*/
+  
+  
+  $(vehicleSelect).on('change', function () {
+      const selectedVehicleID = vehicleSelect.value;
+
+      if (selectedVehicleID) {
+          fetchVehicleDetails(selectedVehicleID);
+      } else {
+          selectedVehicleId = null;
+          document.getElementById("container1").style.display = "none";
+      }
   });
   
   

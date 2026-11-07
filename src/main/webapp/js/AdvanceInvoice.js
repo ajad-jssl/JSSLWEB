@@ -1,4 +1,3 @@
-
 let allowed = null;
 function loadAllowedActions() {
     // Get current JSP page name dynamically
@@ -45,9 +44,47 @@ function loadAllowedActions() {
 }
 
 
+
+
+function initSelect2(selectId, placeholder) {
+    const $el = $('#' + selectId);
+    if (!$el.length) return;
+    if ($el.hasClass('select2-hidden-accessible')) $el.select2('destroy');
+    const $modal = $el.closest('.modal');
+    $el.select2({
+        dropdownParent: $modal.length ? $modal : $(document.body),
+        width: '100%',
+        placeholder: placeholder,
+        allowClear: false,
+        minimumResultsForSearch: 0   // always show the search box
+    });
+}
+
+function setFieldError(errId, message) {
+    const el = document.getElementById(errId);
+    if (!el) return;
+    el.innerText = message || "";
+    el.style.display = message ? "inline-block" : "none";
+}
+
 // ---------- Shared helper ----------
 function normalizeText(str) {
     return (str || "").replace(/\s+/g, " ").trim().toLowerCase();
+}
+
+// [SVC/HSN FIX] Only a purely numeric value is a real master ID. Anything else
+// (e.g. the fallback option whose value is display text) is sent as blank so
+// the backend stores NULL instead of a wrong/garbage code.
+function toIdOrBlank(v) {
+    const s = (v == null ? "" : String(v)).trim();
+    return /^\d+$/.test(s) ? s : "";
+}
+
+// [SVC/HSN FIX] True when the INVOICE_CONTRACT_MASTER row exists in the response.
+// If it exists, a null s_code/h_code means "cleared" and must NOT fall back
+// to the old Contractor_Data value.
+function hasContractMaster(contractMasterData) {
+    return !!(contractMasterData && contractMasterData.con_slno);
 }
 
 /**
@@ -95,6 +132,7 @@ function populateSelect(selectElement, records, selectedId, placeholder, fallbac
         fallbackOption.selected = true;
         selectElement.insertBefore(fallbackOption, selectElement.children[1] || null);
     }
+	initSelect2(selectElement.id, placeholder);
 }
 
 document.getElementById("modalScroll1").addEventListener("click", function () {
@@ -109,7 +147,7 @@ document.getElementById("modalScroll1").addEventListener("click", function () {
 	$('#exampleModalScrollable').modal('show');
 });
 
-document.addEventListener("DOMContentLoaded", function () {
+/*document.addEventListener("DOMContentLoaded", function () {
 	loadAllowedActions();
 	fetchBusinessUnitList();       
 	fetchInvoiceAddressList();     
@@ -152,10 +190,56 @@ document.addEventListener("DOMContentLoaded", function () {
             document.getElementById("inputFieldsContainer").style.display = "none"; // Hide if not selected
         }
     });
+});*/
+
+
+document.addEventListener("DOMContentLoaded", function () {
+    loadAllowedActions();
+    fetchBusinessUnitList();
+    fetchInvoiceAddressList();
+    fetchWorkOrderList();
+    fetchConsigneeAddressList();
+    fetchservice();
+    fetchhsn();
+    fetchServiceCodeList();
+    fetchHsnCodeList();
+
+    initSelect2('cont', 'Select contractor');
+    initSelect2('load', 'Select load');
+
+    const selectedFactoryId = sessionStorage.getItem("selectedFactoryId");
+    if (selectedFactoryId) {
+        fetchCont(selectedFactoryId);
+    } else {
+        console.error("No factory ID found in sessionStorage.");
+    }
+
+    $('#cont').on('change', function () {
+        const selectedContractorId = this.value;
+        const factoryId = sessionStorage.getItem("selectedFactoryId");
+        if (selectedContractorId) {
+            fetchLoad(factoryId, selectedContractorId);
+        } else {
+            $('#load').html(`<option value="">Select load</option>`);
+            initSelect2('load', 'Select load');
+            $('#inputFieldsContainer').hide();
+        }
+    });
+
+    $('#load').on('change', function () {
+        const selectedContractorId = document.getElementById("cont").value;
+        const selectedLoadId = this.value;
+        if (selectedContractorId && selectedLoadId) {
+            $('#inputFieldsContainer').show();
+            fetchQsPackingData(selectedContractorId, selectedLoadId);
+        } else {
+            $('#inputFieldsContainer').hide();
+        }
+    });
 });
 
 // Fetch the contractor list
-async function fetchCont(factoryId) {
+/*async function fetchCont(factoryId) {
     try {
         const url = new URL(`/jssl/getlistcontractorsfromqsadvpackingnew`, baseUrl);
         url.searchParams.append("factory_id", selectedFactoryId);
@@ -223,9 +307,69 @@ async function fetchLoad(factoryId, contractId) {
     } catch (error) {
         console.error("Error fetching loads:", error);
     }
+}*/
+
+
+
+async function fetchCont(factoryId) {
+    try {
+        const url = new URL(`/jssl/getlistcontractorsfromqsadvpackingnew`, baseUrl);
+        url.searchParams.append("factory_id", selectedFactoryId);
+
+        const response = await fetch(url, { method: "GET", credentials: "include" });
+        if (!response.ok) throw new Error("Failed to fetch contractors");
+        const json = await response.json();
+
+        const selectElement = document.getElementById("cont");
+        selectElement.innerHTML = `<option value="">Select contractor</option>`;
+
+        if (json.status === "yes" && json.DATA && json.DATA.length) {
+            json.DATA.forEach((type) => {
+                if (type.contract_id && type.contract_name) {
+                    const option = document.createElement("option");
+                    option.value = type.contract_id;
+                    option.textContent = type.contract_name;
+                    selectElement.appendChild(option);
+                }
+            });
+        }
+        initSelect2('cont', 'Select contractor');
+    } catch (error) {
+        console.error("Error fetching contractors:", error);
+    }
 }
 
-async function fetchSalebusunit(targetId = "bus", currentValueText = null) {
+async function fetchLoad(factoryId, contractId) {
+    try {
+        const url = new URL(`/jssl/getlistloadidforthatcontractorsfromqsadvpackingnew`, baseUrl);
+        url.searchParams.append("factory_id", factoryId);
+        url.searchParams.append("contract_id", contractId);
+
+        const response = await fetch(url, { method: "GET", credentials: "include" });
+        if (!response.ok) throw new Error("Failed to fetch loads");
+        const json = await response.json();
+
+        const selectElement = document.getElementById("load");
+        selectElement.innerHTML = `<option value="">Select load</option>`;
+
+        if (json.status === "yes" && json.DATA.length) {
+            json.DATA.forEach((type) => {
+                if (type.load_id) {
+                    const option = document.createElement("option");
+                    option.value = type.load_id;
+                    option.textContent = type.load_id;
+                    selectElement.appendChild(option);
+                }
+            });
+        }
+        initSelect2('load', 'Select load');
+        $('#load').val('').trigger('change');
+    } catch (error) {
+        console.error("Error fetching loads:", error);
+    }
+}
+
+/*async function fetchSalebusunit(targetId = "bus", currentValueText = null) {
     try {
         const url = new URL(`/jssl/contract/listbusinessunitnew`, baseUrl);
 
@@ -245,7 +389,7 @@ async function fetchSalebusunit(targetId = "bus", currentValueText = null) {
         const selectElement = document.getElementById(targetId);
         if (!selectElement) return;
 
-        selectElement.innerHTML = `<option value="">Select Business Unit</option>`;
+        //selectElement.innerHTML = `<option value="">Select Business Unit</option>`;
 
         //let matchFound = false;
 
@@ -268,15 +412,50 @@ async function fetchSalebusunit(targetId = "bus", currentValueText = null) {
 		});
 
         // Only add currentValueText as a fallback option if it wasn't found in the API list
-        /*if (currentValueText && !matchFound) {
+        if (currentValueText && !matchFound) {
             const currentOption = document.createElement("option");
             currentOption.value = currentValueText;
             currentOption.textContent = currentValueText;
             currentOption.selected = true;
             selectElement.insertBefore(currentOption, selectElement.firstChild.nextSibling);
-        }*/
+        }
     } catch (error) {
         console.error("Error fetching sale order types:", error);
+    }
+}
+
+*/
+
+async function fetchSalebusunit(targetId = "bus", currentValueText = null) {
+    try {
+        const url = new URL(`/jssl/contract/listbusinessunitnew`, baseUrl);
+        const response = await fetch(url, { method: "GET", credentials: "include" });
+        if (!response.ok) throw new Error("Failed to fetch business units");
+        const json = await response.json();
+        if (json.status !== "yes" || !json.Data.length) {
+            console.warn("No business units found.");
+            return;
+        }
+
+        const selectElement = document.getElementById(targetId);
+        if (!selectElement) return;
+        selectElement.innerHTML = `<option value="">Select Business Unit</option>`;
+
+        json.Data.forEach((type) => {
+            if (type.business_unit_id && type.business_unit_name) {
+                const option = document.createElement("option");
+                option.value = type.business_unit_id;
+                option.textContent = type.business_unit_name + type.location + '(' + type.gst_number + ')';
+                if (currentValueText && currentValueText.startsWith(type.business_unit_name)) {
+                    option.selected = true;
+                }
+                selectElement.appendChild(option);
+            }
+        });
+
+        initSelect2(targetId, 'Select Business Unit');
+    } catch (error) {
+        console.error("Error fetching business units:", error);
     }
 }
 
@@ -1456,7 +1635,7 @@ async function fetchBgTypeedit() {
     }
 }
 
-function openModalAdd() {
+/*function openModalAdd() {
    // var username = document.getElementById('intype444').value.trim();
     var prodes = document.getElementById('prodes').value.trim();
     var remark = document.getElementById('remark').value.trim();
@@ -1464,15 +1643,7 @@ function openModalAdd() {
 	var hsncode = document.getElementById('officehsn').value.trim();
     var showError = false; // Initialize showError variable
 
-    // Username Validation
-    /*if (username === '') {
-        document.getElementById('Vehicleerror').innerText = "Please select invoice type.";
-        document.getElementById('Vehicleerror').style.display = "inline-block";
-        showError = true;
-    } else {
-        document.getElementById('Vehicleerror').innerText = "";
-        document.getElementById('Vehicleerror').style.display = "none"; 
-    }*/
+
     
     if (prodes === '') {
         document.getElementById('productCodeError3').innerText = "Please enter product description.";
@@ -1505,6 +1676,34 @@ function openModalAdd() {
     if (!showError) {
         $('#exampleModalCenter66').modal('show'); // Show the next modal (Ensure this modal exists)
     }
+}*/
+
+
+function openModalAdd() {
+    let showError = false;
+
+    function required(selectId, errId, message) {
+        if (String($('#' + selectId).val() || '').trim() === '') {
+            setFieldError(errId, message); showError = true;
+        } else setFieldError(errId, '');
+    }
+
+    required('inbusunit', 'busunitError',  'Please select Business Unit.');
+    required('ininto',    'intoError',     'Please select Invoice To.');
+    required('work',      'workError',     'Please select Work Order.');
+    required('billing',   'billingError',  'Please select Name & Address of Consignee.');
+
+    const servicecode = String($('#officeservice').val() || '').trim();
+    const hsncode     = String($('#officehsn').val() || '').trim();
+    if (servicecode === '' && hsncode === '') {
+        setFieldError('servicecodeError4', 'Please select Service Code or HSN Code.');
+        showError = true;
+    } else setFieldError('servicecodeError4', '');
+
+    required('prodes', 'productCodeError3', 'Please enter product description.');
+    required('remark', 'productCodeError4', 'Please enter remarks.');
+
+    if (!showError) $('#exampleModalCenter66').modal('show');
 }
    
 // Fetch selectedFactoryId from sessionStorage
@@ -1564,8 +1763,9 @@ function addevent() {
 			bank_details_id: document.getElementById("bank").value,
 			delivery_condition_id: document.getElementById("delivery").value,
 		    regd_office_id: document.getElementById("office").value,
-			s_code: document.getElementById("officeservice").value,
-			h_code: document.getElementById("officehsn").value
+			// [SVC/HSN FIX] send only real numeric IDs; blank means "not selected"
+			s_code: toIdOrBlank(document.getElementById("officeservice").value),
+			h_code: toIdOrBlank(document.getElementById("officehsn").value)
         }),
         success: function (data) {
             var result = data.message;
@@ -1719,11 +1919,18 @@ async function editRecord(id) {
 		       ? matchedConsignee.address
 		       : (ContData.length > 0 ? ContData[0].consignee_id_value : "");
 			   
+		   // [SVC/HSN FIX] if the master row exists, a null code means "cleared" -> show blank (no fallback to old value)
+		   const hasMaster = hasContractMaster(ContractMasterData);
+
 		   const matchedService = servicecodelist.find(s => String(s.servicecode_id) === String(ContractMasterData.s_code));
-		   const serviceDisplay = matchedService ? matchedService.service_code : (ContData.length > 0 ? ContData[0].s_code_value : "");
+		   const serviceDisplay = hasMaster
+		       ? (matchedService ? matchedService.service_code : "")
+		       : (ContData.length > 0 ? ContData[0].s_code_value : "");
 
 		   const matchedHsn = hsncodelist.find(h => String(h.servicecode_id) === String(ContractMasterData.h_code));
-		   const hsnDisplay = matchedHsn ? matchedHsn.service_code : (ContData.length > 0 ? ContData[0].h_code_value : "");
+		   const hsnDisplay = hasMaster
+		       ? (matchedHsn ? matchedHsn.service_code : "")
+		       : (ContData.length > 0 ? ContData[0].h_code_value : "");
 
 			   
 		   
@@ -1738,6 +1945,7 @@ async function editRecord(id) {
 
         // Set values in form fields
         setInputValue("#remarkv", invoiceData.remarks);
+		setInputValue("#remarkvvei", invoiceData.gst_remarks);
         setInputValue("#datev", invoiceData.date_of_notification);
         setInputValue("#date1v", invoiceData.date_val);
         setInputValue("#dissuev", invoiceData.date_of_issue);
@@ -2008,11 +2216,18 @@ async function editRecord11(id) {
 		            ? matchedConsignee.address
 		            : (ContData.length > 0 ? ContData[0].consignee_id_value : "");
 					
+				// [SVC/HSN FIX] if the master row exists, a null code means "cleared" -> show blank (no fallback to old value)
+				const hasMaster = hasContractMaster(ContractMasterData);
+
 				const matchedService = servicecodelist.find(s => String(s.servicecode_id) === String(ContractMasterData.s_code));
-				const serviceDisplay = matchedService ? matchedService.service_code : (ContData.length > 0 ? ContData[0].s_code_value : "");
+				const serviceDisplay = hasMaster
+				    ? (matchedService ? matchedService.service_code : "")
+				    : (ContData.length > 0 ? ContData[0].s_code_value : "");
 
 				const matchedHsn = hsncodelist.find(h => String(h.servicecode_id) === String(ContractMasterData.h_code));
-				const hsnDisplay = matchedHsn ? matchedHsn.service_code : (ContData.length > 0 ? ContData[0].h_code_value : "");
+				const hsnDisplay = hasMaster
+				    ? (matchedHsn ? matchedHsn.service_code : "")
+				    : (ContData.length > 0 ? ContData[0].h_code_value : "");
 
 		        setInputValue("#bunitvv",     buDisplay);
 		        setInputValue("#intovv",      invoiceToDisplay);
@@ -2284,6 +2499,9 @@ async function fetchSalebusunitEdit(targetId, selectedId, fallbackText, verified
     } else {
         selectElement.removeAttribute("disabled"); // reset in case it was disabled from a previous open
     }
+	
+	
+	initSelect2(targetId, 'Select Business Unit');
 }
 
 async function fetchinvoicetoEdit(targetId, selectedId, fallbackText) {
@@ -2431,8 +2649,10 @@ async function editRecordInvoice(id) {
 		setInputValue("#banknamevup", ContData.length > 0 ? ContData[0].bank_details_id_value : "");
 		setInputValue("#deliveryconvup", ContData.length > 0 ? ContData[0].delivery_condition_id_value : "");
 		setInputValue("#officevvup", ContData.length > 0 ? ContData[0].reg_office_id_value : "");
-		fetchservicecodeEdit("newscode",ContractMasterData.s_code,ContData.length > 0 ? ContData[0].s_code_value  : "");
-		fetchhsncodeEdit("newhcode",ContractMasterData.h_code,ContData.length > 0 ? ContData[0].h_code_value  : "");
+		// [SVC/HSN FIX] if the master row exists, do NOT fall back to the old contract value (a cleared code must stay cleared)
+		const hasMasterEdit = hasContractMaster(ContractMasterData);
+		fetchservicecodeEdit("newscode",ContractMasterData.s_code, hasMasterEdit ? "" : (ContData.length > 0 ? ContData[0].s_code_value  : ""));
+		fetchhsncodeEdit("newhcode",ContractMasterData.h_code, hasMasterEdit ? "" : (ContData.length > 0 ? ContData[0].h_code_value  : ""));
 		        // ---- END NEW ----
 
         $(".dynamic-row11uptest, .dynamic-row122up").empty(); // Clear previous content
@@ -2766,21 +2986,21 @@ function addeventVerify() {
     });
 }
 
-function openModalUpdate() {
+/*function openModalUpdate() {
    // var username = document.getElementById('intypeeditup').value.trim();
     var username1 = document.getElementById('prodesv11up').value.trim();
     var username12 = document.getElementById('remarkvup').value.trim();
     var showError = false; // Initialize showError variable
 
     // Username Validation
-   /* if (username === '') {
+    if (username === '') {
         document.getElementById('intype').innerText = "Please select Invoice type.";
         document.getElementById('intype').style.display = "inline-block";
         showError = true;
     } else {
         document.getElementById('intype').innerText = "";
         document.getElementById('intype').style.display = "none";
-    }*/
+    }
     
     if (username1 === '') {
         document.getElementById('intypedes').innerText = "Please enter product description.";
@@ -2804,6 +3024,34 @@ function openModalUpdate() {
     if (!showError) {
         $('#exampleModalCenter66Editup').modal('show'); // Show the next modal (Ensure this modal exists)
     }
+}*/
+
+
+function openModalUpdate() {
+    let showError = false;
+
+    function required(selectId, errId, message) {
+        if (String($('#' + selectId).val() || '').trim() === '') {
+            setFieldError(errId, message); showError = true;
+        } else setFieldError(errId, '');
+    }
+
+    required('bunitvup',     'bunitvupError',     'Please select Business Unit.');
+    required('intovup',      'intovupError',      'Please select Invoice To.');
+    required('workordervup', 'workordervupError', 'Please select Work Order.');
+    required('nandconvup',   'nandconvupError',   'Please select Name & Address of Consignee.');
+
+    const sc = String($('#newscode').val() || '').trim();
+    const hc = String($('#newhcode').val() || '').trim();
+    if (sc === '' && hc === '') {
+        setFieldError('servicecodeupError', 'Please select Service Code or HSN Code.');
+        showError = true;
+    } else setFieldError('servicecodeupError', '');
+
+    required('prodesv11up', 'intypedes', 'Please enter product description.');
+    required('remarkvup',   'intyperem', 'Please enter remarks.');
+
+    if (!showError) $('#exampleModalCenter66Editup').modal('show');
 }
 
 function addeventupdate() {
@@ -2851,8 +3099,9 @@ function addeventupdate() {
 		    bank_details_id: document.getElementById("banknamevup").value,
 		   	delivery_condition_id: document.getElementById("deliveryconvup").value,
 		   	regd_office_id: document.getElementById("officevvup").value,
-			s_code: document.getElementById("newscode").value,
-			h_code: document.getElementById("newhcode").value,
+			// [SVC/HSN FIX] send only real numeric IDs; blank means "cleared"
+			s_code: toIdOrBlank(document.getElementById("newscode").value),
+			h_code: toIdOrBlank(document.getElementById("newhcode").value),
         }),
         success: function (data) {
             var result = data.message;
@@ -2942,1130 +3191,8 @@ function addeventrelease() {
     });
 }
 
-/*async function printRecord(id) {
-    try {
-	    const url = new URL(`/jssl/invoice/searchadvidnew?id=${id}`, baseUrl);
-		const response = await fetch(url,{
-						           method: "GET",
-						           credentials: "include"   // ✅ Always send JSESSIONID cookie
-						       });
-        if (!response.ok) throw new Error("Failed to fetch data");
-
-         const json = await response.json();
-         const Invoice_Data = json.Invoice_Data;
-         const Contractor_Data = json.Contractor_Data;
-         const QsPacking_Data = json.QsPacking_Data;
-         const tax = json.tax;
-         const Grand_Total_value = json.Grand_Total_value;
-         
-         const Grand_Total_tax = Grand_Total_value[0].Grand_Total_tax;
-         const Total_adv_tax_Taxable = Grand_Total_value[0].Total_adv_tax_Taxable;
-         const Tax_Final_total = Grand_Total_value[0].Tax_Final_total;
-         const PBC_Final_total = Grand_Total_value[0].PBC_Final_total;
-         
-         const invoiceno = Invoice_Data.invoice_no;
-         const lr_docketno = Invoice_Data.lr_docketno;
-         const date_val = Invoice_Data.date_val;
-         //const product_desc = json.Invoice_Data?.product_desc || ''; // Fix reference
-         
-         const invoice_to_id_value = Contractor_Data[0].invoice_to_id_value;
-         const tax_payable = Contractor_Data[0].tax_payable;
-         const area_no = Contractor_Data[0].area_no;
-         const lot_no = Contractor_Data[0].lot_no;
-         const containter_no = Contractor_Data[0].containter_no;
-         const epcgno = Contractor_Data[0].epcgno;
-         const shipment_mode_id_value = Contractor_Data[0].shipment_mode_id_value;
-         const delivery_condition_id_value = Contractor_Data[0].delivery_condition_id_value;
-         const consignee_id_value = Contractor_Data[0].consignee_id_value;
-         const work_id_value = Contractor_Data[0].work_id_value;
-         const invoiceStateName = Contractor_Data[0].invoiceStateName;
-         const consigneeStateName = Contractor_Data[0].consigneeStateName;
-         const invoiceStateCode = Contractor_Data[0].invoiceStateCode;
-         const consigneeStateCode = Contractor_Data[0].consigneeStateCode;
-         const invoiceGstNo = Contractor_Data[0].invoiceGstNo;
-         const consigneeGstNo = Contractor_Data[0].consigneeGstNo;
-         const invoicePanNo = Contractor_Data[0].invoicePanNo;
-         const consigneePanNo = Contractor_Data[0].consigneePanNo;
-         const bankName = Contractor_Data[0].bankName;
-         const account_number = Contractor_Data[0].account_number;
-         const branch_address = Contractor_Data[0].branch_address;
-         const branch_code = Contractor_Data[0].branch_code;
-         const swift_code = Contractor_Data[0].swift_code;
-         const ifsc_code = Contractor_Data[0].ifsc_code;
-		 const work_date = Contractor_Data[0].work_date;
-         const transport_name = QsPacking_Data[0].transport_name;
-         const vechile_no = QsPacking_Data[0].vechile_no;
-         const con_code_with_lot_no = QsPacking_Data[0].con_code_with_lot_no;
-         
-         const freight = tax[0].freight;
-         const total_pices = tax[0].total_pices;
-         const total_kgs = tax[0].total_kgs;
-         const total_qty = tax[0].total_qty;
-         const basic_value = tax[0].basic_value;
-         
-		 const items = json.QsPacking_Data || []; 
-		 const taxData = json.tax || [];
-		 const InvoiceData = json.Invoice_Data || [];
-		 const grandTotalData = json.Grand_Total_value?.[0] || {};
-         const grandTotalInWords = grandTotalData.GrandTotalInWords || '';
-		 const grandTotalTax = grandTotalData.Grand_Total_tax || '';
-		 const gstremarks = InvoiceData.gst_remarks || '';
-		 const advremarks = taxData[0].taxable || '';
-		 const advremarksnon = taxData[0].non_taxable || '';
-		 const basicValue = taxData[0].basic_value || '';
-		 const basicValuecos = taxData[0].optc || '';
-
-        // Generate dynamic rows based on QsPacking_Data
-        let tableRows = items.map((item, index) => `
-            <tr>
-                <td>${index + 1}</td>
-                <td>${item.scrap_name_type_id || ''}</td>
-                <td>${item.pice || ''}</td>
-                <td>${item.hcode || ''}</td>
-                <td>${item.uom_name || ''}</td>
-                <td>${item.qty || ''}</td>
-                <td>${item.per_kgs || ''}</td>
-                <td>${item.unit_price || ''}</td>
-                <td>${item.total || ''}</td>
-            </tr>
-        `).join('');
-        
-        // Generate dynamic tax rows
-        let taxRows = taxData.map(tax => `
-            <tr>
-                <td colspan="7" style="border: 1px solid #000;">${tax.tax_name || ''}</td>
-                <td style="border: 1px solid #000;">${tax.tax_per || ''}</td>
-                <td style="border: 1px solid #000;">${tax.tax_value || ''}</td>
-            </tr>
-        `).join('');
-        
-        // Generate dynamic tax descriptions with tax_name and tax_value_in_words
-		let taxDetails = taxData.map(tax => `
-		    <b>${tax.tax_name}:</b> ${tax.tax_value_in_words}<br>
-		`).join('');
-		
-		let taxDetailsNew = taxData.map(tax => `
-		    <b>${tax.tax_name}</b><br>
-		`).join('');
-		
-		let taxPerValue = taxData.map(tax => `
-		    <b>${tax.tax_per}</b><br>
-		`).join('');
-		
-		let taxValue = taxData.map(tax => `
-		    <b>${tax.tax_value}</b><br>
-		`).join('');
-		
-		let taxValuedept = taxData.map(tax => `
-		    <b>${tax.ptc}</b><br>
-		`).join('');
-		
-		let taxValuecos = taxData.map(tax => `
-		    <b>${tax.ptc}</b><br>
-		`).join('');
-		
-		let taxadvanceValue = taxData.map(tax => `
-		    <b>${tax.adv_tax}</b><br>
-		`).join('');
-
-        const currentDate = new Date().toLocaleDateString('en-GB', {
-		  day: '2-digit',
-		  month: '2-digit',
-		  year: 'numeric'
-		}).replace(/\//g, '-'); // Replace '/' with '-'
-		
-		console.log(currentDate); // Output: "21-02-2025" (DD-MM-YYYY)
-        const currentDate1 = new Date();
-        const formattedDateTime = String(currentDate1.getDate()).padStart(2, '0') + '-' + 
-                          String(currentDate1.getMonth() + 1).padStart(2, '0') + '-' + 
-                          currentDate1.getFullYear() + ' ' + 
-                          String(currentDate1.getHours()).padStart(2, '0') + ':' + 
-                          String(currentDate1.getMinutes()).padStart(2, '0') + ':' + 
-                          String(currentDate1.getSeconds()).padStart(2, '0');
-                          
-       // const htmlContent = await (await fetch('print-content.html')).text()
-            const htmlContent = `<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tally Invoice</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-        }
-        .invoice-container {
-            width: 100vw;
-            max-width: 1200px;
-            border: 1px solid #000;
-            padding: 5px;
-			margin-top:12%;
-        }
-        .invoice-container1 {
-            width: 100vw;
-            max-width: 1200px;
-            border: 1px solid #000;
-            padding: 5px;
-            margin-top:35%;
-        }
-        .invoice-container2 {
-            width: 100vw;
-            max-width: 1200px;
-            border: 1px solid #000;
-            padding: 5px;
-            margin-top:34%;
-        }
-        .header, .footer {
-            text-align: center;
-        }
-        .invoice-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .gst-text {
-            text-align: center;
-            font-size: 18px;
-            font-weight: bold;
-        }
-        .company-details-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        .company-details-table td {
-            border: 1px solid #000;
-            padding: 15px;
-            vertical-align: top;
-        }
-        .company-logo {
-            width: 80px;
-            height: 50px;
-            display: block;
-            margin-bottom: 10px;
-        }
-        .product-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 0px;
-        }
-        .product-table th, .product-table td {
-            border: 1px solid #000;
-            padding: 10px;
-            text-align: center;
-        }
-        .terms {
-            margin-top: 20px;
-        }
-    </style>
-</head>
-<body>
-    <div class="invoice-container">
-        <div class="invoice-header">
-            <b><span id="topdate"></span></b>
-            <div class="gst-text">RECEIPT VOUCHER</div>
-            <div class="gst-text1">Original For Recipient</div>
-        </div>
-        
-        <table class="company-details-table">
-            <tr>
-                <td colspan="2">
-                    <div class="company-logo">
-                    <img src="img/logo/download.png" alt="Company Logo" style="width: 80px;">
-                      </div>
-                    <strong>JSW Serverfiled Structures Limited</strong><br>
-                    Near 10 MT Gate, Beside Cement Plant-2<br>
-                    Vidyanagar P.O. Torangallu<br>
-                    Torangallu-583275<br>
-                    Ballari, Karnataka, India<br>
-                    State Code:29<br>
-                    GSTIN : 29AACCJ1473D1ZQ     PAN : AACCJ1473D<br>
-                    ICE No: 0309033152   CIN No: U28112MH2009PLC191045<br>
-                    Email: invoice@jssl.in    Website: www.jssl.in<br>
-                </td>
-                <td colspan="2">
-                <b>Invoice No:</b> <span id="invoiceNumber"></span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>Date:</b> <span id="date"></span><br>
-                <b>Contract No Reference No:</b> <span id="contrefno"></span><br>
-                <b>Date & Time of supply:</b> <span id="datetime"></span><br>
-                <b>Work/Purchase Order No:</b> <span id="workor"></span><br>
-                <b>Date of Order:</b> <span id="dateor"></span><br>
-            </tr>
-            <tr>
-                <td colspan="2"><strong>Invoice To:</strong><br>
-                <span id="shipto11"></span><br>
-                <b>Name of the state:</b> <span id="statename"></span><br>
-                <b>State Code:</b> <span id="stcode11"></span><br>
-                <b>GSTIN:</b><span id="ingst"></span><br>
-                <b>PAN:</b><span id="panin"></span><br>
-                </td>
-                <td colspan="2"><strong>Name & Address of consignee:</strong><br>
-                <span id="conadd"></span><br>
-                <b>State Name:</b> <span id="state"></span><br>
-                <b>State Code:</b> <span id="stateco"></span><br>
-                <b>GSTIN:</b><span id="congst"></span><br>
-                <b>PAN:</b><span id="pancon"></span><br>
-                </td>
-            </tr>
-            <tr>
-                <td><strong>Date of Notification</strong><br>
-                 <strong>Exempted note under:</strong><br>
-                 <strong>Tax is Payble on revese charge:(Yes/No):<span id="taxpayre"></span></strong><br>
-                 </td>
-                <td><strong>Export Details:</strong><br>
-                <strong>ARE No:<span id="areano"></span></strong><br>
-                <strong>LUT No:<span id="lutno"></span></strong><br>
-                <strong>Container No:<span id="contlo"></span></strong><br>
-                <strong>EPCG License No:<span id="epoglo"></span></strong><br>
-                </td>
-                <td><b>Transporter:</b> <span id="trans"></span><br>
-                <b>Vehicle No:</b><span id="vehino"></span><br>
-                <b>LR/DOCKET No:<span id="lrdoc"></span></b><br>
-                <b>Date:<span id="lrdate"></span></b><br>
-                </td>
-                <td><b>Shipment Mode:</b> <span id="shipmo"></span><br>
-                <b>Delivery Condition:</b> <span id="delcon"></span><br>
-                </td>
-            </tr>
-        </table>
-        
-        <table class="product-table">
-            <thead>
-                <tr>
-                    <th>Sr No.</th>
-                    <th>Product Description</th>
-                    <th>Pieces</th>
-                    <th>Service/HSN Code</th>
-                    <th>UOM</th>
-                    <th>Qty</th>
-                    <th>Weight</th>
-                    <th>Unit Price</th>
-                    <th>Value (INR)</th>
-                </tr>
-            </thead>
-            <tbody>
-                ${tableRows} 
-            </tbody>
-            <tbody>
-                <tr>
-                    <td style="border: 1px solid #000; height: 10px;"" colspan="4">
-                    <span>Freight</span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 10px;" colspan="4"></td>
-                    <td style="border: 1px solid #000; height: 10px;">
-                    <span id="freight"></span><br>
-                    </td>
-                </tr>
-            </tbody>
-            <tbody>
-                <tr>
-                    <td style="border: 1px solid #000; height: 10px;"" colspan="2">
-                    <span>TOTAL</span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 10px;">
-                    <span id="pitotal"></span><br></td>
-                    </td>
-                    <td style="border: 1px solid #000; height: 10px;"></td>
-                    <td style="border: 1px solid #000; height: 10px;">
-                    <td style="border: 1px solid #000; height: 10px;">
-                    <span id="qtytotal"></span><br></td>
-                    </td>
-                    <td style="border: 1px solid #000; height: 10px;">
-                    <span id="wiegtotal"></span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 10px;"></td>
-                    <td style="border: 1px solid #000; height: 10px;">
-                    <span id="val11"></span><br>
-                    </td>
-                 </tr>
-            </tbody>
-            <tbody>
-                ${taxRows}
-            </tbody>
-            <tbody>
-                <tr>
-                    <td style="border: 1px solid #000; height: 20px; width: 200px;" colspan="4">
-                        <b>Note:</b><span>Identification Marks & Serial No. of Goods: As per packing list attached</span><br>
-                        ${taxDetails} <!-- Dynamic Tax Name & Value in Words -->
-                        <b>Gross total in words:</b> <b>${grandTotalInWords}</b><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px; width: 200px;" colspan="3">
-                        <b>TOTAL INVOICE VALUE:</b><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 10px;" colspan="2">
-                        <span>${grandTotalTax}</span><br> <!-- Dynamic Grand Total Tax -->
-                    </td>              
-                </tr> 
-            </tbody>
-            <tbody>
-                <tr>
-                    <td style="border: 1px solid #000; height: 20px;width: 200px;">
-                    <span>Particulars</span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    <span>Tax Application</span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    <span>Tax %</span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    <span>Adv Recovery (Taxable)</span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    <span>Adv Recovery (NonTax)</span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    <span>Invoice Value</span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    <span>Payable to dept</span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;" colspan="2">
-                    <span>Payable by Customer</span><br>
-                    </td>
-                    </tr>
-            </tbody>
-            <tbody>
-                <tr>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    <span>${gstremarks}</span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    <span>Basic</span><br>
-                    ${taxDetailsNew}
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    ${taxPerValue}
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    <span>${advremarks}</span><br>
-                    ${taxadvanceValue}
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    <span>${advremarksnon}</span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    <span>${basicValue}</span><br>
-                    ${taxValue}
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    ${taxValuedept}
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;" colspan="2">
-                    <span>${basicValuecos}</span><br>
-                    ${taxValuecos}
-                    </td>
-                    </tr>
-            </tbody>
-            <tbody>
-                <tr>
-                    <td style="border: 1px solid #000; height: 20px;" colspan="2">
-                    <span>Total</span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    <span id="taxbasic"></span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    <span id="grandlast"></span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    <span id="taxtotal"></span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;" colspan="2">
-                    <span id="grandlast12new"></span><br>
-                    </td>
-                </tr>
-            </tbody>
-            <tbody>
-                <tr>
-                    <td style="border: 1px solid #000; height: 20px; width: 100%;"colspan="9">
-                    <span>BANK ACCOUNT DETAILS:</span><span>BANK ACCOUNT NAME:</span><b id="bankname"></b>,
-                    <span>ACCOUNT NUMBER:</span><b id="acc"></b>,<span>BANK NAME & ADDRESS:</span><b id="bname"></b>,<b id="add"></b>
-                    <span>BRANCH CODE:</span><b id="code"></b>,<span>SWIFT CODE:</span><b id="scode"></b>,<span>IFSC CODE:</span><b id="ifsc"></b><br>
-                   </td>
-                </tr>
-            </tbody>
-            <tbody>
-                <tr>
-                    <td style="border: 1px solid #000; height: 20px; width: 100%;"colspan="5">
-                    <span>Certified that the particulars given above are the true and correct and the amount indicated represents the price</span><br>
-                    <span>actually charged from the consignee and that there is no additional consideration following directly or</span><br>
-                    <span>indirectly over and above what has been declared herein.</span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px; width: 100%;"></td>
-		                    <td style="border: 1px solid #000; height: 20px; width: 100%;font-size:15px;" colspan="3">
-		    <span>For JSW SEVERFIELD STRUCTURES LTD.</span><br>
-		    <span style="margin-top: 20px; display: inline-block;">(Authorised signature)</span><br>
-		</td>
-        </tr>
-            </tbody>
-        </table>
-       <div class="footer">
-            <p>Regd Office:No.401,Grand Palladium,175 CST Road,Kalina,santacruz(East),Mumbai,IDIA-400 098 Ph:+91-22--67317000
-            (All disputes subject to Karnataka Jurisdiction)E&OE</p>
-        </div>
-    </div>
-    
-    <div class="invoice-container1">
-        <div class="invoice-header">
-            <b><span id="topdate1"></span></b>
-            <div class="gst-text">RECEIPT VOUCHER</div>
-            <div class="gst-text1">Duplicate for Transporter</div>
-        </div>
-        
-        <table class="company-details-table">
-            <tr>
-                <td colspan="2">
-                    <div class="company-logo">
-                    <img src="img/logo/download.png" alt="Company Logo" style="width: 80px;">
-                      </div>
-                    <strong>JSW Serverfiled Structures Limited</strong><br>
-                    Near 10 MT Gate, Beside Cement Plant-2<br>
-                    Vidyanagar P.O. Torangallu<br>
-                    Torangallu-583275<br>
-                    Ballari, Karnataka, India<br>
-                    State Code:29<br>
-                    GSTIN : 29AACCJ1473D1ZQ     PAN : AACCJ1473D<br>
-                    ICE No: 0309033152   CIN No: U28112MH2009PLC191045<br>
-                    Email: invoice@jssl.in    Website: www.jssl.in<br>
-                </td>
-                <td colspan="2">
-                <b>Invoice No:</b> <span id="invoiceNumber1"></span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>Date:</b> <span id="date1"></span><br>
-                <b>Contract No Reference No:</b> <span id="contrefno1"></span><br>
-                <b>Date & Time of supply:</b> <span id="datetime1"></span><br>
-                <b>Work/Purchase Order No:</b> <span id="workor1"></span><br>
-                <b>Date of Order:</b> <span id="dateor1"></span><br>
-            </tr>
-            <tr>
-                <td colspan="2"><strong>Invoice To:</strong><br>
-                <span id="shipto111"></span><br>
-                <b>Name of the state:</b> <span id="statename1"></span><br>
-                <b>State Code:</b> <span id="stcode111"></span><br>
-                <b>GSTIN:</b><span id="ingst1"></span><br>
-                <b>PAN:</b><span id="panin1"></span><br>
-                </td>
-                <td colspan="2"><strong>Name & Address of consignee:</strong><br>
-                <span id="conadd1"></span><br>
-                <b>State Name:</b> <span id="state1"></span><br>
-                <b>State Code:</b> <span id="stateco1"></span><br>
-                <b>GSTIN:</b><span id="congst1"></span><br>
-                <b>PAN:</b><span id="pancon1"></span><br>
-                </td>
-            </tr>
-            <tr>
-                <td><strong>Date of Notification</strong><br>
-                 <strong>Exempted note under:</strong><br>
-                 <strong>Tax is Payble on revese charge:(Yes/No):<span id="taxpayre1"></span></strong><br>
-                 </td>
-                <td><strong>Export Details:</strong><br>
-                <strong>ARE No:<span id="areano1"></span></strong><br>
-                <strong>LUT No:<span id="lutno1"></span></strong><br>
-                <strong>Container No:<span id="contlo1"></span></strong><br>
-                <strong>EPCG License No:<span id="epoglo1"></span></strong><br>
-                </td>
-                <td><b>Transporter:</b> <span id="trans1"></span><br>
-                <b>Vehicle No:</b><span id="vehino1"></span><br>
-                <b>LR/DOCKET No:<span id="lrdoc1"></span></b><br>
-                <b>Date:<span id="lrdate1"></span></b><br>
-                </td>
-                <td><b>Shipment Mode:</b> <span id="shipmo1"></span><br>
-                <b>Delivery Condition:</b> <span id="delcon1"></span><br>
-                </td>
-            </tr>
-        </table>
-        
-        <table class="product-table">
-            <thead>
-                <tr>
-                    <th>Sr No.</th>
-                    <th>Product Description</th>
-                    <th>Pieces</th>
-                    <th>Service/HSN Code</th>
-                    <th>UOM</th>
-                    <th>Qty</th>
-                    <th>Weight</th>
-                    <th>Unit Price</th>
-                    <th>Value (INR)</th>
-                </tr>
-            </thead>
-            <tbody>
-                ${tableRows} 
-            </tbody>
-            <tbody>
-                <tr>
-                    <td style="border: 1px solid #000; height: 10px;"" colspan="4">
-                    <span>Freight</span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 10px;" colspan="4"></td>
-                    <td style="border: 1px solid #000; height: 10px;">
-                    <span id="freight1"></span><br>
-                    </td>
-                </tr>
-            </tbody>
-            <tbody>
-                <tr>
-                    <td style="border: 1px solid #000; height: 10px;"" colspan="2">
-                    <span>TOTAL</span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 10px;">
-                    <span id="pitotal1"></span><br></td>
-                    </td>
-                    <td style="border: 1px solid #000; height: 10px;"></td>
-                    <td style="border: 1px solid #000; height: 10px;">
-                    <td style="border: 1px solid #000; height: 10px;">
-                    <span id="qtytotal1"></span><br></td>
-                    </td>
-                    <td style="border: 1px solid #000; height: 10px;">
-                    <span id="wiegtotal1"></span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 10px;"></td>
-                    <td style="border: 1px solid #000; height: 10px;">
-                    <span id="val111"></span><br>
-                    </td>
-                 </tr>
-            </tbody>
-            <tbody>
-                ${taxRows}
-            </tbody>
-            <tbody>
-                <tr>
-                    <td style="border: 1px solid #000; height: 20px; width: 200px;" colspan="4">
-                        <b>Note:</b><span>Identification Marks & Serial No. of Goods: As per packing list attached</span><br>
-                        ${taxDetails} <!-- Dynamic Tax Name & Value in Words -->
-                        <b>Gross total in words:</b> <b>${grandTotalInWords}</b><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px; width: 200px;" colspan="3">
-                        <b>TOTAL INVOICE VALUE:</b><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 10px;" colspan="2">
-                        <span>${grandTotalTax}</span><br> <!-- Dynamic Grand Total Tax -->
-                    </td>              
-                </tr>
-            </tbody>
-            <tbody>
-                <tr>
-                    <td style="border: 1px solid #000; height: 20px;width: 200px;">
-                    <span>Particulars</span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    <span>Tax Application</span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    <span>Tax %</span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    <span>Adv Recovery (Taxable)</span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    <span>Adv Recovery (NonTax)</span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    <span>Invoice Value</span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    <span>Payable to dept</span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;" colspan="2">
-                    <span>Payable by Customer</span><br>
-                    </td>
-                    </tr>
-            </tbody>
-            <tbody>
-                <tr>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    <span>${gstremarks}</span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    <span>Basic</span><br>
-                    ${taxDetailsNew}
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    ${taxPerValue}
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    <span>${advremarks}</span><br>
-                    ${taxadvanceValue}
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    <span>${advremarksnon}</span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    <span>${basicValue}</span><br>
-                    ${taxValue}
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    ${taxValuedept}
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;" colspan="2">
-                    <span>${basicValuecos}</span><br>
-                    ${taxValuecos}
-                    </td>
-                    </tr>
-            </tbody>
-            <tbody>
-                <tr>
-                    <td style="border: 1px solid #000; height: 20px;" colspan="2">
-                    <span>Total</span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    <span id="taxbasic1"></span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    <span id="grandlast1"></span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    <span id="taxtotal1"></span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;" colspan="2">
-                    <span id="grandlast121"></span><br>
-                    </td>
-                </tr>
-            </tbody>
-            <tbody>
-                <tr>
-                    <td style="border: 1px solid #000; height: 20px; width: 100%;"colspan="9">
-                    <span>BANK ACCOUNT DETAILS:</span><span>BANK ACCOUNT NAME:</span><b id="bankname1"></b>,
-                    <span>ACCOUNT NUMBER:</span><b id="acc1"></b>,<span>BANK NAME & ADDRESS:</span><b id="bname1"></b>,<b id="add1"></b>
-                    <span>BRANCH CODE:</span><b id="code1"></b>,<span>SWIFT CODE:</span><b id="scode1"></b>,<span>IFSC CODE:</span><b id="ifsc1"></b><br>
-                   </td>
-                </tr>
-            </tbody>
-            <tbody>
-                <tr>
-                    <td style="border: 1px solid #000; height: 20px; width: 100%;"colspan="5">
-                    <span>Certified that the particulars given above are the true and correct and the amount indicated represents the price</span><br>
-                    <span>actually charged from the consignee and that there is no additional consideration following directly or</span><br>
-                    <span>indirectly over and above what has been declared herein.</span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px; width: 100%;"></td>
-		                    <td style="border: 1px solid #000; height: 20px; width: 100%;font-size:15px;" colspan="3">
-		    <span>For JSW SEVERFIELD STRUCTURES LTD.</span><br>
-		    <span style="margin-top: 20px; display: inline-block;">(Authorised signature)</span><br>
-		</td>
-        </tr>
-            </tbody>
-        </table>
-       <div class="footer">
-            <p>Regd Office:No.401,Grand Palladium,175 CST Road,Kalina,santacruz(East),Mumbai,IDIA-400 098 Ph:+91-22--67317000
-            (All disputes subject to Karnataka Jurisdiction)E&OE</p>
-        </div>
-    </div>
-    
-    <div class="invoice-container2">
-        <div class="invoice-header">
-            <b><span id="topdate12"></span></b>
-            <div class="gst-text">RECEIPT VOUCHER</div>
-            <div class="gst-text1">Duplicate for Supplier</div>
-        </div>
-        
-        <table class="company-details-table">
-            <tr>
-                <td colspan="2">
-                    <div class="company-logo">
-                    <img src="img/logo/download.png" alt="Company Logo" style="width: 80px;">
-                      </div>
-                    <strong>JSW Serverfiled Structures Limited</strong><br>
-                    Near 10 MT Gate, Beside Cement Plant-2<br>
-                    Vidyanagar P.O. Torangallu<br>
-                    Torangallu-583275<br>
-                    Ballari, Karnataka, India<br>
-                    State Code:29<br>
-                    GSTIN : 29AACCJ1473D1ZQ     PAN : AACCJ1473D<br>
-                    ICE No: 0309033152   CIN No: U28112MH2009PLC191045<br>
-                    Email: invoice@jssl.in    Website: www.jssl.in<br>
-                </td>
-                <td colspan="2">
-                <b>Invoice No:</b> <span id="invoiceNumber12"></span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>Date:</b> <span id="date12"></span><br>
-                <b>Contract No Reference No:</b> <span id="contrefno12"></span><br>
-                <b>Date & Time of supply:</b> <span id="datetime12"></span><br>
-                <b>Work/Purchase Order No:</b> <span id="workor12"></span><br>
-                <b>Date of Order:</b> <span id="dateor12"></span><br>
-            </tr>
-            <tr>
-                <td colspan="2"><strong>Invoice To:</strong><br>
-                <span id="shipto1112"></span><br>
-                <b>Name of the state:</b> <span id="statename12"></span><br>
-                <b>State Code:</b> <span id="stcode1112"></span><br>
-                <b>GSTIN:</b><span id="ingst12"></span><br>
-                <b>PAN:</b><span id="panin12"></span><br>
-                </td>
-                <td colspan="2"><strong>Name & Address of consignee:</strong><br>
-                <span id="conadd12"></span><br>
-                <b>State Name:</b> <span id="state12"></span><br>
-                <b>State Code:</b> <span id="stateco12"></span><br>
-                <b>GSTIN:</b><span id="congst12"></span><br>
-                <b>PAN:</b><span id="pancon12"></span><br>
-                </td>
-            </tr>
-            <tr>
-                <td><strong>Date of Notification</strong><br>
-                 <strong>Exempted note under:</strong><br>
-                 <strong>Tax is Payble on revese charge:(Yes/No):<span id="taxpayre12"></span></strong><br>
-                 </td>
-                <td><strong>Export Details:</strong><br>
-                <strong>ARE No:<span id="areano12"></span></strong><br>
-                <strong>LUT No:<span id="lutno12"></span></strong><br>
-                <strong>Container No:<span id="contlo12"></span></strong><br>
-                <strong>EPCG License No:<span id="epoglo12"></span></strong><br>
-                </td>
-                <td><b>Transporter:</b> <span id="trans12"></span><br>
-                <b>Vehicle No:</b><span id="vehino12"></span><br>
-                <b>LR/DOCKET No:<span id="lrdoc12"></span></b><br>
-                <b>Date:<span id="lrdate12"></span></b><br>
-                </td>
-                <td><b>Shipment Mode:</b> <span id="shipmo12"></span><br>
-                <b>Delivery Condition:</b> <span id="delcon12"></span><br>
-                </td>
-            </tr>
-        </table>
-        
-        <table class="product-table">
-            <thead>
-                <tr>
-                    <th>Sr No.</th>
-                    <th>Product Description</th>
-                    <th>Pieces</th>
-                    <th>Service/HSN Code</th>
-                    <th>UOM</th>
-                    <th>Qty</th>
-                    <th>Weight</th>
-                    <th>Unit Price</th>
-                    <th>Value (INR)</th>
-                </tr>
-            </thead>
-            <tbody>
-                ${tableRows} 
-            </tbody>
-            <tbody>
-                <tr>
-                    <td style="border: 1px solid #000; height: 10px;"" colspan="4">
-                    <span>Freight</span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 10px;" colspan="4"></td>
-                    <td style="border: 1px solid #000; height: 10px;">
-                    <span id="freight12"></span><br>
-                    </td>
-                </tr>
-            </tbody>
-            <tbody>
-                <tr>
-                    <td style="border: 1px solid #000; height: 10px;"" colspan="2">
-                    <span>TOTAL</span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 10px;">
-                    <span id="pitotal12"></span><br></td>
-                    </td>
-                    <td style="border: 1px solid #000; height: 10px;"></td>
-                    <td style="border: 1px solid #000; height: 10px;">
-                    <td style="border: 1px solid #000; height: 10px;">
-                    <span id="qtytotal12"></span><br></td>
-                    </td>
-                    <td style="border: 1px solid #000; height: 10px;">
-                    <span id="wiegtotal12"></span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 10px;"></td>
-                    <td style="border: 1px solid #000; height: 10px;">
-                    <span id="val1112"></span><br>
-                    </td>
-                 </tr>
-            </tbody>
-            <tbody>
-                ${taxRows}
-            </tbody>
-            <tbody>
-                <tr>
-                    <td style="border: 1px solid #000; height: 20px; width: 200px;" colspan="4">
-                        <b>Note:</b><span>Identification Marks & Serial No. of Goods: As per packing list attached</span><br>
-                        ${taxDetails} <!-- Dynamic Tax Name & Value in Words -->
-                        <b>Gross total in words:</b> <b>${grandTotalInWords}</b><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px; width: 200px;" colspan="3">
-                        <b>TOTAL INVOICE VALUE:</b><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 10px;" colspan="2">
-                        <span>${grandTotalTax}</span><br> <!-- Dynamic Grand Total Tax -->
-                    </td>              
-                </tr>
-            </tbody>
-            <tbody>
-                <tr>
-                    <td style="border: 1px solid #000; height: 20px;width: 200px;">
-                    <span>Particulars</span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    <span>Tax Application</span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    <span>Tax %</span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    <span>Adv Recovery (Taxable)</span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    <span>Adv Recovery (NonTax)</span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    <span>Invoice Value</span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    <span>Payable to dept</span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;" colspan="2">
-                    <span>Payable by Customer</span><br>
-                    </td>
-                    </tr>
-            </tbody>
-            <tbody>
-                <tr>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    <span>${gstremarks}</span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    <span>Basic</span><br>
-                    ${taxDetailsNew}
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    ${taxPerValue}
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    <span>${advremarks}</span><br>
-                    ${taxadvanceValue}
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    <span>${advremarksnon}</span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    <span>${basicValue}</span><br>
-                    ${taxValue}
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    ${taxValuedept}
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;" colspan="2">
-                    <span>${basicValuecos}</span><br>
-                    ${taxValuecos}
-                    </td>
-                    </tr>
-            </tbody>
-            <tbody>
-                <tr>
-                    <td style="border: 1px solid #000; height: 20px;" colspan="2">
-                    <span>Total</span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    <span id="taxbasic12"></span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    <span id="grandlast12"></span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    <span id="taxtotal12"></span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;" colspan="2">
-                    <span id="grandlast1212"></span><br>
-                    </td>
-                </tr>
-            </tbody>
-            <tbody>
-                <tr>
-                    <td style="border: 1px solid #000; height: 20px; width: 100%;"colspan="9">
-                    <span>BANK ACCOUNT DETAILS:</span><span>BANK ACCOUNT NAME:</span><b id="bankname12"></b>,
-                    <span>ACCOUNT NUMBER:</span><b id="acc12"></b>,<span>BANK NAME & ADDRESS:</span><b id="bname12"></b>,<b id="add12"></b>
-                    <span>BRANCH CODE:</span><b id="code12"></b>,<span>SWIFT CODE:</span><b id="scode12"></b>,<span>IFSC CODE:</span><b id="ifsc12"></b><br>
-                   </td>
-                </tr>
-            </tbody>
-            <tbody>
-                <tr>
-                    <td style="border: 1px solid #000; height: 20px; width: 100%;"colspan="5">
-                    <span>Certified that the particulars given above are the true and correct and the amount indicated represents the price</span><br>
-                    <span>actually charged from the consignee and that there is no additional consideration following directly or</span><br>
-                    <span>indirectly over and above what has been declared herein.</span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px; width: 100%;"></td>
-		                    <td style="border: 1px solid #000; height: 20px; width: 100%;font-size:15px;" colspan="3">
-		    <span>For JSW SEVERFIELD STRUCTURES LTD.</span><br>
-		    <span style="margin-top: 20px; display: inline-block;">(Authorised signature)</span><br>
-		</td>
-        </tr>
-            </tbody>
-        </table>
-       <div class="footer">
-            <p>Regd Office:No.401,Grand Palladium,175 CST Road,Kalina,santacruz(East),Mumbai,IDIA-400 098 Ph:+91-22--67317000
-            (All disputes subject to Karnataka Jurisdiction)E&OE</p>
-        </div>
-    </div>
-   </body>
-</html>
-` 
-    const printElement = document.createElement('div');
-        printElement.innerHTML = htmlContent;
-        console.log(printElement)
-        // page1
-     printElement.querySelector('#datetime').textContent = formattedDateTime;
-     printElement.querySelector('#topdate').textContent = formattedDateTime;
-     printElement.querySelector('#dateor').textContent = work_date;
-     printElement.querySelector('#date').textContent = currentDate;
-     printElement.querySelector('#invoiceNumber').textContent = invoiceno;
-     printElement.querySelector('#shipto11').textContent = invoice_to_id_value;
-     printElement.querySelector('#taxpayre').textContent = tax_payable;
-     printElement.querySelector('#areano').textContent = area_no;
-     printElement.querySelector('#contlo').textContent = containter_no;
-     printElement.querySelector('#lutno').textContent = lot_no;
-     printElement.querySelector('#epoglo').textContent = epcgno;
-     printElement.querySelector('#trans').textContent = transport_name;
-     printElement.querySelector('#lrdoc').textContent = lr_docketno;
-     printElement.querySelector('#lrdate').textContent = date_val;
-     printElement.querySelector('#shipmo').textContent = shipment_mode_id_value;
-     printElement.querySelector('#delcon').textContent = delivery_condition_id_value;
-     printElement.querySelector('#conadd').textContent = consignee_id_value;
-     printElement.querySelector('#workor').textContent = work_id_value;
-     printElement.querySelector('#vehino').textContent = vechile_no;
-     printElement.querySelector('#contrefno').textContent = con_code_with_lot_no;
-     printElement.querySelector('#statename').textContent = invoiceStateName;
-     printElement.querySelector('#state').textContent = consigneeStateName;
-     printElement.querySelector('#stateco').textContent = consigneeStateCode;
-     printElement.querySelector('#stcode11').textContent = invoiceStateCode;
-     printElement.querySelector('#congst').textContent = consigneeGstNo;
-     printElement.querySelector('#ingst').textContent = invoiceGstNo;
-     printElement.querySelector('#pancon').textContent = consigneePanNo;
-     printElement.querySelector('#panin').textContent = invoicePanNo;
-     printElement.querySelector('#freight').textContent = freight;
-     printElement.querySelector('#pitotal').textContent = total_pices;
-     printElement.querySelector('#qtytotal').textContent = total_qty;
-     printElement.querySelector('#wiegtotal').textContent = total_kgs;
-     printElement.querySelector('#val11').textContent = basic_value;
-     printElement.querySelector('#grandlast').textContent = Grand_Total_tax;
-     printElement.querySelector('#grandlast12new').textContent = PBC_Final_total;
-     printElement.querySelector('#bankname').textContent = bankName;
-     printElement.querySelector('#acc').textContent = account_number;
-     printElement.querySelector('#bname').textContent = branch_address;
-     printElement.querySelector('#code').textContent = branch_code;
-     printElement.querySelector('#scode').textContent = swift_code;
-     printElement.querySelector('#ifsc').textContent = ifsc_code;
-     printElement.querySelector('#taxbasic').textContent = Total_adv_tax_Taxable;
-     printElement.querySelector('#taxtotal').textContent = Tax_Final_total;
-     //printElement.querySelector('#prodesc').textContent = product_desc;
-     
-     //page 2
-     printElement.querySelector('#datetime1').textContent = formattedDateTime;
-     printElement.querySelector('#topdate1').textContent = formattedDateTime;
-     printElement.querySelector('#dateor1').textContent = currentDate;
-     printElement.querySelector('#date1').textContent = currentDate;
-     printElement.querySelector('#invoiceNumber1').textContent = invoiceno;
-     printElement.querySelector('#shipto111').textContent = invoice_to_id_value;
-     printElement.querySelector('#taxpayre1').textContent = tax_payable;
-     printElement.querySelector('#areano1').textContent = area_no;
-     printElement.querySelector('#contlo1').textContent = containter_no;
-     printElement.querySelector('#lutno1').textContent = lot_no;
-     printElement.querySelector('#epoglo1').textContent = epcgno;
-     printElement.querySelector('#trans1').textContent = transport_name;
-     printElement.querySelector('#lrdoc1').textContent = lr_docketno;
-     printElement.querySelector('#lrdate1').textContent = date_val;
-     printElement.querySelector('#shipmo1').textContent = shipment_mode_id_value;
-     printElement.querySelector('#delcon1').textContent = delivery_condition_id_value;
-     printElement.querySelector('#conadd1').textContent = consignee_id_value;
-     printElement.querySelector('#workor1').textContent = work_id_value;
-     printElement.querySelector('#vehino1').textContent = vechile_no;
-     printElement.querySelector('#contrefno1').textContent = con_code_with_lot_no;
-     printElement.querySelector('#statename1').textContent = invoiceStateName;
-     printElement.querySelector('#state1').textContent = consigneeStateName;
-     printElement.querySelector('#stateco1').textContent = consigneeStateCode;
-     printElement.querySelector('#stcode111').textContent = invoiceStateCode;
-     printElement.querySelector('#congst1').textContent = consigneeGstNo;
-     printElement.querySelector('#ingst1').textContent = invoiceGstNo;
-     printElement.querySelector('#pancon1').textContent = consigneePanNo;
-     printElement.querySelector('#panin1').textContent = invoicePanNo;
-     printElement.querySelector('#freight1').textContent = freight;
-     printElement.querySelector('#pitotal1').textContent = total_pices;
-     printElement.querySelector('#qtytotal1').textContent = total_qty;
-     printElement.querySelector('#wiegtotal1').textContent = total_kgs;
-     printElement.querySelector('#val111').textContent = basic_value;
-     printElement.querySelector('#grandlast1').textContent = Grand_Total_tax;
-     printElement.querySelector('#grandlast121').textContent = PBC_Final_total;
-     printElement.querySelector('#bankname1').textContent = bankName;
-     printElement.querySelector('#acc1').textContent = account_number;
-     printElement.querySelector('#bname1').textContent = branch_address;
-     printElement.querySelector('#code1').textContent = branch_code;
-     printElement.querySelector('#scode1').textContent = swift_code;
-     printElement.querySelector('#ifsc1').textContent = ifsc_code;
-     printElement.querySelector('#taxbasic1').textContent = Total_adv_tax_Taxable;
-     printElement.querySelector('#taxtotal1').textContent = Tax_Final_total;
-     
-     //page 3
-     printElement.querySelector('#datetime12').textContent = formattedDateTime;
-     printElement.querySelector('#topdate12').textContent = formattedDateTime;
-     printElement.querySelector('#dateor12').textContent = currentDate;
-     printElement.querySelector('#date12').textContent = currentDate;
-     printElement.querySelector('#invoiceNumber12').textContent = invoiceno;
-     printElement.querySelector('#shipto1112').textContent = invoice_to_id_value;
-     printElement.querySelector('#taxpayre12').textContent = tax_payable;
-     printElement.querySelector('#areano12').textContent = area_no;
-     printElement.querySelector('#contlo12').textContent = containter_no;
-     printElement.querySelector('#lutno12').textContent = lot_no;
-     printElement.querySelector('#epoglo12').textContent = epcgno;
-     printElement.querySelector('#trans12').textContent = transport_name;
-     printElement.querySelector('#lrdoc12').textContent = lr_docketno;
-     printElement.querySelector('#lrdate12').textContent = date_val;
-     printElement.querySelector('#shipmo12').textContent = shipment_mode_id_value;
-     printElement.querySelector('#delcon12').textContent = delivery_condition_id_value;
-     printElement.querySelector('#conadd12').textContent = consignee_id_value;
-     printElement.querySelector('#workor12').textContent = work_id_value;
-     printElement.querySelector('#vehino12').textContent = vechile_no;
-     printElement.querySelector('#contrefno12').textContent = con_code_with_lot_no;
-     printElement.querySelector('#statename12').textContent = invoiceStateName;
-     printElement.querySelector('#state12').textContent = consigneeStateName;
-     printElement.querySelector('#stateco12').textContent = consigneeStateCode;
-     printElement.querySelector('#stcode1112').textContent = invoiceStateCode;
-     printElement.querySelector('#congst12').textContent = consigneeGstNo;
-     printElement.querySelector('#ingst12').textContent = invoiceGstNo;
-     printElement.querySelector('#pancon12').textContent = consigneePanNo;
-     printElement.querySelector('#panin12').textContent = invoicePanNo;
-     printElement.querySelector('#freight12').textContent = freight;
-     printElement.querySelector('#pitotal12').textContent = total_pices;
-     printElement.querySelector('#qtytotal12').textContent = total_qty;
-     printElement.querySelector('#wiegtotal12').textContent = total_kgs;
-     printElement.querySelector('#val1112').textContent = basic_value;
-     printElement.querySelector('#grandlast12').textContent = Grand_Total_tax;
-     printElement.querySelector('#grandlast1212').textContent = PBC_Final_total;
-     printElement.querySelector('#bankname12').textContent = bankName;
-     printElement.querySelector('#acc12').textContent = account_number;
-     printElement.querySelector('#bname12').textContent = branch_address;
-     printElement.querySelector('#code12').textContent = branch_code;
-     printElement.querySelector('#scode12').textContent = swift_code;
-     printElement.querySelector('#ifsc12').textContent = ifsc_code;
-     printElement.querySelector('#taxbasic12').textContent = Total_adv_tax_Taxable;
-     printElement.querySelector('#taxtotal12').textContent = Tax_Final_total;
-     
-    const doc = new window.jspdf.jsPDF();
-
-        doc.html(printElement, {
-            callback: function (doc) {
-               doc.save(`Advance_Invoice_${invoiceno}.pdf`);
-            },
-            x: 6,
-            y: 6,
-            width: 165,
-            windowWidth: 1000
-         });
-         
-
-    } catch (error) {
-        console.error('Error generating PDF:', error);
-    }
-   
-} */
+/* >>> OLD COMMENTED-OUT printRecord (first version, ~600 lines of dead code).
+   Paste your original commented block back here unchanged if you want to keep it. <<< */
 
 
 async function printRecord(id) {
@@ -4076,6 +3203,46 @@ async function printRecord(id) {
     }
 
     showLoader();
+	
+	// ─── HELPER: Parse any date string/number into a Date object ──────────────
+	function toDateObj(val) {
+	    if (!val) return null;
+	    if (val instanceof Date) return isNaN(val) ? null : val;
+	    if (typeof val === 'number') return new Date(val);
+
+	    const s = String(val).trim();
+	    if (/^\d{10,}$/.test(s)) return new Date(Number(s));          // epoch millis
+
+	    // yyyy-MM-dd [HH:mm[:ss]]
+	    let m = s.match(/^(\d{4})-(\d{2})-(\d{2})(?:[T\s](\d{2}):(\d{2})(?::(\d{2}))?)?/);
+	    if (m) return new Date(+m[1], +m[2] - 1, +m[3], +(m[4] || 0), +(m[5] || 0), +(m[6] || 0));
+
+	    // dd-MM-yyyy or dd/MM/yyyy [HH:mm[:ss]]
+	    m = s.match(/^(\d{2})[-\/](\d{2})[-\/](\d{4})(?:[T\s](\d{2}):(\d{2})(?::(\d{2}))?)?/);
+	    if (m) return new Date(+m[3], +m[2] - 1, +m[1], +(m[4] || 0), +(m[5] || 0), +(m[6] || 0));
+
+	    const d = new Date(s);
+	    return isNaN(d) ? null : d;
+	}
+
+	// dd-mm-yyyy
+	function formatDMY(val) {
+	    const d = toDateObj(val);
+	    if (!d) return val || '';
+	    return String(d.getDate()).padStart(2, '0') + '-' +
+	           String(d.getMonth() + 1).padStart(2, '0') + '-' +
+	           d.getFullYear();
+	}
+
+	// dd-mm-yyyy HH:mm:ss
+	function formatDMYHMS(val) {
+	    const d = toDateObj(val);
+	    if (!d) return val || '';
+	    return formatDMY(d) + ' ' +
+	           String(d.getHours()).padStart(2, '0') + ':' +
+	           String(d.getMinutes()).padStart(2, '0') + ':' +
+	           String(d.getSeconds()).padStart(2, '0');
+	}
 
     // ─── HELPER: Format numbers with Indian comma style ───────────────────────
     function formatAmount(value) {
@@ -4084,6 +3251,13 @@ async function printRecord(id) {
         if (isNaN(num)) return value;
         return num.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
+	
+	function formatWeight(value) {
+		    if (!value && value !== 0) return '';
+		    const num = parseFloat(String(value).replace(/,/g, ''));
+		    if (isNaN(num)) return value;
+		    return num.toLocaleString('en-IN', { minimumFractionDigits: 3, maximumFractionDigits: 3 });
+		}
 
     try {
         const url = new URL(`/jssl/invoice/searchadvidnew?id=${id}`, baseUrl);
@@ -4109,20 +3283,20 @@ async function printRecord(id) {
         const resolvedConsignee = matchedConsignee
             ? matchedConsignee.address
             : Contractor_Data[0].consignee_id_value;
-			
-			const resolvedInvoiceDistrict  = matchedInvoiceTo ? matchedInvoiceTo.district   : Contractor_Data[0].invoiceDistrict;
-			const resolvedInvoicePinNo     = matchedInvoiceTo ? matchedInvoiceTo.pin_no     : Contractor_Data[0].invoicePinNo;
-			const resolvedInvoiceStateName = matchedInvoiceTo ? matchedInvoiceTo.state_name : Contractor_Data[0].invoiceStateName;
-			const resolvedInvoiceStateCode = matchedInvoiceTo ? matchedInvoiceTo.state_id   : Contractor_Data[0].invoiceStateCode;
-			const resolvedInvoiceGstNo     = matchedInvoiceTo ? matchedInvoiceTo.gst_no     : Contractor_Data[0].invoiceGstNo;
-			const resolvedInvoicePanNo     = matchedInvoiceTo ? matchedInvoiceTo.pan_no     : Contractor_Data[0].invoicePanNo;
 
-			const resolvedConsigneeDistrict  = matchedConsignee ? matchedConsignee.district   : Contractor_Data[0].consigneeDistrict;
-			const resolvedConsigneePinNo     = matchedConsignee ? matchedConsignee.pin_no     : Contractor_Data[0].consigneePinNo;
-			const resolvedConsigneeStateName = matchedConsignee ? matchedConsignee.state_name : Contractor_Data[0].consigneeStateName;
-			const resolvedConsigneeStateCode = matchedConsignee ? matchedConsignee.state_id   : Contractor_Data[0].consigneeStateCode;
-			const resolvedConsigneeGstNo     = matchedConsignee ? matchedConsignee.gst_no     : Contractor_Data[0].consigneeGstNo;
-			const resolvedConsigneePanNo     = matchedConsignee ? matchedConsignee.pan_no     : Contractor_Data[0].consigneePanNo;
+        const resolvedInvoiceDistrict  = matchedInvoiceTo ? matchedInvoiceTo.district   : Contractor_Data[0].invoiceDistrict;
+        const resolvedInvoicePinNo     = matchedInvoiceTo ? matchedInvoiceTo.pin_no     : Contractor_Data[0].invoicePinNo;
+        const resolvedInvoiceStateName = matchedInvoiceTo ? matchedInvoiceTo.state_name : Contractor_Data[0].invoiceStateName;
+        const resolvedInvoiceStateCode = matchedInvoiceTo ? matchedInvoiceTo.state_id   : Contractor_Data[0].invoiceStateCode;
+        const resolvedInvoiceGstNo     = matchedInvoiceTo ? matchedInvoiceTo.gst_no     : Contractor_Data[0].invoiceGstNo;
+        const resolvedInvoicePanNo     = matchedInvoiceTo ? matchedInvoiceTo.pan_no     : Contractor_Data[0].invoicePanNo;
+
+        const resolvedConsigneeDistrict  = matchedConsignee ? matchedConsignee.district   : Contractor_Data[0].consigneeDistrict;
+        const resolvedConsigneePinNo     = matchedConsignee ? matchedConsignee.pin_no     : Contractor_Data[0].consigneePinNo;
+        const resolvedConsigneeStateName = matchedConsignee ? matchedConsignee.state_name : Contractor_Data[0].consigneeStateName;
+        const resolvedConsigneeStateCode = matchedConsignee ? matchedConsignee.state_id   : Contractor_Data[0].consigneeStateCode;
+        const resolvedConsigneeGstNo     = matchedConsignee ? matchedConsignee.gst_no     : Contractor_Data[0].consigneeGstNo;
+        const resolvedConsigneePanNo     = matchedConsignee ? matchedConsignee.pan_no     : Contractor_Data[0].consigneePanNo;
 
         const matchedWork = workOrderList.find(w => String(w.work_id) === String(ContractMasterData.work_id));
         const resolvedWork = matchedWork
@@ -4143,20 +3317,23 @@ async function printRecord(id) {
             : (Contractor_Data.length > 0 ? cleanBusinessUnitAddress(Contractor_Data[0].business_unit_name) : "");
 
         // ---- NEW: resolve Service Code / HSN Code from InvoiceContractMaster, fallback to Contractor_Data ----
+        // [SVC/HSN FIX] if the master row exists, a null code means "cleared" -> blank (no fallback to old value)
+        const hasMasterPrint = hasContractMaster(ContractMasterData);
+
         const matchedService = servicecodelist.find(s => String(s.servicecode_id) === String(ContractMasterData.s_code));
-        const serviceDisplay = matchedService
-            ? matchedService.service_code
+        const serviceDisplay = hasMasterPrint
+            ? (matchedService ? matchedService.service_code : "")
             : (Contractor_Data.length > 0 ? Contractor_Data[0].s_code_value : "");
 
         const matchedHsn = hsncodelist.find(h => String(h.servicecode_id) === String(ContractMasterData.h_code));
-        const hsnDisplay = matchedHsn
-            ? matchedHsn.service_code
+        const hsnDisplay = hasMasterPrint
+            ? (matchedHsn ? matchedHsn.service_code : "")
             : (Contractor_Data.length > 0 ? Contractor_Data[0].h_code_value : "");
 
         // combine — show whichever is present, "Service / HSN" if both exist
-		const serviceHsnDisplay = [serviceDisplay, hsnDisplay]
-		    .filter(x => x && x.toString().trim() !== "" && x.toString().trim().toLowerCase() !== "null")
-		    .join(" / ");
+        const serviceHsnDisplay = [serviceDisplay, hsnDisplay]
+            .filter(x => x && x.toString().trim() !== "" && x.toString().trim().toLowerCase() !== "null")
+            .join(" / ");
         // ---- END NEW ----
 
         const Grand_Total_tax        = Grand_Total_value[0].Grand_Total_tax;
@@ -4181,9 +3358,9 @@ async function printRecord(id) {
         const reg_addresss     = MumbaiAddress.address;
 
         const bid = resolvedbudisplay;
-		const state_Code = ContractMasterData.state_id   || Contractor_Data[0].invoiceStateCode;
-		const Gst_Code   = ContractMasterData.gst_number || Contractor_Data[0].invoiceGstNo;
-		const Pan_Code   = ContractMasterData.pan_number || Contractor_Data[0].invoicePanNo;
+        const state_Code = ContractMasterData.state_id   || Contractor_Data[0].invoiceStateCode;
+        const Gst_Code   = ContractMasterData.gst_number || Contractor_Data[0].invoiceGstNo;
+        const Pan_Code   = ContractMasterData.pan_number || Contractor_Data[0].invoicePanNo;
 
         const invoice_to_id_value         = resolvedInvoiceTo;
         const tax_payable                 = Contractor_Data[0].tax_payable == 1 ? "No" : "Yes";
@@ -4195,14 +3372,14 @@ async function printRecord(id) {
         const delivery_condition_id_value = Contractor_Data[0].delivery_condition_id_value;
         const consignee_id_value          = resolvedConsignee;
         const work_id_value               = resolvedWork;
-		const invoiceStateName            = resolvedInvoiceStateName;
-		const consigneeStateName          = resolvedConsigneeStateName;
-		const invoiceStateCode            = resolvedInvoiceStateCode;
-		const consigneeStateCode          = resolvedConsigneeStateCode;
-		const invoiceGstNo                = resolvedInvoiceGstNo;
-		const consigneeGstNo              = resolvedConsigneeGstNo;
-		const invoicePanNo                = resolvedInvoicePanNo;
-		const consigneePanNo              = resolvedConsigneePanNo;
+        const invoiceStateName            = resolvedInvoiceStateName;
+        const consigneeStateName          = resolvedConsigneeStateName;
+        const invoiceStateCode            = resolvedInvoiceStateCode;
+        const consigneeStateCode          = resolvedConsigneeStateCode;
+        const invoiceGstNo                = resolvedInvoiceGstNo;
+        const consigneeGstNo              = resolvedConsigneeGstNo;
+        const invoicePanNo                = resolvedInvoicePanNo;
+        const consigneePanNo              = resolvedConsigneePanNo;
         const bankName                    = Contractor_Data[0].org_name;
         const account_number              = Contractor_Data[0].account_number;
         const branch_address              = Contractor_Data[0].bankName + ' ' + Contractor_Data[0].branch_address;
@@ -4245,7 +3422,7 @@ async function printRecord(id) {
                     <td colspan="1" style="text-align:right !important;">${serviceHsnDisplay}</td>
                     <td colspan="1" style="text-align:left !important;">${item.uom_name || ''}</td>
                     <td colspan="1" class="qtys">${item.qty || ''}</td>
-                    <td colspan="2" class="weits">${item.per_kgs || ''}</td>
+                     <td colspan="2" class="weits">${formatWeight(item.per_kgs)}</td>
                     <td colspan="1" class="prs">${formatAmount(item.unit_price) || ''}</td>
                     <td colspan="2" class="tols">${formatAmount(item.total) || ''}</td>
                 </tr>`;
@@ -4286,6 +3463,7 @@ async function printRecord(id) {
             return `
                 <tr>
                     <td colspan="10" class="tax-name" style="${isLast ? '' : 'border-bottom:none;'}">
+                        ${i === 0 && gstremarks ? `<span style="float:left;text-align:left;">${gstremarks}</span>` : ''}
                         ${tax.tax_name || ''}
                     </td>
                     <td colspan="1" class="tax-per" style="${isLast ? '' : 'border-bottom:none;'}">
@@ -4307,18 +3485,10 @@ async function printRecord(id) {
         let taxadvanceValue = taxData.map(tax => `<b>${formatAmount(tax.adv_tax)}</b><br>`).join('');
 
         // ── Date Formatting ───────────────────────────────────────────────────
-        const currentDate = new Date().toLocaleDateString('en-GB', {
-            day: '2-digit', month: '2-digit', year: 'numeric'
-        }).replace(/\//g, '-');
+		const createdRaw = ContractMasterData.invoice_created_date || '';
 
-        const currentDate1 = new Date();
-        const formattedDateTime =
-            String(currentDate1.getDate()).padStart(2, '0') + '-' +
-            String(currentDate1.getMonth() + 1).padStart(2, '0') + '-' +
-            currentDate1.getFullYear() + ' ' +
-            String(currentDate1.getHours()).padStart(2, '0') + ':' +
-            String(currentDate1.getMinutes()).padStart(2, '0') + ':' +
-            String(currentDate1.getSeconds()).padStart(2, '0');
+		const currentDate       = formatDMY(createdRaw);
+		const formattedDateTime = formatDMYHMS(createdRaw);
 
         // ── HTML Template ─────────────────────────────────────────────────────
         const htmlContent = `
@@ -4333,21 +3503,35 @@ async function printRecord(id) {
                 }
                 .watermark.cancelled { color: #ff0000; }
                 .watermark.verified  { color: #4CAF50; }
-                .page { position: relative; }
                 html, body {
                     margin: 0; padding: 0;
                     font-family: "Times New Roman", Times, serif;
                     color: black !important; background-color: #fff !important;
                     font-size: 10px; line-height: 2;
                 }
-                .page { width: 202mm; height: 297mm; overflow: visible; page-break-after: avoid !important; margin: 0; padding: 0; }
-                .page:last-child { page-break-after: avoid !important; }
+
+                /* ── PAGE FIX: one copy = one sheet, no fixed 297mm height / 202mm width ── */
+                .page {
+                    position: relative;
+                    width: 100%;
+                    height: auto;
+                    overflow: hidden;
+                    margin: 0;
+                    padding: 0;
+                    page-break-after: always;
+                }
+                .page:last-child { page-break-after: avoid; }
+
                 .invoice-container {
                     width: 100%; height: auto; overflow: visible;
                     -webkit-font-smoothing: antialiased; text-rendering: geometricPrecision;
-                    page-break-inside: avoid; margin: 0; padding: 1mm;
+                    margin: 0; padding: 1mm;
                 }
-                table { border-collapse: collapse !important; table-layout: fixed; page-break-inside: avoid; width: 100%; margin: 0; padding: 0; }
+                table { border-collapse: collapse !important; table-layout: fixed; width: 100%; margin: 0; padding: 0; }
+
+                /* do not repeat the product table header on another printed page */
+                .product-table thead { display: table-row-group; }
+
                 td, th { border-right: 0.5px solid #000; border-bottom: 0.5px solid #000; padding: 2px 4px; vertical-align: top; font-size: 10px; line-height: 1.05; word-wrap: break-word; }
                 tr { page-break-inside: avoid; }
                 tr:first-child th { border-top: 0.5px solid #000; }
@@ -4417,7 +3601,7 @@ async function printRecord(id) {
                         <div class="company-logo">
                             <img src="img/logo/download.png" alt="Company Logo" style="width:100px;">
                         </div>
-                        <strong>JSW Serverfiled Structures Limited</strong><br>
+                        <strong>JSW Severfield Structures Limited</strong><br>
                         <span class="bid"></span>
                         <p>
                             <b>State Code:</b> <span class="state_code"></span><br>
@@ -4635,7 +3819,7 @@ async function printRecord(id) {
             container.querySelector('.bid').innerHTML = bid;
 
             container.querySelector('.datetime').textContent     = formattedDateTime;
-            container.querySelector('.dateor').textContent       = work_date;
+            container.querySelector('.dateor').textContent       = formatDMY(work_date);
             container.querySelector('.date').textContent         = currentDate;
             container.querySelector('.invoiceNumber').textContent = invoiceno;
 
@@ -4649,10 +3833,10 @@ async function printRecord(id) {
             container.querySelector('.shipto11add2').textContent = line2;
             container.querySelector('.shipto11add3').textContent = line3;
 
-			const districtAndPin = [
-			    resolvedInvoiceDistrict,
-			    resolvedInvoicePinNo
-			].filter(x => x && x.toString().trim() !== "").join("-");
+            const districtAndPin = [
+                resolvedInvoiceDistrict,
+                resolvedInvoicePinNo
+            ].filter(x => x && x.toString().trim() !== "").join("-");
 
             const invoiceAddress = [
                 Invoice_Data.addressLine1up,
@@ -4678,10 +3862,10 @@ async function printRecord(id) {
             container.querySelector('.conname1').textContent = conLine2;
             container.querySelector('.conname2').textContent = conLine3;
 
-			const consigneeDistrictAndPin = [
-			    resolvedConsigneeDistrict,
-			    resolvedConsigneePinNo
-			].filter(x => x && x.toString().trim() !== "").join("-");
+            const consigneeDistrictAndPin = [
+                resolvedConsigneeDistrict,
+                resolvedConsigneePinNo
+            ].filter(x => x && x.toString().trim() !== "").join("-");
 
             const consigneeAddress = [
                 Invoice_Data.conaddressLine1,
@@ -4740,19 +3924,32 @@ async function printRecord(id) {
                 return;
             }
 
+            // A4 = 210 x 297mm. With 8mm margins the printable area is 194 x 281mm.
             let fullHTML = `
                 <html>
                 <head>
+                    <meta charset="utf-8">
                     <title>Invoice PDF</title>
                     <style>
-                        @page { size: A4; margin: 10mm; }
-                        body { margin: 0; padding: 0; font-family: Calibri, Arial, sans-serif; }
-                        .page { width: 100%; max-width: 210mm; margin: 0 auto; page-break-after: always; }
+                        @page { size: A4; margin: 8mm; }
+                        html, body { margin: 0; padding: 0; }
+                        body {
+                            width: 194mm;
+                            margin: 0 auto;
+                            font-family: "Times New Roman", Times, serif;
+                        }
+                        .page {
+                            width: 100%;
+                            height: auto;
+                            margin: 0;
+                            padding: 0;
+                            overflow: hidden;
+                        }
+                        .page:not(:last-child) { page-break-after: always; }
                         .page:last-child { page-break-after: avoid; }
+                        .product-table thead { display: table-row-group; }
                         @media print {
-                            body { margin: 0; }
-                            .page { page-break-after: always; }
-                            .page:last-child { page-break-after: avoid; }
+                            body { margin: 0 auto; }
                         }
                     </style>
                 </head>
@@ -4779,6 +3976,19 @@ async function printRecord(id) {
 
             printWindow.onload = () => {
                 setTimeout(() => {
+                    // Fit each copy on exactly one sheet (prevents spill-over / blank page):
+                    // printable height = 281mm (297mm - 2 x 8mm), converted to px at 96dpi
+                    const maxH = (281 * 96 / 25.4) - 8;
+
+                    printWindow.document.querySelectorAll('.page').forEach(page => {
+                        const inv = page.querySelector('.invoice-container');
+                        if (!inv) return;
+                        const h = inv.getBoundingClientRect().height;
+                        if (h > maxH) {
+                            inv.style.zoom = (maxH / h).toFixed(3);
+                        }
+                    });
+
                     printWindow.focus();
                     printWindow.print();
                     printWindow.close();
@@ -4794,1131 +4004,8 @@ async function printRecord(id) {
         console.error('Error generating PDF:', error);
     }
 }
-
-/*async function printRecordView(id) {
-
-    try {
-	    const url = new URL(`/jssl/invoice/searchadvidnew?id=${id}`, baseUrl);
-		const response = await fetch(url,{
-						           method: "GET",
-						           credentials: "include"   // ✅ Always send JSESSIONID cookie
-						       });
-        if (!response.ok) throw new Error("Failed to fetch data");
-
-         const json = await response.json();
-         const Invoice_Data = json.Invoice_Data;
-         const Contractor_Data = json.Contractor_Data;
-         const QsPacking_Data = json.QsPacking_Data;
-         const tax = json.tax;
-         const Grand_Total_value = json.Grand_Total_value;
-         
-         const Grand_Total_tax = Grand_Total_value[0].Grand_Total_tax;
-         const Total_adv_tax_Taxable = Grand_Total_value[0].Total_adv_tax_Taxable;
-         const Tax_Final_total = Grand_Total_value[0].Tax_Final_total;
-         const PBC_Final_total = Grand_Total_value[0].PBC_Final_total;
-         
-         const invoiceno = Invoice_Data.invoice_no;
-         const lr_docketno = Invoice_Data.lr_docketno;
-         const date_val = Invoice_Data.date_val;
-         //const product_desc = json.Invoice_Data?.product_desc || ''; // Fix reference
-         
-         const invoice_to_id_value = toTitleCase(Contractor_Data[0].invoice_to_id_value);
-		 const formattedValue = toTitleCase(invoice_to_id_value);
-
-		 console.log(formattedValue);
-         const tax_payable = Contractor_Data[0].tax_payable;
-         const area_no = Contractor_Data[0].area_no;
-         const lot_no = Contractor_Data[0].lot_no;
-         const containter_no = Contractor_Data[0].containter_no;
-         const epcgno = Contractor_Data[0].epcgno;
-         const shipment_mode_id_value = Contractor_Data[0].shipment_mode_id_value;
-         const delivery_condition_id_value = Contractor_Data[0].delivery_condition_id_value;
-         const consignee_id_value = Contractor_Data[0].consignee_id_value;
-         const work_id_value = Contractor_Data[0].work_id_value;
-         const invoiceStateName = Contractor_Data[0].invoiceStateName;
-         const consigneeStateName = Contractor_Data[0].consigneeStateName;
-         const invoiceStateCode = Contractor_Data[0].invoiceStateCode;
-         const consigneeStateCode = Contractor_Data[0].consigneeStateCode;
-         const invoiceGstNo = Contractor_Data[0].invoiceGstNo;
-         const consigneeGstNo = Contractor_Data[0].consigneeGstNo;
-         const invoicePanNo = Contractor_Data[0].invoicePanNo;
-         const consigneePanNo = Contractor_Data[0].consigneePanNo;
-         const bankName = Contractor_Data[0].bankName;
-         const account_number = Contractor_Data[0].account_number;
-         const branch_address = Contractor_Data[0].branch_address;
-         const branch_code = Contractor_Data[0].branch_code;
-         const swift_code = Contractor_Data[0].swift_code;
-         const ifsc_code = Contractor_Data[0].ifsc_code;
-         
-         const transport_name = QsPacking_Data[0].transport_name;
-         const vechile_no = QsPacking_Data[0].vechile_no;
-         const con_code_with_lot_no = QsPacking_Data[0].con_code_with_lot_no;
-         
-         const freight = tax[0].freight;
-         const total_pices = tax[0].total_pices;
-         const total_kgs = tax[0].total_kgs;
-         const total_qty = tax[0].total_qty;
-         const basic_value = tax[0].basic_value;
-         
-		 const items = json.QsPacking_Data || []; 
-		 const taxData = json.tax || [];
-		 const InvoiceData = json.Invoice_Data || [];
-		 const grandTotalData = json.Grand_Total_value?.[0] || {};
-         const grandTotalInWords = grandTotalData.GrandTotalInWords || '';
-		 const grandTotalTax = grandTotalData.Grand_Total_tax || '';
-		 const gstremarks = InvoiceData.gst_remarks || '';
-		 const advremarks = taxData[0].taxable || '';
-		 const advremarksnon = taxData[0].non_taxable || '';
-		 const basicValue = taxData[0].basic_value || '';
-		 const basicValuecos = taxData[0].optc || '';
-
-        // Generate dynamic rows based on QsPacking_Data
-        let tableRows = items.map((item, index) => `
-            <tr>
-                <td>${index + 1}</td>
-                <td>${item.scrap_name_type_id || ''}</td>
-                <td>${item.pice || ''}</td>
-                <td>${item.hcode || ''}</td>
-                <td>${item.uom_name || ''}</td>
-                <td>${item.qty || ''}</td>
-                <td>${item.per_kgs || ''}</td>
-                <td>${item.unit_price || ''}</td>
-                <td>${item.total || ''}</td>
-            </tr>
-        `).join('');
-        
-        // Generate dynamic tax rows
-        let taxRows = taxData.map(tax => `
-            <tr>
-                <td colspan="7" style="border: 1px solid #000;">${tax.tax_name || ''}</td>
-                <td style="border: 1px solid #000;">${tax.tax_per || ''}</td>
-                <td style="border: 1px solid #000;">${tax.tax_value || ''}</td>
-            </tr>
-        `).join('');
-        
-        // Generate dynamic tax descriptions with tax_name and tax_value_in_words
-		let taxDetails = taxData.map(tax => `
-		    <b>${tax.tax_name}:</b> ${tax.tax_value_in_words}<br>
-		`).join('');
-		
-		let taxDetailsNew = taxData.map(tax => `
-		    <b>${tax.tax_name}</b><br>
-		`).join('');
-		
-		let taxPerValue = taxData.map(tax => `
-		    <b>${tax.tax_per}</b><br>
-		`).join('');
-		
-		let taxValue = taxData.map(tax => `
-		    <b>${tax.tax_value}</b><br>
-		`).join('');
-		
-		let taxValuedept = taxData.map(tax => `
-		    <b>${tax.ptc}</b><br>
-		`).join('');
-		
-		let taxValuecos = taxData.map(tax => `
-		    <b>${tax.ptc}</b><br>
-		`).join('');
-		
-		let taxadvanceValue = taxData.map(tax => `
-		    <b>${tax.adv_tax}</b><br>
-		`).join('');
-
-        const currentDate = new Date().toLocaleDateString('en-GB', {
-		  day: '2-digit',
-		  month: '2-digit',
-		  year: 'numeric'
-		}).replace(/\//g, '-'); // Replace '/' with '-'
-		
-		console.log(currentDate); // Output: "21-02-2025" (DD-MM-YYYY)
-        const currentDate1 = new Date();
-        const formattedDateTime = String(currentDate1.getDate()).padStart(2, '0') + '-' + 
-                          String(currentDate1.getMonth() + 1).padStart(2, '0') + '-' + 
-                          currentDate1.getFullYear() + ' ' + 
-                          String(currentDate1.getHours()).padStart(2, '0') + ':' + 
-                          String(currentDate1.getMinutes()).padStart(2, '0') + ':' + 
-                          String(currentDate1.getSeconds()).padStart(2, '0');
-                          
-                          // Declare and open new window BEFORE doing heavy logic
-        const newWindow = window.open('', '_blank');
-        if (!newWindow) {
-            //alert("Popup blocked. Please allow popups from this site.");
-            return;
-        }
-                          
-       // const htmlContent = await (await fetch('print-content.html')).text()
-            const htmlContent = `<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tally Invoice</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-        }
-        .invoice-container {
-            width: 100vw;
-            max-width: 1200px;
-            border: 1px solid #000;
-            padding: 15px;
-        }
-        .invoice-container1 {
-            width: 100vw;
-            max-width: 1200px;
-            border: 1px solid #000;
-            padding: 15px;
-            margin-top:80px;
-        }
-        .invoice-container2 {
-            width: 100vw;
-            max-width: 1200px;
-            border: 1px solid #000;
-            padding: 15px;
-            margin-top:50px;
-        }
-        .header, .footer {
-            text-align: center;
-        }
-        .invoice-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .gst-text {
-            text-align: center;
-            font-size: 18px;
-            font-weight: bold;
-        }
-        .company-details-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        .company-details-table td {
-            border: 1px solid #000;
-            padding: 15px;
-            vertical-align: top;
-        }
-        .company-logo {
-            width: 80px;
-            height: 50px;
-            display: block;
-            margin-bottom: 10px;
-        }
-        .product-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 0px;
-        }
-        .product-table th, .product-table td {
-            border: 1px solid #000;
-            padding: 10px;
-            text-align: center;
-        }
-        .terms {
-            margin-top: 20px;
-        }
-    </style>
-</head>
-<body>
-    <div class="invoice-container">
-        <div class="invoice-header">
-            <b><span id="topdate"></span></b>
-            <div class="gst-text">RECEIPT VOUCHER</div>
-            <div class="gst-text1">Original For Recipient</div>
-        </div>
-        
-        <table class="company-details-table">
-            <tr>
-                <td colspan="2">
-                    <div class="company-logo">
-                    <img src="img/logo/download.png" alt="Company Logo" style="width: 80px;">
-                      </div>
-                    <strong>JSW Serverfiled Structures Limited</strong><br>
-                    Near 10 MT Gate, Beside Cement Plant-2<br>
-                    Vidyanagar P.O. Torangallu<br>
-                    Torangallu-583275<br>
-                    Ballari, Karnataka, India<br>
-                    State Code:29<br>
-                    GSTIN : 29AACCJ1473D1ZQ     PAN : AACCJ1473D<br>
-                    ICE No: 0309033152   CIN No: U28112MH2009PLC191045<br>
-                    Email: invoice@jssl.in    Website: www.jssl.in<br>
-                </td>
-                <td colspan="2">
-                <b>Invoice No:</b> <span id="invoiceNumber"></span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>Date:</b> <span id="date"></span><br>
-                <b>Contract No Reference No:</b> <span id="contrefno"></span><br>
-                <b>Date & Time of supply:</b> <span id="datetime"></span><br>
-                <b>Work/Purchase Order No:</b> <span id="workor"></span><br>
-                <b>Date of Order:</b> <span id="dateor"></span><br>
-            </tr>
-            <tr>
-                <td colspan="2"><strong>Invoice To:</strong><br>
-                <span id="shipto11"></span><br>
-                <b>Name of the state:</b> <span id="statename"></span><br>
-                <b>State Code:</b> <span id="stcode11"></span><br>
-                <b>GSTIN:</b><span id="ingst"></span><br>
-                <b>PAN:</b><span id="panin"></span><br>
-                </td>
-                <td colspan="2"><strong>Name & Address of consignee:</strong><br>
-                <span id="conadd"></span><br>
-                <b>State Name:</b> <span id="state"></span><br>
-                <b>State Code:</b> <span id="stateco"></span><br>
-                <b>GSTIN:</b><span id="congst"></span><br>
-                <b>PAN:</b><span id="pancon"></span><br>
-                </td>
-            </tr>
-            <tr>
-                <td><strong>Date of Notification</strong><br>
-                 <strong>Exempted note under:</strong><br>
-                 <strong>Tax is Payble on revese charge:(Yes/No):<span id="taxpayre"></span></strong><br>
-                 </td>
-                <td><strong>Export Details:</strong><br>
-                <strong>ARE No:<span id="areano"></span></strong><br>
-                <strong>LUT No:<span id="lutno"></span></strong><br>
-                <strong>Container No:<span id="contlo"></span></strong><br>
-                <strong>EPCG License No:<span id="epoglo"></span></strong><br>
-                </td>
-                <td><b>Transporter:</b> <span id="trans"></span><br>
-                <b>Vehicle No:</b><span id="vehino"></span><br>
-                <b>LR/DOCKET No:<span id="lrdoc"></span></b><br>
-                <b>Date:<span id="lrdate"></span></b><br>
-                </td>
-                <td><b>Shipment Mode:</b> <span id="shipmo"></span><br>
-                <b>Delivery Condition:</b> <span id="delcon"></span><br>
-                </td>
-            </tr>
-        </table>
-        
-        <table class="product-table">
-            <thead>
-                <tr>
-                    <th>Sr No.</th>
-                    <th>Product Description</th>
-                    <th>Pieces</th>
-                    <th>Service/HSN Code</th>
-                    <th>UOM</th>
-                    <th>Qty</th>
-                    <th>Weight</th>
-                    <th>Unit Price</th>
-                    <th>Value (INR)</th>
-                </tr>
-            </thead>
-            <tbody>
-                ${tableRows} 
-            </tbody>
-            <tbody>
-                <tr>
-                    <td style="border: 1px solid #000; height: 10px;"" colspan="4">
-                    <span>Freight</span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 10px;" colspan="4"></td>
-                    <td style="border: 1px solid #000; height: 10px;">
-                    <span id="freight"></span><br>
-                    </td>
-                </tr>
-            </tbody>
-            <tbody>
-                <tr>
-                    <td style="border: 1px solid #000; height: 10px;"" colspan="2">
-                    <span>TOTAL</span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 10px;">
-                    <span id="pitotal"></span><br></td>
-                    </td>
-                    <td style="border: 1px solid #000; height: 10px;"></td>
-                    <td style="border: 1px solid #000; height: 10px;">
-                    <td style="border: 1px solid #000; height: 10px;">
-                    <span id="qtytotal"></span><br></td>
-                    </td>
-                    <td style="border: 1px solid #000; height: 10px;">
-                    <span id="wiegtotal"></span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 10px;"></td>
-                    <td style="border: 1px solid #000; height: 10px;">
-                    <span id="val11"></span><br>
-                    </td>
-                 </tr>
-            </tbody>
-            <tbody>
-                ${taxRows}
-            </tbody>
-            <tbody>
-                <tr>
-                    <td style="border: 1px solid #000; height: 20px; width: 200px;" colspan="4">
-                        <b>Note:</b><span>Identification Marks & Serial No. of Goods: As per packing list attached</span><br>
-                        ${taxDetails} <!-- Dynamic Tax Name & Value in Words -->
-                        <b>Gross total in words:</b> <b>${grandTotalInWords}</b><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px; width: 200px;" colspan="3">
-                        <b>TOTAL INVOICE VALUE:</b><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 10px;" colspan="2">
-                        <span>${grandTotalTax}</span><br> <!-- Dynamic Grand Total Tax -->
-                    </td>              
-                </tr>
-            </tbody>
-            <tbody>
-                <tr>
-                    <td style="border: 1px solid #000; height: 20px;width: 200px;">
-                    <span>Particulars</span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    <span>Tax Application</span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    <span>Tax %</span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    <span>Adv Recovery (Taxable)</span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    <span>Adv Recovery (NonTax)</span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    <span>Invoice Value</span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    <span>Payable to dept</span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;" colspan="2">
-                    <span>Payable by Customer</span><br>
-                    </td>
-                    </tr>
-            </tbody>
-            <tbody>
-                <tr>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    <span>${gstremarks}</span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    <span>Basic</span><br>
-                    ${taxDetailsNew}
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    ${taxPerValue}
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    <span>${advremarks}</span><br>
-                    ${taxadvanceValue}
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    <span>${advremarksnon}</span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    <span>${basicValue}</span><br>
-                    ${taxValue}
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    ${taxValuedept}
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;" colspan="2">
-                    <span>${basicValuecos}</span><br>
-                    ${taxValuecos}
-                    </td>
-                    </tr>
-            </tbody>
-            <tbody>
-                <tr>
-                    <td style="border: 1px solid #000; height: 20px;" colspan="2">
-                    <span>Total</span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    <span id="taxbasic"></span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    <span id="grandlast"></span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    <span id="taxtotal"></span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;" colspan="2">
-                    <span id="grandlast12new"></span><br>
-                    </td>
-                </tr>
-            </tbody>
-            <tbody>
-                <tr>
-                    <td style="border: 1px solid #000; height: 20px; width: 100%;"colspan="9">
-                    <span>BANK ACCOUNT DETAILS:</span><span>BANK ACCOUNT NAME:</span><b id="bankname"></b>,
-                    <span>ACCOUNT NUMBER:</span><b id="acc"></b>,<span>BANK NAME & ADDRESS:</span><b id="bname"></b>,<b id="add"></b>
-                    <span>BRANCH CODE:</span><b id="code"></b>,<span>SWIFT CODE:</span><b id="scode"></b>,<span>IFSC CODE:</span><b id="ifsc"></b><br>
-                   </td>
-                </tr>
-            </tbody>
-            <tbody>
-                <tr>
-                    <td style="border: 1px solid #000; height: 20px; width: 100%;"colspan="5">
-                    <span>Certified that the particulars given above are the true and correct and the amount indicated represents the price</span><br>
-                    <span>actually charged from the consignee and that there is no additional consideration following directly or</span><br>
-                    <span>indirectly over and above what has been declared herein.</span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px; width: 100%;"></td>
-		                    <td style="border: 1px solid #000; height: 20px; width: 100%;font-size:15px;" colspan="3">
-		    <span>For JSW SEVERFIELD STRUCTURES LTD.</span><br>
-		    <span style="margin-top: 20px; display: inline-block;">(Authorised signature)</span><br>
-		</td>
-        </tr>
-            </tbody>
-        </table>
-       <div class="footer">
-            <p>Regd Office:No.401,Grand Palladium,175 CST Road,Kalina,santacruz(East),Mumbai,IDIA-400 098 Ph:+91-22--67317000
-            (All disputes subject to Karnataka Jurisdiction)E&OE</p>
-        </div>
-    </div>
-    
-    <div class="invoice-container1">
-        <div class="invoice-header">
-            <b><span id="topdate1"></span></b>
-            <div class="gst-text">RECEIPT VOUCHER</div>
-            <div class="gst-text1">Duplicate for Transporter</div>
-        </div>
-        
-        <table class="company-details-table">
-            <tr>
-                <td colspan="2">
-                    <div class="company-logo">
-                    <img src="img/logo/download.png" alt="Company Logo" style="width: 80px;">
-                      </div>
-                    <strong>JSW Serverfiled Structures Limited</strong><br>
-                    Near 10 MT Gate, Beside Cement Plant-2<br>
-                    Vidyanagar P.O. Torangallu<br>
-                    Torangallu-583275<br>
-                    Ballari, Karnataka, India<br>
-                    State Code:29<br>
-                    GSTIN : 29AACCJ1473D1ZQ     PAN : AACCJ1473D<br>
-                    ICE No: 0309033152   CIN No: U28112MH2009PLC191045<br>
-                    Email: invoice@jssl.in    Website: www.jssl.in<br>
-                </td>
-                <td colspan="2">
-                <b>Invoice No:</b> <span id="invoiceNumber1"></span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>Date:</b> <span id="date1"></span><br>
-                <b>Contract No Reference No:</b> <span id="contrefno1"></span><br>
-                <b>Date & Time of supply:</b> <span id="datetime1"></span><br>
-                <b>Work/Purchase Order No:</b> <span id="workor1"></span><br>
-                <b>Date of Order:</b> <span id="dateor1"></span><br>
-            </tr>
-            <tr>
-                <td colspan="2"><strong>Invoice To:</strong><br>
-                <span id="shipto111"></span><br>
-                <b>Name of the state:</b> <span id="statename1"></span><br>
-                <b>State Code:</b> <span id="stcode111"></span><br>
-                <b>GSTIN:</b><span id="ingst1"></span><br>
-                <b>PAN:</b><span id="panin1"></span><br>
-                </td>
-                <td colspan="2"><strong>Name & Address of consignee:</strong><br>
-                <span id="conadd1"></span><br>
-                <b>State Name:</b> <span id="state1"></span><br>
-                <b>State Code:</b> <span id="stateco1"></span><br>
-                <b>GSTIN:</b><span id="congst1"></span><br>
-                <b>PAN:</b><span id="pancon1"></span><br>
-                </td>
-            </tr>
-            <tr>
-                <td><strong>Date of Notification</strong><br>
-                 <strong>Exempted note under:</strong><br>
-                 <strong>Tax is Payble on revese charge:(Yes/No):<span id="taxpayre1"></span></strong><br>
-                 </td>
-                <td><strong>Export Details:</strong><br>
-                <strong>ARE No:<span id="areano1"></span></strong><br>
-                <strong>LUT No:<span id="lutno1"></span></strong><br>
-                <strong>Container No:<span id="contlo1"></span></strong><br>
-                <strong>EPCG License No:<span id="epoglo1"></span></strong><br>
-                </td>
-                <td><b>Transporter:</b> <span id="trans1"></span><br>
-                <b>Vehicle No:</b><span id="vehino1"></span><br>
-                <b>LR/DOCKET No:<span id="lrdoc1"></span></b><br>
-                <b>Date:<span id="lrdate1"></span></b><br>
-                </td>
-                <td><b>Shipment Mode:</b> <span id="shipmo1"></span><br>
-                <b>Delivery Condition:</b> <span id="delcon1"></span><br>
-                </td>
-            </tr>
-        </table>
-        
-        <table class="product-table">
-            <thead>
-                <tr>
-                    <th>Sr No.</th>
-                    <th>Product Description</th>
-                    <th>Pieces</th>
-                    <th>Service/HSN Code</th>
-                    <th>UOM</th>
-                    <th>Qty</th>
-                    <th>Weight</th>
-                    <th>Unit Price</th>
-                    <th>Value (INR)</th>
-                </tr>
-            </thead>
-            <tbody>
-                ${tableRows} 
-            </tbody>
-            <tbody>
-                <tr>
-                    <td style="border: 1px solid #000; height: 10px;"" colspan="4">
-                    <span>Freight</span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 10px;" colspan="4"></td>
-                    <td style="border: 1px solid #000; height: 10px;">
-                    <span id="freight1"></span><br>
-                    </td>
-                </tr>
-            </tbody>
-            <tbody>
-                <tr>
-                    <td style="border: 1px solid #000; height: 10px;"" colspan="2">
-                    <span>TOTAL</span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 10px;">
-                    <span id="pitotal1"></span><br></td>
-                    </td>
-                    <td style="border: 1px solid #000; height: 10px;"></td>
-                    <td style="border: 1px solid #000; height: 10px;">
-                    <td style="border: 1px solid #000; height: 10px;">
-                    <span id="qtytotal1"></span><br></td>
-                    </td>
-                    <td style="border: 1px solid #000; height: 10px;">
-                    <span id="wiegtotal1"></span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 10px;"></td>
-                    <td style="border: 1px solid #000; height: 10px;">
-                    <span id="val111"></span><br>
-                    </td>
-                 </tr>
-            </tbody>
-            <tbody>
-                ${taxRows}
-            </tbody>
-            <tbody>
-                <tr>
-                    <td style="border: 1px solid #000; height: 20px; width: 200px;" colspan="4">
-                        <b>Note:</b><span>Identification Marks & Serial No. of Goods: As per packing list attached</span><br>
-                        ${taxDetails} <!-- Dynamic Tax Name & Value in Words -->
-                        <b>Gross total in words:</b> <b>${grandTotalInWords}</b><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px; width: 200px;" colspan="3">
-                        <b>TOTAL INVOICE VALUE:</b><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 10px;" colspan="2">
-                        <span>${grandTotalTax}</span><br> <!-- Dynamic Grand Total Tax -->
-                    </td>              
-                </tr>
-            </tbody>
-            <tbody>
-                <tr>
-                    <td style="border: 1px solid #000; height: 20px;width: 200px;">
-                    <span>Particulars</span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    <span>Tax Application</span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    <span>Tax %</span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    <span>Adv Recovery (Taxable)</span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    <span>Adv Recovery (NonTax)</span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    <span>Invoice Value</span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    <span>Payable to dept</span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;" colspan="2">
-                    <span>Payable by Customer</span><br>
-                    </td>
-                    </tr>
-            </tbody>
-            <tbody>
-                <tr>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    <span>${gstremarks}</span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    <span>Basic</span><br>
-                    ${taxDetailsNew}
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    ${taxPerValue}
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    <span>${advremarks}</span><br>
-                    ${taxadvanceValue}
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    <span>${advremarksnon}</span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    <span>${basicValue}</span><br>
-                    ${taxValue}
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    ${taxValuedept}
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;" colspan="2">
-                    <span>${basicValuecos}</span><br>
-                    ${taxValuecos}
-                    </td>
-                    </tr>
-            </tbody>
-            <tbody>
-                <tr>
-                    <td style="border: 1px solid #000; height: 20px;" colspan="2">
-                    <span>Total</span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    <span id="taxbasic1"></span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    <span id="grandlast1"></span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    <span id="taxtotal1"></span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;" colspan="2">
-                    <span id="grandlast121"></span><br>
-                    </td>
-                </tr>
-            </tbody>
-            <tbody>
-                <tr>
-                    <td style="border: 1px solid #000; height: 20px; width: 100%;"colspan="9">
-                    <span>BANK ACCOUNT DETAILS:</span><span>BANK ACCOUNT NAME:</span><b id="bankname1"></b>,
-                    <span>ACCOUNT NUMBER:</span><b id="acc1"></b>,<span>BANK NAME & ADDRESS:</span><b id="bname1"></b>,<b id="add1"></b>
-                    <span>BRANCH CODE:</span><b id="code1"></b>,<span>SWIFT CODE:</span><b id="scode1"></b>,<span>IFSC CODE:</span><b id="ifsc1"></b><br>
-                   </td>
-                </tr>
-            </tbody>
-            <tbody>
-                <tr>
-                    <td style="border: 1px solid #000; height: 20px; width: 100%;"colspan="5">
-                    <span>Certified that the particulars given above are the true and correct and the amount indicated represents the price</span><br>
-                    <span>actually charged from the consignee and that there is no additional consideration following directly or</span><br>
-                    <span>indirectly over and above what has been declared herein.</span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px; width: 100%;"></td>
-		                    <td style="border: 1px solid #000; height: 20px; width: 100%;font-size:15px;" colspan="3">
-		    <span>For JSW SEVERFIELD STRUCTURES LTD.</span><br>
-		    <span style="margin-top: 20px; display: inline-block;">(Authorised signature)</span><br>
-		</td>
-        </tr>
-            </tbody>
-        </table>
-       <div class="footer">
-            <p>Regd Office:No.401,Grand Palladium,175 CST Road,Kalina,santacruz(East),Mumbai,IDIA-400 098 Ph:+91-22--67317000
-            (All disputes subject to Karnataka Jurisdiction)E&OE</p>
-        </div>
-    </div>
-    
-    <div class="invoice-container2">
-        <div class="invoice-header">
-            <b><span id="topdate12"></span></b>
-            <div class="gst-text">RECEIPT VOUCHER</div>
-            <div class="gst-text1">Duplicate for Supplier</div>
-        </div>
-        
-        <table class="company-details-table">
-            <tr>
-                <td colspan="2">
-                    <div class="company-logo">
-                    <img src="img/logo/download.png" alt="Company Logo" style="width: 80px;">
-                      </div>
-                    <strong>JSW Serverfiled Structures Limited</strong><br>
-                    Near 10 MT Gate, Beside Cement Plant-2<br>
-                    Vidyanagar P.O. Torangallu<br>
-                    Torangallu-583275<br>
-                    Ballari, Karnataka, India<br>
-                    State Code:29<br>
-                    GSTIN : 29AACCJ1473D1ZQ     PAN : AACCJ1473D<br>
-                    ICE No: 0309033152   CIN No: U28112MH2009PLC191045<br>
-                    Email: invoice@jssl.in    Website: www.jssl.in<br>
-                </td>
-                <td colspan="2">
-                <b>Invoice No:</b> <span id="invoiceNumber12"></span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>Date:</b> <span id="date12"></span><br>
-                <b>Contract No Reference No:</b> <span id="contrefno12"></span><br>
-                <b>Date & Time of supply:</b> <span id="datetime12"></span><br>
-                <b>Work/Purchase Order No:</b> <span id="workor12"></span><br>
-                <b>Date of Order:</b> <span id="dateor12"></span><br>
-            </tr>
-            <tr>
-                <td colspan="2"><strong>Invoice To:</strong><br>
-                <span id="shipto1112"></span><br>
-                <b>Name of the state:</b> <span id="statename12"></span><br>
-                <b>State Code:</b> <span id="stcode1112"></span><br>
-                <b>GSTIN:</b><span id="ingst12"></span><br>
-                <b>PAN:</b><span id="panin12"></span><br>
-                </td>
-                <td colspan="2"><strong>Name & Address of consignee:</strong><br>
-                <span id="conadd12"></span><br>
-                <b>State Name:</b> <span id="state12"></span><br>
-                <b>State Code:</b> <span id="stateco12"></span><br>
-                <b>GSTIN:</b><span id="congst12"></span><br>
-                <b>PAN:</b><span id="pancon12"></span><br>
-                </td>
-            </tr>
-            <tr>
-                <td><strong>Date of Notification</strong><br>
-                 <strong>Exempted note under:</strong><br>
-                 <strong>Tax is Payble on revese charge:(Yes/No):<span id="taxpayre12"></span></strong><br>
-                 </td>
-                <td><strong>Export Details:</strong><br>
-                <strong>ARE No:<span id="areano12"></span></strong><br>
-                <strong>LUT No:<span id="lutno12"></span></strong><br>
-                <strong>Container No:<span id="contlo12"></span></strong><br>
-                <strong>EPCG License No:<span id="epoglo12"></span></strong><br>
-                </td>
-                <td><b>Transporter:</b> <span id="trans12"></span><br>
-                <b>Vehicle No:</b><span id="vehino12"></span><br>
-                <b>LR/DOCKET No:<span id="lrdoc12"></span></b><br>
-                <b>Date:<span id="lrdate12"></span></b><br>
-                </td>
-                <td><b>Shipment Mode:</b> <span id="shipmo12"></span><br>
-                <b>Delivery Condition:</b> <span id="delcon12"></span><br>
-                </td>
-            </tr>
-        </table>
-        
-        <table class="product-table">
-            <thead>
-                <tr>
-                    <th>Sr No.</th>
-                    <th>Product Description</th>
-                    <th>Pieces</th>
-                    <th>Service/HSN Code</th>
-                    <th>UOM</th>
-                    <th>Qty</th>
-                    <th>Weight</th>
-                    <th>Unit Price</th>
-                    <th>Value (INR)</th>
-                </tr>
-            </thead>
-            <tbody>
-                ${tableRows} 
-            </tbody>
-            <tbody>
-                <tr>
-                    <td style="border: 1px solid #000; height: 10px;"" colspan="4">
-                    <span>Freight</span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 10px;" colspan="4"></td>
-                    <td style="border: 1px solid #000; height: 10px;">
-                    <span id="freight12"></span><br>
-                    </td>
-                </tr>
-            </tbody>
-            <tbody>
-                <tr>
-                    <td style="border: 1px solid #000; height: 10px;"" colspan="2">
-                    <span>TOTAL</span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 10px;">
-                    <span id="pitotal12"></span><br></td>
-                    </td>
-                    <td style="border: 1px solid #000; height: 10px;"></td>
-                    <td style="border: 1px solid #000; height: 10px;">
-                    <td style="border: 1px solid #000; height: 10px;">
-                    <span id="qtytotal12"></span><br></td>
-                    </td>
-                    <td style="border: 1px solid #000; height: 10px;">
-                    <span id="wiegtotal12"></span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 10px;"></td>
-                    <td style="border: 1px solid #000; height: 10px;">
-                    <span id="val1112"></span><br>
-                    </td>
-                 </tr>
-            </tbody>
-            <tbody>
-                ${taxRows}
-            </tbody>
-            <tbody>
-                <tr>
-                    <td style="border: 1px solid #000; height: 20px; width: 200px;" colspan="4">
-                        <b>Note:</b><span>Identification Marks & Serial No. of Goods: As per packing list attached</span><br>
-                        ${taxDetails} <!-- Dynamic Tax Name & Value in Words -->
-                        <b>Gross total in words:</b> <b>${grandTotalInWords}</b><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px; width: 200px;" colspan="3">
-                        <b>TOTAL INVOICE VALUE:</b><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 10px;" colspan="2">
-                        <span>${grandTotalTax}</span><br> <!-- Dynamic Grand Total Tax -->
-                    </td>              
-                </tr>
-            </tbody>
-            <tbody>
-                <tr>
-                    <td style="border: 1px solid #000; height: 20px;width: 200px;">
-                    <span>Particulars</span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    <span>Tax Application</span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    <span>Tax %</span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    <span>Adv Recovery (Taxable)</span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    <span>Adv Recovery (NonTax)</span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    <span>Invoice Value</span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    <span>Payable to dept</span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;" colspan="2">
-                    <span>Payable by Customer</span><br>
-                    </td>
-                    </tr>
-            </tbody>
-            <tbody>
-                <tr>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    <span>${gstremarks}</span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    <span>Basic</span><br>
-                    ${taxDetailsNew}
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    ${taxPerValue}
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    <span>${advremarks}</span><br>
-                    ${taxadvanceValue}
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    <span>${advremarksnon}</span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    <span>${basicValue}</span><br>
-                    ${taxValue}
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    ${taxValuedept}
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;" colspan="2">
-                    <span>${basicValuecos}</span><br>
-                    ${taxValuecos}
-                    </td>
-                    </tr>
-            </tbody>
-            <tbody>
-                <tr>
-                    <td style="border: 1px solid #000; height: 20px;" colspan="2">
-                    <span>Total</span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    <span id="taxbasic12"></span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    <span id="grandlast12"></span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;">
-                    <span id="taxtotal12"></span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px;" colspan="2">
-                    <span id="grandlast1212"></span><br>
-                    </td>
-                </tr>
-            </tbody>
-            <tbody>
-                <tr>
-                    <td style="border: 1px solid #000; height: 20px; width: 100%;"colspan="9">
-                    <span>BANK ACCOUNT DETAILS:</span><span>BANK ACCOUNT NAME:</span><b id="bankname12"></b>,
-                    <span>ACCOUNT NUMBER:</span><b id="acc12"></b>,<span>BANK NAME & ADDRESS:</span><b id="bname12"></b>,<b id="add12"></b>
-                    <span>BRANCH CODE:</span><b id="code12"></b>,<span>SWIFT CODE:</span><b id="scode12"></b>,<span>IFSC CODE:</span><b id="ifsc12"></b><br>
-                   </td>
-                </tr>
-            </tbody>
-            <tbody>
-                <tr>
-                    <td style="border: 1px solid #000; height: 20px; width: 100%;"colspan="5">
-                    <span>Certified that the particulars given above are the true and correct and the amount indicated represents the price</span><br>
-                    <span>actually charged from the consignee and that there is no additional consideration following directly or</span><br>
-                    <span>indirectly over and above what has been declared herein.</span><br>
-                    </td>
-                    <td style="border: 1px solid #000; height: 20px; width: 100%;"></td>
-		                    <td style="border: 1px solid #000; height: 20px; width: 100%;font-size:15px;" colspan="3">
-		    <span>For JSW SEVERFIELD STRUCTURES LTD.</span><br>
-		    <span style="margin-top: 20px; display: inline-block;">(Authorised signature)</span><br>
-		</td>
-        </tr>
-            </tbody>
-        </table>
-       <div class="footer">
-            <p>Regd Office:No.401,Grand Palladium,175 CST Road,Kalina,santacruz(East),Mumbai,IDIA-400 098 Ph:+91-22--67317000
-            (All disputes subject to Karnataka Jurisdiction)E&OE</p>
-        </div>
-    </div>
-   </body>
-</html>
-` 
-    const printElement = document.createElement('div');
-        printElement.innerHTML = htmlContent;
-        console.log(printElement)
-        // page1
-     printElement.querySelector('#datetime').textContent = formattedDateTime;
-     printElement.querySelector('#topdate').textContent = formattedDateTime;
-     printElement.querySelector('#dateor').textContent = currentDate;
-     printElement.querySelector('#date').textContent = currentDate;
-     printElement.querySelector('#invoiceNumber').textContent = invoiceno;
-     printElement.querySelector('#shipto11').textContent = invoice_to_id_value;
-     printElement.querySelector('#taxpayre').textContent = tax_payable;
-     printElement.querySelector('#areano').textContent = area_no;
-     printElement.querySelector('#contlo').textContent = containter_no;
-     printElement.querySelector('#lutno').textContent = lot_no;
-     printElement.querySelector('#epoglo').textContent = epcgno;
-     printElement.querySelector('#trans').textContent = transport_name;
-     printElement.querySelector('#lrdoc').textContent = lr_docketno;
-     printElement.querySelector('#lrdate').textContent = date_val;
-     printElement.querySelector('#shipmo').textContent = shipment_mode_id_value;
-     printElement.querySelector('#delcon').textContent = delivery_condition_id_value;
-     printElement.querySelector('#conadd').textContent = consignee_id_value;
-     printElement.querySelector('#workor').textContent = work_id_value;
-     printElement.querySelector('#vehino').textContent = vechile_no;
-     printElement.querySelector('#contrefno').textContent = con_code_with_lot_no;
-     printElement.querySelector('#statename').textContent = invoiceStateName;
-     printElement.querySelector('#state').textContent = consigneeStateName;
-     printElement.querySelector('#stateco').textContent = consigneeStateCode;
-     printElement.querySelector('#stcode11').textContent = invoiceStateCode;
-     printElement.querySelector('#congst').textContent = consigneeGstNo;
-     printElement.querySelector('#ingst').textContent = invoiceGstNo;
-     printElement.querySelector('#pancon').textContent = consigneePanNo;
-     printElement.querySelector('#panin').textContent = invoicePanNo;
-     printElement.querySelector('#freight').textContent = freight;
-     printElement.querySelector('#pitotal').textContent = total_pices;
-     printElement.querySelector('#qtytotal').textContent = total_qty;
-     printElement.querySelector('#wiegtotal').textContent = total_kgs;
-     printElement.querySelector('#val11').textContent = basic_value;
-     printElement.querySelector('#grandlast').textContent = Grand_Total_tax;
-     printElement.querySelector('#grandlast12new').textContent = PBC_Final_total;
-     printElement.querySelector('#bankname').textContent = bankName;
-     printElement.querySelector('#acc').textContent = account_number;
-     printElement.querySelector('#bname').textContent = branch_address;
-     printElement.querySelector('#code').textContent = branch_code;
-     printElement.querySelector('#scode').textContent = swift_code;
-     printElement.querySelector('#ifsc').textContent = ifsc_code;
-     printElement.querySelector('#taxbasic').textContent = Total_adv_tax_Taxable;
-     printElement.querySelector('#taxtotal').textContent = Tax_Final_total;
-     //printElement.querySelector('#prodesc').textContent = product_desc;
-     
-     //page 2
-     printElement.querySelector('#datetime1').textContent = formattedDateTime;
-     printElement.querySelector('#topdate1').textContent = formattedDateTime;
-     printElement.querySelector('#dateor1').textContent = currentDate;
-     printElement.querySelector('#date1').textContent = currentDate;
-     printElement.querySelector('#invoiceNumber1').textContent = invoiceno;
-     printElement.querySelector('#shipto111').textContent = invoice_to_id_value;
-     printElement.querySelector('#taxpayre1').textContent = tax_payable;
-     printElement.querySelector('#areano1').textContent = area_no;
-     printElement.querySelector('#contlo1').textContent = containter_no;
-     printElement.querySelector('#lutno1').textContent = lot_no;
-     printElement.querySelector('#epoglo1').textContent = epcgno;
-     printElement.querySelector('#trans1').textContent = transport_name;
-     printElement.querySelector('#lrdoc1').textContent = lr_docketno;
-     printElement.querySelector('#lrdate1').textContent = date_val;
-     printElement.querySelector('#shipmo1').textContent = shipment_mode_id_value;
-     printElement.querySelector('#delcon1').textContent = delivery_condition_id_value;
-     printElement.querySelector('#conadd1').textContent = consignee_id_value;
-     printElement.querySelector('#workor1').textContent = work_id_value;
-     printElement.querySelector('#vehino1').textContent = vechile_no;
-     printElement.querySelector('#contrefno1').textContent = con_code_with_lot_no;
-     printElement.querySelector('#statename1').textContent = invoiceStateName;
-     printElement.querySelector('#state1').textContent = consigneeStateName;
-     printElement.querySelector('#stateco1').textContent = consigneeStateCode;
-     printElement.querySelector('#stcode111').textContent = invoiceStateCode;
-     printElement.querySelector('#congst1').textContent = consigneeGstNo;
-     printElement.querySelector('#ingst1').textContent = invoiceGstNo;
-     printElement.querySelector('#pancon1').textContent = consigneePanNo;
-     printElement.querySelector('#panin1').textContent = invoicePanNo;
-     printElement.querySelector('#freight1').textContent = freight;
-     printElement.querySelector('#pitotal1').textContent = total_pices;
-     printElement.querySelector('#qtytotal1').textContent = total_qty;
-     printElement.querySelector('#wiegtotal1').textContent = total_kgs;
-     printElement.querySelector('#val111').textContent = basic_value;
-     printElement.querySelector('#grandlast1').textContent = Grand_Total_tax;
-     printElement.querySelector('#grandlast121').textContent = PBC_Final_total;
-     printElement.querySelector('#bankname1').textContent = bankName;
-     printElement.querySelector('#acc1').textContent = account_number;
-     printElement.querySelector('#bname1').textContent = branch_address;
-     printElement.querySelector('#code1').textContent = branch_code;
-     printElement.querySelector('#scode1').textContent = swift_code;
-     printElement.querySelector('#ifsc1').textContent = ifsc_code;
-     printElement.querySelector('#taxbasic1').textContent = Total_adv_tax_Taxable;
-     printElement.querySelector('#taxtotal1').textContent = Tax_Final_total;
-     
-     //page 3
-     printElement.querySelector('#datetime12').textContent = formattedDateTime;
-     printElement.querySelector('#topdate12').textContent = formattedDateTime;
-     printElement.querySelector('#dateor12').textContent = currentDate;
-     printElement.querySelector('#date12').textContent = currentDate;
-     printElement.querySelector('#invoiceNumber12').textContent = invoiceno;
-     printElement.querySelector('#shipto1112').textContent = invoice_to_id_value;
-     printElement.querySelector('#taxpayre12').textContent = tax_payable;
-     printElement.querySelector('#areano12').textContent = area_no;
-     printElement.querySelector('#contlo12').textContent = containter_no;
-     printElement.querySelector('#lutno12').textContent = lot_no;
-     printElement.querySelector('#epoglo12').textContent = epcgno;
-     printElement.querySelector('#trans12').textContent = transport_name;
-     printElement.querySelector('#lrdoc12').textContent = lr_docketno;
-     printElement.querySelector('#lrdate12').textContent = date_val;
-     printElement.querySelector('#shipmo12').textContent = shipment_mode_id_value;
-     printElement.querySelector('#delcon12').textContent = delivery_condition_id_value;
-     printElement.querySelector('#conadd12').textContent = consignee_id_value;
-     printElement.querySelector('#workor12').textContent = work_id_value;
-     printElement.querySelector('#vehino12').textContent = vechile_no;
-     printElement.querySelector('#contrefno12').textContent = con_code_with_lot_no;
-     printElement.querySelector('#statename12').textContent = invoiceStateName;
-     printElement.querySelector('#state12').textContent = consigneeStateName;
-     printElement.querySelector('#stateco12').textContent = consigneeStateCode;
-     printElement.querySelector('#stcode1112').textContent = invoiceStateCode;
-     printElement.querySelector('#congst12').textContent = consigneeGstNo;
-     printElement.querySelector('#ingst12').textContent = invoiceGstNo;
-     printElement.querySelector('#pancon12').textContent = consigneePanNo;
-     printElement.querySelector('#panin12').textContent = invoicePanNo;
-     printElement.querySelector('#freight12').textContent = freight;
-     printElement.querySelector('#pitotal12').textContent = total_pices;
-     printElement.querySelector('#qtytotal12').textContent = total_qty;
-     printElement.querySelector('#wiegtotal12').textContent = total_kgs;
-     printElement.querySelector('#val1112').textContent = basic_value;
-     printElement.querySelector('#grandlast12').textContent = Grand_Total_tax;
-     printElement.querySelector('#grandlast1212').textContent = PBC_Final_total;
-     printElement.querySelector('#bankname12').textContent = bankName;
-     printElement.querySelector('#acc12').textContent = account_number;
-     printElement.querySelector('#bname12').textContent = branch_address;
-     printElement.querySelector('#code12').textContent = branch_code;
-     printElement.querySelector('#scode12').textContent = swift_code;
-     printElement.querySelector('#ifsc12').textContent = ifsc_code;
-     printElement.querySelector('#taxbasic12').textContent = Total_adv_tax_Taxable;
-     printElement.querySelector('#taxtotal12').textContent = Tax_Final_total;
-     
-    newWindow.document.write(htmlContent);
-        newWindow.document.close();
-
-    } catch (error) {
-        console.error("Error:", error);
-        //alert("Failed to load invoice data.");
-    }
-}*/
+/* >>> OLD COMMENTED-OUT printRecordView (~600 lines of dead code).
+   Paste your original commented block back here unchanged if you want to keep it. <<< */
 
 function openModalcancel(id,pn_id) {
     // Open the modal
@@ -6012,3 +4099,37 @@ function cancelRecord(id) {
 	            return char.toUpperCase();
 	        });
 	}
+	
+	
+	
+	
+	const selectErrorMap = {
+	    inbusunit:     ['busunitError'],
+	    ininto:        ['intoError'],
+	    work:          ['workError'],
+	    billing:       ['billingError'],
+	    officeservice: ['servicecodeError4'],
+	    officehsn:     ['servicecodeError4'],
+	    bunitvup:      ['bunitvupError'],
+	    intovup:       ['intovupError'],
+	    workordervup:  ['workordervupError'],
+	    nandconvup:    ['nandconvupError'],
+	    newscode:      ['servicecodeupError'],
+	    newhcode:      ['servicecodeupError']
+	};
+
+	$(document).on('change select2:select', 'select', function () {
+	    const errIds = selectErrorMap[this.id];
+	    if (errIds && String($(this).val() || '').trim() !== '') {
+	        errIds.forEach(id => setFieldError(id, ''));
+	    }
+	});
+
+	$(document).on('input', '#prodes',      () => setFieldError('productCodeError3', ''));
+	$(document).on('input', '#remark',      () => setFieldError('productCodeError4', ''));
+	$(document).on('input', '#prodesv11up', () => setFieldError('intypedes', ''));
+	$(document).on('input', '#remarkvup',   () => setFieldError('intyperem', ''));
+
+	$('#exampleModalScrollable, #exampleModalScrollableEditUp').on('hidden.bs.modal', function () {
+	    $(this).find('.field-error, .error-message').hide().text('');
+	});

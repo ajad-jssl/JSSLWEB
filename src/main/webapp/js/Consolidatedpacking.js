@@ -15,6 +15,31 @@ document.getElementById("modalScroll1").addEventListener("click", function () {
 });
 
 
+function s2(target, placeholder) {
+    const $el = (typeof target === 'string') ? $('#' + target) : $(target);
+    if (!$el.length) return;
+    if ($el.hasClass('select2-hidden-accessible')) $el.select2('destroy');
+    const $modal = $el.closest('.modal');
+    $el.select2({
+        dropdownParent: $modal.length ? $modal : $(document.body),
+        width: '100%',
+        placeholder: placeholder || $el.find('option:first').text(),
+        allowClear: false,
+        minimumResultsForSearch: 0
+    });
+}
+
+// Select2 only fires jQuery events. This re-fires a native "change"
+// so addEventListener("change") handlers keep working.
+$(document).on('select2:select select2:clear', 'select', function () {
+    this.dispatchEvent(new Event('change'));
+});
+
+
+
+
+
+
 function loadAllowedActions() {
     // Get current JSP page name dynamically
     const rawPageName = window.location.pathname.split("/").pop();
@@ -109,16 +134,22 @@ async function fetchcont(factoryId) {
         });
 
         // Add event listener for contractor selection change
-        selectElement.addEventListener("change", function() {
-            const selectedContractId = selectElement.value;
-            if (selectedContractId) {
-                fetchmile(factoryId, selectedContractId);  // Fetch milestones based on selected factory_id and contract_id
-            } else {
-                // If no contractor is selected, clear the milestone dropdown
-                const mileSelect = document.getElementById("mile");
-                mileSelect.innerHTML = `<option value="">Select milestone</option>`;
-            }
-        });
+		s2('cont', 'Select contractor');
+
+		if (!selectElement.dataset.bound) {          // add the listener only once
+		    selectElement.dataset.bound = "1";
+		    selectElement.addEventListener("change", function () {
+		        const selectedContractId = this.value;
+		        if (selectedContractId) {
+		            fetchmile(factoryId, selectedContractId);
+		        } else {
+		            document.getElementById("mile").innerHTML = `<option value="">Select milestone</option>`;
+		            s2('mile', 'Select milestone');
+		            document.getElementById("container1").style.display = "none";
+		            document.getElementById("container2").style.display = "none";
+		        }
+		    });
+		}
 
     } catch (error) {
         console.error("Error fetching contractors:", error);
@@ -126,7 +157,7 @@ async function fetchcont(factoryId) {
 }
 
 
-async function fetchmile(factoryId, contractId) {
+/*async function fetchmile(factoryId, contractId) {
     try {
         // Construct the API URL properly
         const url = new URL(`/jssl/listassignmilestoneforcontractornew`, baseUrl);
@@ -194,6 +225,64 @@ async function fetchmile(factoryId, contractId) {
 		    }
 		});
 
+    } catch (error) {
+        console.error("Error fetching milestones:", error);
+    }
+}*/
+
+
+async function fetchmile(factoryId, contractId) {
+    try {
+        const url = new URL(`/jssl/listassignmilestoneforcontractornew`, baseUrl);
+        url.searchParams.append("factory_id", factoryId);
+        url.searchParams.append("contract_id", contractId);
+
+        const response = await fetch(url, { method: "GET", credentials: "include" });
+        if (!response.ok) throw new Error("Failed to fetch milestones");
+        const json = await response.json();
+
+        const selectElement = document.getElementById("mile");
+        selectElement.innerHTML = `<option value="">Select milestone</option>`;
+
+        if (json.status === "yes" && json.DATA && json.DATA.length) {
+            json.DATA.forEach((milestone) => {
+                if (milestone.milestone_id) {
+                    const option = document.createElement("option");
+                    option.value = milestone.milestone_id;
+                    option.textContent = milestone.milestone_name;
+                    selectElement.appendChild(option);
+                }
+            });
+        } else {
+            console.warn("No milestones found.");
+        }
+
+        s2('mile', 'Select milestone');
+
+        if (!selectElement.dataset.bound) {          // add the listener only once
+            selectElement.dataset.bound = "1";
+            selectElement.addEventListener("change", function () {
+                const selectedContractId = document.getElementById("cont").value;
+                const milevalue = this.value;
+
+                const container1 = document.getElementById("container1");
+                const container2 = document.getElementById("container2");
+
+                container2.style.display = "none";
+                document.getElementById("packingRowsContainer").innerHTML = "";
+                document.getElementById("qty").value = "";
+                document.getElementById("kgs").value = "";
+                document.querySelectorAll("#invoiceCheckboxMenu input[type='checkbox']")
+                    .forEach(cb => cb.checked = false);
+
+                if (milevalue) {
+                    container1.style.display = "block";
+                    loadInvoices(selectedContractId);
+                } else {
+                    container1.style.display = "none";
+                }
+            });
+        }
     } catch (error) {
         console.error("Error fetching milestones:", error);
     }
@@ -463,6 +552,7 @@ async function fetchtype() {
         });
 
         typeDropdown.innerHTML = options;
+		s2('type', 'Select Type');   
 
     } catch (error) {
         console.error("Error fetching Type options:", error);
@@ -507,6 +597,8 @@ async function fetchtype1() {
         });
 
         typeDropdown.innerHTML = options;
+		
+		s2('type1', 'Select Type');  
 
     } catch (error) {
         console.error("Error fetching Type options:", error);
@@ -515,6 +607,9 @@ async function fetchtype1() {
 
 function openModalAdd()
  {
+	
+	var showError = false;  
+	
 	var vechicle = document.getElementById('vehi').value.trim();
 	var trans = document.getElementById('trans').value.trim();
 	var unit_price = document.getElementById('price').value.trim();
@@ -565,6 +660,8 @@ function openModalAdd()
 		  if ( !vechicle || !trans ) {
 		         return; // Do not proceed with opening the modal if validation fails
 		     }
+			 
+			 if (showError) return; 
 
 			 $('#exampleModalCenter66').modal('show');
 		   
@@ -936,7 +1033,10 @@ function editRecord(pn_id) {
                 document.getElementById("qty1").value = firstRecord.qty || "";
                 document.getElementById("Weight1").value = firstRecord.per_kgs || "";
                 document.getElementById("price1").value = firstRecord.unit_price || "";
-                document.getElementById("type1").value = firstRecord.type_id || "";
+              //  document.getElementById("type1").value = firstRecord.type_id || "";
+				
+				$('#type1').val(firstRecord.type_id || "").trigger('change.select2');
+				
                 document.getElementById("total2").value = parseFloat(firstRecord.grand_total || 0).toFixed(2);
                 document.getElementById("pnidedit").value = firstRecord.conpn_id || "";
 				console.log(load_id_toUPdated);

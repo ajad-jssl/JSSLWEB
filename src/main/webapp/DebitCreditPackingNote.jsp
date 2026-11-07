@@ -20,15 +20,16 @@
    <link href="vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css" />
    <link href="css/ruang-admin.min.css" rel="stylesheet" />
    <link href="vendor/datatables/dataTables.bootstrap4.min.css" rel="stylesheet">
-      
+         <link rel="stylesheet"
+      href="externalLibrary/cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">
   <link rel="stylesheet" href="externalLibrary/cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css" />
    <link rel="stylesheet" href="css/main.css">
    
    
    <link href="externalLibrary/cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-KyZXEJjRkC9iY3NfJVzz6se99Nz05dfk03S8zNeS46E1H2nKfHlR9ltRf9TL7zG6" crossorigin="anonymous">
- <link href="externalLibrary/cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
   <link href="externalLibrary/cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
-<script src="externalLibrary/cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
 
     <script>
     const user_id = sessionStorage.getItem('user_id');
@@ -233,6 +234,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
       window.location = "newlogin.jsp";
     }
   </script> -->
+  
 </head>
 
 <body >
@@ -904,7 +906,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
   <a class="scroll-to-top rounded" href="#page-top">
     <i class="fas fa-angle-up"></i>
   </a>
-<!--  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script> -->
+<!--    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script> -->
 
   <!-- Bootstrap JS and dependencies -->
 <script>
@@ -1021,39 +1023,39 @@ function closeModalviewscp() {
 
 
  
-  <script src="vendor/jquery/jquery.min.js"></script>
-      <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
-      <script src="vendor/jquery-easing/jquery.easing.min.js"></script>
+    <script src="vendor/jquery/jquery.min.js"></script>
+        <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+        <script src="vendor/jquery-easing/jquery.easing.min.js"></script>
     
-      <script src="vendor/datatables/jquery.dataTables.min.js"></script>
-      <script src="vendor/datatables/dataTables.bootstrap4.min.js"></script>
+        <script src="vendor/datatables/jquery.dataTables.min.js"></script>
+        <script src="vendor/datatables/dataTables.bootstrap4.min.js"></script>
   
   
   
   
-   <script src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
-    <script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
-    <script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
-    <script src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
-    <script src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>   
+     <script src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
+      <script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+      <script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
+      <script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
+      <script src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
+      <script src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>   
     
+      <script src="externalLibrary/cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     
-    
-    <script src="js/DebitCreditPacking.js?v=<%=ver(application, "/js/DebitCreditPacking.js")%>"></script>
-    <script src="js/config.js?v=<%=ver(application, "/js/config.js")%>"></script>
-    <script src="js/logout.js?v=<%=ver(application, "/js/logout.js")%>"></script>
-    <script src="js/username.js?v=<%=ver(application, "/js/username.js")%>"></script>
-    <script src="js/createdby.js?v=<%=ver(application, "/js/createdby.js")%>"></script>
- 	<script src="js/modifiedby.js?v=<%=ver(application, "/js/modifiedby.js")%>"></script>
- 	<script src="js/factoryid.js?v=<%=ver(application, "/js/factoryid.js")%>"></script>
- 	 <script src="js/Sessionfilter.js?v=<%=ver(application, "/js/Sessionfilter.js")%>"></script>
+      <script src="js/DebitCreditPacking.js?v=<%=ver(application, "/js/DebitCreditPacking.js")%>"></script>
+      <script src="js/config.js?v=<%=ver(application, "/js/config.js")%>"></script>
+      <script src="js/logout.js?v=<%=ver(application, "/js/logout.js")%>"></script>
+      <script src="js/username.js?v=<%=ver(application, "/js/username.js")%>"></script>
+      <script src="js/createdby.js?v=<%=ver(application, "/js/createdby.js")%>"></script>
+ 	  <script src="js/modifiedby.js?v=<%=ver(application, "/js/modifiedby.js")%>"></script>
+ 	  <script src="js/factoryid.js?v=<%=ver(application, "/js/factoryid.js")%>"></script>
+ 	   <script src="js/Sessionfilter.js?v=<%=ver(application, "/js/Sessionfilter.js")%>"></script>
  	<script>
 
   window.actionElementMap = {
   };
 </script>
-<script src="js/permissions.js?v=<%=ver(application, "/js/permissions.js")%>"></script>
+  <script src="js/permissions.js?v=<%=ver(application, "/js/permissions.js")%>"></script>
 
 
 </body>

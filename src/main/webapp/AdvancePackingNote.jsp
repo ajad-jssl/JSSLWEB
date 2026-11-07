@@ -678,48 +678,44 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
   </a>
 
 
-<script>
-  document.getElementById("search").addEventListener("click", function () {
-    document.getElementById("inputFieldsContainer").style.display = "block";
-  });
-</script>
 
 
 
-  <script src="vendor/jquery/jquery.min.js"></script>
-   <script src="externalLibrary/cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-      <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
-      <script src="vendor/jquery-easing/jquery.easing.min.js"></script>
 
-      <script src="vendor/datatables/jquery.dataTables.min.js"></script>
-      <script src="vendor/datatables/dataTables.bootstrap4.min.js"></script>
+    <script src="vendor/jquery/jquery.min.js"></script>
+     <script src="externalLibrary/cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+        <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+        <script src="vendor/jquery-easing/jquery.easing.min.js"></script>
+
+        <script src="vendor/datatables/jquery.dataTables.min.js"></script>
+        <script src="vendor/datatables/dataTables.bootstrap4.min.js"></script>
   
-     <script src="js/config.js?v=<%=ver(application, "/js/config.js")%>"></script>
+       <script src="js/config.js?v=<%=ver(application, "/js/config.js")%>"></script>
   <!-- 
-    <script src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
-    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
-    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script> -->
+      <script src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
+      <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
+      <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script> -->
     
     
     
-       <script src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
-    <script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
-    <script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
-    <script src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
-    <script src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
- <!--  <script src="js/AdvancePacking.js"></script> -->
- <script src="js/AdvancePacking.js?v=<%=ver(application, "/js/AdvancePacking.js")%>"></script>
-      <script src="js/logout.js?v=<%=ver(application, "/js/logout.js")%>"></script>
-  <script src="js/username.js?v=<%=ver(application, "/js/username.js")%>"></script>
+         <script src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
+      <script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+      <script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
+      <script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
+      <script src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
+      <script src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
+ <!--    <script src="js/AdvancePacking.js"></script> -->
+   <script src="js/AdvancePacking.js?v=<%=ver(application, "/js/AdvancePacking.js")%>"></script>
+        <script src="js/logout.js?v=<%=ver(application, "/js/logout.js")%>"></script>
+    <script src="js/username.js?v=<%=ver(application, "/js/username.js")%>"></script>
   
-  <script src="js/createdby.js?v=<%=ver(application, "/js/createdby.js")%>"></script>
- 	   <script src="js/modifiedby.js?v=<%=ver(application, "/js/modifiedby.js")%>"></script>
- 	  <script src="js/factoryid.js?v=<%=ver(application, "/js/factoryid.js")%>"></script>
- 	   <script src="js/Sessionfilter.js?v=<%=ver(application, "/js/Sessionfilter.js")%>"></script>
+    <script src="js/createdby.js?v=<%=ver(application, "/js/createdby.js")%>"></script>
+ 	     <script src="js/modifiedby.js?v=<%=ver(application, "/js/modifiedby.js")%>"></script>
+ 	    <script src="js/factoryid.js?v=<%=ver(application, "/js/factoryid.js")%>"></script>
+ 	     <script src="js/Sessionfilter.js?v=<%=ver(application, "/js/Sessionfilter.js")%>"></script>
  	      	  <script>
 /* const moduleId = localStorage.getItem("selectedModuleId"); */
   // This maps action names from the API to button IDs on this page
@@ -727,37 +723,25 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
   };
 </script>
  	  
-<!-- <script src="js/sessionLogout.js"></script> -->
+<!--   <script src="js/sessionLogout.js"></script> -->
 <script>
 function allowOnlyPositive(e) {
-    // Block minus key (-)
-    if (e.key === '-' || e.keyCode === 189 || e.keyCode === 109) {
-        return false;
-    }
+    // Allow Ctrl/Cmd shortcuts (paste, copy, cut, select all, undo)
+    if (e.ctrlKey || e.metaKey) return true;
 
     // Allow navigation/editing keys
-    if (['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab'].includes(e.key)) {
-        return true;
-    }
+    const allowed = ['Backspace', 'Delete', 'Tab', 'Enter', 'ArrowLeft', 'ArrowRight', 'Home', 'End'];
+    if (allowed.includes(e.key)) return true;
 
-    // Allow one decimal point only
-    if (e.key === '.') {
-        if (e.target.value.includes('.')) {
-            return false; // already has a decimal point
-        }
-        return true;
-    }
+    // Allow digits and a decimal point
+    if (/^[0-9.]$/.test(e.key)) return true;
 
-    // Allow digits
-    if (e.key >= '0' && e.key <= '9') {
-        return true;
-    }
-
+    // Block everything else (-, +, e, letters)
     return false;
 }
 </script>
 
-<script src="js/permissions.js?v=<%=ver(application, "/js/permissions.js")%>"></script>
+  <script src="js/permissions.js?v=<%=ver(application, "/js/permissions.js")%>"></script>
   <!-- Page level custom scripts -->
 </body>
 </html>

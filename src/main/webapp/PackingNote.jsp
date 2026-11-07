@@ -32,7 +32,7 @@
 
 
 
-<script src="externalLibrary/cdn.jsdelivr.net/npm/select2@4.0.13/dist/js/select2.min.js"></script>
+  <script src="externalLibrary/cdn.jsdelivr.net/npm/select2@4.0.13/dist/js/select2.min.js"></script>
 
 
 
@@ -627,9 +627,9 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
  
 
     <!-- jQuery and Bootstrap JS for button click functionality -->
-  <!--   <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.1/dist/umd/popper.min.js"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script> -->
+  <!--     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+      <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.1/dist/umd/popper.min.js"></script>
+      <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script> -->
 
    <!--  <script>
         // jQuery to toggle visibility of container-wrapper on any button click
@@ -1001,25 +1001,25 @@ $('.transportationButton').on('click', function(e) {
   <a class="scroll-to-top rounded" href="#page-top">
     <i class="fas fa-angle-up"></i>
   </a> 
- <!--  <script src="vendor/jquery/jquery.min.js"></script> -->
-      <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
-      <script src="vendor/jquery-easing/jquery.easing.min.js"></script>
+ <!--    <script src="vendor/jquery/jquery.min.js"></script> -->
+        <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+        <script src="vendor/jquery-easing/jquery.easing.min.js"></script>
      
-      <script src="vendor/datatables/jquery.dataTables.min.js"></script>
-      <script src="vendor/datatables/dataTables.bootstrap4.min.js"></script>
-    <!-- <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script> -->
-    <script src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
-    <script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
-    <script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
-    <script src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
-    <script src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
+        <script src="vendor/datatables/jquery.dataTables.min.js"></script>
+        <script src="vendor/datatables/dataTables.bootstrap4.min.js"></script>
+    <!--   <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script> -->
+      <script src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
+      <script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+      <script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
+      <script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
+      <script src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
+      <script src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
     
-      <script src="js/Packing.js?v=<%=ver(application, "/js/Packing.js")%>"></script>
-      <script src="js/config.js?v=<%=ver(application, "/js/config.js")%>"></script>
-        <script src="js/username.js?v=<%=ver(application, "/js/username.js")%>"></script>
-           <script src="js/createdby.js?v=<%=ver(application, "/js/createdby.js")%>"></script>
-           <script src="js/logout.js?v=<%=ver(application, "/js/logout.js")%>"></script>
+        <script src="js/Packing.js?v=<%=ver(application, "/js/Packing.js")%>"></script>
+        <script src="js/config.js?v=<%=ver(application, "/js/config.js")%>"></script>
+          <script src="js/username.js?v=<%=ver(application, "/js/username.js")%>"></script>
+             <script src="js/createdby.js?v=<%=ver(application, "/js/createdby.js")%>"></script>
+             <script src="js/logout.js?v=<%=ver(application, "/js/logout.js")%>"></script>
         <script>
 /* const moduleId = localStorage.getItem("selectedModuleId"); */
   // This maps action names from the API to button IDs on this page
@@ -1028,6 +1028,6 @@ $('.transportationButton').on('click', function(e) {
  /*    "Edit": "updateitems"     // Update button */
   };
 </script>
-<script src="js/permissions.js?v=<%=ver(application, "/js/permissions.js")%>"></script>
+  <script src="js/permissions.js?v=<%=ver(application, "/js/permissions.js")%>"></script>
 </body>
 </html>

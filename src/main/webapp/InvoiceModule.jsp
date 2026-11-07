@@ -370,7 +370,7 @@
 
   <script src="js/factoryid.js?v=<%=ver(application, "/js/factoryid.js")%>"></script>
    <script src="js/Sessionfilter.js?v=<%=ver(application, "/js/Sessionfilter.js")%>"></script>
- <%--   <script src='js/InvoiceModule.js?v=<%=jsVersion%>'></script> --%>
+   <script src="js/InvoiceModule.js?v=<%=ver(application, "/js/InvoiceModule.js")%>"></script>
 
   
 

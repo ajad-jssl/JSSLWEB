@@ -1,7 +1,31 @@
 
 
 let allowed = null;
+function hideError(el) { el.innerText = ""; el.style.display = "none"; }
 
+// UOM / Type dropdowns (native change + Select2's own event)
+$(document).on('change select2:select', '.dynamic-row select', function () {
+    if (String($(this).val() || '').trim() !== '') {
+        $(this).closest('[class*="col-"]').find('.uom-error, .type-error').each(function () { hideError(this); });
+    }
+});
+
+// Qty / Kg / Unit Price / Pieces
+$(document).on('input change', '.dynamic-row input[type="number"]', function () {
+    const v = this.value.trim();
+    if (v !== '' && !isNaN(v) && parseFloat(v) > 0) {
+        $(this).closest('[class*="col-"]').find('[class$="-error"]').each(function () { hideError(this); });
+    }
+});
+
+// File inputs
+$(document).on('change', '#file',     function () { if (this.value) hideError(document.getElementById('fileerror')); });
+$(document).on('change', '#fileedit', function () { if (this.value) hideError(document.getElementById('fileediterror')); });
+
+// Reset messages when a modal closes
+$('#exampleModalScrollable123, #exampleModalScrollable123update').on('hidden.bs.modal', function () {
+    $(this).find('[class$="-error"], .error-message').hide().text('');
+});
 
 document.getElementById("modalScroll1").addEventListener("click", function () {
     // show custom message instead of opening modal
@@ -96,7 +120,7 @@ function addRow() {
         <!-- Quantity -->
         <div class="col-md-2">
             <input type="number" class="form-control form-control-sm text-right"
-                   id="qty-${rowCount}" placeholder="Quantity" onkeydown="return allowOnlyPositive(event)"
+                   id="qty-${rowCount}" placeholder="Quantity" autocomplete="off" onkeydown="return allowOnlyPositive(event)"
                    oninput="calculateTotal(${rowCount})" min="0">
             <div class="qty-error" style="color:red; display:none;"></div>
         </div>
@@ -315,7 +339,7 @@ document.addEventListener("DOMContentLoaded", function() {
 });
 
 // Fetching the dropdown list for contractors
-async function fetchcont(factoryId) {
+/*async function fetchcont(factoryId) {
     try {
         // Construct the API URL properly
         const url = new URL(`/jssl/getlistassignedmilestonetocontractors`, baseUrl);
@@ -424,7 +448,83 @@ async function fetchmile(factoryId, contractId) {
     } catch (error) {
         console.error("Error fetching milestones:", error);
     }
+}*/
+
+
+
+
+
+async function fetchcont(factoryId) {
+    try {
+        const url = new URL(`/jssl/getlistassignedmilestonetocontractors`, baseUrl);
+        url.searchParams.append("factory_id", factoryId);
+
+        const response = await fetch(url, { method: "GET", credentials: "include" });
+        if (!response.ok) throw new Error("Failed to fetch contractors");
+        const json = await response.json();
+
+        const selectElement = document.getElementById("cont");
+        selectElement.innerHTML = `<option value="">Select contractor</option>`;
+
+        if (json.status === "yes" && json.DATA.length) {
+            json.DATA.forEach((contractor) => {
+                if (contractor.contract_id && contractor.contract_name) {
+                    const option = document.createElement("option");
+                    option.value = contractor.contract_id;
+                    option.textContent = contractor.contract_name;
+                    selectElement.appendChild(option);
+                }
+            });
+        }
+
+        initSelect2('cont', 'exampleModalScrollable123', 'Select contractor');
+
+        $('#cont').off('change.cont').on('change.cont', function () {
+            const selectedContractId = this.value;
+            if (selectedContractId) {
+                fetchmile(factoryId, selectedContractId);
+            } else {
+                $('#mile').html(`<option value="">Select milestone</option>`);
+                initSelect2('mile', 'exampleModalScrollable123', 'Select milestone');
+                $('#mile').val('').trigger('change');
+            }
+        });
+    } catch (error) {
+        console.error("Error fetching contractors:", error);
+    }
 }
+
+async function fetchmile(factoryId, contractId) {
+    try {
+        const url = new URL(`/jssl/listassignmilestoneforcontractornew`, baseUrl);
+        url.searchParams.append("factory_id", factoryId);
+        url.searchParams.append("contract_id", contractId);
+
+        const response = await fetch(url, { method: "GET", credentials: "include" });
+        if (!response.ok) throw new Error("Failed to fetch milestones");
+        const json = await response.json();
+
+        const selectElement = document.getElementById("mile");
+        selectElement.innerHTML = `<option value="">Select milestone</option>`;
+
+        if (json.status === "yes" && json.DATA.length) {
+            json.DATA.forEach((milestone) => {
+                if (milestone.milestone_id) {
+                    const option = document.createElement("option");
+                    option.value = milestone.milestone_id;
+                    option.textContent = milestone.milestone_name;
+                    selectElement.appendChild(option);
+                }
+            });
+        }
+
+        initSelect2('mile', 'exampleModalScrollable123', 'Select milestone');
+        $('#mile').val('').trigger('change');   // reset selection and hide the line-item section
+    } catch (error) {
+        console.error("Error fetching milestones:", error);
+    }
+}
+
 
 // Fetching the dropdown list for loads
 /*async function fetchLoad(factoryId, contractId, milestoneName) {
@@ -680,7 +780,7 @@ function fetchUserList(selectedFactoryId) {
     });
 }
 // Adding event listener for "Load" dropdown selection change
-document.getElementById('mile').addEventListener('change', function() {
+/*document.getElementById('mile').addEventListener('change', function() {
     const loadValue = this.value;  // Get the selected value of the "Load" dropdown
 
     const inputFieldsContainer = document.getElementById("inputFieldsContainer");
@@ -692,6 +792,12 @@ document.getElementById('mile').addEventListener('change', function() {
         // If no load is selected, hide the "inputFieldsContainer"
         inputFieldsContainer.style.display = "none";
     }
+});*/
+
+
+$('#mile').on('change', function () {
+    document.getElementById("inputFieldsContainer").style.display =
+        this.value ? "block" : "none";
 });
 
 function openModalAdd() {
@@ -743,7 +849,7 @@ function openModalAdd() {
 
     // UOM Validation for all rows
     var uomValid = true;
-    document.querySelectorAll(".dynamic-row").forEach(function(row) {
+    document.querySelectorAll("#dynamicRowsContainer .dynamic-row").forEach(function(row) {
         var uom = row.querySelector('select[id^="uom-"]').value.trim();
         if (uom === '') {
             uomValid = false;
@@ -757,7 +863,7 @@ function openModalAdd() {
 
     // Type Validation for all rows
     var typeValid = true;
-    document.querySelectorAll(".dynamic-row").forEach(function(row) {
+    document.querySelectorAll("#dynamicRowsContainer .dynamic-row").forEach(function(row) {
         var type = row.querySelector('select[id^="type-"]').value.trim();
         if (type === '') {
             typeValid = false;
@@ -771,7 +877,7 @@ function openModalAdd() {
 
     // Quantity Validation for all rows
     var qtyValid = true;
-    document.querySelectorAll(".dynamic-row").forEach(function(row) {
+    document.querySelectorAll("#dynamicRowsContainer .dynamic-row").forEach(function(row) {
         var qty = row.querySelector('input[id^="qty-"]').value.trim();
         if (qty === '' || isNaN(qty) || qty <= 0) {
             qtyValid = false;
@@ -785,7 +891,7 @@ function openModalAdd() {
 
     // Kg Validation for all rows
     var kgValid = true;
-    document.querySelectorAll(".dynamic-row").forEach(function(row) {
+    document.querySelectorAll("#dynamicRowsContainer .dynamic-row").forEach(function(row) {
         var kg = row.querySelector('input[id^="kg-"]').value.trim();
         if (kg === '' || isNaN(kg) || kg <= 0) {
             kgValid = false;
@@ -799,7 +905,7 @@ function openModalAdd() {
 
     // Unit Price Validation for all rows
     var unitPriceValid = true;
-    document.querySelectorAll(".dynamic-row").forEach(function(row) {
+    document.querySelectorAll("#dynamicRowsContainer .dynamic-row").forEach(function(row) {
         var unitPrice = row.querySelector('input[id^="uniprice-"]').value.trim();
         if (unitPrice === '' || isNaN(unitPrice) || unitPrice <= 0) {
             unitPriceValid = false;
@@ -813,7 +919,7 @@ function openModalAdd() {
 
     // Pieces Validation for all rows
     var piecesValid = true;
-    document.querySelectorAll(".dynamic-row").forEach(function(row) {
+    document.querySelectorAll("#dynamicRowsContainer .dynamic-row").forEach(function(row) {
         var pieces = row.querySelector('input[id^="pice-"]').value.trim();
         if (pieces === '' || isNaN(pieces) || pieces <= 0) {
             piecesValid = false;
@@ -849,7 +955,7 @@ function addevent() {
     const picesArray = [];
 
     // Loop over each row to collect values (assuming the rows have a class 'dynamic-row')
-    const rows = document.querySelectorAll('.dynamic-row');
+    const rows = document.querySelectorAll('#dynamicRowsContainer .dynamic-row');
     console.warn(rows);
     rows.forEach(row => {
         const qty = row.querySelector('[id^="qty"]').value.trim();
@@ -1037,67 +1143,69 @@ function addRowEdit() {
     newRow.classList.add("form-row", "dynamic-row", "mb-2");
     newRow.id = `row_new_${rowIndex}`;
 
-    newRow.innerHTML = `
-        <!-- Hidden SL No -->
-        <div class="col-md-1" style="display:none;">
-            <input type="number" class="form-control form-control-sm"
-                   id="slno_new_${rowIndex}" value="${newSlno}" readonly>
-        </div>
+	newRow.innerHTML = `
+	    <div class="col-md-1" style="display:none;">
+	        <input type="number" class="form-control form-control-sm"
+	               id="slno_new_${rowIndex}" value="${newSlno}" readonly>
+	    </div>
 
-        <!-- UOM -->
-        <div class="col-md-1">
-            <select class="form-control form-control-sm" id="uom_new_${rowIndex}">
-                ${uomOptionsHTML || `<option value="">Select Uom</option>`}
-            </select>
-        </div>
+	    <div class="col-md-1">
+	        <select class="form-control form-control-sm" id="uom_new_${rowIndex}">
+	            ${uomOptionsHTML || `<option value="">Select Uom</option>`}
+	        </select>
+	        <div class="uom-error" style="color:red; display:none;"></div>
+	    </div>
 
-        <!-- Type -->
-        <div class="col-md-2">
-            <select class="form-control form-control-sm" id="type_new_${rowIndex}">
-                ${typeOptionsHTML || `<option value="">Select type</option>`}
-            </select>
-        </div>
+	    <div class="col-md-2">
+	        <select class="form-control form-control-sm" id="type_new_${rowIndex}">
+	            ${typeOptionsHTML || `<option value="">Select type</option>`}
+	        </select>
+	        <div class="type-error" style="color:red; display:none;"></div>
+	    </div>
 
-        <!-- Quantity -->
-        <div class="col-md-2">
-            <input type="number" class="form-control form-control-sm"
-                   id="qty_new_${rowIndex}" placeholder="Quantity">
-        </div>
+	    <div class="col-md-2">
+	        <input type="number" class="form-control form-control-sm text-right"
+	               id="qty_new_${rowIndex}" placeholder="Quantity" min="0"
+	               onkeydown="return allowOnlyPositive(event)"
+	               oninput="calculateRowTotaledit(${rowIndex})">
+	        <div class="qty-error" style="color:red; display:none;"></div>
+	    </div>
 
-        <!-- Kg -->
-        <div class="col-md-2">
-            <input type="number" class="form-control form-control-sm"
-                   id="kg_new_${rowIndex}" placeholder="Kg"
-                   oninput="calculateRowTotaledit(${rowIndex})">
-        </div>
+	    <div class="col-md-2">
+	        <input type="number" class="form-control form-control-sm text-right"
+	               id="kg_new_${rowIndex}" placeholder="Kg" min="0" step="0.01"
+	               onkeydown="return allowOnlyPositive(event)"
+	               oninput="calculateRowTotaledit(${rowIndex})">
+	        <div class="kg-error" style="color:red; display:none;"></div>
+	    </div>
 
-        <!-- Unit Price -->
-        <div class="col-md-2">
-            <input type="number" class="form-control form-control-sm"
-                   id="unit_price_new_${rowIndex}" placeholder="Unit Price"
-                   oninput="calculateRowTotaledit(${rowIndex})">
-        </div>
+	    <div class="col-md-2">
+	        <input type="number" class="form-control form-control-sm text-right"
+	               id="unit_price_new_${rowIndex}" placeholder="Unit Price" min="0"
+	               onkeydown="return allowOnlyPositive(event)"
+	               oninput="calculateRowTotaledit(${rowIndex})">
+	        <div class="unitprice-error" style="color:red; display:none;"></div>
+	    </div>
 
-        <!-- Pieces -->
-        <div class="col-md-1">
-            <input type="number" class="form-control form-control-sm"
-                   id="pieces_new_${rowIndex}" placeholder="Pieces">
-        </div>
+	    <div class="col-md-1">
+	        <input type="number" class="form-control form-control-sm text-right"
+	               id="pieces_new_${rowIndex}" placeholder="Pieces" min="0"
+	               onkeydown="return allowOnlyPositive(event)">
+	        <div class="pieces-error" style="color:red; display:none;"></div>
+	    </div>
 
-        <!-- Total -->
-        <div class="col-md-1">
-            <input type="number" class="form-control form-control-sm"
-                   id="total_new_${rowIndex}" value="0.00" readonly>
-        </div>
+	    <div class="col-md-1">
+	        <input type="number" class="form-control form-control-sm text-right"
+	               id="total_new_${rowIndex}" value="0.00" readonly>
+	    </div>
 
-        <!-- Action -->
-        <div class="col-md-1 text-center">
-            <i class="bi bi-trash text-danger"
-               style="cursor:pointer; font-size:16px;"
-               onclick="deleteRow1('row_new_${rowIndex}')"
-               title="Delete"></i>
-        </div>
-    `;
+	    <div class="col-md-1 text-center">
+	        <i class="bi bi-trash text-danger"
+	           style="cursor:pointer; font-size:16px;"
+	           onclick="deleteRow1('row_new_${rowIndex}')"
+	           title="Delete"></i>
+	    </div>
+	`;
 
 	container.appendChild(newRow);
 
@@ -1178,7 +1286,7 @@ function editRecord(pn_id) {
 			    newRow.className = "form-row dynamic-row";
 			    newRow.id = `row_${index}`;
 
-			    newRow.innerHTML = `
+			   /* newRow.innerHTML = `
 			        <div class="form-group col-md-1">
 			            ${showLabel ? `<label><b>UOM</b></label>` : ``}
 			            <select class="form-control form-control-sm" id="uom_${index}">
@@ -1245,12 +1353,92 @@ function editRecord(pn_id) {
 			               style="cursor:pointer;font-size:16px;"
 			               onclick="deleteRow(${index})"></i>
 			        </div>
-			    `;
+			    `;*/
+				
+				
+				newRow.innerHTML = `
+				    <div class="form-group col-md-1">
+				        ${showLabel ? `<label><b>UOM</b></label>` : ``}
+				        <select class="form-control form-control-sm" id="uom_${index}">
+				            ${uomOptionsHTML || `<option value="">Select uom</option>`}
+				        </select>
+				        <div class="uom-error" style="color:red; display:none;"></div>
+				    </div>
 
+				    <div class="form-group col-md-2">
+				        ${showLabel ? `<label><b>Type</b></label>` : ``}
+				        <select class="form-control form-control-sm" id="type_${index}">
+				            ${typeOptionsHTML || `<option value="">Select type</option>`}
+				        </select>
+				        <div class="type-error" style="color:red; display:none;"></div>
+				    </div>
+
+				    <div class="form-group col-md-2">
+				        ${showLabel ? `<label><b>Quantity</b></label>` : ``}
+				        <input type="number" class="form-control form-control-sm text-right"
+				               id="qty_${index}"
+				               onkeydown="return allowOnlyPositive(event)"
+				               value="${parseFloat(record.qty || 0).toFixed(2)}">
+				        <div class="qty-error" style="color:red; display:none;"></div>
+				    </div>
+
+				    <div class="form-group col-md-2">
+				        ${showLabel ? `<label><b>Kgs / MT / Sqm</b></label>` : ``}
+				        <input type="number" class="form-control form-control-sm text-right"
+				               id="kg_${index}"
+				               onkeydown="return allowOnlyPositive(event)"
+				               oninput="calculateRowTotalupdate(${index})"
+				               value="${parseFloat(record.per_kgs || 0).toFixed(2)}">
+				        <div class="kg-error" style="color:red; display:none;"></div>
+				    </div>
+
+				    <div class="form-group col-md-2">
+				        ${showLabel ? `<label><b>Unit Price</b></label>` : ``}
+				        <input type="number" class="form-control form-control-sm text-right"
+				               id="unit_price_${index}"
+				               onkeydown="return allowOnlyPositive(event)"
+				               oninput="calculateRowTotalupdate(${index})"
+				               value="${parseFloat(record.unit_price || 0).toFixed(2)}">
+				        <div class="unitprice-error" style="color:red; display:none;"></div>
+				    </div>
+
+				    <div class="form-group col-md-1">
+				        ${showLabel ? `<label><b>Pieces</b></label>` : ``}
+				        <input type="number" class="form-control form-control-sm text-right"
+				               id="pieces_${index}"
+				               onkeydown="return allowOnlyPositive(event)"
+				               value="${parseInt(record.pices || 0)}">
+				        <div class="pieces-error" style="color:red; display:none;"></div>
+				    </div>
+
+				    <div class="form-group col-md-1">
+				        ${showLabel ? `<label><b>Total</b></label>` : ``}
+				        <input type="number" class="form-control form-control-sm text-right"
+				               id="total_${index}"
+				               value="${parseFloat(record.total || 0).toFixed(2)}"
+				               readonly>
+				    </div>
+
+				    <div class="form-group col-md-1" style="display:none;">
+				        <input type="text" id="slno_${index}" value="${record.slno}">
+				    </div>
+
+			
+					
+					<div class="form-group col-md-1 text-center">
+							            ${showLabel ? `<label><b>Action</b></label><br>` : `<br>`}
+							            <i class="bi bi-trash text-danger"
+							               style="cursor:pointer;font-size:16px;"
+							               onclick="deleteRow(${index})"></i>
+							        </div>
+				`;
 			    dynamicContainer.appendChild(newRow);
 
-			    document.getElementById(`uom_${index}`).value = record.uom_id || "";
-			    document.getElementById(`type_${index}`).value = record.type_id || "";
+				document.getElementById(`uom_${index}`).value = record.uom_id || "";
+				document.getElementById(`type_${index}`).value = record.type_id || "";
+
+				initSelect2(`uom_${index}`, 'exampleModalScrollable123update', 'Select uom');
+				initSelect2(`type_${index}`, 'exampleModalScrollable123update', 'Select type');
 			});
 
             /* ---------------- SHOW MODAL (ALWAYS) ---------------- */
@@ -1573,15 +1761,15 @@ async function fetchtypeEdit() {
 }
 
 // for validation please give 
-function openModalUpdate() {
-   /* var freigedit = document.getElementById('freigedit').value.trim();
+/*function openModalUpdate() {
+    var freigedit = document.getElementById('freigedit').value.trim();
     var vehiedit = document.getElementById('vehiedit').value.trim();
-    var transedit = document.getElementById('transedit').value.trim();*/
+    var transedit = document.getElementById('transedit').value.trim();
 	var filename = document.getElementById('fileedit').value.trim();
     var showError = false; // Initialize showError variable
 
     // Validate static fields
-   /* if (freigedit === '') {
+    if (freigedit === '') {
         document.getElementById('Freighterroredit').innerText = "Please Enter freight.";
         document.getElementById('Freighterroredit').style.display = "inline-block";
         showError = true;
@@ -1606,7 +1794,7 @@ function openModalUpdate() {
     } else {
         document.getElementById('Transportererroredit').innerText = "";
         document.getElementById('Transportererroredit').style.display = "none";
-    }*/
+    }
 	if (filename === '') {
 		      document.getElementById('fileediterror').innerText = "Please select new file.";
 		      document.getElementById('fileediterror').style.display = "inline-block";
@@ -1668,6 +1856,59 @@ function openModalUpdate() {
     if (!showError) {
         $('#exampleModalCenter66update').modal('show'); // Show the next modal (Ensure this modal exists)
     }
+}*/
+
+
+function openModalUpdate() {
+    var showError = false;
+
+    // File
+    var fileErr = document.getElementById('fileediterror');
+    if (document.getElementById('fileedit').value.trim() === '') {
+        fileErr.innerText = "Please select new file.";
+        fileErr.style.display = "inline-block";
+        showError = true;
+    } else {
+        fileErr.innerText = "";
+        fileErr.style.display = "none";
+    }
+
+    function setError(row, selector, message) {
+        var el = row.querySelector(selector);
+        if (!el) return;
+        el.innerText = message;
+        el.style.display = message ? "inline-block" : "none";
+    }
+    function checkNumber(row, inputSel, errSel, message) {
+        var input = row.querySelector(inputSel);
+        if (!input) return;
+        var v = input.value.trim();
+        if (v === '' || isNaN(v) || parseFloat(v) <= 0) {
+            setError(row, errSel, message);
+            showError = true;
+        } else {
+            setError(row, errSel, "");
+        }
+    }
+
+    // Only the update modal's rows
+    document.querySelectorAll("#dynamicRowsContaineredit .dynamic-row").forEach(function (row) {
+        var uom = row.querySelector("select[id^='uom_']");
+        if (uom && uom.value.trim() === '') { setError(row, ".uom-error", "Please select UOM."); showError = true; }
+        else setError(row, ".uom-error", "");
+
+        var type = row.querySelector("select[id^='type_']");
+        if (type && type.value.trim() === '') { setError(row, ".type-error", "Please select Type."); showError = true; }
+        else setError(row, ".type-error", "");
+
+        checkNumber(row, "input[id^='qty_']",        ".qty-error",       "Please enter a valid Quantity.");
+        checkNumber(row, "input[id^='kg_']",         ".kg-error",        "Please enter a valid Kg.");
+        checkNumber(row, "input[id^='unit_price_']", ".unitprice-error", "Please enter a valid Unit Price.");
+        checkNumber(row, "input[id^='pieces_']",     ".pieces-error",    "Please enter a valid number of Pieces.");
+    });
+
+    if (showError) return;
+    $('#exampleModalCenter66update').modal('show');
 }
 
 function updateevent() {
@@ -1898,7 +2139,7 @@ document.getElementById('eyeIconBtnview').addEventListener('click', function() {
     }
 });
 
-function initSelect2(selectId, modalId, placeholder) {
+/*function initSelect2(selectId, modalId, placeholder) {
     var $el = $('#' + selectId);
     if ($el.hasClass('select2-hidden-accessible')) {
         $el.select2('destroy'); // rebuild so newly fetched options are picked up
@@ -1909,4 +2150,21 @@ function initSelect2(selectId, modalId, placeholder) {
         placeholder: placeholder,
         allowClear: false
     });
+}*/
+
+
+function initSelect2(selectId, modalId, placeholder) {
+    var $el = $('#' + selectId);
+    if (!$el.length) return;
+    if ($el.hasClass('select2-hidden-accessible')) {
+        $el.select2('destroy');
+    }
+    $el.select2({
+        dropdownParent: $('#' + modalId),
+        width: '100%',
+        placeholder: placeholder,
+        allowClear: false,
+        minimumResultsForSearch: 0   // always show the search box
+    });
 }
+

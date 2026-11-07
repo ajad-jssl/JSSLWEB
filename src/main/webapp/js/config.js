@@ -1,13 +1,13 @@
 
 
-const baseUrl = 'https://jims.jssl.in';
-const baseUrl1 = 'https://jims.jssl.in';
+/*const baseUrl = 'https://jims.jssl.in';
+const baseUrl1 = 'https://jims.jssl.in';*/
 
 
 
 
-
-
+const baseUrl = 'http://localhost:8004';
+const baseUrl1 = 'http://localhost:8004';
 
 (function () {
 	$('#sidebarToggleTop').click(function () {

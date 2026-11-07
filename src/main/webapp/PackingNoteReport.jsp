@@ -20,7 +20,7 @@
 <!--   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" integrity="sha512-xxx" crossorigin="anonymous" /> -->
   <link href="css/masterpage.css" rel="stylesheet">
  <link href="externalLibrary/cdn.jsdelivr.net/npm/select2@4.0.13/dist/css/select2.min.css" rel="stylesheet" />
-  <script src="externalLibrary/cdn.jsdelivr.net/npm/select2@4.0.13/dist/js/select2.min.js"></script>
+    <script src="externalLibrary/cdn.jsdelivr.net/npm/select2@4.0.13/dist/js/select2.min.js"></script>
   
   
 <!-- Include Bootstrap CSS -->
@@ -29,7 +29,7 @@
 
 
 <!-- Include Bootstrap JS -->
-<script src="externalLibrary/stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.bundle.min.js"></script>
+  <script src="externalLibrary/stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.bundle.min.js"></script>
 
 <script>
     const user_id = sessionStorage.getItem('user_id');
@@ -880,7 +880,7 @@ word-wrap: break-word;     /* ❌ Prevent line break */
 <div id="errorMsg" style="color:red; font-size:13px;"></div>
 
 
-<script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/xlsx/0.20.3/xlsx.full.min.js"></script>
+  <script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/xlsx/0.20.3/xlsx.full.min.js"></script>
 
 <script>
  function exportToExcelHistroy() {
@@ -985,7 +985,7 @@ function printContainer1() {
   <a class="scroll-to-top rounded" href="#page-top">
     <i class="fas fa-angle-up"></i>
   </a>
- <!-- <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>  -->
+ <!--   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>  -->
 
   <!-- Bootstrap JS and dependencies -->
 
@@ -997,26 +997,26 @@ function printContainer1() {
 </script> -->  
 
  
-    <script src="vendor/jquery/jquery.min.js"></script>
-    <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
-    <script src="vendor/jquery-easing/jquery.easing.min.js"></script>
+      <script src="vendor/jquery/jquery.min.js"></script>
+      <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+      <script src="vendor/jquery-easing/jquery.easing.min.js"></script>
     
-    <script src="vendor/datatables/jquery.dataTables.min.js"></script>
-    <script src="vendor/datatables/dataTables.bootstrap4.min.js"></script>
-    <script src="js/config.js?v=<%=ver(application, "/js/config.js")%>"></script>
-    <!-- <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script> -->
-    <script src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
-    <script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
-    <script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
-    <script src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
-    <script src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script> 
-     <script src="js/PackingNoteReportLoadlist.js?v=<%=ver(application, "/js/PackingNoteReportLoadlist.js")%>"></script>
-     <script src="js/username.js?v=<%=ver(application, "/js/username.js")%>"></script>
-     <script src="js/logout.js?v=<%=ver(application, "/js/logout.js")%>"></script>
-      <script src="js/createdby.js?v=<%=ver(application, "/js/createdby.js")%>"></script>
- 	<script src="js/modifiedby.js?v=<%=ver(application, "/js/modifiedby.js")%>"></script>
- 	<script src="js/factoryid.js?v=<%=ver(application, "/js/factoryid.js")%>"></script>
+      <script src="vendor/datatables/jquery.dataTables.min.js"></script>
+      <script src="vendor/datatables/dataTables.bootstrap4.min.js"></script>
+      <script src="js/config.js?v=<%=ver(application, "/js/config.js")%>"></script>
+    <!--   <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script> -->
+      <script src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
+      <script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+      <script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
+      <script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
+      <script src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
+      <script src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script> 
+       <script src="js/PackingNoteReportLoadlist.js?v=<%=ver(application, "/js/PackingNoteReportLoadlist.js")%>"></script>
+       <script src="js/username.js?v=<%=ver(application, "/js/username.js")%>"></script>
+       <script src="js/logout.js?v=<%=ver(application, "/js/logout.js")%>"></script>
+        <script src="js/createdby.js?v=<%=ver(application, "/js/createdby.js")%>"></script>
+ 	  <script src="js/modifiedby.js?v=<%=ver(application, "/js/modifiedby.js")%>"></script>
+ 	  <script src="js/factoryid.js?v=<%=ver(application, "/js/factoryid.js")%>"></script>
  	
  	
  <script>
@@ -1084,7 +1084,7 @@ function printContainer1() {
 } */
 	</script>	
  <!--    
-    <script src="js/customertype.js"></script>
+      <script src="js/customertype.js"></script>
     -->
 
   <!-- Page level custom scripts -->

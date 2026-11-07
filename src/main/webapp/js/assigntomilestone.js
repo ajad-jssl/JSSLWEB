@@ -1,8 +1,47 @@
 
+
+
+const MainPage =  "InvoiceMasters.jsp";
+const UserId = sessionStorage.getItem('username');
+
+let allowedActions = [];
+
+async function loadActions() {
+    try {
+        const response = await fetch(
+            `${baseUrl}/api/page/actions?userId=${encodeURIComponent(UserId)}&pageName=${encodeURIComponent(MainPage)}`,
+            {
+                method: "GET",
+                credentials: "include", // 🔐 send cookies/session
+                headers: {
+                    "Content-Type": "application/json"
+                }
+            }
+        );
+
+        if (!response.ok) {
+            throw new Error("Failed to fetch actions");
+        }
+
+        allowedActions = await response.json();
+		
+		
+
+    } catch (error) {
+        console.error("Error:", error);
+    }
+}
+
+
+
+
 const selectedFactoryId = sessionStorage.getItem('selectedFactoryId');
 console.log('selectedFactoryId:', selectedFactoryId);
 
-document.addEventListener("DOMContentLoaded", function () {
+document.addEventListener("DOMContentLoaded", async function () {
+	
+	
+await	loadActions();
     const selectedFactoryId = sessionStorage.getItem("selectedFactoryId"); // Get factory_id from sessionStorage
     if (selectedFactoryId) {
         fetchUserList(selectedFactoryId);
@@ -227,7 +266,9 @@ function clearTable() {
 }
 
 function openModalAdd() {
-	  const allowed = window.allowedActions || [];
+
+	
+	  const allowed = allowedActions || [];
 
 	if (!allowed.includes("Insert")) {
 	  alert(" You do not have permission to Insert.");

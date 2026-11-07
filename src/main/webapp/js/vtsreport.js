@@ -329,7 +329,7 @@ function fetchReport() {
 
     const mappedSelectType = selectTypeMap[selectType] || "all";
 
-    const url = new URL(`/api/invoiceexit/jims/getRegisterReport?registerType=${registerType}&selectType=${mappedSelectType}&fromDate=${fromDate}&toDate=${toDate}`, baseUrl1);
+    const url = new URL(`/api/invoiceexit/jims/getRegisterReportIn?registerType=${registerType}&selectType=${mappedSelectType}&fromDate=${fromDate}&toDate=${toDate}`, baseUrl1);
 
     fetch(url, { credentials: "include" })
         .then(res => res.json())
@@ -510,6 +510,7 @@ function fetchvehiclematerialReport() {
                         <td>${row.vecno ?? ""}</td>
                         <td>${row.intime ?? ""}</td>
                         <td>${row.outtime ?? ""}</td>
+						<td>${row.duration ?? ""}</td>
                         <td>${row.Company_name ?? ""}</td>
                         <td>${row.dname ?? ""}</td>
                         <td>${row.dmbno ?? ""}</td>
@@ -531,6 +532,8 @@ function fetchvehiclematerialReport() {
                         <td>${row.Vtype ?? ""}</td>
                         <td>${row.vecno ?? ""}</td>
                         <td>${row.intime ?? ""}</td>
+						<td>${row.outtime ?? ""}</td>
+						<td>${row.duration ?? ""}</td>
                         <td>${row.Company_name ?? ""}</td>
                         <td>${row.dname ?? ""}</td>
                         <td>${row.dmbno ?? ""}</td>

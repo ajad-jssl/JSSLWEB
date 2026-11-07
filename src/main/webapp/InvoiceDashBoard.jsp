@@ -20,7 +20,7 @@
   <link rel="stylesheet" href="css/main.css">
  <!--  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"> -->
 
-  <script src="vendor/chart.js/Chart.min.js"></script>
+    <script src="vendor/chart.js/Chart.min.js"></script>
   <script>
     var user_id = sessionStorage.getItem('user_id');
     if (!user_id) { window.location.href = "newlogin.jsp"; }
@@ -838,6 +838,10 @@
 
 
 
+<%-- <script src="js/username.js?v=<%=jsVersion%>"></script>
+<script src="js/logout.js?v=<%=jsVersion%>"></script>
+<script src="js/Sessionfilter.js?v=<%=jsVersion%>"></script>
+<script src="js/invoiceDashboard.js?v=<%=jsVersion%>"></script> --%>
 
 
 <script src="js/username.js?v=<%=ver(application, "/js/username.js")%>"></script>

@@ -17,8 +17,8 @@ long ts = System.currentTimeMillis();
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
 
-<script src="externalLibrary/cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
-<script src="externalLibrary/cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+  <script src="externalLibrary/cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+  <script src="externalLibrary/cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
 <script>
     var user_id = sessionStorage.getItem('user_id');
     if (!user_id) { window.location.href = "newlogin.jsp"; }
@@ -770,14 +770,14 @@ body {
         </div>
     </div>
 </div>
-<script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
-<script src="vendor/jquery-easing/jquery.easing.min.js"></script>
-<script src="js/config.js?v=<%=ver(application, "/js/config.js")%>"></script>
+  <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+  <script src="vendor/jquery-easing/jquery.easing.min.js"></script>
+  <script src="js/config.js?v=<%=ver(application, "/js/config.js")%>"></script>
 
 
-<script src="js/username.js?v=<%=ver(application, "/js/username.js")%>"></script>
-<script src="js/logout.js?v=<%=ver(application, "/js/logout.js")%>"></script>
-<script src="js/Sessionfilter.js?v=<%=ver(application, "/js/Sessionfilter.js")%>"></script>
+  <script src="js/username.js?v=<%=ver(application, "/js/username.js")%>"></script>
+  <script src="js/logout.js?v=<%=ver(application, "/js/logout.js")%>"></script>
+  <script src="js/Sessionfilter.js?v=<%=ver(application, "/js/Sessionfilter.js")%>"></script>
 
 <script>
 /* ============================================================
@@ -1192,7 +1192,7 @@ function formatToLakhs(value) {
 
 
 
-<script src="js/HomeDashBoard.js?v=<%=ver(application, "/js/HomeDashBoard.js")%>"></script>
+  <script src="js/HomeDashBoard.js?v=<%=ver(application, "/js/HomeDashBoard.js")%>"></script>
 <script>
 (function () {
   var userId = sessionStorage.getItem('user_id');

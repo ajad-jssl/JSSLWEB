@@ -2844,7 +2844,7 @@ document.addEventListener("DOMContentLoaded", function () {
 							                    <div class="company-logo">
 							                        <img src="img/logo/download.png" alt="Company Logo" style="width:100px;">
 							                    </div>
-							                    <strong>JSW Serverfiled Structures Limited</strong><br>
+							                    <strong>JSW Severfield Structures Limited</strong><br>
 							                   <p style="width :70%" class="facotry_address"> 
 							                   
 							                    <p>

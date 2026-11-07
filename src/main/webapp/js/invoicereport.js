@@ -195,7 +195,7 @@ contractDropdown.addEventListener("change", function () {
 });
 
 // ================= LOAD INVOICE REPORT =================
-async function loadInvoiceReport() {
+/*async function loadInvoiceReport() {
 
     const factoryId = factoryDropdown.value;
     const type = typeDropdown.value;
@@ -249,9 +249,9 @@ async function loadInvoiceReport() {
                 <tr>
                     <td>${index + 1}</td>
                     <td>${item.invoice_no ?? ''}</td>
-					<td>${item.inv_type ?? ''}</td>
-                    <td>${item.jobCode ?? ''}</td>
-                    <td>${item.loadno ?? ''}</td>
+					<td>${item.verified_date ?? ''}</td>
+                    <td>${(item.jobCode ?? '').trim() || item.contract_id || ''}</td>
+                    <td>${item.loadno ?? item.load_id ?? ''}</td>
                     <td>${item.workorder_no ?? ''}</td>
                     <td>${item.work_date ?? ''}</td>
                     <td>${item.address ?? ''}</td>
@@ -291,6 +291,138 @@ async function loadInvoiceReport() {
             `;
             tbody.insertAdjacentHTML("beforeend", row);
         });
+
+    } catch (error) {
+        console.error("Error:", error);
+        alert("Something went wrong while fetching the report");
+        container.style.display = "none";
+    }
+}
+*/
+
+async function loadInvoiceReport() {
+
+    const factoryId = factoryDropdown.value;
+    const type = typeDropdown.value;
+    const contractId = contractDropdown.value;
+    const fromDate = fromDateInput.value;
+    const toDate = toDateInput.value;
+
+    // ===== VALIDATIONS =====
+    if (!factoryId || !type || !contractId) {
+        alert("Please select Factory, Type and Contract");
+        container.style.display = "none";
+        return;
+    }
+
+    if (!fromDate || !toDate) {
+        alert("Please select From Date and To Date");
+        container.style.display = "none";
+        return;
+    }
+
+    // ===== HELPERS =====
+    const esc = v => String(v ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+    const txt = v => esc(v).trim();
+    const fmtDate = d => (d ? esc(String(d).substring(0, 10)) : '');
+    const fmtDateTime = d => (d ? esc(String(d).substring(0, 19)) : '');
+    const num = v => (v === null || v === undefined || v === '' ? 0 : v);
+
+    try {
+
+        const url = new URL(`/jssl/invoice/g2/newinvreport`, baseUrl);
+        url.searchParams.append("contract_id", contractId);
+        url.searchParams.append("factory", factoryId);
+        url.searchParams.append("from", fromDate);
+        url.searchParams.append("to", toDate);
+
+        const response = await fetch(url, {
+            method: "GET",
+            credentials: "include"
+        });
+
+        if (!response.ok) throw new Error("Failed to fetch report");
+
+        const json = await response.json();
+
+        if (json.status === "error") {
+            throw new Error(json.message || "Server error");
+        }
+
+        const data = json.Data;
+
+        tbody.innerHTML = "";
+
+        if (!data || data.length === 0) {
+            alert("No records found");
+            container.style.display = "none";
+            return;
+        }
+
+        container.style.display = "block";
+
+        const rows = data.map((item, index) => {
+
+            const hsnSac = [item.hsncode, item.scode]
+                .filter(v => v && String(v).trim() !== '')
+                .join(' / ');
+
+            return `
+            <tr>
+                <td>${index + 1}</td>
+                <td>${txt(item.invoice_no)}</td>
+                <td>${fmtDateTime(item.created_date)}</td>
+                <td>${txt(item.jobCode) || txt(item.contract_id)}</td>
+                <td>${txt(item.loadno ?? item.load_id)}</td>
+                <td>${txt(item.reference_no)}</td>
+                <td>${txt(item.customer_name)}</td>
+                <td>${txt(item.address)}</td>
+                <td>${txt(item.cgst)}</td>
+                <td>${txt(item.cpan)}</td>
+                <td>${txt(item.workorder_no)}</td>
+                <td>${fmtDate(item.work_date)}</td>
+                <td>${txt(item.scrap_name)}</td>
+                <td>${esc(hsnSac)}</td>
+                <td>${txt(item.remarks_type) || txt(item.inv_type)}</td>
+                <td>${num(item.freight)}</td>
+                <td>${item.wb_weight ?? ''}</td>
+                <td>${txt(item.unit_name)}</td>
+                <td>${num(item.qty)}</td>
+                <td>${num(item.weight)}</td>
+                <td>${num(item.unit_price)}</td>
+                <td>${num(item.total)}</td>
+                <td>${num(item.CGSTP)}</td>
+                <td>${num(item.CGSTV)}</td>
+                <td>${num(item.SGSTP)}</td>
+                <td>${num(item.SGSTV)}</td>
+                <td>${num(item.IGSTP)}</td>
+                <td>${num(item.IGSTV)}</td>
+                <td>${num(item.TCSP)}</td>
+                <td>${num(item.TCSV)}</td>
+                <td>${num(item.total_invoice_value)}</td>
+                <td>${num(item.adv_nontax_rec)}</td>
+                <td>${num(item.adv_tax_rec)}</td>
+                <td>${num(item.IGSTA)}</td>
+                <td>${num(item.CGSTA)}</td>
+                <td>${num(item.SGSTA)}</td>
+                <td>${num(item.ptc)}</td>
+                <td>${num(item.ptd)}</td>
+                <td>${txt(item.vehicle_no)}</td>
+                <td>${txt(item.transport_name)}</td>
+                <td>${txt(item.vendorname)}</td>
+                <td>${fmtDate(item.vendorinvdate)}</td>
+                <td>${txt(item.vendorinvno)}</td>
+                <td>${num(item.vendorqty)}</td>
+                <td>${txt(item.remarks)}</td>
+                <td>${txt(item.status)}</td>
+                <td>${txt(item.factory)}</td>
+            </tr>`;
+        });
+
+        tbody.innerHTML = rows.join('');
 
     } catch (error) {
         console.error("Error:", error);

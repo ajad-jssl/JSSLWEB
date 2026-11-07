@@ -1,7 +1,42 @@
 
 let allowed = null;
 
+function hideError(el) { el.innerText = ""; el.style.display = "none"; }
 
+function initSelect2(selectId, modalId, placeholder) {
+    var $el = $('#' + selectId);
+    if (!$el.length) return;
+    if ($el.hasClass('select2-hidden-accessible')) {
+        $el.select2('destroy');
+    }
+    $el.select2({
+        dropdownParent: $('#' + modalId),
+        width: '100%',
+        placeholder: placeholder,
+        allowClear: false,
+        minimumResultsForSearch: 0   // always show search box
+    });
+}
+
+// Hide the red error once a value is chosen / typed
+$(document).on('change select2:select', '.dynamic-row select', function () {
+    if (String($(this).val() || '').trim() !== '') {
+        $(this).closest('[class*="col-"]').find('.uom-error, .type-error').each(function () { hideError(this); });
+    }
+});
+$(document).on('input change', '.dynamic-row input[type="number"]', function () {
+    const v = this.value.trim();
+    if (v !== '' && !isNaN(v) && parseFloat(v) > 0) {
+        $(this).closest('[class*="col-"]').find('[class$="-error"]').each(function () { hideError(this); });
+    }
+});
+$(document).on('change', '#file',     function () { if (this.value) hideError(document.getElementById('fileerror')); });
+$(document).on('change', '#fileedit', function () { if (this.value) hideError(document.getElementById('fileediterror')); });
+
+// Reset messages when modals close
+$('#exampleModalScrollable123, #exampleModalScrollable123update').on('hidden.bs.modal', function () {
+    $(this).find('[class$="-error"], .error-message').hide().text('');
+});
 
 document.getElementById("modalScroll1").addEventListener("click", function () {
     // show custom message instead of opening modal
@@ -75,6 +110,11 @@ document.addEventListener("DOMContentLoaded", function () {
 	   fetchuom(1);
 	   fetctype(1);
 	fetchinvoicetype();
+	
+	initSelect2('invoice', 'exampleModalScrollable123', 'Select invoice type');
+	initSelect2('cont',    'exampleModalScrollable123', 'Select contract');
+	initSelect2('mile',    'exampleModalScrollable123', 'Select milestone');
+	initSelect2('note',    'exampleModalScrollable123', 'Select note type');
 	
 	
 	const factoryId = sessionStorage.getItem("selectedFactoryId");
@@ -248,6 +288,7 @@ document.addEventListener("DOMContentLoaded", function () {
 	                uomSelect.appendChild(option);
 	            }
 	        });
+			initSelect2(`uom-${rowId}`, 'exampleModalScrollable123', 'Select UOM');
 	    } catch (error) {
 	        console.error("Error fetching UOM data:", error);
 	    }
@@ -289,6 +330,7 @@ document.addEventListener("DOMContentLoaded", function () {
 	                typeSelect.appendChild(option);
 	            }
 	        });
+			initSelect2(`type-${rowId}`, 'exampleModalScrollable123', 'Select Type');
 	    } catch (error) {
 	        console.error("Error fetching Type data:", error);
 	    }
@@ -328,7 +370,8 @@ async function fetchinvoicetype() {
 		    if (
 		        invoicetype.type_no &&
 		        invoicetype.type &&
-		        invoicetype.type.trim().toUpperCase() !== "GP"
+		        invoicetype.type.trim().toUpperCase() !== "GP"&&
+				invoicetype.type.trim().toUpperCase() !== "JOBWORK"
 		    ) {
 		        const option = document.createElement("option");
 		        option.value = invoicetype.type_no;
@@ -337,34 +380,22 @@ async function fetchinvoicetype() {
 		    }
 		});
 
-        // Add event listener for contractor selection change
-        selectElement.addEventListener("change", function() {
-            const selectedinvoicetype = selectElement.value;
-			const contractsel = document.getElementById("cont");
-			if (selectedinvoicetype == "1") {
-			      // Clear contract dropdown first
-			      contractsel.innerHTML = '<option value="">Select Contract</option>';
+		initSelect2('invoice', 'exampleModalScrollable123', 'Select invoice type');
 
-			      // Fetch and populate contracts (scrap should not appear)
-			      fetchcont(selectedFactoryId);
-			  } else {
-			      // Clear and add only Scrap
-			      contractsel.innerHTML = "";
-
-			      const scrapOption = document.createElement("option");
-			      scrapOption.value = "Scrap";
-			      scrapOption.textContent = "Scrap";
-			      contractsel.appendChild(scrapOption);
-				  const mileSelect = document.getElementById("mile");
-				  mileSelect.innerHTML = "";
-				  			const scrapOption1 = document.createElement("option");
-				  					      scrapOption1.value = "Scrap";
-				  					      scrapOption1.textContent = "Scrap";
-				  					      mileSelect.appendChild(scrapOption1);
-			  }
-                // If no contractor is selected, clear the milestone dropdown
-              
-        });
+		$('#invoice').off('change.inv').on('change.inv', function () {
+		    if (this.value == "1") {
+		        $('#cont').html('<option value="">Select Contract</option>');
+		        $('#mile').html('<option value="">Select Milestone</option>');
+		        initSelect2('cont', 'exampleModalScrollable123', 'Select contract');
+		        initSelect2('mile', 'exampleModalScrollable123', 'Select milestone');
+		        fetchcont(selectedFactoryId);
+		    } else {
+		        $('#cont').html('<option value="Scrap">Scrap</option>');
+		        $('#mile').html('<option value="Scrap">Scrap</option>');
+		        initSelect2('cont', 'exampleModalScrollable123', 'Select contract');
+		        initSelect2('mile', 'exampleModalScrollable123', 'Select milestone');
+		    }
+		});
 
     } catch (error) {
         console.error("Error fetching contractors:", error);
@@ -408,8 +439,8 @@ async function fetchcont(factoryId) {
         });
 
         // Add event listener for contractor selection change
-        selectElement.addEventListener("change", function() {
-		/*	const invoicetype = document.getElementById("invoice");*/
+     /*   selectElement.addEventListener("change", function() {
+			const invoicetype = document.getElementById("invoice");
             const selectedContractId = selectElement.value;
             if (selectedContractId) {
                 fetchmile(factoryId, selectedContractId); 
@@ -425,6 +456,18 @@ async function fetchcont(factoryId) {
 						      mileSelect.appendChild(scrapOption);
             }
         });
+*/
+
+initSelect2('cont', 'exampleModalScrollable123', 'Select contract');
+
+$('#cont').off('change.cont').on('change.cont', function () {
+    if (this.value) {
+        fetchmile(factoryId, this.value);
+    } else {
+        $('#mile').html('<option value="">Select milestone</option><option value="Scrap">Scrap</option>');
+        initSelect2('mile', 'exampleModalScrollable123', 'Select milestone');
+    }
+});
 
     } catch (error) {
         console.error("Error fetching contractors:", error);
@@ -468,6 +511,8 @@ async function fetchmile(factoryId, contractId) {
                 selectElement.appendChild(option);
             }
         });
+		
+		initSelect2('mile', 'exampleModalScrollable123', 'Select milestone');
 
 
     } catch (error) {
@@ -788,7 +833,7 @@ function fetchScrapPackingNoteDetails(selectedFactoryId) {
 }
 
 // Adding event listener for "Load" dropdown selection change
-document.getElementById('note').addEventListener('change', function() {
+/*document.getElementById('note').addEventListener('change', function() {
     const notevalue = this.value;  // Get the selected value of the "Load" dropdown
 
     const inputFieldsContainer = document.getElementById("inputFieldsContainer");
@@ -800,6 +845,12 @@ document.getElementById('note').addEventListener('change', function() {
         // If no load is selected, hide the "inputFieldsContainer"
         inputFieldsContainer.style.display = "none";
     }
+});*/
+
+
+$('#note').on('change', function () {
+    document.getElementById("inputFieldsContainer").style.display =
+        this.value ? "block" : "none";
 });
 
 function openModalAdd() {
@@ -1289,6 +1340,8 @@ function addRowEdit() {
 
     // Append the new row to the container
     container.appendChild(newRow);
+	initSelect2(`uom_new_${rowIndex}`,  'exampleModalScrollable123update', 'Select uom');
+	initSelect2(`type_new_${rowIndex}`, 'exampleModalScrollable123update', 'Select type');
 }
 function editRecord(dcPn_no,con_id) {
 		  //const allowed = window.allowedActions || [];
@@ -1395,6 +1448,10 @@ function editRecord(dcPn_no,con_id) {
                     if (typeSelect) {
                         typeSelect.value = record.type_id || "";
                     }
+					
+					
+					initSelect2(`uom_${index}`,  'exampleModalScrollable123update', 'Select uom');
+					initSelect2(`type_${index}`, 'exampleModalScrollable123update', 'Select type');
                 });
 				updateGrandTotal();
                 // Show the modal
@@ -1505,6 +1562,8 @@ function editRecord(dcPn_no,con_id) {
 			                  if (typeSelect) {
 			                      typeSelect.value = record.type_id || "";
 			                  }
+							  initSelect2(`uom_${index}`,  'exampleModalScrollable123update', 'Select uom');
+							  initSelect2(`type_${index}`, 'exampleModalScrollable123update', 'Select type');
 			              });
 						  updateGrandTotal();
 			              // Show the modal

@@ -192,17 +192,18 @@ async function fetchSate() {
         const selectElement = document.getElementById("state");
         selectElement.innerHTML = `<option value="">Select State</option>`;
 
-        json.GSTStatesClosedStatusList.forEach((type) => {
-            if (type.state_id && type.state_name) {
-                const option = document.createElement("option");
+		json.GSTStatesClosedStatusList.forEach((type) => {
+		    if (type.state_id && type.state_name) {
+		        const option = document.createElement("option");
 
-                // ✅ Use state_ids (real DB id: 28,12,18...) NOT state_id (1,2,3...)
-                option.value = type.state_ids;          // 👈 CHANGE THIS
-                option.textContent = type.state_name;
-                option.dataset.stateIds = String(type.state_ids);
-                selectElement.appendChild(option);
-            }
-        });
+		        // Unique per business unit, since one state can have several BUs
+		        option.value = type.bu_code;
+		        option.textContent = type.state_name;
+		        option.dataset.stateIds = String(type.state_ids);
+		        option.dataset.buCode = type.bu_code;
+		        selectElement.appendChild(option);
+		    }
+		});
 
     } catch (error) {
         console.error("Error fetching states:", error);
@@ -372,12 +373,12 @@ function addevent() {
     $('#exampleModalCenter66').modal('hide');
 
     const stateSelect = document.getElementById('state');
-    
-    // ✅ Log to confirm what's actually being sent
-    console.log('state element value:', stateSelect.value);
-    console.log('invoice_series:', document.getElementById('ses').value);
-    
-    const state_id = stateSelect.value;
+    const selectedOption = stateSelect.options[stateSelect.selectedIndex];
+
+    const state_id = selectedOption.dataset.stateIds;   // e.g. 27
+    const bu_code  = selectedOption.dataset.buCode;     // e.g. JBU-2
+
+    console.log('state_id:', state_id, 'bu_code:', bu_code);
 
     $.ajax({
         url: new URL('/jssl/seriesmaster/addGstMaster', baseUrl),
@@ -386,6 +387,7 @@ function addevent() {
         dataType: 'json',
         data: jQuery.param({
             state_id: state_id,
+            bu_code: bu_code,                      // 👈 new
             created_by: createdById,
             invoice_series: document.getElementById('ses').value,
             start_date: document.getElementById('sdate').value,

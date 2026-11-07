@@ -517,7 +517,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
                 <div id="departmentError" class="error-message" style="display: none;">Department is required</div>    
                </div>
                
-                <div class="col-md-3" style="padding-top:3%;">
+                <div class="col-md-3" style="padding-top:3%;" hidden>
                 <label for="content"><b>Content Description:</b></label>
                 <input type="text" class="form-control form-control-sm" id="content" placeholder="Content Description">
                 <div id="contentError" class="error-message" style="display: none;">Content Description is required</div>
@@ -831,7 +831,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
                 <input type="text" class="form-control form-control-sm" id="department1" placeholder="Department" readonly="readonly">   
                </div>
                
-                <div class="col-md-3" style="padding-top:3%;">
+                <div class="col-md-3" style="padding-top:3%;" hidden>
                 <label for="content1"><b>Content Description:</b></label>
                 <input type="text" class="form-control form-control-sm" id="content1" placeholder="Content Description">
                </div>
@@ -1189,10 +1189,9 @@ $(document).ready(function () {
 	   	<script src="externalLibrary/cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
  	<script>
 
-  window.actionElementMap = {
-  };
+ 
 </script>
-<script src="js/permissions.js?v=<%=jsVersion%>v"></script>
+<script src="js/permissions.js?v=<%=ver(application, "/js/permissions.js")%>"></script>
 
   <!-- Page level custom scripts -->
 </body>

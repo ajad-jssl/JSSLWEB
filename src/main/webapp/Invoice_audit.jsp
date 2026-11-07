@@ -5,9 +5,7 @@ response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate"); // H
 response.setHeader("Pragma", "no-cache"); // HTTP 1.0
 response.setDateHeader("Expires", 0); // Proxies
 %>
-<%
-long ts = System.currentTimeMillis();
-%>
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -27,23 +25,18 @@ long ts = System.currentTimeMillis();
 <link rel="stylesheet" href="css/main.css">
 <!--   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" integrity="sha512-xxx" crossorigin="anonymous" /> -->
 <link href="css/masterpage.css" rel="stylesheet">
-<link
-	href="https://cdn.jsdelivr.net/npm/select2@4.0.13/dist/css/select2.min.css"
-	rel="stylesheet" />
-<script
-	src="https://cdn.jsdelivr.net/npm/select2@4.0.13/dist/js/select2.min.js"></script>
+
 
 <!-- Include Bootstrap CSS -->
-<link
+<!-- <link
 	href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
 	rel="stylesheet">
-
+ -->
 <!-- Include jQuery -->
-<!-- <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script> -->
+<!--   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script> -->
 
 <!-- Include Bootstrap JS -->
-<script
-	src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.bundle.min.js"></script>
+  <!-- <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.bundle.min.js"></script> -->
 
 <script>
 	
@@ -1309,11 +1302,10 @@ table.table-bordered th, table.table-bordered td {
 
 
 
-	<script
-		src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.20.3/xlsx.full.min.js"></script>
+	
 
 
-
+  <script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/xlsx/0.20.3/xlsx.full.min.js"></script>
 
 
 
@@ -1438,8 +1430,9 @@ $("#createContract").click(function() {
 	<a class="scroll-to-top rounded" href="#page-top"> <i
 		class="fas fa-angle-up"></i>
 	</a>
-	<script
-		src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+	
+	  
+	     <script src="externalLibrary/cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
 
 	<!-- Bootstrap JS and dependencies -->
 
@@ -1448,37 +1441,45 @@ $("#createContract").click(function() {
   
 </script> -->
 
-	<script src="js/config.js"></script>
-	<script src="vendor/jquery/jquery.min.js"></script>
-	<script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
-	<script src="vendor/jquery-easing/jquery.easing.min.js"></script>
-	<script src="js/ruang-admin.min.js"></script>
-	<!-- Page level plugins -->
-	<script src="vendor/datatables/jquery.dataTables.min.js"></script>
-	<script src="vendor/datatables/dataTables.bootstrap4.min.js"></script>
-	<!-- <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script> -->
-	<script
-		src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
-	<script
-		src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-	<script
-		src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
-	<script
-		src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
-	<script
-		src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
-	<script
-		src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
+	  <script src="js/config.js"></script>
+	  <script src="vendor/jquery/jquery.min.js"></script>
+	  <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+	  <script src="vendor/jquery-easing/jquery.easing.min.js"></script>
+
+
+	  <script src="vendor/datatables/jquery.dataTables.min.js"></script>
+	  <script src="vendor/datatables/dataTables.bootstrap4.min.js"></script>
+	<!--   <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script> -->
+	<!--   <script src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
+	  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+	  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
+	  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
+	  <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
+	  <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script> -->
 
 
 
-	<script src="js/username.js"></script>
-	<script src="js/logout.js"></script>
-	<script src="js/invoice_audit.js?v=<%=ts%>"></script>
-	 <script src="js/factoryid.js"></script>
-	  	  <script src="js/modifiedby.js"></script>
-   	  <script src="js/createdby.js"></script>
-   	   <script src="js/Sessionfilter.js"></script>
+      
+          <script src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
+    <script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
+    <script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
+    <script src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
+    <script src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script> 
+
+	 
+
+	  <script src="js/invoice_audit.js?v=<%=ver(application, "/js/invoice_audit.js")%>"></script>
+	
+	  	
+   	    
+   	     <script src="js/Sessionfilter.js?v=<%=ver(application, "/js/Sessionfilter.js")%>"></script>
+   	     
+   	         <script src="js/username.js?v=<%=ver(application, "/js/username.js")%>"></script>
+       <script src="js/logout.js?v=<%=ver(application, "/js/logout.js")%>"></script>
+        <script src="js/createdby.js?v=<%=ver(application, "/js/createdby.js")%>"></script>
+ 	  <script src="js/modifiedby.js?v=<%=ver(application, "/js/modifiedby.js")%>"></script>
+ 	  <script src="js/factoryid.js?v=<%=ver(application, "/js/factoryid.js")%>"></script>
 	
 
 

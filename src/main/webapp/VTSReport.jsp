@@ -517,6 +517,8 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
          <th>Vehicle Type</th>
          <th>Vehicle No</th>
          <th>Vehicle In</th>
+          <th>Vehicle out</th>
+          <th>Duration </th>
          <th>Transporter Name</th>
          <th>Driver Name</th>
          <th>Driver Mobile No</th>
@@ -561,6 +563,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
                             <th>Vehicle No</th>
                             <th>Vehicle In</th>
                             <th>Vehicle Out</th>
+                            <th>Duration </th>
                             <th>Transporter Name</th>
                             <th>Driver Name</th>
                             <th>Driver Mobile No</th>

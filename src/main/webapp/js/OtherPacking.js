@@ -2,7 +2,9 @@
 
 let allowed = null;
 
-
+$(document).on('change', '.dynamic-row select', function () {
+    if (this.value) $(this).closest('.form-group').find('.uom-error, .type-error').hide().text('');
+});
 document.getElementById("modalScroll1").addEventListener("click", function () {
     // show custom message instead of opening modal
 	  //const allowed = window.allowedActions || [];
@@ -13,6 +15,37 @@ document.getElementById("modalScroll1").addEventListener("click", function () {
 	  return;
 	}
 	$('#exampleModalScrollable123').modal('show');
+});
+
+
+// Select2 init. target = id string OR a DOM element. Finds its parent modal itself.
+function s2(target, placeholder) {
+    const $el = (typeof target === 'string') ? $('#' + target) : $(target);
+    if (!$el.length) return;
+    if ($el.hasClass('select2-hidden-accessible')) $el.select2('destroy');
+    const $modal = $el.closest('.modal');
+    $el.select2({
+        dropdownParent: $modal.length ? $modal : $(document.body),
+        width: '100%',
+        placeholder: placeholder || $el.find('option:first').text(),
+        allowClear: false,
+        minimumResultsForSearch: 0       // always show the search box
+    });
+}
+
+// Select2 only fires jQuery events. This re-fires a native "change" so
+// addEventListener("change") code keeps working (your #type listener).
+$(document).on('select2:select select2:clear', 'select', function () {
+    this.dispatchEvent(new Event('change'));
+});
+
+// Recalculate the row total when the UOM changes (the total depends on the UOM,
+// but only qty/kg/price triggered it before).
+$(document).on('change', 'select[id^="uom-"]', function () {
+    calculateTotal(this.id.split('-')[1]);
+});
+$(document).on('change', 'select[id^="uom_new_"]', function () {
+    calculateRowTotaledit(this.id.replace('uom_new_', ''));
 });
 
 function loadAllowedActions() {
@@ -330,6 +363,8 @@ function updateGrandTotal() {
 	                uomSelect.appendChild(option);
 	            }
 	        });
+			
+			s2(`uom-${rowId}`, 'Select UOM');  
 	    } catch (error) {
 	        console.error("Error fetching UOM data:", error);
 	    }
@@ -363,6 +398,8 @@ function updateGrandTotal() {
 	                selectElement.appendChild(option);
 	            }
 	        });
+			
+			s2('type', 'Select othertype');
 	    } catch (error) {
 	        console.error("Error fetching othertype:", error);
 	    }
@@ -404,6 +441,10 @@ function updateGrandTotal() {
 	                typeSelect.appendChild(option);
 	            }
 	        });
+			
+			s2(`type-${rowId}`, 'Select Type');
+			
+			
 	    } catch (error) {
 	        console.error("Error fetching Type data:", error);
 	    }
@@ -1069,7 +1110,8 @@ console.warn(uom)
 
 function addRowEdit() {
     const container = document.getElementById("dynamicRowsContaineredit");
-    const rowIndex = container.children.length;
+   // const rowIndex = container.children.length;
+	const rowIndex = Date.now();     // was: container.children.length
 
     // Set SL No. to always be 0 for new rows
     let newSlno = 0;
@@ -1120,6 +1162,9 @@ function addRowEdit() {
 
     // Append the new row to the container
     container.appendChild(newRow);
+	
+	s2(`uom_new_${rowIndex}`,  'Select uom');     // <-- ADD
+	s2(`type_new_${rowIndex}`, 'Select type');    // <-- ADD
 }
 
 function editRecord(pn_id) {
@@ -1224,7 +1269,12 @@ function editRecord(pn_id) {
                     if (typeSelect) {
                         typeSelect.value = record.type_id || "";
                     }
+					
+					s2(`uom_${index}`,  'Select uom');      // <-- ADD
+					 s2(`type_${index}`, 'Select type');     // <-- ADD
                 });
+				
+				
 				updateGrandTotal();
                 // Show the modal
                 $("#exampleModalScrollable123update").modal("show");

@@ -27,9 +27,9 @@ long ts = System.currentTimeMillis();
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" integrity="sha512-xxx" crossorigin="anonymous" />
    <link href="css/newmasterfile.css" rel="stylesheet">
    <link href="https://stackpath.bootstrapcdn.com/bootstrap/5.1.0/css/bootstrap.min.css" rel="stylesheet">
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
- <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
- <script src="js/sidebar.js"></script>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+   <script src="js/sidebar.js"></script>
    
   <script>
     const user_id = sessionStorage.getItem('user_id');
@@ -741,18 +741,18 @@ long ts = System.currentTimeMillis();
   <a class="scroll-to-top rounded" href="#page-top">
     <i class="fas fa-angle-up"></i>
   </a>
-   <script src="js/config.js"></script>
- <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="vendor/jquery/jquery.min.js"></script>
-  <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
-  <script src="vendor/jquery-easing/jquery.easing.min.js"></script>
-  <script src="js/ruang-admin.min.js"></script>
-    <script src="js/newmaster.js?v=<%=ts%>"></script>
-  <script src="js/logout.js"></script>
-  <script src="js/username.js"></script>
+     <script src="js/config.js"></script>
+   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="vendor/jquery/jquery.min.js"></script>
+    <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src="vendor/jquery-easing/jquery.easing.min.js"></script>
+    <script src="js/ruang-admin.min.js"></script>
+      <script src="js/newmaster.js?v=<%=ts%>"></script>
+    <script src="js/logout.js"></script>
+    <script src="js/username.js"></script>
 
-  <script src="js/factoryid.js"></script>
-   <script src="js/Sessionfilter.js"></script>
+    <script src="js/factoryid.js"></script>
+     <script src="js/Sessionfilter.js"></script>
 
   
 <script>

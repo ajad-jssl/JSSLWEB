@@ -133,7 +133,7 @@ async function fetchdelivery() {
     }
 }
 
-async function fetchSate() {
+/*async function fetchSate() {
     try {
         
         // Construct the API URL properly
@@ -172,6 +172,42 @@ async function fetchSate() {
         });
     } catch (error) {
         console.error("Error fetching sale order types:", error);
+    }
+}*/
+
+async function fetchSate() {
+    try {
+        const url = new URL(`/jssl/seriesmaster/getClosedDebitCredit`, baseUrl);
+        const response = await fetch(url, {
+            method: "GET",
+            credentials: "include"
+        });
+
+        const json = await response.json();
+
+        if (json.status !== "yes" || !json.ClosedDebitCreditList.length) {
+            console.warn("No sale order types found.");
+            return;
+        }
+
+        const selectElement = document.getElementById("state");
+        selectElement.innerHTML = `<option value="">Select State</option>`;
+
+		json.ClosedDebitCreditList.forEach((type) => {
+		    if (type.state_id && type.state_name) {
+		        const option = document.createElement("option");
+
+		        // Unique per business unit, since one state can have several BUs
+		        option.value = type.bu_code;
+		        option.textContent = type.state_name;
+		        option.dataset.stateIds = String(type.state_ids);
+		        option.dataset.buCode = type.bu_code;
+		        selectElement.appendChild(option);
+		    }
+		});
+
+    } catch (error) {
+        console.error("Error fetching states:", error);
     }
 }
 
@@ -390,25 +426,26 @@ document.getElementById("DebitseriesAdd").addEventListener("input", function () 
 
 
 function addevent() {
-	$('#exampleModalCenter66').modal('hide');
-  //const state_id        = $('#state').val();                  // or document.getElementById('state').value
-  const state_id = $('#state').find(':selected').data('state-ids');
-  const invoice_series  = $('#DebitseriesAdd').val().trim();
-  const start_date      = $('#DebitstartdateAdd').val().trim();
-  const end_date        = $('#DebitenddateAdd').val().trim();
-  const debitcredit_type= $('#DebittypeAdd').val().trim();
-  const created_by      = createdById;                        // provided elsewhere
+  $('#exampleModalCenter66').modal('hide');
 
-  /* Optional quick validation */
-  if (!state_id || !invoice_series || !start_date || !debitcredit_type) {
+  const selected         = $('#state').find(':selected');
+  const state_id         = selected.data('state-ids');
+  const bu_code          = selected.data('bu-code');          // new
+  const invoice_series   = $('#DebitseriesAdd').val().trim();
+  const start_date       = $('#DebitstartdateAdd').val().trim();
+  const end_date         = $('#DebitenddateAdd').val().trim();
+  const debitcredit_type = $('#DebittypeAdd').val().trim();
+  const created_by       = createdById;
+
+  if (!state_id || !bu_code || !invoice_series || !start_date || !debitcredit_type) {
     $('#errorMessage').text('Please fill in all required fields.');
     $('#exampleModalCenterDup').modal('show');
     return;
   }
 
-  /* Bundle everything exactly as the backend column names expect */
   const payload = {
     state_id,
+    bu_code,                                                     // new
     created_by,
     debitcredit_type,
     invoice_series,
@@ -419,20 +456,16 @@ function addevent() {
   $.ajax({
     url         : new URL('/jssl/seriesmaster/addDebitCreditMaster', baseUrl),
     type        : 'POST',
-    dataType    : 'json',      
-	xhrFields: {
-		    withCredentials: true
-		},                              // —— we expect JSON back
-    contentType : 'application/x-www-form-urlencoded; charset=UTF-8', // ★ keep form format
-    data        : $.param(payload),                          // ★ encode obj → state_id=…&…
+    dataType    : 'json',
+    xhrFields   : { withCredentials: true },
+    contentType : 'application/x-www-form-urlencoded; charset=UTF-8',
+    data        : $.param(payload),
     success     : handleResponse,
-    error       : () => console.error('Request failed.')
+    error       : (xhr) => console.error('Request failed:', xhr.responseText)
   });
 
   function handleResponse(data) {
-    const result = data.message;
-
-    if (result === 'Success') {
+    if (data.message === 'Success') {
       $('<div class="popup">Debit-credit Series Master created successfully!</div>')
         .appendTo('body').hide().fadeIn(400)
         .delay(800)
@@ -440,10 +473,8 @@ function addevent() {
           $(this).remove();
           window.location = 'debitcreditseriesmaster.jsp';
         });
-
     } else {
-      const errorMessage = data.message || 'Series Invoice No is Already exists';
-      $('#errorMessage').text(errorMessage);
+      $('#errorMessage').text(data.message || 'Series Invoice No is Already exists');
       $('#exampleModalCenterDup').modal('show');
     }
   }

@@ -539,9 +539,9 @@ $(document).on("click", "#confirmcompanyupd", function () {
 });
 
 // Add new state event
-function companyaddevent() {
+/*function companyaddevent() {
 	var company = $('#company').val().trim();
-	/*var address = $('#address').val().trim();
+	var address = $('#address').val().trim();
 	var statedp = $('#statedp').val().trim();
 	//var city3 = $('#city3').val().trim();
 
@@ -578,7 +578,7 @@ function companyaddevent() {
 	// If any error, stop further action
 	if (hasError) {
 	    return;
-	}*/
+	}
 
     // Check if state already exists
     $.ajax({
@@ -593,6 +593,31 @@ function companyaddevent() {
                 //alert("company already exists!");
             } else {
                 insertcompany(company);
+            }
+        },
+        error: function (xhr, status, error) {
+            console.error("Check Error:", error);
+            alert("Error while checking company.");
+        }
+    });
+}*/
+
+
+function companyaddevent() {
+    var company = $('#company').val().trim();
+    var stateId = parseInt($('#statedp').val()) || 0;
+    var cityId  = parseInt($('#city3').val()) || 0;
+
+    $.ajax({
+        url: new URL('/api/VMScompany/checkcompany?Company_name=' + encodeURIComponent(company)
+              + '&State_id=' + stateId + '&City_id=' + cityId, baseUrl1),
+        type: 'GET',
+        xhrFields: { withCredentials: true },
+        success: function (response) {
+            if (response.exists) {
+                showModalPopup("Company already exists in this state and city!");
+            } else {
+                insertcompany();
             }
         },
         error: function (xhr, status, error) {
@@ -698,7 +723,7 @@ async function editcompany(company_id) {
 }
 
 
-function companyUpdate(company_id) {
+/*function companyUpdate(company_id) {
 
     const updatedData = {
         company_name: $('#company1').val().trim(),
@@ -748,6 +773,64 @@ function companyUpdate(company_id) {
             alert("Error while checking company.");
         }
     });
+}*/
+
+
+function companyUpdate(company_id) {
+
+    const updatedData = {
+        company_name: $('#company1').val().trim(),
+        address: $('#address1').val().trim(),
+        state_id: String($('#state2').val() || ''),
+        city_id: String($('#city2').val() || '')
+    };
+
+    // 1. Check if ANY field changed
+    const isChanged =
+        updatedData.company_name !== originalCompanyData.company_name ||
+        updatedData.address !== originalCompanyData.address ||
+        updatedData.state_id !== originalCompanyData.state_id ||
+        updatedData.city_id !== originalCompanyData.city_id;
+
+    if (!isChanged) {
+        showModalPopup("No changes are detected. Update is skipped..!");
+        return;
+    }
+
+    // 2. Duplicate check is needed only if name, state or city changed
+    const needsDuplicateCheck =
+        updatedData.company_name !== originalCompanyData.company_name ||
+        updatedData.state_id !== originalCompanyData.state_id ||
+        updatedData.city_id !== originalCompanyData.city_id;
+
+    // 3. Only the address changed, so update directly
+    if (!needsDuplicateCheck) {
+        proceedUpdate(company_id, updatedData);
+        return;
+    }
+
+    // 4. Check duplicate on company name + state + city (excluding this record)
+    $.ajax({
+        url: new URL(
+            `/api/VMScompany/checkcompany?Company_name=${encodeURIComponent(updatedData.company_name)}`
+            + `&State_id=${parseInt(updatedData.state_id) || 0}`
+            + `&City_id=${parseInt(updatedData.city_id) || 0}`
+            + `&Company_id=${company_id}`,
+            baseUrl1
+        ),
+        type: 'GET',
+        xhrFields: { withCredentials: true },
+        success: function (response) {
+            if (response.exists) {
+                showModalPopup("Company already exists in this state and city!");
+            } else {
+                proceedUpdate(company_id, updatedData);
+            }
+        },
+        error: function () {
+            alert("Error while checking company.");
+        }
+    });
 }
 
 function proceedUpdate(company_id, updatedData) {
@@ -778,6 +861,9 @@ function proceedUpdate(company_id, updatedData) {
         alert("Error updating company");
     });
 }
+
+
+
 
 
 

@@ -1,6 +1,28 @@
 let allowed = null;
 
 
+
+// Select2 init. target = id string OR a DOM element. Finds the parent modal itself.
+function s2(target, placeholder) {
+    const $el = (typeof target === 'string') ? $('#' + target) : $(target);
+    if (!$el.length) return;
+    if ($el.hasClass('select2-hidden-accessible')) $el.select2('destroy');
+    const $modal = $el.closest('.modal');
+    $el.select2({
+        dropdownParent: $modal.length ? $modal : $(document.body),
+        width: '100%',
+        placeholder: placeholder || $el.find('option:first').text(),
+        allowClear: false,
+        minimumResultsForSearch: 0
+    });
+}
+
+// Select2 only fires jQuery events. This re-fires a native 'change' so your
+// existing addEventListener("change") handlers (cont, load, intype444 ...) keep working.
+$(document).on('select2:select select2:clear', 'select', function () {
+    this.dispatchEvent(new Event('change'));
+});
+
 document.getElementById("#modalScroll").addEventListener("click", function () {
     // show custom message instead of opening modal
 	  //const allowed = window.allowedActions || [];
@@ -63,6 +85,9 @@ function populateSelect(selectElement, records, selectedId, placeholder, fallbac
         fallbackOption.selected = true;
         selectElement.insertBefore(fallbackOption, selectElement.children[1] || null);
     }
+	
+	
+	s2(selectElement.id);
 }
 
 
@@ -114,6 +139,39 @@ async function fetchservice() {
 
     } catch (error) {
         console.error("Error fetching service codes:", error);
+    }
+}
+
+let taxMasterList = [];
+
+async function fetchTaxMasterList() {
+    try {
+        const url = new URL("/jssl/taxmasters/list", baseUrl);
+
+        const response = await fetch(url, {
+            method: "GET",
+            credentials: "include"
+        });
+
+        if (!response.ok) {
+            throw new Error("Failed to fetch tax master list.");
+        }
+
+        const json = await response.json();
+
+        if (json.status !== "yes") {
+            console.warn("No tax master records found.", json);
+            taxMasterList = [];
+            return;
+        }
+
+        taxMasterList = Array.isArray(json.Data) ? json.Data : [];
+
+        console.log("Tax master list:", taxMasterList);
+
+    } catch (error) {
+        console.error("Error fetching tax master list:", error);
+        taxMasterList = [];
     }
 }
 
@@ -201,6 +259,10 @@ document.addEventListener("DOMContentLoaded", function () {
             document.getElementById("inputFieldsContainer").style.display = "none"; // Hide if not selected
         }
     });
+	
+	
+	s2('cont', 'Select contractor');
+	s2('load', 'Select load');
 });
 
 
@@ -235,13 +297,15 @@ async function fetchCont(factoryId) {
                 selectElement.appendChild(option);
             }
         });
+		
+		s2('cont', 'Select contractor');  
     } catch (error) {
         console.error("Error fetching contractors:", error);
     }
 }
 
 // Fetch the load list based on factoryId and selected contractorId (con_id)
-async function fetchLoad(factoryId, contractId) {
+/*async function fetchLoad(factoryId, contractId) {
     try {
         const url = new URL(`/jssl/getlistloadidforthatcontractorsfromqspackingnew`, baseUrl);
         url.searchParams.append("factory_id", factoryId);
@@ -271,6 +335,40 @@ async function fetchLoad(factoryId, contractId) {
                 selectElement.appendChild(option);
             }
         });
+		
+		
+    } catch (error) {
+        console.error("Error fetching loads:", error);
+    }
+}*/
+
+async function fetchLoad(factoryId, contractId) {
+    try {
+        const url = new URL(`/jssl/getlistloadidforthatcontractorsfromqspackingnew`, baseUrl);
+        url.searchParams.append("factory_id", factoryId);
+        url.searchParams.append("con_id", contractId);
+
+        const response = await fetch(url, { method: "GET", credentials: "include" });
+        if (!response.ok) throw new Error("Failed to fetch loads");
+        const json = await response.json();
+
+        const selectElement = document.getElementById("load");
+        selectElement.innerHTML = `<option value="">Select load</option>`;
+
+        if (json.status === "yes" && json.DATA && json.DATA.length) {
+            json.DATA.forEach((type) => {
+                if (type.load_id && type.lot_no) {
+                    const option = document.createElement("option");
+                    option.value = type.load_id;
+                    option.textContent = type.lot_no;
+                    selectElement.appendChild(option);
+                }
+            });
+        } else {
+            console.warn("No loads found.");
+        }
+
+        s2('load', 'Select load');
     } catch (error) {
         console.error("Error fetching loads:", error);
     }
@@ -311,12 +409,14 @@ async function fetchSalebusunit(targetId = "bus", currentValueText = null) {
 		        // Loosen the match — check if currentValueText starts with the business unit name
 		        if (currentValueText && currentValueText.startsWith(type.business_unit_name)) {
 		            option.selected = true;
-		            matchFound = true;
+		            //matchFound = true;
 		        }
 
 		        selectElement.appendChild(option);
 		    }
+			
 		});
+		s2(targetId, 'Select business unit');  
 
         // Only add currentValueText as a fallback option if it wasn't found in the API list
         /*if (currentValueText && !matchFound) {
@@ -419,331 +519,771 @@ async function fetchconname(targetId = "consig", currentValueText = null) {
     }
 }
 
-// Fetch the QsPacking data using contractor_id and load_id
-async function fetchQsPackingData(contractId, loadId) {
-    try {
-        const selectedFactoryId = sessionStorage.getItem("selectedFactoryId"); // Get the factory_id from sessionStorage
+let invoiceBasicAmount = 0;
 
-        // Ensure factory_id is available
+function calculateInvoiceTaxes() {
+
+    // Basic amount = sum of packing row totals (+ freight), NOT the grand total box
+    const basicAmount = invoiceBasicAmount;
+
+    const taxFields = [
+        { taxId: "tax_id_1", percentageId: "tax_per_1", valueId: "tax_value_1" },
+        { taxId: "tax_id_2", percentageId: "tax_per_2", valueId: "tax_value_2" },
+        { taxId: "tax_id_3", percentageId: "tax_per_3", valueId: "tax_value_3" }
+    ];
+
+    let totalTax = 0;
+
+    taxFields.forEach(field => {
+
+        const taxSelect       = document.getElementById(field.taxId);
+        const percentageInput = document.getElementById(field.percentageId);
+        const valueInput      = document.getElementById(field.valueId);
+
+        if (!taxSelect || !percentageInput || !valueInput) return;
+
+        let taxAmount = 0;
+
+        if (taxSelect.value !== "") {
+            const percentage = parseFloat(percentageInput.value || 0) || 0;
+            // Round to nearest whole rupee
+            taxAmount = Math.round((basicAmount * percentage) / 100);
+        }
+
+        valueInput.value = taxAmount.toFixed(2);
+        totalTax += taxAmount;
+    });
+
+    const grandTotal = basicAmount + totalTax;
+
+    // Show grand total = basic + all three taxes
+    const grandInput = document.getElementById("ingrandv");
+    if (grandInput) grandInput.value = grandTotal.toFixed(2);
+
+    return { basicAmount, totalTax, grandTotal };
+}
+
+// Fetch the QsPacking data using contractor_id and load_id
+// Used to ignore stale responses if the user changes the percentage quickly
+let qsPackingRequestSeq = 0;
+
+async function fetchQsPackingData(contractId, loadId, fromPercentChange = false) {
+
+    try {
+
+        const selectedFactoryId =
+            sessionStorage.getItem("selectedFactoryId");
+
         if (!selectedFactoryId) {
             console.error("No factory ID found in sessionStorage.");
             return;
         }
 
-        const url = new URL(`/jssl/invoice/getcontractqspackingdetailsnew`, baseUrl);
+        const percentageElement =
+            document.getElementById("percen");
 
-        // Append the parameters to the URL
+        // ------------------------------------------------------------
+        // PERCENTAGE CHANGE LISTENER
+        // ------------------------------------------------------------
+        if (
+            percentageElement &&
+            !percentageElement.dataset.changeListenerAdded
+        ) {
+
+            percentageElement.addEventListener("change", async function () {
+
+                const c = document.getElementById("cont").value;
+                const l = document.getElementById("load").value;
+
+                if (!c || !l) return;
+
+                if (this.value.trim() === "") return;
+
+                await fetchQsPackingData(c, l, true);
+
+            });
+
+            percentageElement.dataset.changeListenerAdded = "true";
+        }
+
+        // ------------------------------------------------------------
+        // LOAD TAX MASTER LIST
+        // ------------------------------------------------------------
+        if (!taxMasterList || taxMasterList.length === 0) {
+            await fetchTaxMasterList();
+        }
+
+        // ------------------------------------------------------------
+        // BUILD API URL
+        // ------------------------------------------------------------
+        const url = new URL(
+            "/jssl/invoice/getcontractqspackingdetailsnew",
+            baseUrl
+        );
+
         url.searchParams.append("contract_id", contractId);
         url.searchParams.append("load_id", loadId);
-        url.searchParams.append("factory_id", selectedFactoryId); // Append factory_id as well
+        url.searchParams.append("factory_id", selectedFactoryId);
+
+        // ------------------------------------------------------------
+        // PERCENTAGE CHANGE
+        // ------------------------------------------------------------
+        if (fromPercentChange) {
+
+            const pctNow = percentageElement
+                ? percentageElement.value.trim()
+                : "";
+
+            if (pctNow !== "") {
+                url.searchParams.append("percentage_value", pctNow);
+            }
+        }
+
+        const mySeq = ++qsPackingRequestSeq;
 
         const response = await fetch(url, {
             method: "GET",
-            credentials: "include"   // ✅ Always send JSESSIONID cookie
+            credentials: "include"
         });
-        if (!response.ok) throw new Error("Failed to fetch QsPacking data");
+
+        if (!response.ok) {
+            throw new Error("Failed to fetch QsPacking data.");
+        }
 
         const json = await response.json();
 
-        // Declared here (function-level scope) so it's still visible later
-        // when we build the QsPacking_Data rows below.
+        // Ignore stale response
+        if (mySeq !== qsPackingRequestSeq) return;
+
+        // ------------------------------------------------------------
+        // COMMON SET VALUE FUNCTION
+        // ------------------------------------------------------------
+        const setVal = (id, value) => {
+
+            const element = document.getElementById(id);
+
+            if (element) {
+                element.value = value ?? "";
+            }
+        };
+
         let contractor = null;
 
-        if (json.Grand_Total_value && json.Grand_Total_value.length > 0) {
-            const Grand_Total_value = json.Grand_Total_value[0];
+		// Basic amount = sum of all packing row totals + freight
+		const packingRows = Array.isArray(json.QsPacking_Data) ? json.QsPacking_Data : [];
 
-            const grandvalue = Grand_Total_value.Grand_Total_tax;
-            const grand1 = document.getElementById("ingrandv");
-            if (grand1) {
-                grand1.value = grandvalue;
-            }
-        } else {
-            console.warn("No Contractor Data found.");
-        }
+		const rowsTotal = packingRows.reduce(
+		    (sum, r) => sum + (parseFloat(r.total) || 0), 0
+		);
 
-        if (json.QsPacking_Data && json.QsPacking_Data.length > 0) {
+		const freightValue =
+		    packingRows.length > 0
+		        ? (parseFloat(packingRows[0].freight) || 0)
+		        : 0;
+
+		invoiceBasicAmount = rowsTotal + freightValue;
+
+        // ------------------------------------------------------------
+        // FREIGHT AND PACKING NOTE ID
+        // ------------------------------------------------------------
+        if (
+            json.QsPacking_Data &&
+            json.QsPacking_Data.length > 0
+        ) {
+
             const QsPacking = json.QsPacking_Data[0];
 
-            const freightValue = QsPacking.freight;
-            const frie = document.getElementById("freight");
-            if (frie) {
-                frie.value = freightValue;
-            }
-
-            const pnidValue = QsPacking.pn_id;
-            const pnid = document.getElementById("id11");
-            if (pnid) {
-                pnid.value = pnidValue;
-            }
+            setVal("freight", QsPacking.freight);
+            setVal("id11", QsPacking.pn_id);
 
         } else {
-            console.warn("No Contractor Data found.");
+
+            console.warn("No QsPacking data found.");
+
         }
 
-        // Check if Contractor_Data exists and contains items
-        if (json.Contractor_Data && json.Contractor_Data.length > 0) {
-            // Get the first item (or iterate if needed)
-            contractor = json.Contractor_Data[0]; // was: const contractor = ...
+        // ------------------------------------------------------------
+        // TAX 1, TAX 2 AND TAX 3
+        // ------------------------------------------------------------
+        const taxContainer =
+            document.querySelector(".dynamic-row1");
 
-            // Set the bank name from the contractor data
-            const bankDetailsIdValue = contractor.bank_details_id_value;
-            const bankInput = document.getElementById("bank");
-            if (bankInput) {
-                bankInput.value = bankDetailsIdValue;
-            }
+        if (!taxContainer) {
 
-            fetchSalework("work", contractor.work_id_value);
+            console.error("Element .dynamic-row1 not found.");
 
-            const InvoiceTypeCal = contractor.invoice_type_calculation;
-            const InvoiceTypeCalcu = document.getElementById("intypecal");
-            if (InvoiceTypeCalcu) {
-                InvoiceTypeCalcu.value = InvoiceTypeCal;
-            }
+        } else {
 
-            fetchinvoiceto("ininto", contractor.invoice_to_id_value);
+            taxContainer.innerHTML = "";
 
-            const ProductValue = contractor.product_desc_id;
-            const ProDec = document.getElementById("prodesc");
-            if (ProDec) {
-                ProDec.value = ProductValue;
-            }
+            const existingTaxes = Array.isArray(json.tax)
+                ? json.tax
+                : [];
 
-            const ShipmentValue = contractor.shipment_mode_id_value;
-            const Ship = document.getElementById("shipmode");
-            if (Ship) {
-                Ship.value = ShipmentValue;
-            }
+            const taxFields = [
+                { id: "tax_id_1", percentageId: "tax_per_1", valueId: "tax_value_1" },
+                { id: "tax_id_2", percentageId: "tax_per_2", valueId: "tax_value_2" },
+                { id: "tax_id_3", percentageId: "tax_per_3", valueId: "tax_value_3" }
+            ];
 
-            const ExportValue = contractor.export;
-            const exp = document.getElementById("expt");
-            if (exp) {
-                exp.value = ExportValue;
-            }
+            taxFields.forEach((field, index) => {
 
-            const TaxPayValye = contractor.tax_payable;
-            const taxpay = document.getElementById("taxres");
-            if (taxpay) {
-                taxpay.value = TaxPayValye;
-            }
+                const existingTax = existingTaxes[index] || {};
 
-            const PercenValue = contractor.percentage_value;
-            const per = document.getElementById("percen");
-            if (per) {
-                per.value = PercenValue;
-            }
+                const selectedTaxId =
+                    existingTax.tax_id != null
+                        ? String(existingTax.tax_id)
+                        : "";
 
-            fetchconname("billing", contractor.consignee_id_value);
+                // Main row
+                const div = document.createElement("div");
 
-            const DelValue = contractor.delivery_condition_id_value;
-            const del = document.getElementById("delivery");
-            if (del) {
-                del.value = DelValue;
-            }
+                div.className = "form-row align-items-center";
 
-            const RegValue = contractor.reg_office_id_value;
-            const reg = document.getElementById("office");
-            if (reg) {
-                reg.value = RegValue;
-            }
+                // ----------------------------------------------------
+                // TAX NAME
+                // ----------------------------------------------------
+                const nameDiv = document.createElement("div");
 
-            if (contractor.export === 'yes') {
-                $('#exportFields1').show();
+                nameDiv.className =
+                    "form-group col-md-4 col-sm-12";
+
+                const nameRow = document.createElement("div");
+
+                nameRow.className =
+                    "d-flex align-items-center";
+
+                const nameLabel = document.createElement("label");
+
+                nameLabel.htmlFor = field.id;
+                nameLabel.className = "mb-0 mr-2";
+                nameLabel.style.minWidth = "105px";
+                nameLabel.innerHTML = "<b>Tax Name</b>";
+
+                const taxSelect = document.createElement("select");
+
+                taxSelect.id = field.id;
+                taxSelect.name = field.id;
+                taxSelect.className = "form-control";
+
+                const defaultOption =
+                    document.createElement("option");
+
+                defaultOption.value = "";
+                defaultOption.textContent = "Select Tax";
+
+                taxSelect.appendChild(defaultOption);
+
+                // Populate tax master options
+                taxMasterList.forEach(tax => {
+
+                    const option = document.createElement("option");
+
+                    option.value = tax.tax_id;
+
+                    option.textContent =
+                        tax.tax_name + " - " + tax.tax_per + "%";
+
+                    if (String(tax.tax_id) === selectedTaxId) {
+                        option.selected = true;
+                    }
+
+                    taxSelect.appendChild(option);
+
+                });
+
+                // Retain existing tax if missing from master list
+                if (
+                    selectedTaxId &&
+                    !taxMasterList.some(
+                        tax => String(tax.tax_id) === selectedTaxId
+                    )
+                ) {
+
+                    const option = document.createElement("option");
+
+                    option.value = selectedTaxId;
+
+                    option.textContent =
+                        existingTax.tax_name || "Existing Tax";
+
+                    option.selected = true;
+
+                    taxSelect.appendChild(option);
+                }
+
+                nameRow.appendChild(nameLabel);
+                nameRow.appendChild(taxSelect);
+
+                // ----------------------------------------------------
+                // DUPLICATE TAX VALIDATION MESSAGE
+                // ----------------------------------------------------
+                const taxError = document.createElement("small");
+
+                taxError.className = "text-danger tax-error";
+                taxError.style.display = "none";
+
+                taxError.textContent =
+                    "This tax is already selected.";
+
+                nameDiv.appendChild(nameRow);
+                nameDiv.appendChild(taxError);
+
+                // ----------------------------------------------------
+                // TAX PERCENTAGE
+                // ----------------------------------------------------
+                const percentageDiv =
+                    document.createElement("div");
+
+                percentageDiv.className =
+                    "form-group col-md-4 col-sm-12";
+
+                const percentageRow =
+                    document.createElement("div");
+
+                percentageRow.className =
+                    "d-flex align-items-center";
+
+                const percentageLabel =
+                    document.createElement("label");
+
+                percentageLabel.htmlFor = field.percentageId;
+                percentageLabel.className = "mb-0 mr-2";
+                percentageLabel.style.minWidth = "130px";
+                percentageLabel.innerHTML =
+                    "<b>Tax Percentage</b>";
+
+                const percentageInput =
+                    document.createElement("input");
+
+                percentageInput.type = "text";
+                percentageInput.id = field.percentageId;
+                percentageInput.className = "form-control";
+
+                // Get percentage from tax master first.
+                const initialTax = taxMasterList.find(
+                    tax => String(tax.tax_id) === selectedTaxId
+                );
+
+                percentageInput.value = initialTax
+                    ? parseFloat(initialTax.tax_per || 0).toFixed(2)
+                    : parseFloat(existingTax.tax_per || 0).toFixed(2);
+
+                percentageInput.disabled = true;
+
+                percentageRow.appendChild(percentageLabel);
+                percentageRow.appendChild(percentageInput);
+
+                percentageDiv.appendChild(percentageRow);
+
+                // ----------------------------------------------------
+                // TAX VALUE
+                // ----------------------------------------------------
+                const valueDiv = document.createElement("div");
+
+                valueDiv.className =
+                    "form-group col-md-4 col-sm-12";
+
+                const valueRow = document.createElement("div");
+
+                valueRow.className =
+                    "d-flex align-items-center";
+
+                const valueLabel =
+                    document.createElement("label");
+
+                valueLabel.htmlFor = field.valueId;
+                valueLabel.className = "mb-0 mr-2";
+                valueLabel.style.minWidth = "95px";
+                valueLabel.innerHTML = "<b>Tax Value</b>";
+
+                const valueInput =
+                    document.createElement("input");
+
+                valueInput.type = "text";
+                valueInput.id = field.valueId;
+                valueInput.className =
+                    "form-control text-right";
+
+				valueInput.value = "0.00";
+                valueInput.disabled = true;
+
+                valueRow.appendChild(valueLabel);
+                valueRow.appendChild(valueInput);
+
+                valueDiv.appendChild(valueRow);
+
+                // ----------------------------------------------------
+                // APPEND THREE COLUMNS
+                // ----------------------------------------------------
+                div.appendChild(nameDiv);
+                div.appendChild(percentageDiv);
+                div.appendChild(valueDiv);
+
+                taxContainer.appendChild(div);
+
+                // ----------------------------------------------------
+                // DUPLICATE TAX VALIDATION + CALCULATION
+                // ----------------------------------------------------
+                let previousTaxId = taxSelect.value;
+
+                taxSelect.addEventListener("change", function () {
+
+                    const selectedTaxId = this.value;
+
+                    const allTaxDropdowns = [
+                        document.getElementById("tax_id_1"),
+                        document.getElementById("tax_id_2"),
+                        document.getElementById("tax_id_3")
+                    ];
+
+                    const duplicateTax = allTaxDropdowns.some(
+                        dropdown => {
+
+                            return dropdown &&
+                                dropdown !== this &&
+                                selectedTaxId !== "" &&
+                                dropdown.value === selectedTaxId;
+
+                        }
+                    );
+
+                    // Duplicate selection
+                    if (duplicateTax) {
+
+                        taxError.style.display = "block";
+
+                        this.value = previousTaxId;
+
+                        return;
+                    }
+
+                    taxError.style.display = "none";
+
+					// Update previous valid selection.
+					previousTaxId = selectedTaxId;
+
+					// Find selected tax details.
+					const selectedTax = taxMasterList.find(
+					    tax => String(tax.tax_id) === String(selectedTaxId)
+					);
+
+					percentageInput.value = selectedTax
+					    ? parseFloat(selectedTax.tax_per || 0).toFixed(2)
+					    : "0.00";
+
+					// Recalculate all three taxes.
+					calculateInvoiceTaxes();
+
+                });
+
+            });
+
+            // --------------------------------------------------------
+            // CALCULATE ALL THREE TAXES AFTER RENDERING
+            // --------------------------------------------------------
+            calculateInvoiceTaxes();
+
+        }
+
+        // ------------------------------------------------------------
+        // IF ONLY PERCENTAGE CHANGED, STOP HERE
+        // ------------------------------------------------------------
+        if (fromPercentChange) return;
+
+        // ------------------------------------------------------------
+        // CONTRACTOR / CONTRACT DETAILS
+        // ------------------------------------------------------------
+        if (
+            json.Contractor_Data &&
+            json.Contractor_Data.length > 0
+        ) {
+
+            contractor = json.Contractor_Data[0];
+
+            setVal("bank", contractor.bank_details_id_value);
+
+            fetchSalework(
+                "work",
+                contractor.work_id_value
+            );
+
+            setVal(
+                "intypecal",
+                contractor.invoice_type_calculation
+            );
+
+            fetchinvoiceto(
+                "ininto",
+                contractor.invoice_to_id_value
+            );
+
+            setVal(
+                "prodesc",
+                contractor.product_desc_id
+            );
+
+            setVal(
+                "shipmode",
+                contractor.shipment_mode_id_value
+            );
+
+            setVal("expt", contractor.export);
+
+            setVal(
+                "taxres",
+                contractor.tax_payable
+            );
+
+            // Contract default percentage
+            setVal(
+                "percen",
+                contractor.percentage_value
+            );
+
+            fetchconname(
+                "billing",
+                contractor.consignee_id_value
+            );
+
+            setVal(
+                "delivery",
+                contractor.delivery_condition_id_value
+            );
+
+            setVal(
+                "office",
+                contractor.reg_office_id_value
+            );
+
+            if (contractor.export === "yes") {
+
+                $("#exportFields1").show();
+
             } else {
-                $('#exportFields1').hide();
+
+                $("#exportFields1").hide();
+
             }
 
-            const AreaValue = contractor.area_no;
-            const area = document.getElementById("are");
-            if (area) {
-                area.value = AreaValue;
-            }
+            setVal("are", contractor.area_no);
+            setVal("lut", contractor.lot_no);
+            setVal("connum", contractor.containter_no);
+            setVal("epog", contractor.epcgno);
+            setVal("exptitle", contractor.export_title);
+            setVal("service", contractor.s_code_value);
+            setVal("hsncode", contractor.h_code_value);
 
-            const LotValue = contractor.lot_no;
-            const lot = document.getElementById("lut");
-            if (lot) {
-                lot.value = LotValue;
-            }
+            fetchSalebusunit(
+                "inbusunit",
+                contractor.businessUnitName
+            );
 
-            const contValue = contractor.containter_no;
-            const cont = document.getElementById("connum");
-            if (cont) {
-                cont.value = contValue;
-            }
+            setVal(
+                "id11con",
+                contractor.con_slno
+            );
 
-            const epcgnoValue = contractor.epcgno;
-            const epcgno = document.getElementById("epog");
-            if (epcgno) {
-                epcgno.value = epcgnoValue;
-            }
-
-            const exptitelvalue = contractor.export_title;
-            const expval = document.getElementById("exptitle");
-            if (expval) {
-                expval.value = exptitelvalue;
-            }
-
-            const ServiceValue = contractor.s_code_value;
-            const Scode = document.getElementById("service");
-            if (Scode) {
-                Scode.value = ServiceValue;
-            }
-
-            const HsnValue = contractor.h_code_value;
-            const Hcode = document.getElementById("hsncode");
-            if (Hcode) {
-                Hcode.value = HsnValue;
-            }
-
-            // Populate the business unit dropdown
-            fetchSalebusunit("inbusunit", contractor.businessUnitName);
-
-            const con_slnoValue = contractor.con_slno;
-            const con_slno = document.getElementById("id11con");
-            if (con_slno) {
-                con_slno.value = con_slnoValue;
-            }
         } else {
+
             console.warn("No Contractor Data found.");
+
         }
 
-        // Check if QsPacking_Data exists and contains items
-        if (json.QsPacking_Data && json.QsPacking_Data.length > 0) {
-            const container = document.querySelector(".dynamic-row");
+        // ------------------------------------------------------------
+        // PACKING ROWS WITH SERVICE / HSN DROPDOWNS
+        // ------------------------------------------------------------
+        if (
+            json.QsPacking_Data &&
+            json.QsPacking_Data.length > 0
+        ) {
+
+            const container =
+                document.querySelector(".dynamic-row");
+
+            if (!container) {
+
+                console.error("Element .dynamic-row not found.");
+                return;
+
+            }
+
             container.innerHTML = "";
 
-            // Contractor-level codes, if present, take priority for every row.
-            // If contractor is null, or the field is empty, this falls back
-            // to the existing "as is" behavior (blank / unselected dropdown).
-            const contractorServiceCode = contractor ? contractor.s_code_value : null;
-            const contractorHsnCode = contractor ? contractor.h_code_value : null;
+            const contractorServiceCode = contractor
+                ? contractor.s_code_value
+                : null;
+
+            const contractorHsnCode = contractor
+                ? contractor.h_code_value
+                : null;
 
             json.QsPacking_Data.forEach((item, index) => {
 
                 const showLabel = index === 0;
 
+                const rowServiceCode =
+                    item.scode || contractorServiceCode || "";
+
+                const rowHsnCode =
+                    item.hsncode || contractorHsnCode || "";
+
                 const div = document.createElement("div");
-                div.classList.add("form-group-container", "col-md-12");
 
-                // Build Service Code <option> list — pre-select the option
-                // that matches contractor.s_code_value, if it exists.
-                const serviceOptions = serviceMasterList.map(s => {
-                    const isMatch = contractorServiceCode && s.service_code === contractorServiceCode;
-                    return `
-                        <option value="${s.service_code}" ${isMatch ? 'selected' : ''}>
-                            ${s.service_code} - ${s.service_description}
-                        </option>`;
-                }).join("");
+                div.classList.add(
+                    "form-group-container",
+                    "col-md-12"
+                );
 
-                // Build HSN Code <option> list — pre-select the option
-                // that matches contractor.h_code_value, if it exists.
-                const hsnOptions = hsnMasterList.map(h => {
-                    const isMatch = contractorHsnCode && h.service_code === contractorHsnCode;
-                    return `
-                        <option value="${h.service_code}" ${isMatch ? 'selected' : ''}>
-                            ${h.service_code} - ${h.service_description}
-                        </option>`;
-                }).join("");
+                const serviceOptions = serviceMasterList.map(s => `
+
+                    <option value="${s.service_code}"
+                        ${
+                            String(s.service_code) ===
+                            String(rowServiceCode)
+                                ? "selected"
+                                : ""
+                        }>
+                        ${s.service_code} - ${s.service_description}
+                    </option>
+
+                `).join("");
+
+                const hsnOptions = hsnMasterList.map(h => `
+
+                    <option value="${h.service_code}"
+                        ${
+                            String(h.service_code) ===
+                            String(rowHsnCode)
+                                ? "selected"
+                                : ""
+                        }>
+                        ${h.service_code} - ${h.service_description}
+                    </option>
+
+                `).join("");
 
                 div.innerHTML = `
+
                     <div class="form-row flex-nowrap">
 
                         <div class="form-group col-md-1 col-sm-12">
-                            ${showLabel ? '<label><b>UOM</b></label>' : ''}
-                            <input type="text" value="${item.uom_name}" class="form-control form-control-sm" disabled>
+                            ${showLabel ? "<label><b>UOM</b></label>" : ""}
+                            <input type="text"
+                                   value="${item.uom_name ?? ""}"
+                                   class="form-control form-control-sm"
+                                   disabled>
                         </div>
 
                         <div class="form-group col-md-1 col-sm-12">
-                            ${showLabel ? '<label><b>Quantity</b></label>' : ''}
-                            <input type="number" value="${item.qty}" class="form-control form-control-sm text-right" disabled>
+                            ${showLabel ? "<label><b>Quantity</b></label>" : ""}
+                            <input type="number"
+                                   value="${item.qty ?? ""}"
+                                   class="form-control form-control-sm text-right"
+                                   disabled>
                         </div>
 
                         <div class="form-group col-md-1 col-sm-12">
-                            ${showLabel ? '<label><b>Kg</b></label>' : ''}
-                            <input type="number" value="${item.per_kgs}" class="form-control form-control-sm text-right" disabled>
+                            ${showLabel ? "<label><b>Kg</b></label>" : ""}
+                            <input type="number"
+                                   value="${item.per_kgs ?? ""}"
+                                   class="form-control form-control-sm text-right"
+                                   disabled>
                         </div>
 
                         <div class="form-group col-md-1 col-sm-12">
-                            ${showLabel ? '<label><b>Unit Price</b></label>' : ''}
-                            <input type="number" value="${item.unit_price}" class="form-control form-control-sm text-right" disabled>
+                            ${showLabel ? "<label><b>Unit Price</b></label>" : ""}
+                            <input type="number"
+                                   value="${item.unit_price ?? ""}"
+                                   class="form-control form-control-sm text-right"
+                                   disabled>
                         </div>
 
                         <div class="form-group col-md-1 col-sm-12">
-                            ${showLabel ? '<label><b>Total</b></label>' : ''}
-                            <input type="number" value="${item.total}" class="form-control form-control-sm text-right" disabled>
+                            ${showLabel ? "<label><b>Total</b></label>" : ""}
+                            <input type="number"
+                                   value="${item.total ?? ""}"
+                                   class="form-control form-control-sm text-right"
+                                   disabled>
                         </div>
 
                         <div class="form-group col-md-1 col-sm-12">
-                            ${showLabel ? '<label><b>Milestone</b></label>' : ''}
-                            <input type="text" value="${item.milestone_name}" class="form-control form-control-sm" disabled>
+                            ${showLabel ? "<label><b>Milestone</b></label>" : ""}
+                            <input type="text"
+                                   value="${item.milestone_name ?? ""}"
+                                   class="form-control form-control-sm"
+                                   disabled>
                         </div>
 
                         <div class="form-group col-md-1 col-sm-12">
-                            ${showLabel ? '<label><b>Invoice Type</b></label>' : ''}
-                            <input type="text" value="${item.scrap_name_type_id}" class="form-control form-control-sm" disabled>
+                            ${showLabel ? "<label><b>Invoice Type</b></label>" : ""}
+                            <input type="text"
+                                   value="${item.scrap_name_type_id ?? ""}"
+                                   class="form-control form-control-sm"
+                                   disabled>
                         </div>
 
                         <div class="form-group col-md-2 col-sm-12">
-                            ${showLabel ? '<label><b>Service Code</b></label>' : ''}
-                            <select class="form-control form-control-sm service-code-select" data-slno="${item.slno || ''}">
-                                <option value="" ${!contractorServiceCode ? 'selected' : ''}>Select Service Code</option>
+                            ${showLabel ? "<label><b>Service Code</b></label>" : ""}
+
+                            <select class="form-control form-control-sm service-code-select"
+                                    data-slno="${item.slno || ""}">
+
+                                <option value=""
+                                    ${!rowServiceCode ? "selected" : ""}>
+                                    Select Service Code
+                                </option>
+
                                 ${serviceOptions}
+
                             </select>
+
                             <div class="error-message service-code-error"></div>
                         </div>
 
                         <div class="form-group col-md-2 col-sm-12">
-                            ${showLabel ? '<label><b>HSN Code</b></label>' : ''}
-                            <select class="form-control form-control-sm hsn-code-select" data-slno="${item.slno || ''}">
-                                <option value="" ${!contractorHsnCode ? 'selected' : ''}>Select HSN Code</option>
+                            ${showLabel ? "<label><b>HSN Code</b></label>" : ""}
+
+                            <select class="form-control form-control-sm hsn-code-select"
+                                    data-slno="${item.slno || ""}">
+
+                                <option value=""
+                                    ${!rowHsnCode ? "selected" : ""}>
+                                    Select HSN Code
+                                </option>
+
                                 ${hsnOptions}
+
                             </select>
+
                         </div>
 
                     </div>
 
-                    ${showLabel ? '<hr>' : ''}
+                    ${showLabel ? "<hr>" : ""}
+
                 `;
+
                 container.appendChild(div);
+
             });
+
         } else {
+
             console.warn("No QsPacking data found.");
+
         }
 
-        // Now, handle tax data and append it to .dynamic-row1
-        if (json.tax && json.tax.length > 0) {
-            const taxContainer = document.querySelector(".dynamic-row1");
-            taxContainer.innerHTML = "";
-
-            json.tax.forEach((tax, taxIndex) => {
-                const div = document.createElement("div");
-                div.classList.add("form-group", "col-md-12");
-
-                div.innerHTML = `
-                    <div class="form-row">
-                        <div class="form-group col-md-3 col-sm-12">
-                            <label for="tax_name_${taxIndex}"><b>Tax Name</b></label>
-                            <input type="text" id="tax_name_${taxIndex}" value="${tax.tax_name}" class="form-group col-md-8 col-sm-12" disabled>
-                        </div>
-                        <div class="form-group col-md-3 col-sm-12">
-                            <label for="tax_per_${taxIndex}"><b>Tax Percentage</b></label>
-                            <input type="text" id="tax_per_${taxIndex}" value="${tax.tax_per}" class="form-group col-md-8 col-sm-12" disabled>
-                        </div>
-                        <div class="form-group col-md-3 col-sm-12">
-                            <label for="tax_per_${taxIndex}"><b>Tax Value</b></label>
-                            <input type="text" id="tax_per_${taxIndex}" value="${tax.tax_value}" class="form-group col-md-8 col-sm-12 text-right" disabled>
-                        </div>
-                    </div>
-                `;
-
-                taxContainer.appendChild(div);
-            });
-        } else {
-            console.warn("No tax data found.");
-        }
     } catch (error) {
-        console.error("Error fetching QsPacking data:", error);
+
+        console.error(
+            "Error fetching QsPacking data:",
+            error
+        );
+
     }
 }
+
 
 document.addEventListener("DOMContentLoaded", function () {
     const selectedFactoryId = sessionStorage.getItem("selectedFactoryId"); // Get factory_id from sessionStorage
@@ -1150,6 +1690,8 @@ async function fetchinvoice() {
                 selectElement.appendChild(option);
             }
         });
+		
+		s2('intype444');
 		// NEW: run once after populating, in case a value is pre-selected
 		toggleSubcontractingFields();
     } catch (error) {
@@ -1194,6 +1736,8 @@ async function fetchinvoiceEdit() {
                 selectElement.appendChild(option);
             }
         });
+		
+		s2('intypeeditup');
     } catch (error) {
         console.error("Error fetching sale order types:", error);
     }
@@ -1235,6 +1779,9 @@ async function fetchBgType() {
                 selectElement.appendChild(option);
             }
         });
+		
+		
+		s2('bg');
     } catch (error) {
         console.error("Error fetching sale order types:", error);
     }
@@ -1276,6 +1823,9 @@ async function fetchBgTypeedit() {
                 selectElement.appendChild(option);
             }
         });
+		
+		
+		s2('bgvaerifyup');
     } catch (error) {
         console.error("Error fetching sale order types:", error);
     }
@@ -1438,17 +1988,33 @@ console.log('selectedFactoryId:', selectedFactoryId);
 async function addevent() {
     $('#exampleModalCenter66').modal('hide');
 
-    const selectedCOnt = document.getElementById("cont").selectedOptions[0];
+    const selectedCOnt =
+        document.getElementById("cont").selectedOptions[0];
+
     const contid = selectedCOnt ? selectedCOnt.value : '';
     const contname = selectedCOnt ? selectedCOnt.textContent : '';
 
+    // Get three selected tax IDs.
+    const tax1 = document.getElementById("tax_id_1");
+    const tax2 = document.getElementById("tax_id_2");
+    const tax3 = document.getElementById("tax_id_3");
+
+    // Get three corresponding tax values.
+    const taxValue1 = document.getElementById("tax_value_1");
+    const taxValue2 = document.getElementById("tax_value_2");
+    const taxValue3 = document.getElementById("tax_value_3");
+
+    // Save existing Service / HSN selections.
     await saveServiceHsnSelections();
 
     $.ajax({
         url: new URL('/jssl/invoice/addnew', baseUrl),
         type: 'POST',
-        xhrFields: { withCredentials: true },
+        xhrFields: {
+            withCredentials: true
+        },
         dataType: 'json',
+
         data: jQuery.param({
             contract_id: contid,
             created_by: createdById,
@@ -1464,10 +2030,12 @@ async function addevent() {
             reference_no: ref.value,
             lc_number: lc.value,
             supply_place: sup.value,
-			vendorname: vendorname.value,
-			vendorinvno: vendorinvno.value,
-			vendorqty: vendorqty.value,
-			vendorinvdate: vendordate.value,
+
+            vendorname: vendorname.value,
+            vendorinvno: vendorinvno.value,
+            vendorqty: vendorqty.value,
+            vendorinvdate: vendordate.value,
+
             s_t_exempted: exe.value,
             lr_docketno: dock.value,
             bg_no: bgno.value,
@@ -1479,48 +2047,109 @@ async function addevent() {
             inc_type: intype444.value,
             pn_id: id11.value,
 
+            // ---- TAX 1 ----
+            tax_id_1: tax1 ? tax1.value : "",
+            tax_value_1: taxValue1 ? taxValue1.value : "0.00",
+
+            // ---- TAX 2 ----
+            tax_id_2: tax2 ? tax2.value : "",
+            tax_value_2: taxValue2 ? taxValue2.value : "0.00",
+
+            // ---- TAX 3 ----
+            tax_id_3: tax3 ? tax3.value : "",
+            tax_value_3: taxValue3 ? taxValue3.value : "0.00",
+
             // ---- Contract Details modal fields ----
-            business_unit_id: document.getElementById("inbusunit").value,
-            invoice_type_calculation: document.getElementById("intypecal").value,
-            invoice_to_id: document.getElementById("ininto").value,
-            product_desc_id: document.getElementById("prodesc").value,
-            shipment_mode_id: document.getElementById("shipmode").value,
-            work_id: document.getElementById("work").value,
-            export: document.getElementById("expt").value,
-            tax_ex_inc: document.getElementById("taxres").value,
-            percentage_value: document.getElementById("percen").value,
-            consignee_id: document.getElementById("billing").value,
-            bank_details_id: document.getElementById("bank").value,
-            delivery_condition_id: document.getElementById("delivery").value,
-            regd_office_id: document.getElementById("office").value
+            business_unit_id:
+                document.getElementById("inbusunit").value,
+
+            invoice_type_calculation:
+                document.getElementById("intypecal").value,
+
+            invoice_to_id:
+                document.getElementById("ininto").value,
+
+            product_desc_id:
+                document.getElementById("prodesc").value,
+
+            shipment_mode_id:
+                document.getElementById("shipmode").value,
+
+            work_id:
+                document.getElementById("work").value,
+
+            export:
+                document.getElementById("expt").value,
+
+            tax_ex_inc:
+                document.getElementById("taxres").value,
+
+            percentage_value:
+                document.getElementById("percen").value,
+
+            consignee_id:
+                document.getElementById("billing").value,
+
+            bank_details_id:
+                document.getElementById("bank").value,
+
+            delivery_condition_id:
+                document.getElementById("delivery").value,
+
+            regd_office_id:
+                document.getElementById("office").value
         }),
+
         success: function (data) {
             var result = data.message;
+
             if (result === "Success") {
-                const popup = $('<div class="popup">Steel Invoice Created Successfully!</div>')
-                    .appendTo('body').hide().fadeIn(400);
+
+                const popup = $(
+                    '<div class="popup">Steel Invoice Created Successfully!</div>'
+                )
+                    .appendTo('body')
+                    .hide()
+                    .fadeIn(400);
+
                 setTimeout(function () {
                     popup.fadeOut(400, function () {
                         $(this).remove();
+
                         window.location = 'invoicesidemenu.jsp';
                     });
                 }, 800);
+
             } else {
-                const errorMessage = data.message || 'Failed to create invoice.';
+
+                const errorMessage =
+                    data.message || 'Failed to create invoice.';
+
                 $('#errorMessage').text(errorMessage);
+
                 $('#exampleModalCenterDup').modal('show');
                 $('#exampleModalCenter66').modal('hide');
                 $('#exampleModalScrollable').modal('hide');
             }
         },
-        error: function () {
-            console.error('Request failed.');
+
+        error: function (xhr, status, error) {
+            console.error('Request failed:', error);
+            console.error('Status:', status);
+            console.error('Response:', xhr.responseText);
         }
     });
 }
 // Function to safely set values in input fields
-function setInputValue(selector, value) {
+/*function setInputValue(selector, value) {
     $(selector).val(value ? value : ""); // Set value or empty string if undefined/null
+}*/
+
+
+function setInputValue(selector, value) {
+    const $el = $(selector);
+    $el.val(value ? value : "");
+    if ($el.hasClass('select2-hidden-accessible')) $el.trigger('change.select2'); // refresh display only
 }
 
 
@@ -1625,12 +2254,14 @@ async function editRecord(id) {
         setInputValue("#intov",      invoiceToDisplay);
         setInputValue("#workorderv", workDisplay);
         setInputValue("#nandconv",   consigneeDisplay);
+		setInputValue("#percenv", ContractMasterData.percentage_value ?? "");
         // ---- END Contract Details resolution ----
 
         $(".dynamic-row11, .dynamic-row122").empty(); // Clear previous content
 
         // Set values in form fields
         setInputValue("#remarkv", invoiceData.remarks);
+		setInputValue("#remarkvvei", invoiceData.gst_remarks);
         setInputValue("#datev", invoiceData.date_of_notification);
         setInputValue("#date1v", invoiceData.date_val);
         setInputValue("#dissuev", invoiceData.date_of_issue);
@@ -1664,7 +2295,7 @@ async function editRecord(id) {
             "#shipmodev": "shipment_mode_id_value",
             "#exptv": "export",
             "#taxresv": "tax_payable",
-            "#percenv": "percentage_value",
+            //"#percenv": "percentage_value",
             "#banknamev": "bank_details_id_value",
             "#deliveryconv": "delivery_condition_id_value",
             "#officevv": "reg_office_id_value",
@@ -1877,6 +2508,7 @@ async function editRecord11(id,status) {
         setInputValue("#intovv",      invoiceToDisplay);
         setInputValue("#workordervv", workDisplay);
         setInputValue("#nandconvv",   consigneeDisplay);
+		setInputValue("#percenvv", ContractMasterData.percentage_value ?? "");
         // ---- END NEW ----
 
         $(".dynamic-row11test, .dynamic-row122test").empty(); // Clear previous content
@@ -1915,7 +2547,7 @@ async function editRecord11(id,status) {
             "#shipmodevv": "shipment_mode_id_value",
             "#exptvv": "export",
             "#taxresvv": "tax_payable",
-            "#percenvv": "percentage_value",
+            //"#percenvv": "percentage_value",
             "#banknamevv": "bank_details_id_value",
             "#deliveryconvv": "delivery_condition_id_value",
             "#officevvv": "reg_office_id_value",
@@ -2276,6 +2908,94 @@ else{
 }
 }
 
+let editInvoiceBasicAmount = 0;
+
+function recalcEditTaxes() {
+    let totalTax = 0;
+    [1, 2, 3].forEach(n => {
+        const sel = document.getElementById("edit_tax_id_" + n);
+        const per = document.getElementById("edit_tax_per_" + n);
+        const val = document.getElementById("edit_tax_value_" + n);
+        if (!sel || !per || !val) return;
+        let amt = 0;
+        if (sel.value !== "") {
+            amt = Math.round((editInvoiceBasicAmount * (parseFloat(per.value) || 0)) / 100);
+        }
+        val.value = amt.toFixed(2);
+        totalTax += amt;
+    });
+    setInputValue("#grandvup", (editInvoiceBasicAmount + totalTax).toFixed(2));
+}
+
+function renderEditTaxes(selectedIds) {
+    const container = $(".dynamic-row122up");
+    container.empty();
+
+    [1, 2, 3].forEach((n, i) => {
+        const selId = (selectedIds[i] != null && selectedIds[i] !== "" && Number(selectedIds[i]) > 0)
+            ? String(selectedIds[i]) : "";
+
+        let options = `<option value="">Select Tax</option>` +
+            taxMasterList.map(t =>
+                `<option value="${t.tax_id}" ${String(t.tax_id) === selId ? "selected" : ""}>${t.tax_name} - ${t.tax_per}%</option>`
+            ).join("");
+
+        if (selId && !taxMasterList.some(t => String(t.tax_id) === selId)) {
+            options += `<option value="${selId}" selected>Existing Tax</option>`;
+        }
+
+        const found = taxMasterList.find(t => String(t.tax_id) === selId);
+        const per = found ? parseFloat(found.tax_per || 0).toFixed(2) : "0.00";
+
+        container.append(`
+            <div class="form-row align-items-center w-100 mb-2">
+                <div class="form-group col-md-4 col-sm-12">
+                    <div class="d-flex align-items-center">
+                        <label class="mb-0 mr-2" style="min-width:105px;"><b>Tax Name</b></label>
+                        <select class="form-control" id="edit_tax_id_${n}" data-prev="${selId}">${options}</select>
+                    </div>
+                    <small class="text-danger" id="edit_tax_err_${n}" style="display:none;">This tax is already selected.</small>
+                </div>
+                <div class="form-group col-md-4 col-sm-12">
+                    <div class="d-flex align-items-center">
+                        <label class="mb-0 mr-2" style="min-width:130px;"><b>Tax Percentage</b></label>
+                        <input type="text" class="form-control" id="edit_tax_per_${n}" value="${per}" disabled>
+                    </div>
+                </div>
+                <div class="form-group col-md-4 col-sm-12">
+                    <div class="d-flex align-items-center">
+                        <label class="mb-0 mr-2" style="min-width:95px;"><b>Tax Value</b></label>
+                        <input type="text" class="form-control text-right" id="edit_tax_value_${n}" value="0.00" disabled>
+                    </div>
+                </div>
+            </div>
+        `);
+    });
+
+    [1, 2, 3].forEach(n => {
+        document.getElementById("edit_tax_id_" + n).addEventListener("change", function () {
+            const err = document.getElementById("edit_tax_err_" + n);
+            const chosen = this.value;
+            const duplicate = [1, 2, 3].some(m => {
+                const other = document.getElementById("edit_tax_id_" + m);
+                return other && other !== this && chosen !== "" && other.value === chosen;
+            });
+            if (duplicate) {
+                err.style.display = "block";
+                this.value = this.dataset.prev || "";
+                return;
+            }
+            err.style.display = "none";
+            this.dataset.prev = chosen;
+            const t = taxMasterList.find(x => String(x.tax_id) === String(chosen));
+            document.getElementById("edit_tax_per_" + n).value =
+                t ? parseFloat(t.tax_per || 0).toFixed(2) : "0.00";
+            recalcEditTaxes();
+        });
+    });
+
+    recalcEditTaxes();
+}
 
 async function editRecordInvoice(id,status,load_id) {
 	if (!allowed.includes("Edit")) {
@@ -2364,7 +3084,7 @@ if(status!='CANCELLED')
             "#workordervup": "work_id_value",
             "#exptvup": "export",
             "#taxresvup": "tax_payable",
-            "#percenvup": "percentage_value",
+            //"#percenvup": "percentage_value",
             "#nandconvup": "consignee_id_value",
             "#banknamevup": "bank_details_id_value",
             "#deliveryconvup": "delivery_condition_id_value",
@@ -2469,34 +3189,17 @@ if(status!='CANCELLED')
 		    `);
 		});
 
-        taxData.forEach((tax) => {
-            $(".dynamic-row122up").append(`
-                <div class="row align-items-center mb-1">
-                    <div class="col-auto"><label class="small-label1">Tax Name</label>
-                        <input type="text" class="form-control form-control-sm small-input1" value="${tax.tax_name}" readonly>
-                    </div>
-                    <div class="col-auto"><label class="small-label1">Tax %</label>
-                        <input type="text" class="form-control form-control-sm small-input1 text-right" value="${tax.tax_per}" readonly>
-                    </div>
-                    <div class="col-auto"><label class="small-label1">Advance Tax</label>
-                        <input type="text" class="form-control form-control-sm small-input1 text-right" value="${tax.adv_tax}" readonly>
-                    </div>
-                    <div class="col-auto"><label class="small-label1">Tax Value</label>
-                        <input type="text" class="form-control form-control-sm small-input1 text-right" value="${tax.tax_value}" readonly>
-                    </div>
-                    <div class="col-auto"><label class="small-label1">PTD</label>
-                        <input type="text" class="form-control form-control-sm small-input1 text-right" value="${tax.ptd}" readonly>
-                    </div>
-                    <div class="col-auto"><label class="small-label1">PBC</label>
-                        <input type="text" class="form-control form-control-sm small-input1 text-right" value="${tax.ptc}" readonly>
-                    </div>
-                    <div class="col-auto" style="display:none;"><label class="small-label1">Tax Id</label>
-                        <input type="text" class="form-control form-control-sm small-input1" value="${tax.tax_id}">
-                    </div>
-                </div>
-                <hr>
-            `);
-        });
+		if (!taxMasterList || taxMasterList.length === 0) {
+		    await fetchTaxMasterList();
+		}
+		const rowsTotal = packingData.reduce((s, r) => s + (parseFloat(r.total) || 0), 0);
+		const frt = packingData.length > 0 ? (parseFloat(packingData[0].freight) || 0) : 0;
+		editInvoiceBasicAmount = rowsTotal + frt;
+
+		const savedIds = [ContractMasterData.tax_id_1, ContractMasterData.tax_id_2, ContractMasterData.tax_id_3];
+		const hasSaved = savedIds.some(x => x != null && x !== "" && Number(x) > 0);
+		const selectedIds = hasSaved ? savedIds : taxData.map(t => t.tax_id);
+		renderEditTaxes(selectedIds);
 		
 		toggleSubcontractingFieldsUp(); 
         $("#exampleModalScrollableEditUp").modal("show");
@@ -2753,6 +3456,7 @@ async function fetchSalebusunitEdit(targetId, selectedId, fallbackText, verified
     } else {
         selectElement.removeAttribute("disabled"); // reset in case it was disabled from a previous open
     }
+	s2(targetId, 'Select Business Unit'); 
 }
 
 async function fetchinvoicetoEdit(targetId, selectedId, fallbackText) {
@@ -2979,9 +3683,11 @@ function openModalUpdate() {
 
 function addeventudate() {
 	$('#exampleModalCenter66Editup').modal('hide');
+
 	const slno = [];
 	const service_code_id = [];
 	const hsn_code_id = [];
+
 	$(".service-code-select").each(function () {
 	    const rowSlno = $(this).data("slno");
 	    slno.push(rowSlno);
@@ -2992,85 +3698,104 @@ function addeventudate() {
 	        .val();
 	    hsn_code_id.push(hsn);
 	});
-    $.ajax({
-        url: new URL('/jssl/invoice/updatenew', baseUrl),
-        type: 'POST',
-		xhrFields: {
-			    withCredentials: true
-			},
-        dataType: 'json',
-		data: jQuery.param({
-		    modified_by: createdById,
-		    product_desc: prodesv11up.value,
-		    remarks: remarkvup.value,
-		    date_of_notification: datevup.value,
-		    date_val: date1vup.value,
-		    pn_id: pnverifywwup.value,
-		    bg_type: bgvaerifyup.value,
-		    date_of_issue: dissuevup.value,
-		    reference_no: refvup.value,
-		    lc_number: lcvup.value,
-		    supply_place: supvup.value,
-		    s_t_exempted: exevup.value,
-		    lr_docketno: dockvup.value,
-		    bg_no: bgnovup.value,
-		    date_of_expiry: dateexpvup.value,
-		    date_of_ref: daterefvup.value,
-		    lc_issue_date: lcdatevup.value,
-		    id: vidverifyup.value,
-		    inc_type: intypeeditup.value,
-		    slno: slno,
-		    service_code_id: service_code_id,
-		    hsn_code_id: hsn_code_id,
-			
-			// ---- Vendor / subcontracting fields ----
-			vendorname: vendornameup.value,
-			vendorinvno: vendorinvnoup.value,
-			vendorqty: vendorqtyup.value,
-			//vendorinvdate: vendordateup.value || '',
-			vendorinvdate: vendordateup.value
-			    ? vendordateup.value.replace(/-/g, '')   // "2026-08-20" -> "20260820"
-			    : '',
-		    // ---- Contract Details modal fields ----
-			con_slno: document.getElementById("vconslnoupdate").value,
-		    factory_id: selectedFactoryId,
-		    business_unit_id: document.getElementById("bunitvup").value,
-		    invoice_type_calculation: document.getElementById("intypevup").value,
-		    invoice_to_id: document.getElementById("intovup").value,
-		    product_desc_id: document.getElementById("prodesvup").value,
-		    shipment_mode_id: document.getElementById("shipmodevup").value,
-		    work_id: document.getElementById("workordervup").value,
-		    export: document.getElementById("exptvup").value,
-		    tax_ex_inc: document.getElementById("taxresvup").value,
-		    percentage_value: document.getElementById("percenvup").value,
-		    consignee_id: document.getElementById("nandconvup").value,   // ✅ FIXED
-		    bank_details_id: document.getElementById("banknamevup").value,
-		    delivery_condition_id: document.getElementById("deliveryconvup").value,
-		    regd_office_id: document.getElementById("officevvup").value
-		}),
-        success: function (data) {
-            var result = data.message;
-            if (result === "Success") {
-                const popup = $('<div class="popup">Steel Invoice updated Successfully!</div>')
-                    .appendTo('body').hide().fadeIn(400);
-                setTimeout(function () {
-                    popup.fadeOut(400, function () {
-                        $(this).remove();
-                        window.location = 'invoicesidemenu.jsp';
-                    });
-                }, 800);
-            } else {
-                const errorMessage = data.message || 'Failed to update invoice.';
-                $('#errorMessage').text(errorMessage);
-                $('#exampleModalCenterDup').modal('show');
-                $('#exampleModalCenter66Editup').modal('hide');
-                $('#exampleModalScrollableEditUp').modal('hide');
-            }
-        },
-        error: function (xhr, status, error) {
-            console.error('Request failed.', status, error, xhr.responseText);
-        }
-    });
+
+	// ---- Tax params (only sent when the edit tax dropdowns exist) ----
+	const taxParams = {};
+	if (document.getElementById("edit_tax_id_1")) {
+	    taxParams.tax_edit = "1";
+	    [1, 2, 3].forEach(n => {
+	        taxParams["tax_id_" + n] = document.getElementById("edit_tax_id_" + n).value;
+	        taxParams["tax_value_" + n] = document.getElementById("edit_tax_value_" + n).value || "0.00";
+	    });
+	}
+
+	// ---- Main payload (unchanged) ----
+	const payload = {
+	    modified_by: createdById,
+	    product_desc: prodesv11up.value,
+	    remarks: remarkvup.value,
+	    date_of_notification: datevup.value,
+	    date_val: date1vup.value,
+	    pn_id: pnverifywwup.value,
+	    bg_type: bgvaerifyup.value,
+	    date_of_issue: dissuevup.value,
+	    reference_no: refvup.value,
+	    lc_number: lcvup.value,
+	    supply_place: supvup.value,
+	    s_t_exempted: exevup.value,
+	    lr_docketno: dockvup.value,
+	    bg_no: bgnovup.value,
+	    date_of_expiry: dateexpvup.value,
+	    date_of_ref: daterefvup.value,
+	    lc_issue_date: lcdatevup.value,
+	    id: vidverifyup.value,
+	    inc_type: intypeeditup.value,
+	    slno: slno,
+	    service_code_id: service_code_id,
+	    hsn_code_id: hsn_code_id,
+
+	    // ---- Vendor / subcontracting fields ----
+	    vendorname: vendornameup.value,
+	    vendorinvno: vendorinvnoup.value,
+	    vendorqty: vendorqtyup.value,
+	    vendorinvdate: vendordateup.value
+	        ? vendordateup.value.replace(/-/g, '')   // "2026-08-20" -> "20260820"
+	        : '',
+
+	    // ---- Contract Details modal fields ----
+	    con_slno: document.getElementById("vconslnoupdate").value,
+	    factory_id: selectedFactoryId,
+	    business_unit_id: document.getElementById("bunitvup").value,
+	    invoice_type_calculation: document.getElementById("intypevup").value,
+	    invoice_to_id: document.getElementById("intovup").value,
+	    product_desc_id: document.getElementById("prodesvup").value,
+	    shipment_mode_id: document.getElementById("shipmodevup").value,
+	    work_id: document.getElementById("workordervup").value,
+	    export: document.getElementById("exptvup").value,
+	    tax_ex_inc: document.getElementById("taxresvup").value,
+	    percentage_value: document.getElementById("percenvup").value,
+	    consignee_id: document.getElementById("nandconvup").value,
+	    bank_details_id: document.getElementById("banknamevup").value,
+	    delivery_condition_id: document.getElementById("deliveryconvup").value,
+	    regd_office_id: document.getElementById("officevvup").value
+	};
+
+	// ---- THE FIX: merge tax params into the payload ----
+	Object.assign(payload, taxParams);
+
+	console.log("Update payload:", payload);   // remove after testing
+
+	$.ajax({
+	    url: new URL('/jssl/invoice/updatenew', baseUrl),
+	    type: 'POST',
+	    xhrFields: {
+	        withCredentials: true
+	    },
+	    dataType: 'json',
+	    data: jQuery.param(payload),
+	    success: function (data) {
+	        var result = data.message;
+	        if (result === "Success") {
+	            const popup = $('<div class="popup">Steel Invoice updated Successfully!</div>')
+	                .appendTo('body').hide().fadeIn(400);
+	            setTimeout(function () {
+	                popup.fadeOut(400, function () {
+	                    $(this).remove();
+	                    window.location = 'invoicesidemenu.jsp';
+	                });
+	            }, 800);
+	        } else {
+	            const errorMessage = data.message || 'Failed to update invoice.';
+	            $('#errorMessage').text(errorMessage);
+	            $('#exampleModalCenterDup').modal('show');
+	            $('#exampleModalCenter66Editup').modal('hide');
+	            $('#exampleModalScrollableEditUp').modal('hide');
+	        }
+	    },
+	    error: function (xhr, status, error) {
+	        console.error('Request failed.', status, error, xhr.responseText);
+	    }
+	});
 }
 
 function openModal(id, pn_id) {
@@ -5416,6 +6141,46 @@ async function printRecord(id, status) {
 
     showLoader();
     console.log("Printing record with ID:", id);
+	
+	// ─── HELPER: Parse any date string/number into a Date object ──────────────
+	function toDateObj(val) {
+	    if (!val) return null;
+	    if (val instanceof Date) return isNaN(val) ? null : val;
+	    if (typeof val === 'number') return new Date(val);
+
+	    const s = String(val).trim();
+	    if (/^\d{10,}$/.test(s)) return new Date(Number(s));          // epoch millis
+
+	    // yyyy-MM-dd [HH:mm[:ss]]
+	    let m = s.match(/^(\d{4})-(\d{2})-(\d{2})(?:[T\s](\d{2}):(\d{2})(?::(\d{2}))?)?/);
+	    if (m) return new Date(+m[1], +m[2] - 1, +m[3], +(m[4] || 0), +(m[5] || 0), +(m[6] || 0));
+
+	    // dd-MM-yyyy or dd/MM/yyyy [HH:mm[:ss]]
+	    m = s.match(/^(\d{2})[-\/](\d{2})[-\/](\d{4})(?:[T\s](\d{2}):(\d{2})(?::(\d{2}))?)?/);
+	    if (m) return new Date(+m[3], +m[2] - 1, +m[1], +(m[4] || 0), +(m[5] || 0), +(m[6] || 0));
+
+	    const d = new Date(s);
+	    return isNaN(d) ? null : d;
+	}
+
+	// dd-mm-yyyy
+	function formatDMY(val) {
+	    const d = toDateObj(val);
+	    if (!d) return val || '';
+	    return String(d.getDate()).padStart(2, '0') + '-' +
+	           String(d.getMonth() + 1).padStart(2, '0') + '-' +
+	           d.getFullYear();
+	}
+
+	// dd-mm-yyyy HH:mm:ss
+	function formatDMYHMS(val) {
+	    const d = toDateObj(val);
+	    if (!d) return val || '';
+	    return formatDMY(d) + ' ' +
+	           String(d.getHours()).padStart(2, '0') + ':' +
+	           String(d.getMinutes()).padStart(2, '0') + ':' +
+	           String(d.getSeconds()).padStart(2, '0');
+	}
 
     // ─── HELPER: Format numbers with Indian comma style ───────────────────────
     function formatAmount(value) {
@@ -5433,6 +6198,35 @@ async function printRecord(id, status) {
             .join("\n");
     }
 
+    // ─── HELPER: Clean business unit name / address text ─────────────────────
+    // Removes JBU code, company name (even with spelling variations),
+    // GSTIN, PAN and trailing pincode (pincode is added again from master data).
+    function cleanBusinessUnitAddress(name) {
+        if (!name) return '';
+        return String(name)
+            .replace(/^JBU-\d+\s*/i, '')                                          // JBU-16
+            .replace(/JSW\s+Sever\w*\s+Structures\s+(Limited|Ltd\.?)\s*,?/i, '')  // company name (handles typos)
+            .replace(/,?\s*GSTIN\s*\.?\s*:?\s*[0-9A-Z]{15}/i, '')                 // GSTIN
+            .replace(/,?\s*PAN\s*\.?\s*:?\s*[A-Z]{5}\d{4}[A-Z]/i, '')             // PAN
+            .replace(/\s*-?\s*\d{6}\s*$/, '')                                     // trailing pincode
+            .split(',').map(s => s.trim()).filter(Boolean).join(', ');
+    }
+
+	function fullBusinessUnitAddress(name) {
+	    if (!name) return '';
+	    return String(name)
+	        .replace(/^JBU-\d+\s*/i, '')
+	        .split(',').map(s => s.trim()).filter(Boolean).join(', ');
+	}
+	
+	// ─── HELPER: Weight with exactly 3 decimals (Indian comma style) ───────────
+	function formatWeight(value) {
+	    if (!value && value !== 0) return '';
+	    const num = parseFloat(String(value).replace(/,/g, ''));
+	    if (isNaN(num)) return value;
+	    return num.toLocaleString('en-IN', { minimumFractionDigits: 3, maximumFractionDigits: 3 });
+	}
+	
     try {
         const endpoint =
             status === "CANCELLED"
@@ -5444,9 +6238,9 @@ async function printRecord(id, status) {
         if (!response.ok) throw new Error("Failed to fetch data");
 
         const json = await response.json();
-        const Invoice_Data     = json.Invoice_Data;
-        const Contractor_Data  = json.Contractor_Data;
-        const QsPacking_Data   = json.QsPacking_Data;
+        const Invoice_Data      = json.Invoice_Data;
+        const Contractor_Data   = json.Contractor_Data;
+        const QsPacking_Data    = json.QsPacking_Data;
         const tax               = json.tax;
         const Grand_Total_value = json.Grand_Total_value;
 
@@ -5485,18 +6279,18 @@ async function printRecord(id, status) {
             ? matchedWork.workorder_no
             : Contractor_Data[0].work_id_value;
 
-        function cleanBusinessUnitAddress(name) {
-            if (!name) return '';
-            return name
-                .replace(/^JBU-\d+\s*/i, '')                                    // remove "JBU-16 "
-                .replace(/^JSW\s+Severfield\s+Structures\s+Limited\s*/i, '')    // remove company name
-                .trim();
-        }
+			const matchedBU = businessUnitList.find(b => String(b.business_unit_id) === String(ContractMasterData.bid));
 
-        const matchedBU = businessUnitList.find(b => String(b.business_unit_id) === String(ContractMasterData.bid));
-        const resolvedbudisplay = matchedBU
-            ? `${cleanBusinessUnitAddress(matchedBU.business_unit_name)},${matchedBU.district || ''}-${matchedBU.pinNo || ''}<br>${matchedBU.location || ''}`
-            : (Contractor_Data.length > 0 ? cleanBusinessUnitAddress(Contractor_Data[0].business_unit_name) : "");
+			let resolvedbudisplay = "";
+			if (matchedBU) {
+			    const buText = fullBusinessUnitAddress(matchedBU.business_unit_name);
+			    const pin    = matchedBU.pinNo || '';
+			    // add district-pincode only if the name doesn't already contain the pincode
+			    const tail   = (pin && !buText.includes(pin)) ? `, ${matchedBU.district || ''}-${pin}` : '';
+			    resolvedbudisplay = `${buText}${tail}${matchedBU.location ? '<br>' + matchedBU.location : ''}`;
+			} else if (Contractor_Data.length > 0) {
+			    resolvedbudisplay = fullBusinessUnitAddress(Contractor_Data[0].business_unit_name);
+			}
         // ---- END resolution block ----
 
         const Grand_Total_tax        = Grand_Total_value[0].Grand_Total_tax;
@@ -5525,7 +6319,8 @@ async function printRecord(id, status) {
         const reg_addresss   = MumbaiAddress.address;
 
         // ── Business Unit Address (cleaned, trimmed, no stray commas) ──────────
-        const address = Contractor_Data[0].businessUnitName
+        // (kept as-is; made null-safe so it can never throw)
+        const address = (Contractor_Data[0].businessUnitName || '')
             .split(',')
             .slice(1)
             .map(x => x.trim())
@@ -5588,15 +6383,32 @@ async function printRecord(id, status) {
 
         const grandTotalInWords = grandTotalData.GrandTotalInWords || '';
         const grandTotalTax     = grandTotalData.Grand_Total_tax || '';
-        const gstremarks        = InvoiceData.gst_remarks || '';
+        // gst_remarks sometimes carries the business unit name/GSTIN/PAN — clean it
+        //const gstremarks        = cleanBusinessUnitAddress(InvoiceData.gst_remarks || '');
+		const gstremarks = (InvoiceData.gst_remarks || '').replace(/,\s*/g, ', ');
         const advremarks        = taxData[0].taxable || '';
         const advremarksnon     = taxData[0].non_taxable || '';
         const basicValue        = taxData[0].basic_value || '';
         const basicValuecos     = taxData[0].optc || '';
 
+		
         // ── Product Table Rows ────────────────────────────────────────────────
-        const maxRows = 9;
+        const maxRows = 6;   // total body rows (items + spacer + description + blanks)
         let tableRows = "";
+
+        function emptyRowHtml(descText) {
+            return `
+                <tr class="empty-row">
+                    <td colspan="1">&nbsp;</td>
+                    <td colspan="4" ${descText ? 'style="font-weight:550;"' : ''}>${descText || ''}</td>
+                    <td colspan="1"></td>
+                    <td colspan="1"></td>
+                    <td colspan="1"></td>
+                    <td colspan="2"></td>
+                    <td colspan="1"></td>
+                    <td colspan="2"></td>
+                </tr>`;
+        }
 
         items.forEach((item, index) => {
             tableRows += `
@@ -5608,41 +6420,22 @@ async function printRecord(id, status) {
                     <td colspan="1" style="text-align:right !important; white-space: nowrap; font-size: 9px;">${[item.scode, item.hsncode].filter(Boolean).join('/')}</td>
                     <td colspan="1" style="text-align:left !important;">${item.uom_name || ''}</td>
                     <td colspan="1" class="qtys">${item.qty || ''}</td>
-                    <td colspan="2" class="weits">${item.per_kgs || ''}</td>
+                    <td colspan="2" class="weits">${formatWeight(item.per_kgs)}</td>
                     <td colspan="1" class="prs">${formatAmount(item.unit_price) || ''}</td>
                     <td colspan="2" class="tols">${formatAmount(item.total) || ''}</td>
                 </tr>`;
         });
-        const emptyCount = Math.max(0, maxRows - items.length);
 
+        // One spacer row, then the product description row (ALWAYS printed,
+        // even when there are many items), then blank filler rows.
+        tableRows += emptyRowHtml('');
+        tableRows += emptyRowHtml(productdesc || '');
+
+        const emptyCount = Math.max(0, maxRows - items.length - 2);
         for (let i = 0; i < emptyCount; i++) {
-
-            if (i === 1) { // only once (3rd empty row)
-                tableRows += `
-                    <tr class="empty-row">
-                        <td colspan="1">&nbsp;</td>
-                        <td colspan="4" style="font-weight:550;">${productdesc || ''}</td>
-                        <td colspan="1"></td>
-                        <td colspan="1"></td>
-                        <td colspan="1"></td>
-                        <td colspan="2"></td>
-                        <td colspan="1"></td>
-                        <td colspan="2"></td>
-                    </tr>`;
-            } else {
-                tableRows += `
-                    <tr class="empty-row">
-                        <td colspan="1">&nbsp;</td>
-                        <td colspan="4"></td>
-                        <td colspan="1"></td>
-                        <td colspan="1"></td>
-                        <td colspan="1"></td>
-                        <td colspan="2"></td>
-                        <td colspan="1"></td>
-                        <td colspan="2"></td>
-                    </tr>`;
-            }
+            tableRows += emptyRowHtml('');
         }
+
         // ── Tax Rows ──────────────────────────────────────────────────────────
         let taxRows = taxData.map((tax, i, arr) => {
             const isLast = i === arr.length - 1;
@@ -5670,19 +6463,10 @@ async function printRecord(id, status) {
         let taxadvanceValue = taxData.map(tax => `<b>${formatAmount(tax.adv_tax)}</b><br>`).join('');
 
         // ── Date Formatting ───────────────────────────────────────────────────
-        const currentDate = new Date().toLocaleDateString('en-GB', {
-            day: '2-digit', month: '2-digit', year: 'numeric'
-        }).replace(/\//g, '-');
+		const createdRaw = ContractMasterData.invoice_created_date || '';
 
-        const currentDate1 = new Date();
-        const formattedDateTime =
-            String(currentDate1.getDate()).padStart(2, '0') + '-' +
-            String(currentDate1.getMonth() + 1).padStart(2, '0') + '-' +
-            currentDate1.getFullYear() + ' ' +
-            String(currentDate1.getHours()).padStart(2, '0') + ':' +
-            String(currentDate1.getMinutes()).padStart(2, '0') + ':' +
-            String(currentDate1.getSeconds()).padStart(2, '0');
-
+		const currentDate       = formatDMY(createdRaw);
+		const formattedDateTime = formatDMYHMS(createdRaw);
         // ── HTML Template ─────────────────────────────────────────────────────
         const htmlContent = `
             <style>
@@ -5706,46 +6490,47 @@ async function printRecord(id, status) {
                 .watermark.cancelled { color: #ff0000; }
                 .watermark.verified  { color: #4CAF50; }
 
-                .page { position: relative; }
-
                 html, body {
                     margin: 0;
                     padding: 0;
-                     font-family: "Times New Roman", Times, serif;
+                    font-family: "Times New Roman", Times, serif;
                     background-color: #fff !important;
                     font-size: 10px;
                     line-height: 2;
                 }
 
+                /* One invoice copy = one sheet. No fixed 297mm height, no fixed width. */
                 .page {
-                    width: 202mm;
-                    height: 297mm;
-                    overflow: visible;
-                    page-break-after: avoid !important;
+                    position: relative;
+                    width: 100%;
+                    height: auto;
+                    overflow: hidden;
                     margin: 0;
                     padding: 0;
+                    page-break-after: always;
                 }
-                .page:last-child { page-break-after: avoid !important; }
+                .page:last-child { page-break-after: avoid; }
+				
+				.bid { display: block; font-size: 9px; line-height: 1.3; word-break: break-word; }
 
                 .invoice-container {
                     width: 100%;
                     height: auto;
-                    overflow: visible;
+                    padding: 1mm;
                     -webkit-font-smoothing: antialiased;
                     text-rendering: geometricPrecision;
-                    page-break-inside: avoid;
-                    margin: 0;
-                    padding: 1mm;
                 }
 
                 table {
                     border-collapse: collapse !important;
                     table-layout: fixed;
-                    page-break-inside: avoid;
                     width: 100%;
                     margin: 0;
                     padding: 0;
                 }
+
+                /* Do not repeat the product table header on a new printed page */
+                .product-table thead { display: table-row-group; }
 
                 td, th {
                     border-right: 0.5px solid #000;
@@ -5793,7 +6578,7 @@ async function printRecord(id, status) {
                 .product-row td:nth-child(n+4) { text-align: right !important; }
 
                 .product-row td,
-                .empty-row td { height: 22px; }
+                .empty-row td { height: 16px; }
 
                 .empty-row td { border-top: none !important; border-bottom: none !important; }
 
@@ -5900,14 +6685,15 @@ async function printRecord(id, status) {
                             <div class="company-logo">
                                 <img src="img/logo/download.png" alt="Company Logo" style="width:100px;">
                             </div>
-                            <strong>JSW Serverfiled Structures Limited</strong><br>
+                            <strong>JSW Severfield Structures Limited</strong><br>
                             <span class="bid"></span>
-                            <p>
+                            <p style="margin:0;">
                             <b>State Code:</b> <span class="state_code"></span><br>
                             <b>GSTIN:</b> <span class="gst_code"></span> &nbsp;
                             <b>PAN:</b> <span class="pan_code"></span><br>
                             <b>ICE No:</b> 0309033152 &nbsp; <b>CIN No:</b> U28112MH2009PLC191045<br>
                             <b>Email:</b> invoice@jssl.in &nbsp; <b>Website:</b> www.jssl.in<br>
+                            </p>
                         </td>
                         <td colspan="6">
                             <br>
@@ -5924,52 +6710,50 @@ async function printRecord(id, status) {
                         </td>
                     </tr>
                     <tr>
-                    <td colspan="6" style="font-size:10px; line-height:1.3;">
+                        <td colspan="6" style="font-size:10px; line-height:1.3;">
 
-                                            <b>
-                                                Invoice To :<br> </b>
+                            <b>
+                                Invoice To :<br> </b>
 
-                                               <b><span class="shipto11"></span></b><br>
-                                                <span class="shipto11add2" ></span><br>
-                                                <span class="shipto11add3" ></span>
+                            <b><span class="shipto11"></span></b><br>
+                            <span class="shipto11add2" ></span><br>
+                            <span class="shipto11add3" ></span>
 
-                                                <span class="projectname"></span><br>
+                            <span class="projectname"></span><br>
 
+                            <!-- Address (NOT bold) -->
+                            <span class="fulladdress" style="white-space: pre-line;"></span><br><br>
 
-                                            <!-- Address (NOT bold) -->
-                                            <span class="fulladdress" style="white-space: pre-line;"></span><br><br>
+                            <b>Place of Supply : <span class="placeofsupply"></span></b><br><br>
 
-                                            <b>Place of Supply : <span class="placeofsupply"></span></b><br><br>
+                            <b>
+                                Name of the State : <span class="statename"></span><br>
+                                State Code : <span class="stcode11"></span><br>
+                                GSTIN : <span class="ingst"></span><br>
+                                PAN : <span class="panin"></span><br>
+                            </b>
 
-                                            <b>
-                                                Name of the State : <span class="statename"></span><br>
-                                                State Code : <span class="stcode11"></span><br>
-                                                GSTIN : <span class="ingst"></span><br>
-                                                PAN : <span class="panin"></span><br>
-                                            </b>
+                        </td>
+                        <td colspan="6" style="font-size:10px; line-height:1.3;">
 
-                                        </td>
-                                        <td colspan="6" style="font-size:10px; line-height:1.3;">
+                            <b>Name &amp; Address of consignee:<br></b>
 
-                                                                            <b>Name & Address of consignee:<br></b>
+                            <b><span class="conname"></span></b><br>
+                            <span class="conname1" ></span><br>
+                            <span class="conname2" ></span><br>
 
-                                                                            <b><span class="conname"></span></b><br>
-                                                                                <span class="conname1" ></span><br>
-                                                                                <span class="conname2" ></span><br>
+                            <!-- Address -->
+                            <span class="conaddress" style="white-space: pre-line;"></span><br>
+                            <br>
 
+                            <b>
+                                Name of the State: <span class="state"></span><br>
+                                State Code: <span class="stateco"></span><br>
+                                GSTIN: <span class="congst"></span><br>
+                                PAN: <span class="pancon"></span><br>
+                            </b>
 
-                                                                            <!-- Address -->
-                                                                            <span class="conaddress" style="white-space: pre-line;"></span><br>
-                                                                                <br>
-
-                                                                                <b>
-                                                                                Name of the State: <span class="state"></span><br>
-                                                                                State Code: <span class="stateco"></span><br>
-                                                                                GSTIN: <span class="congst"></span><br>
-                                                                                PAN: <span class="pancon"></span><br>
-                                                                                </b>
-
-                                                                        </td>
+                        </td>
                     </tr>
                     <tr class="fixed-8px">
                         <td colspan="3" class="notif-cell">
@@ -6134,7 +6918,7 @@ async function printRecord(id, status) {
 
             // INVOICE HEADER
             container.querySelector('.datetime').textContent     = formattedDateTime;
-            container.querySelector('.dateor').textContent       = work_date;
+            container.querySelector('.dateor').textContent       = formatDMY(work_date);
             container.querySelector('.date').textContent         = currentDate;
             container.querySelector('.invoiceNumber').textContent = invoiceno;
 
@@ -6259,7 +7043,7 @@ async function printRecord(id, status) {
             // TOTALS  ← all formatted with commas
             //container.querySelector('.freight').textContent       = formatAmount(freight);
             container.querySelector('.qtytotal').textContent      = total_qty || '';
-            container.querySelector('.wiegtotal').textContent     = total_kgs || '';
+           container.querySelector('.wiegtotal').textContent     = formatWeight(total_kgs);
             container.querySelector('.val11').textContent         = formatAmount(basic_value);
             container.querySelector('.grandlast').textContent     = formatAmount(Grand_Total_tax);
             container.querySelector('.grandlast12new').textContent = formatAmount(PBC_Final_total);
@@ -6275,7 +7059,7 @@ async function printRecord(id, status) {
             container.querySelector('.ifsc').textContent     = ifsc_code || '';
         }
 
-        // ── Auto-fit font size ────────────────────────────────────────────────
+        // ── Auto-fit font size (kept; not used by the print flow, which uses zoom-to-fit below) ──
         function autoFitInvoice(container) {
             const invoice = container.querySelector(".invoice-container");
             const maxHeight = 1000;
@@ -6324,24 +7108,32 @@ async function printRecord(id, status) {
                 return;
             }
 
+            // A4 = 210 x 297mm. With 8mm margins the printable area is 194 x 281mm.
             let fullHTML = `
                 <html>
                 <head>
+                    <meta charset="utf-8">
                     <title>Invoice PDF</title>
                     <style>
-                        @page { size: A4; margin: 10mm; }
-                        body { margin: 0; padding: 0; font-family: Calibri, Arial, sans-serif; }
+                        @page { size: A4; margin: 8mm; }
+                        html, body { margin: 0; padding: 0; }
+                        body {
+                            width: 194mm;
+                            margin: 0 auto;
+                            font-family: "Times New Roman", Times, serif;
+                        }
                         .page {
                             width: 100%;
-                            max-width: 210mm;
-                            margin: 0 auto;
-                            page-break-after: always;
+                            height: auto;
+                            margin: 0;
+                            padding: 0;
+                            overflow: hidden;
                         }
+                        .page:not(:last-child) { page-break-after: always; }
                         .page:last-child { page-break-after: avoid; }
+                        .product-table thead { display: table-row-group; }
                         @media print {
-                            body { margin: 0; }
-                            .page { page-break-after: always; }
-                            .page:last-child { page-break-after: avoid; }
+                            body { margin: 0 auto; }
                         }
                     </style>
                 </head>
@@ -6368,6 +7160,19 @@ async function printRecord(id, status) {
 
             printWindow.onload = () => {
                 setTimeout(() => {
+                    // Fit each copy on exactly one sheet:
+                    // printable height = 281mm (297mm - 2 x 8mm), converted to px at 96dpi
+                    const maxH = (281 * 96 / 25.4) - 8;
+
+                    printWindow.document.querySelectorAll('.page').forEach(page => {
+                        const inv = page.querySelector('.invoice-container');
+                        if (!inv) return;
+                        const h = inv.getBoundingClientRect().height;
+                        if (h > maxH) {
+                            inv.style.zoom = (maxH / h).toFixed(3);   // shrink to one page
+                        }
+                    });
+
                     printWindow.focus();
                     printWindow.print();
                     printWindow.close();

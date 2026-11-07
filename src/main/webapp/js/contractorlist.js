@@ -57,23 +57,24 @@ if (selectedFactoryId) {
 
 // Function to fetch the list of users/vendors based on the selected factory ID
 async function fetchUserList(selectedFactoryId) {
-	fetchtax();
-	fetchexptitle();
+    fetchtax();
+    fetchexptitle();
     try {
-        
-        // Construct the API URL
         const url = new URL(`/jssl/contract/listcontractnew`, baseUrl);
         url.searchParams.append('factory_id', selectedFactoryId);
 
-        // Fetch vendor data
-		const response = await fetch(url,{
-						           method: "GET",
-						           credentials: "include"   // ✅ Always send JSESSIONID cookie
-						       });
+        const response = await fetch(url, {
+            method: "GET",
+            credentials: "include"
+        });
         if (!response.ok) throw new Error("Failed to fetch data");
         const json = await response.json();
 
-        // Prepare table content
+        // Destroy the old DataTable BEFORE replacing the HTML
+        if ($.fn.DataTable.isDataTable('#tableID')) {
+            $('#tableID').DataTable().destroy();
+        }
+
         let tableContent = `
             <thead>
                 <tr>
@@ -96,17 +97,16 @@ async function fetchUserList(selectedFactoryId) {
         });
 
         tableContent += `</tbody>`;
-
-        // Update table content
         $("#tableID").html(tableContent);
 
-        // Initialize DataTable with custom configuration
         $("#tableID").DataTable({
-            dom: 'Bfrtip',
+            dom: 'Bfrtip',        // 'p' = pagination controls
             scrollX: true,
-            info: false,
-            paging: false,
-            destroy: true, // Prevent duplication
+            info: true,           // shows "Showing 1 to 10 of N entries"
+            paging: true,
+            pageLength: 10,       // 10 records per page
+            lengthChange: false,  // hides the page-size dropdown
+            destroy: true,
             buttons: [
                 {
                     extend: 'excel',

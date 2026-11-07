@@ -275,7 +275,7 @@ document.addEventListener("DOMContentLoaded", function() {
         })
         .catch(error => console.error('Error fetching users:', error));
 
-    // 2️⃣ On user selection, fetch the department name
+    // 2 On user selection, fetch the department name
 	$('#whom').on('change', function () {
 	    const selectedUserId = $(this).val();
 
@@ -548,6 +548,7 @@ document.addEventListener("DOMContentLoaded", function() {
 					const tlocationInput = document.getElementById('tlocation');
 				    const taddressInput = document.getElementById('taddress');
 					fetchCompanyDetails(item.transname, tlocationInput, taddressInput);
+					applyStatusLockCreate();
 					document.getElementById("container1").style.display = "block";
 					             document.getElementById("container2").style.display = "block";
                 } else {
@@ -818,6 +819,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Check if all required fields are filled in container1 and show container2
 function checkFieldsAndShowDetails() {
+	
+	if (isStoresSelfCreate()) {
+	        document.getElementById('container2').style.display = 'block';
+	        return;
+	    }
+	
     const rc = document.getElementById('RC').value;
     const validityRC = document.getElementById('validityRC').value;
     const fitness = document.getElementById('Fitness').value;
@@ -1261,7 +1268,7 @@ function formatDate(dateStr) {
 		        });
 
 
-
+				applyStatusLockUpdate(); 
 		        // Show modal
 		        $('#exampleModalScrollable12').modal('show');
 
@@ -1375,19 +1382,19 @@ function formatDate(dateStr) {
 		    const poDate = $(`#podate1${row}`).val();
 		    const today = todayStr();
 
-		    if (invDate < today) {
+		/*    if (invDate < today) {
 		        alert("Invoice Date cannot be a past date");
 		        this.value = "";
 		        return;
 		    }
-
-		    if (poDate && invDate < poDate) {
+*/
+		  /*  if (poDate && invDate < poDate) {
 		        alert("Invoice Date cannot be less than PO Date");
 		        this.value = "";
 		        return;
-		    }
+		    }*/
 
-		    $(`#dcdate1${row}`).attr('min', invDate);
+		   // $(`#dcdate1${row}`).attr('min', invDate);
 		});
 
 		// Delegate DC Date validation
@@ -1398,13 +1405,13 @@ function formatDate(dateStr) {
 		    const invDate = $(`#invoicedate1${row}`).val();
 		    const today = todayStr();
 
-		    if (dcDate < today) {
+	/*	    if (dcDate < today) {
 		        alert("DC Date cannot be a past date");
 		        this.value = "";
 		        return;
 		    }
-
-		    if (poDate && dcDate < poDate) {
+*/
+		/*    if (poDate && dcDate < poDate) {
 		        alert("DC Date cannot be less than PO Date");
 		        this.value = "";
 		        return;
@@ -1414,7 +1421,7 @@ function formatDate(dateStr) {
 		        alert("DC Date cannot be less than Invoice Date");
 		        this.value = "";
 		        return;
-		    }
+		    }*/
 		});
 
 		//let selectedvehicleId = null;
@@ -1735,7 +1742,27 @@ function formatDate(dateStr) {
 		        hideError('description1Errorup');
 		    }
 
+			
+			
+			$("#TableID1 tbody tr").each(function () {
+			       const qtyInput = $(this).find('input[id^="quantity"]');
+			       const weightInput = $(this).find('input[id^="weight"]');
+
+			       const qty = Number(qtyInput.val());
+			       const weight = Number(weightInput.val());
+
+			       if (isNaN(qty) || qty < 0) {
+			           showFieldError(qtyInput, "Quantity cannot be less than 0");
+			           isValid = false;
+			       }
+			       if (isNaN(weight) || weight < 0) {
+			           showFieldError(weightInput, "Weight cannot be less than 0");
+			           isValid = false;
+			       }
+			   });
 		    return isValid;
+			
+			
 		}
 		
 		// Step 4: Update vehicle only after confirmation
@@ -2277,7 +2304,7 @@ function fetchCnameCompanyDetailsDynamic(rowId) {
 
 // Initial load: for first row only
 
-function generateVehicleNo(callback) {
+/*function generateVehicleNo(callback) {
     // Fetch the auto-generated number from the backend
     $.ajax({
         url: new URL('/api/invoiceexit/jims/autovechileno',baseUrl1), // Endpoint
@@ -2294,8 +2321,8 @@ function generateVehicleNo(callback) {
             }
 
             // Format the number to be zero-padded to 6 digits
-/*            const formattedNumber = ('000000' + autoNumber).slice(-6); // Zero-padded to 6 digits
-            const vehicleid = `VL00${formattedNumber}`; // Prefix with VL00*/
+            const formattedNumber = ('000000' + autoNumber).slice(-6); // Zero-padded to 6 digits
+            const vehicleid = `VL00${formattedNumber}`; // Prefix with VL00
 			
 			const vehicleid = `VL${String(autoNumber).padStart(6, '0')}`;
 
@@ -2338,7 +2365,48 @@ function generatematerialVehicleNo(callback) {
         }
     });
 }
+*/
 
+const VL_START = 28672;
+const MI_START = 35645;
+
+function generateVehicleNo(callback) {
+    $.ajax({
+        url: new URL('/api/invoiceexit/jims/autovechileno', baseUrl1),
+        type: 'GET',
+        xhrFields: { withCredentials: true },
+        success: function (maxNo) {
+            let next = parseInt(maxNo, 10);
+            next = (!next || isNaN(next)) ? VL_START : next + 1;
+            if (next < VL_START) next = VL_START;   // never go below the start number
+
+            callback(`VL${String(next).padStart(6, '0')}`);   // VL028672
+        },
+        error: function (error) {
+            console.error('Error generating vehicle number:', error);
+            callback(`VL${String(VL_START).padStart(6, '0')}`);
+        }
+    });
+}
+
+function generatematerialVehicleNo(callback) {
+    $.ajax({
+        url: new URL('/api/invoiceexit/jims/autovechilenomaterial', baseUrl1),
+        type: 'GET',
+        xhrFields: { withCredentials: true },
+        success: function (maxNo) {
+            let next = parseInt(maxNo, 10);
+            next = (!next || isNaN(next)) ? MI_START : next + 1;
+            if (next < MI_START) next = MI_START;
+
+            callback(`MI00${String(next).padStart(6, '0')}`); // MI00035645
+        },
+        error: function (error) {
+            console.error('Error generating vehicle number:', error);
+            callback(`MI00${String(MI_START).padStart(6, '0')}`);
+        }
+    });
+}
 
 function tablehide() {
     // Get dropdown elements
@@ -2552,7 +2620,7 @@ function getIndianTimeOnly(date) {
 		            }
 
 		            // ✅ Quantity validation
-		            if (qtyValue <= 0) {
+		        /*    if (qtyValue <= 0) {
 		                showFieldError($(quantityInput), "Quantity must be greater than 0");
 		                isValid = false;
 		            }
@@ -2562,6 +2630,22 @@ function getIndianTimeOnly(date) {
 		                showFieldError($(weightInput), "Weight must be greater than 0");
 		                isValid = false;
 		            }
+					*/
+					
+					
+					// ✅ Quantity validation (0 allowed, negative not allowed)
+					if (isNaN(qtyValue) || qtyValue < 0) {
+					    showFieldError($(quantityInput), "Quantity cannot be less than 0");
+					    isValid = false;
+					}
+
+					// ✅ Weight validation (0 allowed, negative not allowed)
+					if (isNaN(weightValue) || weightValue < 0) {
+					    showFieldError($(weightInput), "Weight cannot be less than 0");
+					    isValid = false;
+					}
+					
+					
 		        });
 
 		        if (!isValid) return false;
@@ -2622,21 +2706,22 @@ function getIndianTimeOnly(date) {
 
 
 	function materialInward() {
-	    // Get the form field values
+
 	    const registerSelect = document.getElementById("register");
 	    const vtypeselect = document.getElementById("vehicle");
+
 	    const selectedId = registerSelect.value;
-	    const selectedvtypeId = vtypeselect.value;
 	    const vehicleNo = document.getElementById("vehicleNo").value;
-	    
+
 	    let regtype = '';
+
 	    if (selectedId == "1") {
-	        regtype = document.getElementById("register").value;
+	        regtype = registerSelect.value;
 	    } else {
 	        regtype = document.getElementById("Select").value;
 	    }
 
-	    const vechicletype = document.getElementById("vehicle").value;
+	    const vechicletype = vtypeselect.value;
 	    const dname = document.getElementById("dname").value;
 	    const dmno = document.getElementById("dmno").value;
 	    const dlno = document.getElementById("dlno").value;
@@ -2658,17 +2743,17 @@ function getIndianTimeOnly(date) {
 	    const pucdate = document.getElementById("validityPUC").value;
 	    const content_desc = document.getElementById("content").value;
 
-	    // Generate the vehicle ID (assuming it's asynchronous)
 	    generatematerialVehicleNo(function(vehicleid) {
+
 	        let currentDate = new Date();
 	        let currentDateTimeString = getIndianDateTimeFormat(currentDate);
-	        let currentTimeOnly = getIndianTimeOnly(currentDate); 
-	        
-	        // Create the first data object for the vehicle loading
+	        let currentTimeOnly = getIndianTimeOnly(currentDate);
+
+	        // Vehicle data
 	        const vehicleData = {
 	            vechile_id: vehicleid,
-	            regtyp:regtype,
-	            vtype:vechicletype,
+	            regtyp: regtype,
+	            vtype: vechicletype,
 	            vecno: vehicleNo,
 	            dname: dname,
 	            vdate: currentDateTimeString,
@@ -2682,7 +2767,7 @@ function getIndianTimeOnly(date) {
 	            department: department,
 	            inremarks: remarks,
 	            description: description,
-	            content_desc :content_desc,
+	            content_desc: content_desc,
 	            rcflag: rc,
 	            insuflag: insure,
 	            pucflag: puc,
@@ -2691,66 +2776,55 @@ function getIndianTimeOnly(date) {
 	            fitValidThrough: fitnessdate,
 	            pucValidThrough: pucdate,
 	            insuValidThrough: insuredate,
-	            intime:currentTimeOnly,
+	            intime: currentTimeOnly,
 	            created_by: createdById,
 	            created_date: currentDateTimeString,
 	            factory_id: selectedFactoryId,
-	            capture: capturedImageData                            
+	            capture: capturedImageData
 	        };
 
-	        // Make the API call to the first API (vehicle loading)
-	        fetch(new URL('/api/invoiceexit',baseUrl1), {
-	            method: 'POST',
-	            credentials: 'include',
-	            headers: {
-	                'Content-Type': 'application/json'
-	            },
-	            body: JSON.stringify(vehicleData)
-	        })
-	        .then(response => response.ok ? Promise.resolve() : response.text().then(text => Promise.reject(text)))
-	        .then(() => {
-	            // Now, prepare the data for the second table (incponumber)
-	            const rows = document.querySelectorAll("#TableID tbody tr");
-	            const dataToInsert = [];
-	            
-	            rows.forEach(row => {
-	                // Collect data from each row
-	                const companySelect = row.querySelector('[id^="cname"]');
-	                const poNumberInput = row.querySelector('[id^="ponum"]');
-	                const poDateInput = row.querySelector('[id^="podate"]');
-	                const invoiceNumberInput = row.querySelector('[id^="invoicenum"]');
-	                const invoiceDateInput = row.querySelector('[id^="invoicedate"]');
-	                const dcNumberInput = row.querySelector('[id^="dcnum"]');
-	                const dcDateInput = row.querySelector('[id^="dcdate"]');
-	                const quantityInput = row.querySelector('[id^="quantity"]');
-	                const weightInput = row.querySelector('[id^="weight"]');
-	                const descriptionInput = row.querySelector('[id^="description"]');
+	        // Collect all PO records first
+	        const rows = document.querySelectorAll("#TableID tbody tr");
+	        const dataToInsert = [];
 
-	                const data = {
-	                    vechile_id: vehicleid,
-	                    company_id: companySelect ? companySelect.value : '',
-	                    po_number: poNumberInput ? poNumberInput.value : '',
-	                    po_date: poDateInput ? poDateInput.value : '',
-	                    inv_no: invoiceNumberInput ? invoiceNumberInput.value : '',
-	                    inv_date: invoiceDateInput ? invoiceDateInput.value : '',
-	                    dc_no: dcNumberInput ? dcNumberInput.value : '',
-	                    dc_date: dcDateInput ? dcDateInput.value : '',
-	                    qty: quantityInput ? quantityInput.value : '',
-	                    weight: weightInput ? weightInput.value : '',
-	                    descp: descriptionInput ? descriptionInput.value : '',
-	                    created_by: createdById,
-	                    created_date: currentDateTimeString,
-	                    factory_id: selectedFactoryId
-	                };
+	        rows.forEach(row => {
 
-	                dataToInsert.push(data);
-	            });
+	            const companySelect = row.querySelector('[id^="cname"]');
+	            const poNumberInput = row.querySelector('[id^="ponum"]');
+	            const poDateInput = row.querySelector('[id^="podate"]');
+	            const invoiceNumberInput = row.querySelector('[id^="invoicenum"]');
+	            const invoiceDateInput = row.querySelector('[id^="invoicedate"]');
+	            const dcNumberInput = row.querySelector('[id^="dcnum"]');
+	            const dcDateInput = row.querySelector('[id^="dcdate"]');
+	            const quantityInput = row.querySelector('[id^="quantity"]');
+	            const weightInput = row.querySelector('[id^="weight"]');
+	            const descriptionInput = row.querySelector('[id^="description"]');
 
-	            let successCount = 0;
-	            let failCount = 0;
+	            const data = {
+	                vechile_id: vehicleid,
+	                company_id: companySelect ? companySelect.value : '',
+	                po_number: poNumberInput ? poNumberInput.value : '',
+	                po_date: poDateInput ? poDateInput.value : '',
+	                inv_no: invoiceNumberInput ? invoiceNumberInput.value : '',
+	                inv_date: invoiceDateInput ? invoiceDateInput.value : '',
+	                dc_no: dcNumberInput ? dcNumberInput.value : '',
+	                dc_date: dcDateInput ? dcDateInput.value : '',
+	                qty: quantityInput ? quantityInput.value : '',
+	                weight: weightInput ? weightInput.value : '',
+	                descp: descriptionInput ? descriptionInput.value : '',
+	                created_by: createdById,
+	                created_date: currentDateTimeString,
+	                factory_id: selectedFactoryId
+	            };
 
-	            const promises = dataToInsert.map(poData =>
-	                fetch(new URL('/api/incponumber',baseUrl1), {
+	            dataToInsert.push(data);
+	        });
+
+	        // Step 1: Insert all PO records
+	        Promise.all(
+	            dataToInsert.map(poData => {
+
+	                return fetch(new URL('/api/incponumber', baseUrl1), {
 	                    method: 'POST',
 	                    credentials: 'include',
 	                    headers: {
@@ -2759,36 +2833,63 @@ function getIndianTimeOnly(date) {
 	                    body: JSON.stringify(poData)
 	                })
 	                .then(response => {
+
 	                    if (!response.ok) {
 	                        return response.text().then(err => {
-	                            console.error("Failed to insert PO:", err);
-	                            failCount++;
+	                            throw new Error(err || "PO insertion failed");
 	                        });
-	                    } else {
-	                        successCount++;
 	                    }
-	                })
-	                .catch(error => {
-	                    console.error('Error submitting PO data:', error);
-	                    failCount++;
-	                })
+
+	                    return response;
+
+	                });
+
+	            })
+	        )
+
+	        // Step 2: Execute vehicle API only if ALL PO records succeed
+	        .then(() => {
+
+	            return fetch(new URL('/api/invoiceexit', baseUrl1), {
+	                method: 'POST',
+	                credentials: 'include',
+	                headers: {
+	                    'Content-Type': 'application/json'
+	                },
+	                body: JSON.stringify(vehicleData)
+	            });
+
+	        })
+
+	        .then(response => {
+
+	            if (!response.ok) {
+	                return response.text().then(err => {
+	                    throw new Error(err || "Vehicle insertion failed");
+	                });
+	            }
+
+	            showPopup(
+	                "Vehicle and all PO records submitted successfully!",
+	                "Vehicle.jsp"
 	            );
 
-	            Promise.all(promises).then(() => {
-	                if (failCount === 0) {
-	                    showPopup("Vehicle and all PO records submitted successfully!", "Vehicle.jsp");
-					   
-					  /* alert("the vehilce details are successsfully inserted");*/
-	                } else {
-	                    alert(`Vehicle data saved but ${failCount} PO(s) failed to submit.`);
-	                }
-	            });
 	        })
+
 	        .catch(error => {
-	            alert('Error submitting vehicle data: ' + error);
+
+	            console.error("Submission failed:", error);
+
+	            alert(
+	                "Submission failed. Vehicle API was not called if any PO insertion failed.\n" +
+	                error.message
+	            );
+
 	        });
+
 	    });
 	}
+
 
 
 	function vehicleLoading() {
@@ -2927,3 +3028,108 @@ function showPopup(message, redirectUrl) {
 		        });
 		    }, 800);
 		}
+		
+		
+		
+		// ===== CREATE: lock RC / Insurance / Fitness / PUC for Stores Material + Self =====
+		const STORES_MATERIAL_TID = '3';
+		const SELF_VID = '5';
+
+		const createStatusPairs = [
+		    ['RC', 'validityRC'],
+		    ['Insurance', 'validityInsurance'],
+		    ['Fitness', 'validityFitness'],
+		    ['PUC', 'validityPUC']
+		];
+
+		function isStoresSelfCreate() {
+		    return $('#register').val() === '2' &&
+		           $('#Select').val() === STORES_MATERIAL_TID &&
+		           $('#vehicle').val() === SELF_VID;
+		}
+
+		function applyStatusLockCreate() {
+		    const lock = isStoresSelfCreate();
+
+		    createStatusPairs.forEach(([selId, dateId]) => {
+		        const sel = document.getElementById(selId);
+		        const date = document.getElementById(dateId);
+
+		        if (lock) {
+		            sel.value = '';
+		            date.value = '';
+		            sel.disabled = true;
+		            date.disabled = true;
+		        } else {
+		            sel.disabled = false;
+		            date.disabled = (sel.value !== '1');   // same rule as toggleDateInput
+		        }
+		    });
+
+		    // In the locked case there is nothing to fill, so show the details block directly
+		    if (lock && $('#vehicle').val()) {
+		        $('#container1').show();
+		        $('#container2').show();
+		    }
+		}
+
+		// Re-apply whenever any of the controlling dropdowns change
+		$(document).on('change', '#register, #Select, #vehicle', function () {
+		    applyStatusLockCreate();
+		});
+		
+		
+		// ===== UPDATE: lock RC1 / Insurance1 / Fitness1 / PUC1 for Stores Material + Self =====
+		const updateStatusPairs = [
+		    ['RC1', 'validityRC1'],
+		    ['Insurance1', 'validityInsurance1'],
+		    ['Fitness1', 'validityFitness1'],
+		    ['PUC1', 'validityPUC1']
+		];
+
+		function isStoresSelfUpdate() {
+		    return $('#register1').val() === '2' &&
+		           $('#Select1').val() === STORES_MATERIAL_TID &&
+		           $('#vehicle1').val() === SELF_VID;
+		}
+
+		function applyStatusLockUpdate() {
+		    const lock = isStoresSelfUpdate();
+
+		    updateStatusPairs.forEach(([selId, dateId]) => {
+		        const sel = document.getElementById(selId);
+		        const date = document.getElementById(dateId);
+
+		        if (lock) {
+		            // Only disable, do not clear, so existing saved values are not wiped
+		            // and "no changes" detection keeps working
+		            sel.disabled = true;
+		            date.disabled = true;
+		        } else {
+		            sel.disabled = false;
+		            date.disabled = (sel.value === '0');
+		        }
+		    });
+
+		    if (lock) {
+		        $('#container4').show();
+		        $('#container5').show();
+		    }
+		}
+
+		// Runs AFTER your existing #vehicle1 change handler (which resets and re-enables fields)
+		$(document).on('change', '#vehicle1', function () {
+		    applyStatusLockUpdate();
+		});
+		
+		
+		
+		// Allow only digits and a single decimal point in quantity / weight (no negatives)
+		$(document).on('input', 'input[id^="quantity"], input[id^="weight"]', function () {
+		    let v = this.value.replace(/[^0-9.]/g, '');
+		    const firstDot = v.indexOf('.');
+		    if (firstDot !== -1) {
+		        v = v.slice(0, firstDot + 1) + v.slice(firstDot + 1).replace(/\./g, '');
+		    }
+		    this.value = v;
+		});

@@ -134,7 +134,7 @@ async function fetchdelivery() {
 	}
 }
 
-async function fetchSate() {
+/*async function fetchSate() {
     try {
         const url = new URL(`/jssl/seriesmaster/getClosedStatusAdvanceStates`, baseUrl); // ✅ added leading /
 
@@ -163,6 +163,42 @@ async function fetchSate() {
                 selectElement.appendChild(option);
             }
         });
+
+    } catch (error) {
+        console.error("Error fetching states:", error);
+    }
+}*/
+
+async function fetchSate() {
+    try {
+        const url = new URL(`/jssl/seriesmaster/getClosedStatusAdvanceStates`, baseUrl);
+        const response = await fetch(url, {
+            method: "GET",
+            credentials: "include"
+        });
+
+        const json = await response.json();
+
+        if (json.status !== "yes" || !json.AdvanceStatesClosedStatusList.length) {
+            console.warn("No sale order types found.");
+            return;
+        }
+
+        const selectElement = document.getElementById("state");
+        selectElement.innerHTML = `<option value="">Select State</option>`;
+
+		json.AdvanceStatesClosedStatusList.forEach((type) => {
+		    if (type.state_id && type.state_name) {
+		        const option = document.createElement("option");
+
+		        // Unique per business unit, since one state can have several BUs
+		        option.value = type.bu_code;
+		        option.textContent = type.state_name;
+		        option.dataset.stateIds = String(type.state_ids);
+		        option.dataset.buCode = type.bu_code;
+		        selectElement.appendChild(option);
+		    }
+		});
 
     } catch (error) {
         console.error("Error fetching states:", error);
@@ -354,8 +390,11 @@ document.getElementById("AdvanceseriesAdd").addEventListener("input", function()
 function addevent() {
     $('#exampleModalCenter66').modal('hide');
 
-    // ✅ Read from DOM elements properly
-    const state_id = document.getElementById('state').value;
+    const stateSelect = document.getElementById('state');
+    const selectedOption = stateSelect.options[stateSelect.selectedIndex];
+
+    const state_id = selectedOption.dataset.stateIds;
+    const bu_code  = selectedOption.dataset.buCode;
 
     $.ajax({
         url: new URL('/jssl/seriesmaster/addAdvanceMaster', baseUrl),
@@ -363,7 +402,8 @@ function addevent() {
         dataType: 'json',
         xhrFields: { withCredentials: true },
         data: jQuery.param({
-            state_id: state_id,                                              // ✅ real DB id (28,12,18...)
+            state_id: state_id,
+            bu_code: bu_code,                      // new
             created_by: createdById,
             invoice_series: document.getElementById('AdvanceseriesAdd').value,
             start_date: document.getElementById('AdvancestartdateAdd').value,
@@ -371,8 +411,6 @@ function addevent() {
         }),
         success: function(data) {
             if (data.message === "Success") {
-
-                // ✅ Store real state_id in sessionStorage
                 sessionStorage.setItem('state_id', state_id);
 
                 const popup = $('<div class="popup">Advance Series Master Created Successfully!</div>')
@@ -385,8 +423,7 @@ function addevent() {
                     });
                 }, 800);
             } else {
-                const errorMessage = data.message || 'Advance series is Already Exists';
-                $('#errorMessage').text(errorMessage);
+                $('#errorMessage').text(data.message || 'Advance series is Already Exists');
                 $('#exampleModalCenterDup').modal('show');
             }
         },
@@ -395,7 +432,6 @@ function addevent() {
         }
     });
 }
-
 
 function formatDateToDDMMYYYY(dateStr) {
     if (!dateStr) return '';

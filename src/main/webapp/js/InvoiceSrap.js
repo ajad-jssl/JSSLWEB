@@ -45,6 +45,37 @@ function loadAllowedActions() {
 }
 
 
+$('#exampleModalScrollableUpdate').on('shown.bs.modal', function () {
+    $(this).find('select').each(function () { s2(this); });
+});
+
+
+
+function s2(target, placeholder) {
+    const $el = (typeof target === 'string') ? $('#' + target) : $(target);
+    if (!$el.length) return;
+    if ($el.hasClass('select2-hidden-accessible')) $el.select2('destroy');
+    const $modal = $el.closest('.modal');
+    $el.select2({
+        dropdownParent: $modal.length ? $modal : $(document.body),
+        width: '100%',
+        placeholder: placeholder || $el.find('option:first').text(),
+        allowClear: false,
+        minimumResultsForSearch: 0       // always show the search box
+    });
+}
+
+// Select2 only fires jQuery events. This re-fires a native "change" so your existing
+// addEventListener("change") code keeps working: scrapType, uom, tax1add/2add/3add.
+$(document).on('select2:select select2:clear', 'select', function () {
+    this.dispatchEvent(new Event('change'));
+});
+
+// Use this when your code sets a value from JS and the Select2 display must update.
+function setS2(id, value) {
+    $('#' + id).val(value).trigger('change');
+}
+
 document.getElementById("#modalScroll").addEventListener("click", function () {
     // show custom message instead of opening modal
 	  //const allowed = window.allowedActions || [];
@@ -458,6 +489,8 @@ async function fetchPackingnote(factoryId) {
                 selectElement.appendChild(option);
             }
         });
+		
+		s2('scrappacnote');
     } catch (error) {
         console.error("Error fetching sale order types:", error);
     }
@@ -510,6 +543,8 @@ async function fetchShipping() {
                 selectElement.appendChild(option);
             }
         });
+		
+		s2('shipmode');
     } catch (error) {
         console.error("Error fetching sale order types:", error);
     }
@@ -614,6 +649,8 @@ async function fetchdelivery() {
                 selectElement.appendChild(option);
             }
         });
+		
+		s2('delivery');
     } catch (error) {
         console.error("Error fetching sale order types:", error);
     }
@@ -716,6 +753,8 @@ async function fetchservice() {
                 selectElement.appendChild(option);
             }
         });
+		
+		s2('service');
     } catch (error) {
         console.error("Error fetching sale order types:", error);
     }
@@ -767,6 +806,8 @@ async function fetchserviceup() {
                 selectElement.appendChild(option);
             }
         });
+		
+		/*s2('serviceup');*/
     } catch (error) {
         console.error("Error fetching sale order types:", error);
     }
@@ -869,6 +910,8 @@ async function fetchhsn() {
                 selectElement.appendChild(option);
             }
         });
+		
+		s2('hsncode');
     } catch (error) {
         console.error("Error fetching sale order types:", error);
     }
@@ -1075,6 +1118,8 @@ async function fetchbank() {
                 selectElement.appendChild(option);
             }
         });
+		
+		s2('bakname');
     } catch (error) {
         console.error("Error fetching sale order types:", error);
     }
@@ -1565,6 +1610,7 @@ function editRecord(id) {
                     $('#vehino').val(response.ScrapInvoiceInfo.vehicleno);
                     $('#prodesv').val(response.ScrapInvoiceInfo.product_desc);
                     $('#remarkv').val(response.ScrapInvoiceInfo.remarks);
+					$('#remagst').val(response.ScrapInvoiceInfo.gst_remarks);
                     $('#shipmodev').val(response.ScrapInvoiceInfo.shipment_mode);
                     $('#deliveryv').val(response.ScrapInvoiceInfo.delivery_condition);
                     $('#baknamev').val(response.ScrapInvoiceInfo.bank_name);
@@ -1787,6 +1833,7 @@ function addeventVV() {
         data: jQuery.param({verified_by:createdById,
         id:inid123.value,
         load_id:workv.value,
+		Scp_load:pacV.value,
         gst_remarks:remagst.value
         }),
         success: function(data) {
@@ -1805,7 +1852,7 @@ function addeventVV() {
                 }, 800);
             } else {
                 // Optionally, you can alert or log failure message here
-                console.log(data.message || 'Failed to create module.');
+				alert("Error updating: " + data.message);
             }
         },
         error: function() {
@@ -1967,12 +2014,59 @@ async function printRecord(id) {
     showLoader();
     console.log("Printing scrap record with ID:", id);
 
+    // ─── HELPER: Parse any date string/number into a Date object ──────────────
+    function toDateObj(val) {
+        if (!val) return null;
+        if (val instanceof Date) return isNaN(val) ? null : val;
+        if (typeof val === 'number') return new Date(val);
+
+        const s = String(val).trim();
+        if (/^\d{10,}$/.test(s)) return new Date(Number(s));          // epoch millis
+
+        // yyyy-MM-dd [HH:mm[:ss]]
+        let m = s.match(/^(\d{4})-(\d{2})-(\d{2})(?:[T\s](\d{2}):(\d{2})(?::(\d{2}))?)?/);
+        if (m) return new Date(+m[1], +m[2] - 1, +m[3], +(m[4] || 0), +(m[5] || 0), +(m[6] || 0));
+
+        // dd-MM-yyyy or dd/MM/yyyy [HH:mm[:ss]]
+        m = s.match(/^(\d{2})[-\/](\d{2})[-\/](\d{4})(?:[T\s](\d{2}):(\d{2})(?::(\d{2}))?)?/);
+        if (m) return new Date(+m[3], +m[2] - 1, +m[1], +(m[4] || 0), +(m[5] || 0), +(m[6] || 0));
+
+        const d = new Date(s);
+        return isNaN(d) ? null : d;
+    }
+
+    // dd-mm-yyyy
+    function formatDMY(val) {
+        const d = toDateObj(val);
+        if (!d) return val || '';
+        return String(d.getDate()).padStart(2, '0') + '-' +
+               String(d.getMonth() + 1).padStart(2, '0') + '-' +
+               d.getFullYear();
+    }
+
+    // dd-mm-yyyy HH:mm:ss
+    function formatDMYHMS(val) {
+        const d = toDateObj(val);
+        if (!d) return val || '';
+        return formatDMY(d) + ' ' +
+               String(d.getHours()).padStart(2, '0') + ':' +
+               String(d.getMinutes()).padStart(2, '0') + ':' +
+               String(d.getSeconds()).padStart(2, '0');
+    }
+
     // ─── HELPER: Format numbers with Indian comma style ───────────────────────
     function formatAmount(value) {
         if (!value && value !== 0) return '';
         const num = parseFloat(String(value).replace(/,/g, ''));
         if (isNaN(num)) return value;
         return num.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function formatWeight(value) {
+        if (!value && value !== 0) return '';
+        const num = parseFloat(String(value).replace(/,/g, ''));
+        if (isNaN(num)) return value;
+        return num.toLocaleString('en-IN', { minimumFractionDigits: 3, maximumFractionDigits: 3 });
     }
 
     try {
@@ -2003,6 +2097,7 @@ async function printRecord(id) {
         const vehicleno          = ScrapInvoiceInfo.vehicleno;
         const shipment_mode      = ScrapInvoiceInfo.shipment_mode;
         const delivery_condition = ScrapInvoiceInfo.delivery_condition;
+        const created_date       = ScrapInvoiceInfo.created_date;
 
         // ── Shipping / Invoice To ─────────────────────────────────────────────
         const shipping_address    = ScrapInvoiceInfo.shipping_address;
@@ -2086,18 +2181,10 @@ async function printRecord(id) {
         const Pan_Code        = bu_pan_number;
 
         // ── Date Formatting ───────────────────────────────────────────────────
-        const currentDate = new Date().toLocaleDateString('en-GB', {
-            day: '2-digit', month: '2-digit', year: 'numeric'
-        }).replace(/\//g, '-');
+        const createdRaw = ScrapInvoiceInfo.created_date || '';
 
-        const currentDate1 = new Date();
-        const formattedDateTime =
-            String(currentDate1.getDate()).padStart(2, '0') + '-' +
-            String(currentDate1.getMonth() + 1).padStart(2, '0') + '-' +
-            currentDate1.getFullYear() + ' ' +
-            String(currentDate1.getHours()).padStart(2, '0') + ':' +
-            String(currentDate1.getMinutes()).padStart(2, '0') + ':' +
-            String(currentDate1.getSeconds()).padStart(2, '0');
+        const currentDate       = formatDMY(createdRaw);
+        const formattedDateTime = formatDMYHMS(createdRaw);
 
         // ── HTML Template ─────────────────────────────────────────────────────
         const htmlContent = `
@@ -2132,15 +2219,21 @@ async function printRecord(id) {
                     line-height: 2;
                 }
 
+                /* FIX: page size now fits inside the printable area of the A4 sheet
+                   (@page margin is 4mm  =>  202mm x 289mm printable).
+                   Height reduced from 297mm to 287mm so a copy can never overflow
+                   onto a second (blank) sheet.
+                   FIX: page-break rules removed from here (they used
+                   "avoid !important", which overrode the print-window rules and
+                   broke the page flow). Page breaks are controlled only in the
+                   print window stylesheet. */
                 .page {
                     width: 202mm;
-                    height: 297mm;
-                    overflow: visible;
-                    page-break-after: avoid !important;
+                    height: 287mm;
+                    overflow: hidden;
                     margin: 0;
                     padding: 0;
                 }
-                .page:last-child { page-break-after: avoid !important; }
 
                 .invoice-container {
                     width: 100%;
@@ -2529,7 +2622,7 @@ async function printRecord(id) {
                                 <span>indirectly over and above what has been declared herein.</span><br>
                             </td>
                             <td colspan="4">
-                                <span>For <span class="footercompanyname"></span></span><br>
+                                <span>For JSW SEVERFIELD STRUCTURES LTD.</span><br>
                                 <span style="margin-top:20px; display:inline-block;">(Authorised signature)</span><br>
                             </td>
                         </tr>
@@ -2557,7 +2650,7 @@ async function printRecord(id) {
             // COMPANY / FACTORY HEADER — all dynamic from ScrapInvoiceInfo (BUSINESS_UNITS join)
             container.querySelector('.reg_add').textContent          = reg_addresss;
             container.querySelector('.companyname').textContent      = cleanBusinessUnitName;
-            container.querySelector('.footercompanyname').textContent = cleanBusinessUnitName;
+            //container.querySelector('.footercompanyname').textContent = cleanBusinessUnitName;
             container.querySelector('.gst_code').textContent         = Gst_Code;
             container.querySelector('.pan_code').textContent         = Pan_Code;
             container.querySelector('.state_code').textContent       = state_Code;
@@ -2568,7 +2661,7 @@ async function printRecord(id) {
             container.querySelector('.contrefno').textContent      = contref;
             container.querySelector('.datetime').textContent       = formattedDateTime;
             container.querySelector('.workor').textContent         = saleOrderCode;
-            container.querySelector('.dateor').textContent         = currentDate;
+            container.querySelector('.dateor').textContent         = formatDMY(created_date);
             container.querySelector('.date').textContent           = currentDate;
 
             // INVOICE TO (SHIPPING)
@@ -2597,7 +2690,7 @@ async function printRecord(id) {
             container.querySelector('.hsn').textContent     = Service_Code;
             container.querySelector('.uom').textContent     = unit_name;
             container.querySelector('.qty').textContent     = quantity;
-            container.querySelector('.kg').textContent      = kg;
+            container.querySelector('.kg').textContent      = formatWeight(kg);
             container.querySelector('.unipri').textContent  = formatAmount(unit_price);
             container.querySelector('.val').textContent     = formatAmount(total);
 
@@ -2699,24 +2792,40 @@ async function printRecord(id) {
                 return;
             }
 
+            /* FIX: @page margin reduced to 4mm so the printable area is
+               202mm x 289mm, which matches .page (202mm x 287mm).
+               FIX: page breaks are defined ONLY here:
+                 - every copy except the last breaks after itself
+                 - the last copy never breaks, so no trailing blank sheet */
             let fullHTML = `
                 <html>
                 <head>
                     <title>Invoice PDF</title>
                     <style>
-                        @page { size: A4; margin: 10mm; }
-                        body { margin: 0; padding: 0; font-family: Calibri, Arial, sans-serif; }
+                        @page { size: A4; margin: 4mm; }
+                        html, body { margin: 0; padding: 0; font-family: Calibri, Arial, sans-serif; }
                         .page {
-                            width: 100%;
-                            max-width: 210mm;
+                            width: 202mm;
+                            height: 287mm;
                             margin: 0 auto;
+                            overflow: hidden;
                             page-break-after: always;
+                            break-after: page;
                         }
-                        .page:last-child { page-break-after: avoid; }
+                        .page:last-of-type {
+                            page-break-after: auto;
+                            break-after: auto;
+                        }
                         @media print {
-                            body { margin: 0; }
-                            .page { page-break-after: always; }
-                            .page:last-child { page-break-after: avoid; }
+                            html, body { margin: 0; padding: 0; }
+                            .page {
+                                page-break-after: always;
+                                break-after: page;
+                            }
+                            .page:last-of-type {
+                                page-break-after: auto;
+                                break-after: auto;
+                            }
                         }
                     </style>
                 </head>

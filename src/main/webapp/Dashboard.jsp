@@ -21,7 +21,7 @@
   <link href="vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css">
   <link href="css/ruang-admin.min.css" rel="stylesheet">
   <link rel="stylesheet" href="css/main.css">
-  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>	
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>	
        
       <script>
     
@@ -104,17 +104,17 @@
   <a class="scroll-to-top rounded" href="#page-top">
     <i class="fas fa-angle-up"></i>
   </a>
-  <script src="js/config.js"></script>
-  <script src="vendor/jquery/jquery.min.js"></script>
-  <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
-  <script src="vendor/jquery-easing/jquery.easing.min.js"></script>
-  <script src="js/ruang-admin.min.js"></script>
-  <script src="vendor/chart.js/Chart.min.js"></script>
-  <script src="js/demo/chart-area-demo.js"></script>  
-  <script src="js/username.js"></script>
+    <script src="js/config.js"></script>
+    <script src="vendor/jquery/jquery.min.js"></script>
+    <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src="vendor/jquery-easing/jquery.easing.min.js"></script>
+    <script src="js/ruang-admin.min.js"></script>
+    <script src="vendor/chart.js/Chart.min.js"></script>
+    <script src="js/demo/chart-area-demo.js"></script>  
+    <script src="js/username.js"></script>
  
-<script src="js/logout.js"></script>
- <script src="js/Sessionfilter.js"></script>
+  <script src="js/logout.js"></script>
+   <script src="js/Sessionfilter.js"></script>
  <script>
         $(document).ready(function() {
             console.log("jQuery is loaded!");

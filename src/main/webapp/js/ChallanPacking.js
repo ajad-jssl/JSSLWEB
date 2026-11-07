@@ -14,6 +14,28 @@ document.getElementById("modalScroll1").addEventListener("click", function () {
 	$('#exampleModalScrollable123').modal('show');
 });
 
+
+function initSelect2(selectId, placeholder) {
+    const $el = $('#' + selectId);
+    if (!$el.length) return;
+    if ($el.hasClass('select2-hidden-accessible')) $el.select2('destroy');
+    const $modal = $el.closest('.modal');
+    $el.select2({
+        dropdownParent: $modal.length ? $modal : $(document.body),
+        width: '100%',
+        placeholder: placeholder,
+        allowClear: false,
+        minimumResultsForSearch: 0   // always show the search box
+    });
+}
+
+function setFieldError(errId, message) {
+    const el = document.getElementById(errId);
+    if (!el) return;
+    el.innerText = message || "";
+    el.style.display = message ? "inline-block" : "none";
+}
+
 let rowCount = 0; // Counter to keep track of dynamic row IDs
 
 
@@ -245,6 +267,8 @@ async function fetchuom(rowId) {
                 uomSelect.appendChild(option);
             }
         });
+		
+		initSelect2(`uom-${rowId}`, 'Select UOM');
     } catch (error) {
         console.error("Error fetching UOM data:", error);
     }
@@ -293,6 +317,8 @@ async function fetctype(rowId) {
                 typeSelect.appendChild(option);
             }
         });
+		
+		initSelect2(`type-${rowId}`, 'Select Type');
     } catch (error) {
         console.error("Error fetching Type data:", error);
     }
@@ -309,37 +335,30 @@ document.addEventListener("DOMContentLoaded", function() {
     }
 });
 
-async function fetchinvoicetype() {
+/*async function fetchinvoicetype() {
     try {
-        // Construct the API URL properly
         const url = new URL(`/jssl/master/listinvoicetypenew`, baseUrl1);
-
         const selectedFactoryId = sessionStorage.getItem("selectedFactoryId");
 
-        // Fetch data from API
         const response = await fetch(url, {
             method: "GET",
-            credentials: "include"   // ✅ Always send JSESSIONID cookie
+            credentials: "include"
         });
         if (!response.ok) throw new Error("Failed to fetch invoicetype");
 
         const json = await response.json();
 
-        // Check if the API response has valid data
         if (json.status !== "yes" || !json.INVOICE_TYPE_LIST.length) {
             console.warn("No invoicetype found.");
             return;
         }
 
-        // Get the select element for invoice types
         const selectElement = document.getElementById("invoice");
 
-        // Clear existing options
         selectElement.innerHTML = `<option value="">Select invoicetype</option>`;
 
-        // Populate dropdown options
         json.INVOICE_TYPE_LIST.forEach((invoicetype) => {
-            if (invoicetype.type_no && invoicetype.type && invoicetype.type !== "SCRAP" ) { // Ensure both values exist
+            if (invoicetype.type_no && invoicetype.type && invoicetype.type !== "SCRAP") {
                 const option = document.createElement("option");
                 option.value = invoicetype.type_no;
                 option.textContent = invoicetype.type;
@@ -347,9 +366,11 @@ async function fetchinvoicetype() {
             }
         });
 
-        // Add event listener for selection change
-        selectElement.addEventListener("change", function () {
-            const selectedinvoicetype = selectElement.value;
+        // Use onchange (not addEventListener) so the handler is never added twice
+        selectElement.onchange = function () {
+            const selectedOption = selectElement.options[selectElement.selectedIndex];
+            const selectedText = selectedOption ? selectedOption.text.trim().toUpperCase() : "";
+
             const contractsel = document.getElementById("cont");
             const mileSelect = document.getElementById("mile");
 
@@ -357,19 +378,66 @@ async function fetchinvoicetype() {
             contractsel.innerHTML = '<option value="">Select Contract</option>';
             mileSelect.innerHTML = '<option value="">Select Milestone</option>';
 
-            // If invoice type is 1 → load contracts, otherwise leave blank
-            if (selectedinvoicetype == "1") {
+            // Steel and Jobwork both load contracts
+            const loadsContracts = ["STEEL", "JOBWORK", "JOB WORK"];
+            if (loadsContracts.includes(selectedText)) {
                 fetchcont(selectedFactoryId);
+            }
+        };
+
+    } catch (error) {
+        console.error("Error fetching invoice types:", error);
+    }
+}*/
+
+
+async function fetchinvoicetype() {
+    try {
+        const url = new URL(`/jssl/master/listinvoicetypenew`, baseUrl1);
+        const selectedFactoryId = sessionStorage.getItem("selectedFactoryId");
+
+        const response = await fetch(url, { method: "GET", credentials: "include" });
+        if (!response.ok) throw new Error("Failed to fetch invoicetype");
+        const json = await response.json();
+
+        if (json.status !== "yes" || !json.INVOICE_TYPE_LIST.length) {
+            console.warn("No invoicetype found.");
+            return;
+        }
+
+        const selectElement = document.getElementById("invoice");
+        selectElement.innerHTML = `<option value="">Select invoicetype</option>`;
+
+        json.INVOICE_TYPE_LIST.forEach((invoicetype) => {
+            if (invoicetype.type_no && invoicetype.type && invoicetype.type !== "SCRAP") {
+                const option = document.createElement("option");
+                option.value = invoicetype.type_no;
+                option.textContent = invoicetype.type;
+                selectElement.appendChild(option);
             }
         });
 
+        initSelect2('invoice', 'Select invoicetype');
+
+        $('#invoice').off('change.inv').on('change.inv', function () {
+            const selectedText = ($('#invoice option:selected').text() || "").trim().toUpperCase();
+
+            $('#cont').html('<option value="">Select Contract</option>');
+            $('#mile').html('<option value="">Select Milestone</option>');
+            initSelect2('cont', 'Select contractor');
+            initSelect2('mile', 'Select milestone');
+
+            if (["STEEL", "JOBWORK", "JOB WORK"].includes(selectedText)) {
+                fetchcont(selectedFactoryId);
+            }
+        });
     } catch (error) {
         console.error("Error fetching invoice types:", error);
     }
 }
 
 // Fetching the dropdown list for contractors
-async function fetchcont(factoryId) {
+/*async function fetchcont(factoryId) {
     try {
         // Construct the API URL properly
         const url = new URL(`/jssl/getlistassignedmilestonetocontractors`, baseUrl);
@@ -475,6 +543,79 @@ async function fetchmile(factoryId, contractId) {
             }
         });
 
+    } catch (error) {
+        console.error("Error fetching milestones:", error);
+    }
+}*/
+
+
+
+async function fetchcont(factoryId) {
+    try {
+        const url = new URL(`/jssl/getlistassignedmilestonetocontractors`, baseUrl);
+        url.searchParams.append("factory_id", factoryId);
+
+        const response = await fetch(url, { method: "GET", credentials: "include" });
+        if (!response.ok) throw new Error("Failed to fetch contractors");
+        const json = await response.json();
+
+        const selectElement = document.getElementById("cont");
+        selectElement.innerHTML = `<option value="">Select contractor</option>`;
+
+        if (json.status === "yes" && json.DATA.length) {
+            json.DATA.forEach((contractor) => {
+                if (contractor.contract_id && contractor.contract_name) {
+                    const option = document.createElement("option");
+                    option.value = contractor.contract_id;
+                    option.textContent = contractor.contract_name;
+                    selectElement.appendChild(option);
+                }
+            });
+        }
+
+        initSelect2('cont', 'Select contractor');
+
+        $('#cont').off('change.cont').on('change.cont', function () {
+            const selectedContractId = this.value;
+            if (selectedContractId) {
+                fetchmile(factoryId, selectedContractId);
+            } else {
+                $('#mile').html(`<option value="">Select milestone</option>`);
+                initSelect2('mile', 'Select milestone');
+                $('#mile').val('').trigger('change');
+            }
+        });
+    } catch (error) {
+        console.error("Error fetching contractors:", error);
+    }
+}
+
+async function fetchmile(factoryId, contractId) {
+    try {
+        const url = new URL(`/jssl/listassignmilestoneforcontractornew`, baseUrl);
+        url.searchParams.append("factory_id", factoryId);
+        url.searchParams.append("contract_id", contractId);
+
+        const response = await fetch(url, { method: "GET", credentials: "include" });
+        if (!response.ok) throw new Error("Failed to fetch milestones");
+        const json = await response.json();
+
+        const selectElement = document.getElementById("mile");
+        selectElement.innerHTML = `<option value="">Select milestone</option>`;
+
+        if (json.status === "yes" && json.DATA.length) {
+            json.DATA.forEach((milestone) => {
+                if (milestone.milestone_id) {
+                    const option = document.createElement("option");
+                    option.value = milestone.milestone_id;
+                    option.textContent = milestone.milestone_name;
+                    selectElement.appendChild(option);
+                }
+            });
+        }
+
+        initSelect2('mile', 'Select milestone');
+        $('#mile').val('').trigger('change');   // reset selection and hide the details section
     } catch (error) {
         console.error("Error fetching milestones:", error);
     }
@@ -675,7 +816,7 @@ function fetchUserList(selectedFactoryId) {
 
 
 // Adding event listener for "Load" dropdown selection change
-document.getElementById('mile').addEventListener('change', function() {
+/*document.getElementById('mile').addEventListener('change', function() {
     const loadValue = this.value;  // Get the selected value of the "Load" dropdown
 
     const inputFieldsContainer = document.getElementById("inputFieldsContainer");
@@ -687,9 +828,16 @@ document.getElementById('mile').addEventListener('change', function() {
         // If no load is selected, hide the "inputFieldsContainer"
         inputFieldsContainer.style.display = "none";
     }
+});*/
+
+
+
+$('#mile').on('change', function () {
+    document.getElementById("inputFieldsContainer").style.display =
+        this.value ? "block" : "none";
 });
 
-function openModalAdd() {
+/*function openModalAdd() {
    // const freig = document.getElementById('freig').value.trim();
     const file = document.getElementById('file').value.trim();
 	const transportname = document.getElementById('transname').value.trim();
@@ -796,7 +944,7 @@ function openModalAdd() {
     });
 
     // Pieces Validation
-    /*let piecesValid = true;
+    let piecesValid = true;
     document.querySelectorAll(".dynamic-row").forEach(function (row) {
         const pieces = row.querySelector('input[id^="pice-"]').value.trim();
         if (pieces === '' || isNaN(pieces) || pieces <= 0) {
@@ -807,12 +955,58 @@ function openModalAdd() {
             row.querySelector('.pieces-error').innerText = "";
             row.querySelector('.pieces-error').style.display = "none";
         }
-    });*/
+    });
 
     if (showError || !uomValid || !typeValid || !qtyValid || !kgValid || !unitPriceValid) {
         return;
     }
 
+    $('#exampleModalCenter66').modal('show');
+}*/
+
+function openModalAdd() {
+    let showError = false;
+
+    function required(id, errId, msg) {
+        if (String($('#' + id).val() || '').trim() === '') {
+            setFieldError(errId, msg); showError = true;
+        } else setFieldError(errId, '');
+    }
+
+    required('invoice', 'invoiceError', 'Please select Invoice Type.');
+    const invType = ($('#invoice option:selected').text() || '').trim().toUpperCase();
+    if (invType === 'GP') {                       // contractor/milestone are disabled for GP
+        setFieldError('contError', ''); setFieldError('mileError', '');
+    } else {
+        required('cont', 'contError', 'Please select Contractor.');
+        required('mile', 'mileError', 'Please select Milestone.');
+    }
+
+    required('transname', 'transportnameerror', 'Please enter Transport Name.');
+    required('vehino',    'vehiclenoerror',     'Please enter Vehicle No.');
+    required('file',      'fileerror',          'Please select a file.');
+
+    function rowError(row, sel, msg, bad) {
+        const el = row.querySelector(sel);
+        if (!el) return;
+        el.innerText = bad ? msg : "";
+        el.style.display = bad ? "inline-block" : "none";
+        if (bad) showError = true;
+    }
+    function badNum(input) {
+        const v = input.value.trim();
+        return v === '' || isNaN(v) || parseFloat(v) <= 0;
+    }
+
+    document.querySelectorAll("#dynamicRowsContainer .dynamic-row").forEach(function (row) {
+        rowError(row, '.uom-error',       'Please select UOM.',               row.querySelector('select[id^="uom-"]').value.trim() === '');
+        rowError(row, '.type-error',      'Please select Type.',              row.querySelector('select[id^="type-"]').value.trim() === '');
+        rowError(row, '.qty-error',       'Please enter a valid Quantity.',   badNum(row.querySelector('input[id^="qty-"]')));
+        rowError(row, '.kg-error',        'Please enter a valid Kg.',         badNum(row.querySelector('input[id^="kg-"]')));
+        rowError(row, '.unitprice-error', 'Please enter a valid Unit Price.', badNum(row.querySelector('input[id^="uniprice-"]')));
+    });
+
+    if (showError) return;
     $('#exampleModalCenter66').modal('show');
 }
 
@@ -840,7 +1034,8 @@ function addevent() {
     //const picesArray = [];
 
     // Loop over each row to collect values (assuming the rows have a class 'dynamic-row')
-    const rows = document.querySelectorAll('.dynamic-row');
+  //  const rows = document.querySelectorAll('.dynamic-row');
+	const rows = document.querySelectorAll('#dynamicRowsContainer .dynamic-row');   // was '.dynamic-row'
     console.warn(rows);
     rows.forEach(row => {
         const qty = row.querySelector('[id^="qty"]').value.trim();
@@ -894,7 +1089,7 @@ console.warn(uom)
     formData.append('grand_total', totalNo.value);
     formData.append('created_by', createdById);
     formData.append('factory_id', selectedFactoryId);
-	formData.append('gpid', GPno.value);
+	//formData.append('gpid', GPno.value);
     
     if (file) {
 		formData.append('filepath', file); // Correct key // Append file only if selected
@@ -1021,7 +1216,7 @@ function updateGrandTotal() {
 
 let newSlno = 0; // Set default SL No. to 0 instead of auto-incrementing
 
-function addRowEdit() {
+/*function addRowEdit() {
     const container = document.getElementById("dynamicRowsContaineredit");
     const rowIndex = container.children.length;
 
@@ -1077,7 +1272,86 @@ function addRowEdit() {
     `;
 
     container.appendChild(newRow);
+}*/
+
+
+
+function addRowEdit() {
+    const container = document.getElementById("dynamicRowsContaineredit");
+    const rowIndex = Date.now();
+
+    const newRow = document.createElement("div");
+    newRow.classList.add("form-row", "dynamic-row", "mb-2");
+    newRow.id = `row_new_${rowIndex}`;
+
+    newRow.innerHTML = `
+        <div class="form-group col-md-2">
+            <select class="form-control form-control-sm" id="uom_new_${rowIndex}">
+                ${uomOptionsHTML || `<option value="">Select UOM</option>`}
+            </select>
+            <div class="uom-error" style="color:red; display:none;"></div>
+        </div>
+
+        <div class="form-group col-md-1">
+            <input type="number" class="form-control form-control-sm text-right"
+                   id="qty_new_${rowIndex}" placeholder="Qty" min="0"
+                   onkeydown="return allowOnlyPositive(event)"
+                   oninput="calculateRowTotaledit(${rowIndex})">
+            <div class="qty-error" style="color:red; display:none;"></div>
+        </div>
+
+        <div class="form-group col-md-1">
+            <input type="number" class="form-control form-control-sm text-right"
+                   id="kg_new_${rowIndex}" placeholder="Kg" min="0" step="0.01"
+                   onkeydown="return allowOnlyPositive(event)"
+                   oninput="calculateRowTotaledit(${rowIndex})">
+            <div class="kg-error" style="color:red; display:none;"></div>
+        </div>
+
+        <div class="form-group col-md-2">
+            <input type="number" class="form-control form-control-sm text-right"
+                   id="unit_price_new_${rowIndex}" placeholder="Unit Price" min="0"
+                   onkeydown="return allowOnlyPositive(event)"
+                   oninput="calculateRowTotaledit(${rowIndex})">
+            <div class="unitprice-error" style="color:red; display:none;"></div>
+        </div>
+
+        <div class="form-group col-md-2">
+            <select class="form-control form-control-sm" id="type_new_${rowIndex}">
+                ${typeOptionsHTML || `<option value="">Select Type</option>`}
+            </select>
+            <div class="type-error" style="color:red; display:none;"></div>
+        </div>
+
+        <div class="form-group col-md-1">
+            <input type="number" class="form-control form-control-sm text-right"
+                   id="total_new_${rowIndex}" readonly>
+        </div>
+
+        <div class="form-group col-md-1 text-center">
+            <i class="bi bi-trash text-danger"
+               style="cursor:pointer; font-size:16px;"
+               onclick="deleteRow1('row_new_${rowIndex}')"
+               title="Delete"></i>
+        </div>
+    `;
+
+    container.appendChild(newRow);
+
+    initSelect2(`uom_new_${rowIndex}`, 'Select UOM');
+    initSelect2(`type_new_${rowIndex}`, 'Select Type');
 }
+
+function deleteRow1(rowId) {
+    const row = document.getElementById(rowId);
+    if (row) {
+        row.remove();
+        updateGrandTotal();
+    } else {
+        console.error("Row not found:", rowId);
+    }
+}
+
 
 function editRecord(pn_id) {
 				//  const allowed = window.allowedActions || [];
@@ -1128,7 +1402,7 @@ function editRecord(pn_id) {
                 newRow.className = "form-row dynamic-row mb-2";
                 newRow.id = `row_${index}`;
 
-                newRow.innerHTML = `
+              /*  newRow.innerHTML = `
                     <!-- UOM -->
                     <div class="form-group col-md-2">
                         <select class="form-control form-control-sm" id="uom_${index}">
@@ -1191,13 +1465,80 @@ function editRecord(pn_id) {
                            onclick="deleteRow(${index})"
                            title="Delete"></i>
                     </div>
-                `;
+                `;*/
+				
+				
+				newRow.innerHTML = `
+				    <div class="form-group col-md-2">
+				        <select class="form-control form-control-sm" id="uom_${index}">
+				            ${uomOptionsHTML || `<option value="">Select UOM</option>`}
+				        </select>
+				        <div class="uom-error" style="color:red; display:none;"></div>
+				    </div>
 
-                dynamicContainer.appendChild(newRow);
+				    <div class="form-group col-md-1">
+				        <input type="number" class="form-control form-control-sm text-right"
+				               id="qty_${index}" onkeydown="return allowOnlyPositive(event)"
+				               value="${parseFloat(record.qty || 0).toFixed(2)}"
+				               oninput="calculateRowTotalupdate(${index})">
+				        <div class="qty-error" style="color:red; display:none;"></div>
+				    </div>
+
+				    <div class="form-group col-md-1">
+				        <input type="number" class="form-control form-control-sm text-right"
+				               id="kg_${index}" onkeydown="return allowOnlyPositive(event)"
+				               value="${parseFloat(record.per_kgs || 0).toFixed(2)}"
+				               oninput="calculateRowTotalupdate(${index})">
+				        <div class="kg-error" style="color:red; display:none;"></div>
+				    </div>
+
+				    <div class="form-group col-md-2">
+				        <input type="number" class="form-control form-control-sm text-right"
+				               id="unit_price_${index}" onkeydown="return allowOnlyPositive(event)"
+				               value="${parseFloat(record.unit_price || 0).toFixed(2)}"
+				               oninput="calculateRowTotalupdate(${index})">
+				        <div class="unitprice-error" style="color:red; display:none;"></div>
+				    </div>
+
+				    <div class="form-group col-md-2">
+				        <select class="form-control form-control-sm" id="type_${index}">
+				            ${typeOptionsHTML || `<option value="">Select Type</option>`}
+				        </select>
+				        <div class="type-error" style="color:red; display:none;"></div>
+				    </div>
+
+				    <div class="form-group col-md-1">
+				        <input type="text" class="form-control form-control-sm text-right"
+				               id="total_${index}"
+				               value="${parseFloat(record.total || 0).toFixed(2)}" readonly>
+				    </div>
+
+				    <div class="form-group col-md-1" style="display:none;">
+				        <input type="text" id="slno_${index}" value="${record.slno}">
+				    </div>
+
+				    <div class="form-group col-md-1 text-center">
+				        <i class="bi bi-trash text-danger"
+				           style="cursor:pointer; font-size:18px;"
+				           onclick="deleteRow(${index})"
+				           title="Delete"></i>
+				    </div>
+				`;
+
+            /*    dynamicContainer.appendChild(newRow);
 
                 // Set UOM and Type dropdowns
                 document.getElementById(`uom_${index}`).value = record.uom_id || "";
-                document.getElementById(`type_${index}`).value = record.type_id || "";
+                document.getElementById(`type_${index}`).value = record.type_id || "";*/
+				
+				
+				dynamicContainer.appendChild(newRow);
+
+				document.getElementById(`uom_${index}`).value = record.uom_id || "";
+				document.getElementById(`type_${index}`).value = record.type_id || "";
+
+				initSelect2(`uom_${index}`, 'Select UOM');
+				initSelect2(`type_${index}`, 'Select Type');
             });
 
             /* ---------------- SHOW MODAL ---------------- */
@@ -1483,7 +1824,7 @@ async function fetchtypeEdit() {
 }
 
 // for validation please give 
-function openModalUpdate() {
+/*function openModalUpdate() {
     //var freigedit = document.getElementById('freigedit').value.trim();   var vehiedit = document.getElementById('vehiclenoerroredit').
     var vehiedit = document.getElementById("vehicleno").value.trim();
     var transedit = document.getElementById("transportname").value.trim();
@@ -1491,14 +1832,14 @@ function openModalUpdate() {
     var showError = false; // Initialize showError variable
 
     // Validate static fields
-    /*if (freigedit === '') {
+    if (freigedit === '') {
         document.getElementById('Freighterroredit').innerText = "Please Enter freight.";
         document.getElementById('Freighterroredit').style.display = "inline-block";
         showError = true;
     } else {
         document.getElementById('Freighterroredit').innerText = "";
         document.getElementById('Freighterroredit').style.display = "none";
-    }*/
+    }
     
     if (vehiedit === '') {
         document.getElementById('vehiclenoerroredit').innerText = "Please Enter vehicle no.";
@@ -1579,6 +1920,45 @@ function openModalUpdate() {
     if (!showError) {
         $('#exampleModalCenter66update').modal('show'); // Show the next modal (Ensure this modal exists)
     }
+}*/
+
+
+
+function openModalUpdate() {
+    let showError = false;
+
+    function required(id, errId, msg) {
+        if (String($('#' + id).val() || '').trim() === '') {
+            setFieldError(errId, msg); showError = true;
+        } else setFieldError(errId, '');
+    }
+
+    required('transportname', 'transportnameerroredit', 'Please enter Transport Name.');
+    required('vehicleno',     'vehiclenoerroredit',     'Please enter Vehicle No.');
+    required('fileedit',      'fileediterror',          'Please select new file.');
+
+    function rowError(row, sel, msg, bad) {
+        const el = row.querySelector(sel);
+        if (!el) return;
+        el.innerText = bad ? msg : "";
+        el.style.display = bad ? "inline-block" : "none";
+        if (bad) showError = true;
+    }
+    function badNum(input) {
+        const v = input.value.trim();
+        return v === '' || isNaN(v) || parseFloat(v) <= 0;
+    }
+
+    document.querySelectorAll("#dynamicRowsContaineredit .dynamic-row").forEach(function (row) {
+        rowError(row, '.uom-error',       'Please select UOM.',               row.querySelector("select[id^='uom_']").value.trim() === '');
+        rowError(row, '.type-error',      'Please select Type.',              row.querySelector("select[id^='type_']").value.trim() === '');
+        rowError(row, '.qty-error',       'Please enter a valid Quantity.',   badNum(row.querySelector("input[id^='qty_']")));
+        rowError(row, '.kg-error',        'Please enter a valid Kg.',         badNum(row.querySelector("input[id^='kg_']")));
+        rowError(row, '.unitprice-error', 'Please enter a valid Unit Price.', badNum(row.querySelector("input[id^='unit_price_']")));
+    });
+
+    if (showError) return;
+    $('#exampleModalCenter66update').modal('show');
 }
 
 function updateevent() {
@@ -1587,7 +1967,7 @@ function updateevent() {
     var formData = new FormData();
 
     /* -------------------- COLLECT DYNAMIC VALUES -------------------- */
-    function collectValues(prefix) {
+ /*   function collectValues(prefix) {
         const values = [];
         // New items
         document.querySelectorAll('[id^="' + prefix + '_new_"]').forEach(el => {
@@ -1598,8 +1978,22 @@ function updateevent() {
             if (el.value.trim() !== "") values.push(el.value.trim());
         });
         return values;
-    }
+    }*/
 
+	
+	function collectValues(prefix) {
+	    const scope = document.getElementById('dynamicRowsContaineredit');
+	    const values = [];
+	    scope.querySelectorAll('[id^="' + prefix + '_new_"]').forEach(el => {
+	        if (el.value.trim() !== "") values.push(el.value.trim());
+	    });
+	    scope.querySelectorAll('[id^="' + prefix + '_"]:not([id^="' + prefix + '_new_"])').forEach(el => {
+	        if (el.value.trim() !== "") values.push(el.value.trim());
+	    });
+	    return values;
+	}
+	
+	
     var qtyArr = collectValues('qty');
     var perKgsArr = collectValues('kg');
     var unitPriceArr = collectValues('unit_price');
@@ -1936,8 +2330,12 @@ $(document).ready(function () {
 					
 					
 					fetctype(index);
-					fetchuom(index).then(() => {
+				/*	fetchuom(index).then(() => {
 					    $(`#uom-${index}`).val(record.UM);
+					});*/
+					
+					fetchuom(index).then(() => {
+					    $(`#uom-${index}`).val(record.UM).trigger('change');
 					});
 					// Call the function to update grand total
 					calculateGrandTotal();
@@ -1950,4 +2348,42 @@ $(document).ready(function () {
 	            alert("Failed to load GP items.");
 	        });
 	
+	});
+	
+	
+	
+	function hideError(el) { el.innerText = ""; el.style.display = "none"; }
+
+	// Row dropdowns (UOM / Type): native change + Select2's own event
+	$(document).on('change select2:select', '.dynamic-row select', function () {
+	    if (String($(this).val() || '').trim() !== '') {
+	        $(this).closest('[class*="col-"]').find('.uom-error, .type-error').each(function () { hideError(this); });
+	    }
+	});
+
+	// Row numbers (Qty / Kg / Unit Price)
+	$(document).on('input change', '.dynamic-row input[type="number"]', function () {
+	    const v = this.value.trim();
+	    if (v !== '' && !isNaN(v) && parseFloat(v) > 0) {
+	        $(this).closest('[class*="col-"]').find('[class$="-error"]').each(function () { hideError(this); });
+	    }
+	});
+
+	// Header selects
+	const headerErrorMap = { invoice: 'invoiceError', cont: 'contError', mile: 'mileError' };
+	$(document).on('change select2:select', '#invoice, #cont, #mile', function () {
+	    if (String($(this).val() || '').trim() !== '') setFieldError(headerErrorMap[this.id], '');
+	});
+
+	// Text fields and files
+	$(document).on('input', '#transname',     () => setFieldError('transportnameerror', ''));
+	$(document).on('input', '#vehino',        () => setFieldError('vehiclenoerror', ''));
+	$(document).on('input', '#transportname', () => setFieldError('transportnameerroredit', ''));
+	$(document).on('input', '#vehicleno',     () => setFieldError('vehiclenoerroredit', ''));
+	$(document).on('change', '#file',     function () { if (this.value) setFieldError('fileerror', ''); });
+	$(document).on('change', '#fileedit', function () { if (this.value) setFieldError('fileediterror', ''); });
+
+	// Reset all messages when a modal closes
+	$('#exampleModalScrollable123, #exampleModalScrollable123update').on('hidden.bs.modal', function () {
+	    $(this).find('.error-message, [class$="-error"]').hide().text('');
 	});

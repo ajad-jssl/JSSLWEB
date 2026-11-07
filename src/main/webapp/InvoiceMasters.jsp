@@ -215,7 +215,7 @@
                   </div>
                 </div>
               </div> 
-                 <div class="card h-100" onclick="window.location.href='Gstmaster.jsp'">
+                 <!-- <div class="card h-100" onclick="window.location.href='Gstmaster.jsp'">
                 <div class="card-body">
                   <div class="row align-items-center">
                      <div class="col mr-2">
@@ -229,7 +229,7 @@
                  
                   </div>
                 </div>
-              </div>      
+              </div>       -->
                  <div class="card h-100" onclick="window.location.href='servicecode.jsp'">
                 <div class="card-body">
                   <div class="row align-items-center">
@@ -665,16 +665,16 @@
     <i class="fas fa-angle-up"></i>
   </a>
    
- <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="vendor/jquery/jquery.min.js"></script>
-  <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
-  <script src="vendor/jquery-easing/jquery.easing.min.js"></script>
-  <script src="js/config.js?v=<%=ver(application, "/js/config.js")%>"></script>
+   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="vendor/jquery/jquery.min.js"></script>
+    <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src="vendor/jquery-easing/jquery.easing.min.js"></script>
+    <script src="js/config.js?v=<%=ver(application, "/js/config.js")%>"></script>
  
-    <script src="js/newmaster.js?v=<%=ver(application, "/js/newmaster.js")%>"></script>
-  <script src="js/logout.js?v=<%=ver(application, "/js/logout.js")%>"></script>
-  <script src="js/username.js?v=<%=ver(application, "/js/username.js")%>"></script>
-   <script src="js/Sessionfilter.js?v=<%=ver(application, "/js/Sessionfilter.js")%>"></script>
+      <script src="js/newmaster.js?v=<%=ver(application, "/js/newmaster.js")%>"></script>
+    <script src="js/logout.js?v=<%=ver(application, "/js/logout.js")%>"></script>
+    <script src="js/username.js?v=<%=ver(application, "/js/username.js")%>"></script>
+     <script src="js/Sessionfilter.js?v=<%=ver(application, "/js/Sessionfilter.js")%>"></script>
 
   
 

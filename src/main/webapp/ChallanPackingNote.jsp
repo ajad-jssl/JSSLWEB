@@ -24,7 +24,8 @@
 <link href="css/ruang-admin.min.css" rel="stylesheet" />
 <link href="vendor/datatables/dataTables.bootstrap4.min.css"
 	rel="stylesheet">
-
+   <link rel="stylesheet"
+      href="externalLibrary/cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">
 
 <link rel="stylesheet"
 	href="externalLibrary/cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css" />
@@ -178,6 +179,15 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 	color: white;
 	padding: 4px 10px;
 }
+
+.select2-container .select2-selection--single {
+    height: calc(1.5em + 0.5rem + 2px) !important;
+    font-size: 0.875rem;
+    display: flex;
+    align-items: center;
+}
+.select2-container .select2-selection--single .select2-selection__arrow { height: 100% !important; }
+.select2-container--open { z-index: 1056 !important; }
 </style>
 
 <script type="text/javascript">
@@ -310,8 +320,9 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 												<label for="invoice"><b>Invoice Type:</b></label> <select
 													class="form-control form-control-sm" id="invoice">
 												</select>
+												<div id="invoiceError" class="error-message"></div>
 											</div>
-											<div class="form-group col-md-3">
+											<div class="form-group col-md-3" hidden=hidden>
 												<label for="saleOrderDate"><b>GP Number:</b></label> <select
 													class="form-control form-control-sm" id="GPno" disabled>
 												</select>
@@ -320,11 +331,13 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 												<label for="scrapSaleOrder"><b>Contractor:</b></label> <select
 													class="form-control form-control-sm" id="cont">
 												</select>
+												<div id="contError" class="error-message"></div>
 											</div>
 											<div class="form-group col-md-3">
 												<label for="saleOrderDate"><b>Milestone:</b></label> <select
 													class="form-control form-control-sm" id="mile">
 												</select>
+												<div id="mileError" class="error-message"></div>
 											</div>
 											<!--  <div class="form-group col-md-4">
         <label for="totalSteelQty"><b>Load:</b></label>
@@ -782,85 +795,58 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 
 
 
-	<script>
-		document
-				.getElementById("search")
-				.addEventListener(
-						"click",
-						function() {
-							document.getElementById("inputFieldsContainer").style.display = "block";
-						});
-	</script>
+	
 
 
 
-	<script src="vendor/jquery/jquery.min.js"></script>
-	<script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
-	<script src="vendor/jquery-easing/jquery.easing.min.js"></script>
+	  <script src="vendor/jquery/jquery.min.js"></script>
+	  <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+	  <script src="vendor/jquery-easing/jquery.easing.min.js"></script>
 
-	<script src="vendor/datatables/jquery.dataTables.min.js"></script>
-	<script src="vendor/datatables/dataTables.bootstrap4.min.js"></script>
-	<script src="js/config.js?v=<%=ver(application, "/js/config.js")%>"></script>
+	  <script src="vendor/datatables/jquery.dataTables.min.js"></script>
+	  <script src="vendor/datatables/dataTables.bootstrap4.min.js"></script>
+	  <script src="js/config.js?v=<%=ver(application, "/js/config.js")%>"></script>
 
 
 
 
-	<script
-		src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
-	<script
-		src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-	<script
-		src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
-	<script
-		src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
-	<script
-		src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
-	<script
-		src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
+	  <script src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
+	  <script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+	  <script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
+	  <script src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
+	  <script src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
+	  <script src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
+<script src="externalLibrary/cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
 
 
-
-	<script src="js/ChallanPacking.js?v=<%=ver(application, "/js/ChallanPacking.js")%>"></script>
-	<script src="js/logout.js?v=<%=ver(application, "/js/logout.js")%>"></script>
-	<script src="js/username.js?v=<%=ver(application, "/js/username.js")%>"></script>
-	<script src="js/createdby.js?v=<%=ver(application, "/js/createdby.js")%>"></script>
-	<script src="js/modifiedby.js?v=<%=ver(application, "/js/modifiedby.js")%>"></script>
-	<script src="js/factoryid.js?v=<%=ver(application, "/js/factoryid.js")%>"></script>
-	<script src="js/Sessionfilter.js?v=<%=ver(application, "/js/Sessionfilter.js")%>"></script>
+	  <script src="js/ChallanPacking.js?v=<%=ver(application, "/js/ChallanPacking.js")%>"></script>
+	  <script src="js/logout.js?v=<%=ver(application, "/js/logout.js")%>"></script>
+	  <script src="js/username.js?v=<%=ver(application, "/js/username.js")%>"></script>
+	  <script src="js/createdby.js?v=<%=ver(application, "/js/createdby.js")%>"></script>
+	  <script src="js/modifiedby.js?v=<%=ver(application, "/js/modifiedby.js")%>"></script>
+	  <script src="js/factoryid.js?v=<%=ver(application, "/js/factoryid.js")%>"></script>
+	  <script src="js/Sessionfilter.js?v=<%=ver(application, "/js/Sessionfilter.js")%>"></script>
 	<script>
 		window.actionElementMap = {};
 	</script>
-	<script src="js/permissions.js?v=<%=ver(application, "/js/permissions.js")%>"></script>
+	  <script src="js/permissions.js?v=<%=ver(application, "/js/permissions.js")%>"></script>
 
 	<script>
-		function allowOnlyPositive(e) {
-			// Block minus key (-)
-			if (e.key === '-' || e.keyCode === 189 || e.keyCode === 109) {
-				return false;
-			}
+	function allowOnlyPositive(e) {
+	    // Allow Ctrl/Cmd shortcuts (paste, copy, cut, select all, undo)
+	    if (e.ctrlKey || e.metaKey) return true;
 
-			// Allow navigation/editing keys
-			if ([ 'Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab' ]
-					.includes(e.key)) {
-				return true;
-			}
+	    // Allow navigation/editing keys
+	    const allowed = ['Backspace', 'Delete', 'Tab', 'Enter', 'ArrowLeft', 'ArrowRight', 'Home', 'End'];
+	    if (allowed.includes(e.key)) return true;
 
-			// Allow one decimal point only
-			if (e.key === '.') {
-				if (e.target.value.includes('.')) {
-					return false; // already has a decimal point
-				}
-				return true;
-			}
+	    // Allow digits and a decimal point
+	    if (/^[0-9.]$/.test(e.key)) return true;
 
-			// Allow digits
-			if (e.key >= '0' && e.key <= '9') {
-				return true;
-			}
-
-			return false;
-		}
+	    // Block everything else (-, +, e, letters)
+	    return false;
+	}
 	</script>
 
 

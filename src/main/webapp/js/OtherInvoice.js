@@ -58,6 +58,34 @@ function loadAllowedActions() {
         });
 }
 
+
+function s2(target, placeholder) {
+    const $el = (typeof target === 'string') ? $('#' + target) : $(target);
+    if (!$el.length) return;
+    if ($el.hasClass('select2-hidden-accessible')) $el.select2('destroy');
+    const $modal = $el.closest('.modal');
+    $el.select2({
+        dropdownParent: $modal.length ? $modal : $(document.body),
+        width: '100%',
+        placeholder: placeholder || $el.find('option:first').text(),
+        allowClear: false,
+        minimumResultsForSearch: 0       // always show the search box
+    });
+}
+
+// Select2 only fires jQuery events. This re-fires a native "change" so your existing
+// addEventListener("change") code keeps working: scrapType, uom, tax1add/2add/3add.
+$(document).on('select2:select select2:clear', 'select', function () {
+    this.dispatchEvent(new Event('change'));
+});
+
+// Use this when your code sets a value from JS and the Select2 display must update.
+function setS2(id, value) {
+    $('#' + id).val(value).trigger('change');
+}
+
+
+
 document.addEventListener("DOMContentLoaded", function() {
 	loadAllowedActions();
     const selectedFactoryId = sessionStorage.getItem("selectedFactoryId");
@@ -98,6 +126,7 @@ function fetchtaxadd3up() {
     fetchTaxData("tax3addupp", "tax13upp", "tax3valueupp");
 }
 
+
 async function fetchTaxData(selectId, taxPercentId, taxValueId) {
     try {
         const url = new URL(`/jssl/taxmasters/list`, baseUrl);
@@ -126,6 +155,8 @@ async function fetchTaxData(selectId, taxPercentId, taxValueId) {
                 selectElement.appendChild(option);
             }
         });
+		
+		s2(selectId, 'Select tax');  
 
         selectElement.addEventListener("change", () => {
             const selectedTaxId = selectElement.value;
@@ -134,13 +165,70 @@ async function fetchTaxData(selectId, taxPercentId, taxValueId) {
             const taxValue = ((taxPercent / 100) * totalAmount).toFixed(2);
 
             document.getElementById(taxPercentId).value = taxPercent;
-            document.getElementById(taxValueId).value = taxValue;
+            /*document.getElementById(taxValueId).value = taxValue;*/
+			calculateTaxes(
+					parseFloat(document.getElementById("bvaueup").value) || 0
+					);
 
+			preventDuplicateTaxUp();
             calculateGrandTotal();
         });
     } catch (error) {
         console.error("Error fetching tax data:", error);
     }
+}
+
+function calculateTaxes(total) {
+
+    let gstTotal = 0;
+
+    ["tax1addupp", "tax2addupp", "tax3addupp"].forEach((selectId, index) => {
+
+        const taxPercentId = `tax1${index + 1}upp`;
+        const taxValueId = `tax${index + 1}valueupp`;
+
+        const select = document.getElementById(selectId);
+        const taxName = select.options[select.selectedIndex]?.text?.toUpperCase() || "";
+
+        const taxPercent =
+            parseFloat(document.getElementById(taxPercentId).value) || 0;
+
+        // GST taxes calculated on Net Amount
+        if (!taxName.includes("TCS")) {
+            const taxValue = (total * taxPercent) / 100;
+
+            document.getElementById(taxValueId).value =
+                taxValue.toFixed(2);
+
+            gstTotal += taxValue;
+        }
+    });
+
+    // TCS Calculation
+    ["tax1addupp", "tax2addupp", "tax3addupp"].forEach((selectId, index) => {
+
+        const taxPercentId = `tax1${index + 1}upp`;
+        const taxValueId = `tax${index + 1}valueupp`;
+
+        const select = document.getElementById(selectId);
+        const taxName = select.options[select.selectedIndex]?.text?.toUpperCase() || "";
+
+        const taxPercent =
+            parseFloat(document.getElementById(taxPercentId).value) || 0;
+
+        // TCS = Net Amount + GST
+        if (taxName.includes("TCS")) {
+
+            const tcsBase = total + gstTotal;
+
+            const tcsValue = (tcsBase * taxPercent) / 100;
+
+            document.getElementById(taxValueId).value =
+                tcsValue.toFixed(2);
+        }
+    });
+
+    calculateGrandTotal();
 }
 
 function calculateGrandTotal() {
@@ -155,7 +243,7 @@ function calculateGrandTotal() {
 }
 
 // Fetch the load list based on factoryId and selected contractorId (con_id)
-async function fetchLoad(factoryId) {
+/*async function fetchLoad(factoryId) {
     try {
         const url = new URL(`/jssl/othersinvoice/getLoadListForTheContractor`, baseUrl1);
         url.searchParams.append("factory_id", factoryId);
@@ -184,6 +272,37 @@ async function fetchLoad(factoryId) {
                 selectElement.appendChild(option);
             }
         });
+    } catch (error) {
+        console.error("Error fetching loads:", error);
+    }
+}*/
+
+
+async function fetchLoad(factoryId) {
+    try {
+        const url = new URL(`/jssl/othersinvoice/getLoadListForTheContractor`, baseUrl1);
+        url.searchParams.append("factory_id", factoryId);
+        const response = await fetch(url, { method: "GET", credentials: "include" });
+        if (!response.ok) throw new Error("Failed to fetch loads");
+        const json = await response.json();
+
+        const selectElement = document.getElementById("load");
+        selectElement.innerHTML = `<option value="">Select load</option>`;
+
+        if (json.status === "yes" && json.DATA && json.DATA.length) {
+            json.DATA.forEach((type) => {
+                if (type.other_Pn_no) {
+                    const option = document.createElement("option");
+                    option.value = type.other_Pn_no;
+                    option.textContent = type.other_Pn_no;
+                    selectElement.appendChild(option);
+                }
+            });
+        } else {
+            console.warn("No loads found.");
+        }
+
+        s2('load', 'Select load');
     } catch (error) {
         console.error("Error fetching loads:", error);
     }
@@ -379,6 +498,9 @@ async function fetchQsPackingData(loadId) {
 
                 container.appendChild(div); // Append the new dynamic row
                 // 🔹 After loop, show the grand total in a textbox
+				
+				
+				div.querySelectorAll('.service-code-select, .hsn-code-select').forEach(el => s2(el));
                 const grandTotalBox = document.getElementById("grandTotal");
                 if (grandTotalBox) {
                     grandTotalBox.value = grandTotal.toFixed(2); // 2 decimals
@@ -465,22 +587,40 @@ async function fetchtaxadd1() {
                 selectElement.appendChild(option);
             }
         });
+		
+		s2('tax1addup', 'Select Tax');
 
         // Function to calculate and update tax value
-        function updateTaxValue() {
+    /*    function updateTaxValue() {
             const taxPer = parseFloat(taxInput.value) || 0;
             const totalNo = parseFloat(totalNoInput.value) || 0;
             const taxAmount = (totalNo * taxPer) / 100;
             taxValueInput.value = taxAmount.toFixed(2); // Show result with 2 decimal places
             updateTotalTax();
             updateGrandTotal();
-        }
+        }*/
+		function updateTaxValue() {
+		        const taxPer = parseFloat(taxInput.value) || 0;
+		     /*   const totalNo = parseFloat(totalNoInput.value) || 0;
+		        const taxAmount = (totalNo * taxPer) / 100;*/
+				const selectedOption = selectElement.options[selectElement.selectedIndex];
+				const taxName = (selectedOption.text || "").trim().toUpperCase();
+				const totalNo = parseFloat(totalNoInput.value) || 0;
+				const grandTotal = parseFloat(document.getElementById("grandTotalup").value) || 0;
+				// If TCS calculate on Grand Total else on Net Amount
+				const baseAmount = taxName.includes("TCS") ? grandTotal : totalNo;
+				const taxAmount = (baseAmount * taxPer) / 100;
+		        taxValueInput.value = taxAmount.toFixed(2); // Show result with 2 decimal places
+		        updateTotalTax();
+		        updateGrandTotal();
+		    }
 
         // Event listener to update tax percentage and value
         selectElement.addEventListener("change", function() {
             const selectedOption = selectElement.options[selectElement.selectedIndex];
             taxInput.value = selectedOption.dataset.taxPer || "";
             updateTaxValue(); // Update tax value immediately after selection
+			preventDuplicateTax();
         });
 
         // Recalculate tax value when totalNo changes
@@ -532,22 +672,41 @@ async function fetchtaxadd2() {
                 selectElement.appendChild(option);
             }
         });
+		
+		
+		s2('tax2addup', 'Select Tax');
 
         // Function to calculate and update tax value
-        function updateTaxValue() {
+    /*    function updateTaxValue() {
             const taxPer = parseFloat(taxInput.value) || 0;
             const totalNo = parseFloat(totalNoInput.value) || 0;
             const taxAmount = (totalNo * taxPer) / 100;
             taxValueInput.value = taxAmount.toFixed(2); // Show result with 2 decimal places
             updateTotalTax();
             updateGrandTotal();
-        }
+        }*/
+		function updateTaxValue() {
+				const taxPer = parseFloat(taxInput.value) || 0;
+				   /*   const totalNo = parseFloat(totalNoInput.value) || 0;
+				      const taxAmount = (totalNo * taxPer) / 100;*/
+					const selectedOption = selectElement.options[selectElement.selectedIndex];
+					const taxName = (selectedOption.text || "").trim().toUpperCase();
+					const totalNo = parseFloat(totalNoInput.value) || 0;
+					const grandTotal = parseFloat(document.getElementById("grandTotalup").value) || 0;
+					// If TCS calculate on Grand Total else on Net Amount
+					const baseAmount = taxName.includes("TCS") ? grandTotal : totalNo;
+					const taxAmount = (baseAmount * taxPer) / 100;
+				      taxValueInput.value = taxAmount.toFixed(2); // Show result with 2 decimal places
+				      updateTotalTax();
+				      updateGrandTotal();
+		    }
 
         // Event listener to update tax percentage and value
         selectElement.addEventListener("change", function() {
             const selectedOption = selectElement.options[selectElement.selectedIndex];
             taxInput.value = selectedOption.dataset.taxPer || "";
             updateTaxValue(); // Update tax value immediately after selection
+			preventDuplicateTax();
         });
 
         // Recalculate tax value when totalNo changes
@@ -597,20 +756,38 @@ async function fetchtaxadd3() {
                 selectElement.appendChild(option);
             }
         });
+		
+		s2('tax3addup', 'Select Tax');
 
         // Function to calculate and update tax value
-        function updateTaxValue() {
+      /*  function updateTaxValue() {
             const taxPer = parseFloat(taxInput.value) || 0;
             const totalNo = parseFloat(totalNoInput.value) || 0;
             const taxAmount = (totalNo * taxPer) / 100;
             taxValueInput.value = taxAmount.toFixed(2); // Show result with 2 decimal places
             updateTotalTax();
-        }
+        }*/
+		function updateTaxValue() {
+			const taxPer = parseFloat(taxInput.value) || 0;
+			   /*   const totalNo = parseFloat(totalNoInput.value) || 0;
+			      const taxAmount = (totalNo * taxPer) / 100;*/
+				const selectedOption = selectElement.options[selectElement.selectedIndex];
+				const taxName = (selectedOption.text || "").trim().toUpperCase();
+				const totalNo = parseFloat(totalNoInput.value) || 0;
+				const grandTotal = parseFloat(document.getElementById("grandTotalup").value) || 0;
+				// If TCS calculate on Grand Total else on Net Amount
+				const baseAmount = taxName.includes("TCS") ? grandTotal : totalNo;
+				const taxAmount = (baseAmount * taxPer) / 100;
+			      taxValueInput.value = taxAmount.toFixed(2); // Show result with 2 decimal places
+			      updateTotalTax();
+			      updateGrandTotal();
+		   }
 
         // Event listener to update tax percentage and value
         selectElement.addEventListener("change", function() {
             const selectedOption = selectElement.options[selectElement.selectedIndex];
             taxInput.value = selectedOption.dataset.taxPer || "";
+			preventDuplicateTax();
             updateTaxValue(); // Update tax value immediately after selection
             updateGrandTotal();
         });
@@ -623,13 +800,84 @@ async function fetchtaxadd3() {
     }
 }
 
+function preventDuplicateTax() {
+
+    const taxSelectIds = [
+        "tax1addup",
+        "tax2addup",
+        "tax3addup"
+    ];
+
+    const selectedTaxes = taxSelectIds
+        .map(id => document.getElementById(id))
+        .filter(select => select !== null)
+        .map(select => select.value)
+        .filter(value => value !== "");
+
+    taxSelectIds.forEach(id => {
+
+        const select = document.getElementById(id);
+
+        if (!select) return;
+
+        Array.from(select.options).forEach(option => {
+
+            if (option.value === "") return;
+
+            const selectedInOtherDropdown = selectedTaxes.includes(option.value) &&
+                select.value !== option.value;
+
+            option.disabled = selectedInOtherDropdown;
+        });
+    });
+}
+
+function preventDuplicateTaxUp() {
+
+const taxSelectIds = [
+    "tax1addupp",
+    "tax2addupp",
+    "tax3addupp"
+];
+
+const selectedTaxes = taxSelectIds
+    .map(id => document.getElementById(id))
+    .filter(select => select)
+    .map(select => select.value)
+    .filter(value => value !== "");
+
+taxSelectIds.forEach(id => {
+
+    const select = document.getElementById(id);
+
+    if (!select) return;
+
+    Array.from(select.options).forEach(option => {
+
+        if (option.value === "") return;
+
+        option.disabled =
+            selectedTaxes.includes(option.value) &&
+            select.value !== option.value;
+    });
+});
+
+}
+
 function updateTotalTax() {
     const tax1 = parseFloat(document.getElementById("tax1valueup").value) || 0;
     const tax2 = parseFloat(document.getElementById("tax2valueup").value) || 0;
-    const tax3 = parseFloat(document.getElementById("tax3addup").value) || 0;
+   // const tax3 = parseFloat(document.getElementById("tax3addup").value) || 0;
+   const tax3 = parseFloat(document.getElementById("tax3valueup").value) || 0;
     const totalTax = tax1 + tax2 + tax3;
 
     document.getElementById("totalTaxup").value = totalTax.toFixed(2); // Show result with 2 decimal places
+}
+
+function hasDuplicateTax(ids) {
+    const vals = ids.map(id => document.getElementById(id))
+        .filter(el => el).map(el => el.value).filter(v => v !== "");
+    return new Set(vals).size !== vals.length;
 }
 
 function updateGrandTotal() {
@@ -676,6 +924,9 @@ async function fetchinvoice() {
                 selectElement.appendChild(option);
             }
         });
+		
+		
+		s2('intype444', 'Select invoice type');
     } catch (error) {
         console.error("Error fetching sale order types:", error);
     }
@@ -718,6 +969,8 @@ async function fetchinvoice1() {
                 selectElement.appendChild(option);
             }
         });
+		
+		s2('intypeeditup', 'Select invoice type');
     } catch (error) {
         console.error("Error fetching sale order types:", error);
     }
@@ -759,6 +1012,8 @@ async function fetchSalebusunit() {
                 selectElement.appendChild(option);
             }
         });
+		
+		s2('inbusunit', 'Select business unit');
     } catch (error) {
         console.error("Error fetching sale order types:", error);
     }
@@ -801,6 +1056,8 @@ async function fetchinvoiceto() {
                 selectElement.appendChild(option);
             }
         });
+		
+		s2('ininto', 'Select invoice to');
     } catch (error) {
         console.error("Error fetching sale order types:", error);
     }
@@ -842,6 +1099,8 @@ async function fetchconname() {
                 selectElement.appendChild(option);
             }
         });
+		
+		s2('billing', 'Select consignee');
     } catch (error) {
         console.error("Error fetching sale order types:", error);
     }
@@ -883,6 +1142,9 @@ async function fetchShipping() {
                 selectElement.appendChild(option);
             }
         });
+		
+		
+		s2('shipmode', 'Select shipment mode');
     } catch (error) {
         console.error("Error fetching sale order types:", error);
     }
@@ -925,6 +1187,8 @@ async function fetchdelivery() {
                 selectElement.appendChild(option);
             }
         });
+		
+		s2('delivery', 'Select delivery condition');
     } catch (error) {
         console.error("Error fetching sale order types:", error);
     }
@@ -967,6 +1231,8 @@ async function fetchSalebank() {
                 selectElement.appendChild(option);
             }
         });
+		
+		s2('bank', 'Select bank');
     } catch (error) {
         console.error("Error fetching sale order types:", error);
     }
@@ -1009,6 +1275,9 @@ async function fetchSalework() {
                 selectElement.appendChild(option);
             }
         });
+		
+		
+		s2('work', 'Select work order');
     } catch (error) {
         console.error("Error fetching sale order types:", error);
     }
@@ -1051,6 +1320,8 @@ async function fetchorg1() {
                 selectElement.appendChild(option);
             }
         });
+		
+		s2('office', 'Select office');
     } catch (error) {
         console.error("Error fetching sale order types:", error);
     }
@@ -1092,6 +1363,9 @@ async function fetchexptitle() {
                 selectElement.appendChild(option);
             }
         });
+		
+		
+		s2('extitle', 'Select export title');
     } catch (error) {
         console.error("Error fetching sale order types:", error);
     }
@@ -1142,6 +1416,8 @@ async function fetchBgType1() {
                 selectElement.appendChild(option);
             }
         });
+		
+		s2('bgvaerifyup', 'Select BG type');
     } catch (error) {
         console.error("Error fetching sale order types:", error);
     }
@@ -1183,6 +1459,7 @@ async function fetchBgType() {
                 selectElement.appendChild(option);
             }
         });
+		s2('bg', 'Select BG type');
     } catch (error) {
         console.error("Error fetching sale order types:", error);
     }
@@ -1254,6 +1531,10 @@ const selectedFactoryId = sessionStorage.getItem('selectedFactoryId');
 console.log('selectedFactoryId:', selectedFactoryId);
 
 async function addevent() {
+	if (hasDuplicateTax(["tax1addup","tax2addup","tax3addup"])) {
+	    alert("Same tax cannot be selected more than once.");
+	    return;
+	}
     // Validate role code and role description
     const selectedloadid = document.getElementById("load").selectedOptions[0];
     const loadname = selectedloadid ? selectedloadid.textContent : '';
@@ -1346,8 +1627,15 @@ async function addevent() {
     });
 }
 
-function setInputValue(selector, value) {
+/*function setInputValue(selector, value) {
     $(selector).val(value ? value : ""); // Set value or empty string if undefined/null
+}*/
+
+
+function setInputValue(selector, value) {
+    const $el = $(selector);
+    $el.val(value ? value : "");
+    if ($el.hasClass('select2-hidden-accessible')) $el.trigger('change.select2'); // refresh display only
 }
 
 let currentFactoryIdOthersInvoice = null;
@@ -1571,6 +1859,8 @@ async function fetchSalebusunitEdit(targetId, selectedId, fallbackText, verified
     } else {
         selectElement.removeAttribute("disabled"); // reset in case it was disabled from a previous open
     }
+	
+	s2(targetId, 'Select Business Unit'); 
 }
 
 async function fetchinvoicetoEdit(targetId, selectedId, fallbackText) {
@@ -1595,6 +1885,8 @@ async function fetchinvoicetoEdit(targetId, selectedId, fallbackText) {
             selectElement.appendChild(option);
         }
     });
+	
+	s2(targetId, 'Select Invoice To'); 
 
     if (!matched && fallbackText) {
         const fallbackOption = document.createElement("option");
@@ -1625,6 +1917,8 @@ async function fetchSaleworkEdit(targetId, selectedId, fallbackText) {
         }
         selectElement.appendChild(option);
     });
+	
+	s2(targetId, 'Select workOrder'); 
 
     if (!matched && fallbackText) {
         const fallbackOption = document.createElement("option");
@@ -1657,6 +1951,8 @@ async function fetchconnameEdit(targetId, selectedId, fallbackText) {
             selectElement.appendChild(option);
         }
     });
+	
+	s2(targetId, 'Select consignee Address'); 
 
     if (!matched && fallbackText) {
         const fallbackOption = document.createElement("option");
@@ -1695,6 +1991,7 @@ async function editRecordInvoice(id) {
 
 			//fetchSalebusunitEdit("bunitvup", ContractMasterData.bid || (ContData.length > 0 ? ContData[0].business_unit_name : ""));
 			fetchSalebusunitEdit("bunitvup",invoiceData.business_Unit_id,ContData.length > 0 ? ContData[0].business_unit_name : "",ContData.length > 0 ? invoiceData[0].verified_status : undefined);
+			
 			document.getElementById("intypevup").value = invoiceData.invoice_type_calculation || "2";
 			//fetchinvoicetoEdit("intovup", ContractMasterData.invoice_to_id || (ContData.length > 0 ? ContData[0].invoice_to_id_value : ""));
 			fetchinvoicetoEdit("intovup",invoiceData.invoice_to_id,ContData.length > 0 ? ContData[0].invoice_to_id_value : "");
@@ -1791,6 +2088,7 @@ async function editRecordInvoice(id) {
         Object.keys(contractorFields).forEach(selector => {
             setInputValue(selector, invoiceData[contractorFields[selector]] || "");
         });
+		preventDuplicateTaxUp();   // ADD
 
         /*     Object.keys(TaxFields).forEach(selector => {
                  setInputValue(selector, invoiceData.length > 0 ? invoiceData[0][TaxFields[selector]] : "");
@@ -1866,6 +2164,8 @@ async function editRecordInvoice(id) {
 
             `);
         });
+		
+		$('.dynamic-row11uptest select').each(function () { s2(this); }); 
         var selectedTaxId1 = document.getElementById('tax11upp').value.trim();
         var selectedTaxId2 = document.getElementById('tax12upp').value.trim();
         var selectedTaxId3 = document.getElementById('tax13upp').value.trim();
@@ -1991,6 +2291,10 @@ async function saveOthersServiceHsnSelections() {
 }
 
 function addeventudate() {
+	if (hasDuplicateTax(["tax1addupp","tax2addupp","tax3addupp"])) {
+	    alert("Same tax cannot be selected more than once.");
+	    return;
+	}
     let slnoArr = [];
     let serviceCodeArr = [];
     let hsnCodeArr = [];
@@ -2155,6 +2459,7 @@ async function editRecord(id) {
 
         // Set values in form fields
         setInputValue("#remarkv", invoiceData.remarks);
+		setInputValue("#remarkvvei", invoiceData.gst_remarks);
         setInputValue("#datev", invoiceData.date_of_notification);
         setInputValue("#date1v", invoiceData.date_val);
         setInputValue("#dissuev", invoiceData.date_of_issue);
@@ -2701,1284 +3006,986 @@ function addeventrelease() {
     });
 }
 
-
 async function printRecord(id) {
-    //	const allowed = window.allowedActions || [];
-        if (!allowed.includes("Print")) {
-          alert(" You do not have permission to print.");
-          return;
-        }
-    
-    // Proceed with print logic here
-    console.log(" Printing record with ID:", id);
-showLoader();
-    // Your actual print logic here
+    if (!allowed.includes("Print")) {
+        alert("You do not have permission to print.");
+        return;
+    }
+
+    // ─── HELPER: Parse any date string/number into a Date object ──────────────
+    function toDateObj(val) {
+        if (!val) return null;
+        if (val instanceof Date) return isNaN(val) ? null : val;
+        if (typeof val === 'number') return new Date(val);
+
+        const s = String(val).trim();
+        if (/^\d{10,}$/.test(s)) return new Date(Number(s));          // epoch millis
+
+        // yyyy-MM-dd [HH:mm[:ss]]
+        let m = s.match(/^(\d{4})-(\d{2})-(\d{2})(?:[T\s](\d{2}):(\d{2})(?::(\d{2}))?)?/);
+        if (m) return new Date(+m[1], +m[2] - 1, +m[3], +(m[4] || 0), +(m[5] || 0), +(m[6] || 0));
+
+        // dd-MM-yyyy or dd/MM/yyyy [HH:mm[:ss]]
+        m = s.match(/^(\d{2})[-\/](\d{2})[-\/](\d{4})(?:[T\s](\d{2}):(\d{2})(?::(\d{2}))?)?/);
+        if (m) return new Date(+m[3], +m[2] - 1, +m[1], +(m[4] || 0), +(m[5] || 0), +(m[6] || 0));
+
+        const d = new Date(s);
+        return isNaN(d) ? null : d;
+    }
+
+    // dd-mm-yyyy
+    function formatDMY(val) {
+        const d = toDateObj(val);
+        if (!d) return val || '';
+        return String(d.getDate()).padStart(2, '0') + '-' +
+               String(d.getMonth() + 1).padStart(2, '0') + '-' +
+               d.getFullYear();
+    }
+
+    // dd-mm-yyyy HH:mm:ss
+    function formatDMYHMS(val) {
+        const d = toDateObj(val);
+        if (!d) return val || '';
+        return formatDMY(d) + ' ' +
+               String(d.getHours()).padStart(2, '0') + ':' +
+               String(d.getMinutes()).padStart(2, '0') + ':' +
+               String(d.getSeconds()).padStart(2, '0');
+    }
+
+    function formatAmount(value) {
+        if (!value && value !== 0) return '';
+        const num = parseFloat(String(value).replace(/,/g, ''));
+        if (isNaN(num)) return value;
+        return num.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function formatWeight(value) {
+        if (!value && value !== 0) return '';
+        const num = parseFloat(String(value).replace(/,/g, ''));
+        if (isNaN(num)) return value;
+        return num.toLocaleString('en-IN', { minimumFractionDigits: 3, maximumFractionDigits: 3 });
+    }
+
+    console.log("Printing record with ID:", id);
+    showLoader();
+
     try {
         const url = new URL(`/jssl/invoice/searchothersidnew?id=${id}`, baseUrl);
         const response = await fetch(url, {
             method: "GET",
-            credentials: "include"   // ✅ Always send JSESSIONID cookie
+            credentials: "include"   // always send JSESSIONID cookie
         });
         if (!response.ok) throw new Error("Failed to fetch data");
 
         const json = await response.json();
         const Invoice_Data = json.Invoice_Data;
-        const Contractor_Data = json.Contractor_Data;
         const QsPacking_Data = json.QsPacking_Data;
-        const tax = json.tax;
         const Grand_Total_value = json.Grand_Total_value;
 
-        const Grand_Total_tax = Grand_Total_value[0].Grand_Total_tax;
-        const Total_adv_tax_Taxable = Grand_Total_value[0].Total_adv_tax_Taxable;
-        const Tax_Final_total = Grand_Total_value[0].Tax_Final_total;
-        const PBC_Final_total = Grand_Total_value[0].PBC_Final_total;
+        const row = Invoice_Data?.[0] ?? {};
 
-        const invoiceno = Invoice_Data[0].invoice_no;
-        const lr_docketno = Invoice_Data[0].lr_docketno;
-        const date_val = Invoice_Data[0].date_val;
-        const factory_id = Invoice_Data[0].factory_id;
-		
-		const cancel = Invoice_Data[0].cancel;
+        const invoiceno = row.invoice_no;
+        const lr_docketno = row.lr_docketno;
+        const date_val = row.date_val;
+        const factory_id = row.factory_id;
+        const work_date = row.work_date;
+        const cancel = row.cancel;
 
-
-
-
+        // ─── Factory data ─────────────────────────────────────────────────────
         const url_factory = new URL(`/jssl/factory/getAllFactoryListSS`, baseUrl);
         const response_factory = await fetch(url_factory, {
             method: "GET",
-            credentials: "include"   // ✅ Always send JSESSIONID cookie
+            credentials: "include"
         });
-        if (!response_factory.ok) throw new Error("Failed to fetch data");
+        if (!response_factory.ok) throw new Error("Failed to fetch factory data");
         const factory_json = await response_factory.json();
 
         const factory_data_map = factory_json.FactoryDetails;
-        console.log("this the factory_data_map" + factory_data_map);
-
-
         const FactoryDataBasedById = factory_data_map.find(f => f.id === factory_id);
         const MumbaiAddress = factory_data_map.find(f => f.id === "4");
-        console.log(FactoryDataBasedById);
-        /*	console.log(factory_data_map);
-                   
-                   
-                   console.log(factory_json);*/
 
         const reg_addresss = MumbaiAddress.address;
+        const factory_Address = FactoryDataBasedById ? FactoryDataBasedById.address : '';
 
-        const factory_Address = FactoryDataBasedById.address;
-        const state_Code = FactoryDataBasedById.stateCode;
-        const Gst_Code = FactoryDataBasedById.gstNo;
+        // ─── Resolve Invoice To / Consignee / Work Order from master lists ────
+        // Same logic as the normal invoice print: prefer the master record matched by id,
+        // fall back to the values already present on the invoice row.
+        const CM = json.InvoiceContractMaster || {};
 
-        //const product_desc = json.Invoice_Data?.product_desc || ''; // Fix reference
+        const invList  = (typeof invoiceAddressList  !== 'undefined' && invoiceAddressList)  || [];
+        const conList  = (typeof consigneeAddressList !== 'undefined' && consigneeAddressList) || [];
+        const workList = (typeof workOrderList       !== 'undefined' && workOrderList)       || [];
 
-        const invoice_to_id_value = Invoice_Data[0].consignee_id_value;
-        /*    const tax_payable = Contractor_Data[0].tax_payable;*/
-        const tax_payable = Invoice_Data[0].tax_onpayable_rev;
-        const area_no = Invoice_Data[0].area_number;
-        const lot_no = Invoice_Data[0].lot_number;
-        const containter_no = Invoice_Data[0].container_name;
-        const epcgno = Invoice_Data[0].epcg_license;
-        const shipment_mode_id_value = Invoice_Data[0].shipment_mode_id_value;
-        const delivery_condition_id_value = Invoice_Data[0].delivery_condition_id_value;
-        const consignee_id_value = Invoice_Data[0].invoice_to_id_value;
-        const work_id_value = Invoice_Data[0].work_id_value;
-        const invoiceStateName = Invoice_Data[0].invoiceStateName;
-        const consigneeStateName = Invoice_Data[0].consigneestateName;
-        const invoiceStateCode = Invoice_Data[0].invoiceStateCode;
-        const consigneeStateCode = Invoice_Data[0].consigneestatecode;
-        const invoiceGstNo = Invoice_Data[0].invoiceGstNo;
-        const consigneeGstNo = Invoice_Data[0].consigneeGstNo;
-        const invoicePanNo = Invoice_Data[0].invoicePanNo;
-        const consigneePanNo = Invoice_Data[0].consigneePanNo;
-        const bankName = Invoice_Data[0].org_name;
-		
-		const productdesc = Invoice_Data[0].product_desc;
-		const supplyplace = Invoice_Data[0].supply_place;
+        const invoiceToId  = CM.invoice_to_id ?? row.invoice_to_id;
+        const consigneeId  = CM.consignee_id  ?? row.consignee_id;
+        const workId       = CM.work_id       ?? row.work_id;
 
-		// ✅ DYNAMIC: Business Unit details (from the "bu" alias in your query).
-		// business_unit_name actually comes back as a COMPOSITE string:
-		//   "<unit code> <company name> <full address>"
-		//   e.g. "JBU-8 JSW Severfield Structures Limited Flat No 05, 5th Floor, ..."
-		// So it has to be split into its 3 parts before printing — the "JBU-8" code
-		// is an internal reference only and should never appear on the invoice.
-		function parseBusinessUnitDetails(raw) {
-			const result = { code: '', name: (raw || '').trim(), address: '' };
-			if (!raw) return result;
+        const matchedInvoiceTo = invList.find(a => String(a.id) === String(invoiceToId));
+        const matchedConsignee = conList.find(c => String(c.id) === String(consigneeId));
+        const matchedWork      = workList.find(w => String(w.work_id) === String(workId));
 
-			let text = raw.trim();
+        // NOTE: fallback mapping kept exactly as the original Others code
+        // (Invoice To <- consignee_id_value, Consignee <- invoice_to_id_value).
+        // If those fields are crossed by mistake in the query, swap these two lines.
+        const resolvedInvoiceTo = matchedInvoiceTo ? matchedInvoiceTo.address : row.consignee_id_value;
+        const resolvedConsignee = matchedConsignee ? matchedConsignee.address : row.invoice_to_id_value;
 
-			// Strip a leading unit code like "JBU-8 " (letters + dash + digits)
-			const codeMatch = text.match(/^([A-Z]{2,6}-\d+)\s+(.*)$/);
-			if (codeMatch) {
-				result.code = codeMatch[1];
-				text = codeMatch[2].trim();
-			}
+        // Invoice To — district / pincode / state name / state code / GSTIN / PAN
+        const resolvedInvoiceDistrict  = matchedInvoiceTo ? matchedInvoiceTo.district   : row.invoiceDistrict;
+        const resolvedInvoicePinNo     = matchedInvoiceTo ? matchedInvoiceTo.pin_no     : row.invoicePinNo;
+        const resolvedInvoiceStateName = matchedInvoiceTo ? matchedInvoiceTo.state_name : row.invoiceStateName;
+        const resolvedInvoiceStateCode = matchedInvoiceTo ? matchedInvoiceTo.state_id   : row.invoiceStateCode;
+        const resolvedInvoiceGstNo     = matchedInvoiceTo ? matchedInvoiceTo.gst_no     : row.invoiceGstNo;
+        const resolvedInvoicePanNo     = matchedInvoiceTo ? matchedInvoiceTo.pan_no     : row.invoicePanNo;
 
-			// The legal company name ends with "Limited" / "Ltd" / "LLP" / "Pvt Ltd" —
-			// everything after that word is treated as the unit's address.
-			const nameMatch = text.match(/^(.*?\b(?:Private\s+Limited|Pvt\.?\s*Ltd\.?|Limited|Ltd\.?|LLP))\b\s*(.*)$/i);
-			if (nameMatch) {
-				result.name = nameMatch[1].trim();
-				result.address = nameMatch[2].trim();
-			} else {
-				// No "Limited/Ltd/LLP" found — fall back to treating the whole
-				// remaining string as the name so we never print nothing.
-				result.name = text;
-			}
-			return result;
-		}
+        // Consignee — district / pincode / state name / state code / GSTIN / PAN
+        const resolvedConsigneeDistrict  = matchedConsignee ? matchedConsignee.district   : row.consigneeDistrict;
+        const resolvedConsigneePinNo     = matchedConsignee ? matchedConsignee.pin_no     : row.consigneePinNo;
+        const resolvedConsigneeStateName = matchedConsignee ? matchedConsignee.state_name : row.consigneestateName;
+        const resolvedConsigneeStateCode = matchedConsignee ? matchedConsignee.state_id   : row.consigneestatecode;
+        const resolvedConsigneeGstNo     = matchedConsignee ? matchedConsignee.gst_no     : row.consigneeGstNo;
+        const resolvedConsigneePanNo     = matchedConsignee ? matchedConsignee.pan_no     : row.consigneePanNo;
 
-		const businessUnitRaw    = Invoice_Data[0].business_unit_name || '';
-		const businessUnitParsed = parseBusinessUnitDetails(businessUnitRaw);
-		//const businessUnitCode    = businessUnitParsed.code;     // "JBU-8" — kept for reference/debugging, NOT printed
-		const businessUnitName   = businessUnitParsed.name;      // "JSW Severfield Structures Limited"
-		const businessUnitAddress = businessUnitParsed.address;  // "Flat No 05, 5th Floor, ... Moulali"
-		const businessUnitlocation   = Invoice_Data[0].location;    // e.g. "Telangana" — human-readable state name
+        const resolvedWork = matchedWork ? matchedWork.workorder_no : row.work_id_value;
 
-		// ✅ DYNAMIC: GSTIN / State / PAN must come from the business unit itself,
-		// not from the factory master — a business unit can be registered in a
-		// different state than the factory it's printing from (Telangana vs the
-		// factory's Karnataka in your example).
-		const businessUnitGstNo    = Invoice_Data[0].gst_number || '';   // bu.gst_number, e.g. "36AACCJ1473D1ZV"
-		const businessUnitPanNo    = Invoice_Data[0].pan_number || '';   // bu.pan_number
-		const businessUnitDistrict = Invoice_Data[0].district || '';    // bu.district, e.g. "Hyderabad"
-		const businessUnitPin      = Invoice_Data[0].pinNo || '';       // bu.pinNo
-		// added below already shows it separately either way.
-		const businessUnitStateName = Invoice_Data[0].state_id || '';
+        const invoice_to_id_value = resolvedInvoiceTo;
+        const consignee_id_value  = resolvedConsignee;
+        const work_id_value       = resolvedWork;
+        // ---- END resolution block ----
 
+        const tax_payable = row.tax_onpayable_rev;
+        const area_no = row.area_number;
+        const lot_no = row.lot_number;
+        const containter_no = row.container_name;
+        const epcgno = row.epcg_license;
+        const shipment_mode_id_value = row.shipment_mode_id_value;
+        const delivery_condition_id_value = row.delivery_condition_id_value;
+        const bankName = row.org_name;
 
-        const account_number = Invoice_Data[0].account_number;
-        const branch_address =  Invoice_Data[0].bank_details_id_value+' '+ Invoice_Data[0].branch_address;
-        const branch_code = Invoice_Data[0].branch_code;
-        const swift_code = Invoice_Data[0].swift_code;
-        const ifsc_code = Invoice_Data[0].ifsc_code;
+        const productdesc = row.product_desc;
+        const supplyplace = row.supply_place;
 
+        // ─── Business Unit details (composite string split into parts) ────────
+        // business_unit_name comes back as "<unit code> <company name> <full address>"
+        // e.g. "JBU-8 JSW Severfield Structures Limited Flat No 05, 5th Floor, ..."
+        // The "JBU-8" code is internal only and must never print on the invoice.
+        function parseBusinessUnitDetails(raw) {
+            const result = { code: '', name: (raw || '').trim(), address: '' };
+            if (!raw) return result;
 
+            let text = raw.trim();
+
+            const codeMatch = text.match(/^([A-Z]{2,6}-\d+)\s+(.*)$/);
+            if (codeMatch) {
+                result.code = codeMatch[1];
+                text = codeMatch[2].trim();
+            }
+
+            const nameMatch = text.match(/^(.*?\b(?:Private\s+Limited|Pvt\.?\s*Ltd\.?|Limited|Ltd\.?|LLP))\b\s*(.*)$/i);
+            if (nameMatch) {
+                result.name = nameMatch[1].trim();
+                result.address = nameMatch[2].trim();
+            } else {
+                result.name = text;
+            }
+            return result;
+        }
+
+        const businessUnitParsed = parseBusinessUnitDetails(row.business_unit_name || '');
+        const businessUnitName = businessUnitParsed.name;
+        const businessUnitAddress = businessUnitParsed.address;
+        const businessUnitlocation = row.location;
+
+        // GSTIN / State / PAN come from the business unit itself, not the factory master
+        const businessUnitGstNo = row.gst_number || '';
+        const businessUnitPanNo = row.pan_number || '';
+        const businessUnitDistrict = row.district || '';
+        const businessUnitPin = row.pinNo || '';
+        const businessUnitStateName = row.state_id || '';
+
+        // ─── Bank ─────────────────────────────────────────────────────────────
+        const account_number = row.account_number;
+        const branch_address = row.bank_details_id_value + ' ' + row.branch_address;
+        const branch_code = row.branch_code;
+        const swift_code = row.swift_code;
+        const ifsc_code = row.ifsc_code;
+
+        // ─── Transport / totals ───────────────────────────────────────────────
         const transport_name = QsPacking_Data[0].transporterName;
         const vechile_no = QsPacking_Data[0].vechileNo;
-        const con_code_with_lot_no = Invoice_Data[0].con_id + "-" + Invoice_Data[0].load_id;
-
+        const con_code_with_lot_no = row.con_id + "-" + row.load_id;
 
         const freight = QsPacking_Data[0].freight;
-        /* const total_pices = tax[0].total_pices;*/
         const total_kgs = QsPacking_Data[0].total_kgs;
         const total_qty = QsPacking_Data[0].total_qty;
         const basic_value = QsPacking_Data[0].totalpnAmount;
 
-
-        const tax1_name = Invoice_Data[0].tax_1 ?? " ";
-        const tax2_name = Invoice_Data[0].tax_2 ?? " ";
-        const tax3_name = Invoice_Data[0].tax_3 ?? " ";
-
-
-
-        const row = Invoice_Data?.[0] ?? {};
+        // ─── Tax ──────────────────────────────────────────────────────────────
+        const tax1_name = row.tax_1 ?? " ";
+        const tax2_name = row.tax_2 ?? " ";
+        const tax3_name = row.tax_3 ?? " ";
 
         const tax1_value = row.tax1_per ? row.tax1_per + "%" : " ";
         const tax2_value = row.tax2_per ? row.tax2_per + "%" : " ";
         const tax3_value = row.tax3_per ? row.tax3_per + "%" : " ";
-       const tax4_data = Grand_Total_value[0].GrandTotalInWords ;
+        const tax4_data = Grand_Total_value[0].GrandTotalInWords;
 
-        const formatTax = (val) =>
-            val == null || val === "0.00" ? " " : val;
+        const formatTax = (val) => (val == null || val === "0.00" ? " " : val);
 
         const tax1_data = formatTax(row.tax1_value);
         const tax2_data = formatTax(row.tax2_value);
         const tax3_data = formatTax(row.tax3_value);
-		
-		
-		
-	
 
-		const formatWord = (val) => {
-		  if (!val) return "";
+        const formatWord = (val) => {
+            if (!val) return "";
+            const cleaned = val.replace(/\s+/g, " ").trim().toLowerCase();
+            if (cleaned === "zero rupees only" || cleaned === "rupees only") return "";
+            return val;
+        };
 
-		  const cleaned = val.replace(/\s+/g, " ").trim().toLowerCase();
+        const rows = Grand_Total_value?.[0] ?? {};
+        const tax1_word = formatWord(rows.GrandtaxInWords);
+        const tax2_word = formatWord(rows.Grandtax2InWords);
+        const tax3_word = formatWord(rows.Grandtax3InWords);
 
-		  if (
-		    cleaned === "zero rupees only" ||
-		    cleaned === "rupees only"
-		  ) {
-		    return "";
-		  }
+        // Show a tax line in the "in words" block only when that tax really exists:
+        // it has a name, a non-zero amount, and a real amount-in-words
+        // (blank / "Rupees Crore Rupees Only" placeholders are ignored).
+        const hasRealWords = (val) => {
+            if (!val) return false;
+            const cleaned = String(val).replace(/\s+/g, " ").trim().toLowerCase();
+            if (!cleaned) return false;
+            if (/^(zero\s+)?(rupees(\s+crore\s+rupees)?)(\s+only)?$/.test(cleaned)) return false;
+            if (cleaned === "zero rupees only") return false;
+            return true;
+        };
+        const hasRealTax = (name, amount, words) => {
+            const n = String(name == null ? '' : name).trim();
+            const a = parseFloat(String(amount == null ? '' : amount).replace(/,/g, ''));
+            return n !== '' && !isNaN(a) && a > 0 && hasRealWords(words);
+        };
 
-		  return val;
-		};
+        const showTax1 = hasRealTax(tax1_name, row.tax1_value, tax1_word);
+        const showTax2 = hasRealTax(tax2_name, row.tax2_value, tax2_word);
+        const showTax3 = hasRealTax(tax3_name, row.tax3_value, tax3_word);
 
-
-		const rows = Grand_Total_value?.[0] ?? {};
-
-		const tax1_word = formatWord(rows.GrandtaxInWords);
-		const tax2_word = formatWord(rows.Grandtax2InWords);
-		const tax3_word = formatWord(rows.Grandtax3InWords);
-		console.log("VALUE:", rows.Grandtax3InWords);
-			console.log("LENGTH:", rows.Grandtax3InWords?.length);
-			console.log("JSON:", JSON.stringify(rows.Grandtax3InWords));
-		
-
-const total_invoice_value = Invoice_Data[0].grand_total;
-
-
+        const total_invoice_value = row.grand_total;
 
         const items = json.QsPacking_Data || [];
-      /*  const taxData = json.tax || [];*/
-        const InvoiceData = json.Invoice_Data || [];
-        const grandTotalData = json.Grand_Total_value?.[0] || {};
-      /*  const grandTotalInWords = grandTotalData.GrandTotalInWords || '';
-        const grandTotalTax = grandTotalData.Grand_Total_tax || '';
-        const gstremarks = InvoiceData.gst_remarks || '';
-        const advremarks = 200 || '';
-        const advremarksnon = 400 || '';
-        const basicValue = 500 || '';
-        const basicValuecos = 600 || '';*/
 
-        // Generate dynamic rows based on QsPacking_Data
-        const maxRows = 9;// 👈 adjust invoice height here
+        // GST remarks: hide empty values and the ".." placeholder
+        const cleanRemarks = (val) => {
+            const text = (val == null ? '' : String(val)).trim();
+            return /^[.\s]*$/.test(text) ? '' : text;
+        };
+        const gstremarks = cleanRemarks(row.gst_remarks ?? row.gstRemarks);
+
+        // ─── Product rows ─────────────────────────────────────────────────────
+        const maxRows = 9;
         let tableRows = "";
 
-        // real product rows
         items.forEach((item, index) => {
             tableRows += `
-							   						   		        <tr class="product-row ">
-							   						   		            <td  colspan="1" style="text-align: right;">${index + 1}</td>
-							   						   		            <td colspan="4" class="desc-col descri">${item.scrapNameTypeId || ''}</td>
-																		<td colspan="1" style="text-align:right !important; white-space: nowrap; font-size: 9px;">${[item.scode, item.hsncode].filter(Boolean).join('/')}</td>
-							   						   		            <td colspan="1" style="text-align:left !important;">${item.uom_name || ''}</td>
-							   						   		            <td colspan="1" class="qtys">${item.quantities || ''}</td>
-							   						   		            <td colspan="2" class="weits">${item.kgs || ''}</td>
-							   						   		            <td colspan="1" class="prs">${item.unitPrice || ''}</td>
-							   						   		            <td  colspan="2" class="tols">${item.total || ''}</td>
-							   						   		        </tr>`;
+                <tr class="product-row ">
+                    <td colspan="1" style="text-align: right;">${index + 1}</td>
+                    <td colspan="4" class="desc-col descri">${item.scrapNameTypeId || ''}</td>
+                    <td colspan="1" style="text-align:right !important; white-space: nowrap; font-size: 9px;">${[item.scode, item.hsncode].filter(Boolean).join('/')}</td>
+                    <td colspan="1" style="text-align:left !important;">${item.uom_name || ''}</td>
+                    <td colspan="1" class="qtys">${item.quantities || ''}</td>
+                    <td colspan="2" class="weits">${formatWeight(item.kgs)}</td>
+                    <td colspan="1" class="prs">${formatAmount(item.unitPrice) || ''}</td>
+                    <td colspan="2" class="tols">${item.total || ''}</td>
+                </tr>`;
         });
 
-        // add empty rows to fill space
-		const emptyCount = Math.max(0, maxRows - items.length);
+        const emptyCount = Math.max(0, maxRows - items.length);
 
-				for (let i = 0; i < emptyCount; i++) {
+        for (let i = 0; i < emptyCount; i++) {
+            if (i === 1) {   // product description printed once, on the 2nd empty row
+                tableRows += `
+                    <tr class="empty-row">
+                        <td colspan="1">&nbsp;</td>
+                        <td colspan="4" style="font-weight:550;">${productdesc || ''}</td>
+                        <td colspan="1"></td>
+                        <td colspan="1"></td>
+                        <td colspan="1"></td>
+                        <td colspan="2"></td>
+                        <td colspan="1"></td>
+                        <td colspan="2"></td>
+                    </tr>`;
+            } else {
+                tableRows += `
+                    <tr class="empty-row">
+                        <td colspan="1">&nbsp;</td>
+                        <td colspan="4"></td>
+                        <td colspan="1"></td>
+                        <td colspan="1"></td>
+                        <td colspan="1"></td>
+                        <td colspan="2"></td>
+                        <td colspan="1"></td>
+                        <td colspan="2"></td>
+                    </tr>`;
+            }
+        }
 
-				    if (i === 1) { // 👈 only once (3rd empty row)
-				        tableRows += `
-				            <tr class="empty-row">
-				                <td colspan="1">&nbsp;</td>
-				                <td colspan="4" style="font-weight:550;">${productdesc || ''}</td>
-				                <td colspan="1"></td>
-				                <td colspan="1"></td>
-				                <td colspan="1"></td>
-				                <td colspan="2"></td>
-				                <td colspan="1"></td>
-				                <td colspan="2"></td>
-				            </tr>`;
-				    } else {
-				        tableRows += `
-				            <tr class="empty-row">
-				                <td colspan="1">&nbsp;</td>
-				                <td colspan="4"></td>
-				                <td colspan="1"></td>
-				                <td colspan="1"></td>
-				                <td colspan="1"></td>
-				                <td colspan="2"></td>
-				                <td colspan="1"></td>
-				                <td colspan="2"></td>
-				            </tr>`;
-				    }
-				}
+        // ─── Dates ────────────────────────────────────────────────────────────
+        const createdRaw = row.created_date || '';
+        const currentDate = formatDMY(createdRaw);
+        const formattedDateTime = formatDMYHMS(createdRaw);
 
-        const currentDate = new Date().toLocaleDateString('en-GB', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric'
-        }).replace(/\//g, '-'); // Replace '/' with '-'
-
-        console.log(currentDate); // Output: "21-02-2025" (DD-MM-YYYY)
-        const currentDate1 = new Date();
-        const formattedDateTime = String(currentDate1.getDate()).padStart(2, '0') + '-' +
-            String(currentDate1.getMonth() + 1).padStart(2, '0') + '-' +
-            currentDate1.getFullYear() + ' ' +
-            String(currentDate1.getHours()).padStart(2, '0') + ':' +
-            String(currentDate1.getMinutes()).padStart(2, '0') + ':' +
-            String(currentDate1.getSeconds()).padStart(2, '0');
-
-        // const htmlContent = await (await fetch('print-content.html')).text()
+        // ─── HTML template ────────────────────────────────────────────────────
         const htmlContent = `
-							   						   		    <style>
-							   						   		        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
-
-							   						   		        * {
-							   						   		            box-sizing: border-box;
-							   						   		        }
-																	.watermark {
-																									                   position: absolute;
-																									                   top: 50%;
-																									                   left: 50%;
-																									                   transform: translate(-50%, -50%) rotate(-45deg);
-																									                   font-size: 120px;
-																									                   font-weight: bold;
-																									                   opacity: 0.15;
-																									                   pointer-events: none;
-																									                   z-index: 9999;
-																									                   white-space: nowrap;
-																									                   letter-spacing: 10px;
-																									               }
-
-																									               .watermark.cancelled {
-																									                   color: #ff0000;
-																									               }
-
-																									               .watermark.verified {
-																									                   color: #4CAF50;
-																									               }
-
-																									               .page {
-																									                   position: relative;
-																									               }
-
-							   						   		        /* --- Global Reset --- */
-							   						   		        html, body {
-							   						   		            margin: 0;  /* FIXED: Removed top and left margins */
-							   						   		            padding: 0;
-							   						   		            font-family: "Times New Roman", Times, serif;
-							   						   		            color: black !important;
-							   						   		            background-color: #fff !important;
-							   						   		            font-size: 10px;
-							   						   		            line-height: 2;
-							   						   		        }
-
-							   						   		        /* --- Page Container --- */
-							   						   		        .page {
-							   						   		            width: 202mm;
-							   						   		             height: 297mm;   
-							   						   		            overflow: visible;
-							   						   		          /*  page-break-after: always;*/
-							   						   				  page-break-after: avoid !important;
-							   						   		            margin: 0;
-							   						   		            padding: 0;
-							   						   		        }
-
-							   						   		 
-							   						   				.page:last-child {
-							   						   				     page-break-after: avoid !important;
-							   						   				}
-
-							   						   		        /* --- Invoice Container --- */
-							   						   		        .invoice-container {
-							   						   		            width: 100%;
-							   						   		            height: auto;
-							   						   		            overflow: visible;
-							   						   		            -webkit-font-smoothing: antialiased;
-							   						   		            text-rendering: geometricPrecision;
-							   						   		            page-break-inside: avoid;
-							   						   		            margin: 0;
-							   						   		            padding: 1mm;  /* Add small padding instead of margins */
-							   						   		        }
-
-							   						   		        table {
-							   						   		            border-collapse: collapse;
-							   						   		            page-break-inside: avoid;
-							   						   		            width: 100%;
-							   						   		            margin: 0;
-							   						   		            padding: 0;
-							   						   		        }
-
-							   						   		        /* remove default borders */
-							   						   		        td, th {
-							   						   		            border: none;
-							   						   		        }
-
-							   						   		        /* draw grid using single lines */
-							   						   		        td, th {
-							   						   		            border-right: 0.5px solid #000;
-							   						   		            border-bottom: 0.5px solid #000;
-							   						   		            padding: 2px 4px;
-							   						   		            vertical-align: top;
-							   						   		            font-size: 10px;
-							   						   		            line-height: 1.05;
-							   						   		            word-wrap: break-word;
-							   						   		        }
-
-							   						   		        tr {
-							   						   		            page-break-inside: avoid;
-							   						   		        }
-
-							   						   		        /* top border only for first row */
-							   						   		        tr:first-child th {
-							   						   		            border-top: 0.5px solid #000;
-							   						   		        }
-
-							   						   		        /* left border only for first column */
-							   						   		        td:first-child,
-							   						   		        th:first-child {
-							   						   		            border-left: 0.5px solid #000;
-							   						   		        }
-
-							   						   		        .company-details-table {
-							   						   		            border-top: 0.5px solid #000 !important;
-							   						   		        }
-
-							   						   		        /* --- Header & Footer --- */
-							   						   		        .header, .footer {
-							   						   		            text-align: center;
-							   						   		            margin: 0;
-							   						   		            padding: 0;
-							   						   		        }
-
-							   						   		        .invoice-header {
-							   						   		            display: flex;
-							   						   		            justify-content: space-between;
-							   						   		            align-items: center;
-							   						   		            margin-bottom: 2mm;
-							   						   		        }
-
-							   						   		        .gst-text {
-							   						   		            font-size: 15px;
-							   						   		            font-weight:500;
-							   						   		            text-align: center;
-							   											margin-left:300px !important;
-							   						   		        }
-
-							   						   		        .copy-label {
-							   						   		            font-size: 12px;
-							   						   		            font-weight: normal;
-							   						   		        }
-
-							   						   		        /* --- Tables --- */
-							   						   		        table {
-							   						   		            border-collapse: collapse !important;
-							   						   		            table-layout: fixed;
-							   						   		        }
-
-							   						   		        td br, th br {
-							   						   		            display: block;
-							   						   		            margin: 0;
-							   						   		            line-height: 1;
-							   						   		        }
-
-							   						   		        .company-details-table td {
-							   						   		            padding: 4px;
-							   						   		            font-size: 11px !important;
-							   						   		        }
-
-							   						   		        /* --- Logo --- */
-							   						   		        .company-logo img {
-							   						   		            width: 60px;
-							   						   		            height: auto;
-							   						   		            display: block;
-							   						   		            margin-bottom: 2px;
-							   						   		        }
-
-							   						   		        .product-row td:nth-child(n+4) {
-							   						   		            text-align: right !important;
-							   						   		        }
-
-							   						   		        .product-row td,
-							   						   		        .empty-row td {
-							   						   		            height: 22px;
-							   						   		        }
-
-							   						   		        .empty-row td {
-							   						   		            border-top: none !important;
-							   						   		            border-bottom: none !important;
-							   						   		        }
-
-							   						   		        .last-product td {
-							   						   		            border-bottom: none !important;
-							   						   		        }
-
-							   						   		        .product-table .desc-col {
-							   						   		            line-height: 1.5 !important;
-							   						   		            white-space: normal;
-							   						   		            word-break: break-word;
-							   						   		        }
-
-							   						   		        .product-table .fright-row .fright-data {
-							   						   		            line-height: 1.6 !important;
-							   						   		            padding: 5px !important;
-							   						   		        }
-
-							   						   		        .total-body .total-datatd {
-							   						   		            line-height: 1.6 !important;
-							   						   		            padding: 5px !important;
-							   						   		        }
-
-							   						   		        .total-body .total-datatds {
-							   						   		            line-height: 2.5 !important;
-							   						   		            text-align: right !important;
-							   						   		        }
-
-							   						   		        .desc-col.descri {
-							   						   		            font-size: 7px !important;
-							   						   		            padding: 1px !important;
-							   						   		        }
-
-							   						   		        .desc-col.tols {
-							   						   		            text-align: right !important;
-							   						   		        }
-
-							   						   		        .desc-col.prs {
-							   						   		            text-align: right !important;
-							   						   		        }
-
-							   						   		        .desc-col.weits {
-							   						   		            text-align: right !important;
-							   						   		        }
-
-							   						   		        .desc-col.qtys {
-							   						   		            text-align: right !important;
-							   						   		        }
-
-							   						   		        .product-table th,
-							   						   		        .product-table td {
-							   						   		            padding: 3px 5px;
-							   						   		            line-height: 1.2;
-							   						   		        }
-
-							   						   		        .product-row td {
-							   						   		            border-bottom: none;
-							   						   		        }
-
-							   						   		        .freight-vlaue {
-							   						   		            text-align: right !important;
-							   						   		        }
-
-							   						   		        .fright-row {
-							   						   		            border: 0.5px solid #000 !important;
-							   						   		        }
-
-							   						   		        .tax-row .tax-name {
-							   						   		            line-height: 0.8 !important;
-							   						   		            text-align: right !important;
-							   						   					padding:5px !important;
-							   						   		        }
-
-							   						   		        .tax-row .tax-per {
-							   						   		            text-align: right !important;
-							   						   		            vertical-align: middle !important;
-							   						   		        }
-
-							   						   		        .total-word .total-words-des {
-							   						   		            line-height: 1.2 !important;
-							   						   		            font-size: 8px !important;
-							   						   		            padding: 0 0 5px 5px !important;
-							   						   		        }
-
-							   						   		        .total-words-des.ss {
-							   						   		            vertical-align: middle !important;
-							   						   		        }
-
-							   						   		        .total-word .total-words-val {
-							   						   		            text-align: right !important;
-							   						   		            vertical-align: middle !important;
-							   						   		        }
-
-							   						   		        .particulars-row {
-							   						   		            line-height: 1 !important;
-							   						   		        }
-
-							   						   		        .particulars-row td {
-							   						   		            padding-top: 5px !important;
-							   						   		        }
-
-							   						   		        .particulars-row .particulars-row-prtd {
-							   						   		            font-size: 8px !important;
-							   						   		        }
-
-							   						   		        .particulars-row-body {
-							   						   		            padding-top: 5px !important;
-							   						   		        }
-
-							   						   		        .particulars-row-body .particulars-row-body-td {
-							   						   		            text-align: right !important;
-							   						   		            font-size: 8px !important;
-							   						   		        }
-
-							   						   		        .td-body-tax {
-							   						   		            text-align: right !important;
-							   						   		            line-height: 2 !important;
-							   						   		        }
-
-							   						   		        .Bank_details {
-							   						   		            line-height: 1.8 !important;
-							   						   		            font-size: 8px !important;
-							   						   		        }
-
-							   						   		        .last-data td {
-							   						   		            line-height: 1.5 !important;
-							   						   		            font-size: 9px !important;
-							   						   		            padding-top: 6px !important;
-							   						   		        }
-
-							   						   		        .last-data td:last-child {
-							   						   		            text-align: center !important;
-							   						   		            vertical-align: middle !important;
-							   						   		        }
-
-							   						   		        .last-data td:last-child span {
-							   						   		            display: block;
-							   						   		            text-align: center;
-							   						   		        }
-
-							   						   		        .footer {
-							   						   		            padding-top: 6px !important;
-							   						   		        }
-
-							   						   		        .invoice-line {
-							   						   		            display: flex;
-							   						   		            justify-content: space-between;
-							   						   		            width: 80%;
-							   						   		        }
-
-							   						   		        .fixed-8px td {
-							   						   		            font-size: 8px !important;
-							   						   		            line-height: 1.1 !important;
-							   						   		        }
-
-							   						   		        /* --- Terms & Footer --- */
-							   						   		        .terms {
-							   						   		            margin-top: 2mm;
-							   						   		        }
-
-							   						   		        .footer p {
-							   						   		            font-size: 9px;
-							   						   		            line-height: 1.2;
-							   						   		            margin: 0;
-							   						   		            padding: 0;
-							   						   		        }
-
-							   						   		        /* --- Text & Alignment --- */
-							   						   		        .header, .footer, .gst-text, .copy-label {
-							   						   		            text-align: center;
-							   						   		        }
-																	b{
-																		font-weigth:550px;
-																	}
-																	strong{
-																		font-weigth:550px;
-																	}
-							   						   		    </style>
-
-							   						   		    <div class="invoice-container">
-							   						   		        <div class="invoice-header">
-																	${cancel === 'true' ? `
-																																	           <div class="watermark cancelled">
-																																	               CANCELLED
-																																	           </div>
-																																	       ` : ''}
-							   						   		            
-							   						   		            <div class="gst-text">GST TAX INVOICE</div>
-							   						   		            <div class="gst-text1 copy-label">Original For Recipient</div>
-							   						   		        </div>
-							   						   		        
-							   						   		        <table class="company-details-table">
-							   						   		            <tr>
-							   						   		                <td colspan="6">
-							   						   		                    <div class="company-logo">
-							   						   		                        <img src="img/logo/download.png" alt="Company Logo" style="width:100px;">
-							   						   		                    </div>
-							   						   		                    <strong class="businessUnitName"></strong><br>
-							   						   		                   <p style="width :70%" class="facotry_address"> 
-							   						   		                   
-							   						   		                    <p>
-							   						   		                   <span class="businessUnitlocation"></span><br>
-							   						   		                   <span class="businessUnitDistrict"></span><br>
-							   						   		                   <span class="businessUnitPin"></span><br>
-																			   <b> State Code :</b> <span class="businessUnitStateName"> </span><br>
-							   						   		                   <b> GSTIN :</b> <span class="gst_code"> </span>    <b style="margin-left: 20px;">PAN </b>: <span class="pan_code"></span><br>
-							   						   		                  <b>  ICE No:</b> 0309033152   <b style="margin-left: 40px;">CIN No:</b> U28112MH2009PLC191045<br>
-							   						   		                    <b>Email:</b> invoice@jssl.in   <b style="margin-left: 30px;"> Website:</b> www.jssl.in
-							   						   		                </td>
-							   						   		                <td colspan="6">
-							   						   		                    <br>
-							   						   		                    <div class="invoice-line">
-							   						   		                        <div style="font-size:12px;"><b>Invoice No:  </b> <span class="invoiceNumber"></span></div>
-							   						   		                        <div><b>Date:</b> <span class="date"></span></div>
-							   						   		                    </div>
-							   						   		                    <br>
-							   						   		                    <b>Contract No Reference No:</b> <span class="contrefno"></span><br>
-							   						   		                 
-							   						   		                    <b>Date & Time of supply:</b> <span class="datetime"></span><br>
-							   						   		                    <br>
-							   						   		                    <b>Work/Purchase Order No:</b> <span class="workor"></span><br>
-							   						   		             
-							   						   		                    <b>Date of Order:</b> <span class="dateor"></span><br>
-							   						   		                </td>
-							   						   		            </tr>
-																		<tr>
-																						<td colspan="6" style="font-size:10px; line-height:1.4;">
-																						    
-																						    <b>
-																						        Invoice To :<br>
-
-																						        <span class="shipto11" style="text-transform:uppercase;"></span></b><br>
-																						        <span class="projectname"></span><br>
-																						   
-
-																						    <!-- Address (NOT bold) -->
-																						    <span class="fulladdress" style="white-space: pre-line;"></span><br>
-																							<b>Place of Supply : <span class="placeofsupply"></span></b><br><br>
-
-																						    <b>
-																						        Name of the State : <span class="state"></span><br>
-																						        State Code : <span class="stateco"></span><br>
-																						        GSTIN : <span class="congst"></span><br>
-																						        PAN : <span class="pancon"></span><br>
-																						    </b>
-
-																						</td>
-																						<td colspan="6" style="font-size:10px; line-height:1.4;">
-																						    
-																						    <b>Name & Address of consignee:<br>
-
-																						    <span class="conname" style="text-transform:uppercase;"></span></b><br>
-																						    <span class="conproject"></span><br>
-
-																						    <!-- Address -->
-																						    <span class="conaddress" style="white-space: pre-line;"></span><br>
-
-																							<b>
-																						    Name of the State: <span class="statename"></span><br>
-																						    State Code: <span class="stcode11"></span><br>
-																						    GSTIN: <span class="ingst "></span><br>
-																						    PAN: <span class="panin"></span><br>
-																						   </b>
-																						   
-																						</td>
-																			            </tr>
-							   						   		            <tr class="fixed-8px">
-							   						   		                <td  colspan="3" class="notif-cell"> <strong>Date of Notification</strong><br>
-							   						   		                    <strong>Exempted note under:</strong><br>
-							   						   		                    <strong>Tax is Payble on revese charge:(Yes/No):</strong><span class="taxpayre"></span><br>
-							   						   		                </td>
-							   						   		                <td  colspan="3" style="font-size:7px;">  <strong>Export Details:</strong><br>
-							   						   		                    <strong>ARE No:</strong><span class="areano"></span><br>
-							   						   		                    <strong>LUT No:</strong><span class="lutno"></span><br>
-							   						   		                    <strong>Container No:</strong><span class="contlo"></span><br>
-							   						   		                    <strong>EPCG License No:</strong><span class="epoglo"></span><br>
-							   						   		                </td>
-							   						   		                <td  colspan="3" style="font-size:7px;">  <b>Transporter:</b> <span class="trans"></span><br>
-							   						   		                    <b>Vehicle No:</b><span class="vehino"></span><br>
-							   						   		                    <b>LR/DOCKET No:</b><span class="lrdoc"></span><br>
-							   						   		                    <b>Date:</b><span class="lrdate"></span><br>
-							   						   		                </td>
-							   						   		                <td  colspan="3" style="font-size:7px;">   <b>Shipment Mode:</b> <span class="shipmo"></span><br>
-							   						   		                    <b>Delivery Condition:</b> <span class="delcon"></span><br>
-							   						   		                </td>
-							   						   		            </tr>
-							   						   		        </table>
-							   						   		        
-							   						   		        <table class="product-table">
-							   						   		            <thead>
-							   						   		                <tr>
-							   						   		                    <th class="desc-col" colspan="1" style="width: 5%;">Sr No.</th>
-							   						   		                    <th  class="desc-col" colspan="4" >Product Description</th>
-							   						   		                   
-							   						   		                    <th  class="desc-col" colspan="1" style="width: 10%;" >Service/HSN Code</th>
-							   						   		                    <th  class="desc-col" colspan="1"  >UOM</th>
-							   						   		                    <th class="desc-col"  colspan="1" >Qty/Nos</th>
-							   						   		                    <th class="desc-col" colspan="2"  style="text-align:center">Weight</th>
-							   						   		                    <th class="desc-col" colspan="1" style="width: 10%;" >Unit Price</th>
-							   						   		                    <th  class="desc-col" colspan="2" >Value (INR)</th>
-							   						   		                </tr>
-							   						   		            </thead>
-							   						   		            <tbody id="product_table_data">
-							   						   		                ${tableRows} 
-							   						   		            </tbody>
-							   						   		            <tbody>
-							   						   		                <tr class="fright-row">
-							   						   		                    <td class="fright-data"  colspan="11">
-							   						   		                        <span>Freight</span><br>
-							   						   		                    </td>
-							   						   		                    <td class="fright-data freight-vlaue" colspan="2">
-							   						   		                        <span class="freight"></span><br>
-							   						   		                    </td>
-							   						   		                </tr>
-							   						   		            </tbody>
-							   						   		            <tbody class="total-body">
-							   						   		                <tr>
-							   						   		                    <td  colspan="7" class="total-datatd">
-							   						   		                        <span>TOTAL</span><br>
-							   						   		                    </td>
-							   						   		                   
-							   						   		                   
-							   						   		                    <td class="total-datatds" >
-							   						   		                        <span class="qtytotal"></span><br>
-							   						   		                    </td>
-							   						   		                    <td  colspan="2" class="total-datatds" >
-							   						   		                        <span class="wiegtotal"></span><br>
-							   						   		                    </td>
-							   						   		                    <td ></td>
-							   						   		                    <td colspan="2"  class="total-datatds" >
-							   						   		                        <span class="val11"></span><br>
-							   						   		                    </td>
-							   						   		                </tr>
-							   						   		            </tbody>
-							   						   		            <tbody class="tax-row">
-							   						   		            
-																		  <tr>
-																		                    <td colspan="6"></td>
-																		                    <td  colspan="4" style="text-align:right;">
-																		                    <span class="tax1name"></span><br>
-																		                    <span class="tax2name"></span><br>
-																		                    <span class="tax3name"></span><br>
-																		                    </td>
-																		                    <td style="text-align:right;">
-																		                    <span class="tax1per"></span><span> </span><br>
-																		                    <span class="tax2per"></span><span> </span><br>
-																		                    <span class="tax3per"></span><span> </span><br>
-																		                    </td>
-																		                    <td colspan="2" style="text-align:right;">
-																		                    <span class="tax1value"></span><br>
-																		                    <span class="tax2value"></span><br>
-																		                    <span class="tax3value"></span><br>
-																		                    </td>
-																		                  
-																		                </tr>
-							   						   		            </tbody>
-							   						   		            <tbody class="total-word">
-																		<tr>
-																		                <td  colspan="8" style="vertical-align: middle !important;">
-																		                <b>Note:</b><span>:Identification Marks & serial No. of Goods:As per packing list attached</span><br>
-																		                <b class="tax1namewo"></b>: <b class="word1"></b><br>
-																		                <b class="tax2namewo"></b>: <b class="word2"></b><br>
-																		                <b class="tax3namewo"></b>: <b class="word3"></b><br>
-																						<br>
-																		                <b>Gross total in words:</b> <b class="grandwork"></b>
-																		                </td>
-																		                <td  colspan="3" style="vertical-align: middle !important;" >
-																		                <b>TOTAL INVOICE VALUE:</b><br>
-																		                </td>
-																		                <td  colspan="2" style="text-align:right; vertical-align: middle !important;">
-																		                <span class="grand"></span><br>
-																		                </td>
-																		                                
-																		            </tr>
-							   						   		            </tbody>
-																		<tbody style="display:none;>
-																		               <tr>
-																		                   <td colspan="4">
-																		                   <span>Particulars</span><br>
-																		                   </td>
-																		                   <td colspan="1">
-																		                   <span>Tax Application</span><br>
-																		                   </td>
-																		                   <td colspan="2">
-																		                   <span>Tax %</span><br>
-																		                   </td>
-																		                   
-																		                   <td  colspan="2">
-																		                   <span>Invoice Value</span><br>
-																		                   </td>
-																		                   <td  colspan="2">
-																		                   <span>Payable to dept</span><br>
-																		                   </td>
-																		                   <td colspan="2">
-																		                   <span>Payable by Customer</span><br>
-																		                   </td>
-																		               </tr>
-																		           </tbody>
-																				  <tbody style="display:none; height:100px;">
-																				   			<tr>
-
-																				   			<td colspan="4" >
-																				   			<span id="gstrem"></span><br>
-																				   			</td>
-
-																				   			<td colspan="1" style="text-align:right;">
-																							<span>Basic</span> </br>
-																				   			<span class="tax11name"></span><br>
-																				   			<span class="tax12name"></span><br>
-																				   			<span class="tax13name"></span><br>
-																				   			</td>
-
-																				   			<td colspan="2" style="text-align:right;">
-																							<br>
-																				   			<span class="tax11per"></span><br>
-																				   			<span class="tax12per"></span><br>
-																				   			<span class="tax13per"></span><br>
-																				   			</td>
-
-																				   		
-
-																				   			<td colspan="2" style="text-align:right;">
-																				   			<span id="vallast"></span><br>
-																				   			<span id="tax11value"></span><br>
-																				   			<span id="tax12value"></span><br>
-																				   			<span id="tax13value"></span><br>
-																				   			</td>
-
-																				   			<td colspan="2" style="text-align:right;">
-																				   			<br>
-																				   			<span id="tax111value"></span><br>
-																				   			<span id="tax121value"></span><br>
-																				   			<span id="tax131value"></span><br>
-																				   			</td>
-
-																				   			<td colspan="2" style="text-align:right;">
-																				   			<span id="vallast1"></span><br>
-																				   			<span id="tax11value1"></span><br>
-																				   			<span id="tax12value1"></span><br>
-																				   			<span id="tax13value1"></span><br>
-																				   			</td>
-
-																				   			</tr>
-																				   			</tbody>
-
-																				               <tbody style="display:none; height:100px;">
-																				                   <tr>
-																				                       <td colspan="5">
-																				                       <span>Total</span><br>
-																				                       </td>
-																				                       <td colspan="1" >
-																				                       </td>
-																				                       
-																				                       <td colspan="1">
-																				                       </td>
-																				   				
-																				   				
-																				                       <td  colspan="2"  style="text-align:right;">
-																				                       <span id="grandlast"></span><br>
-																				                       </td>
-																				                       <td  colspan="2"  style="text-align:right;">
-																				                       <span id="taxtotal"></span><br>
-																				                       </td>
-																				                       <td  colspan="2"  style="text-align:right;">
-																				                       <span id="grandlast12"></span><br>
-																				                       </td>
-																				                   </tr>
-																				               </tbody>
-							   						   		            <tbody>
-							   						   		                <tr>
-							   						   		                    <td colspan="13" class="Bank_details">
-							   						   		                        <span>BANK ACCOUNT DETAILS:</span><span>BANK ACCOUNT NAME:</span><b class="bankname"></b><br>
-							   						   		                        <span>ACCOUNT NUMBER:</span><b class="acc"></b><span>,BANK NAME & ADDRESS:</span><b class="bname"></b><b class="add"></b>
-							   						   		                        <span>BRANCH CODE:</span><b class="code"></b>, <br><span>SWIFT CODE:</span><b class="scode"></b>,<span>IFSC CODE:</span><b class="ifsc"></b><br>
-							   						   		                    </td>
-							   						   		                </tr>
-							   						   		            </tbody>
-							   						   		            <tbody>
-							   						   		                <tr class="last-data">
-							   						   		                    <td colspan="9">
-							   						   		                        <span>Certified that the particulars given above are the true and correct and the amount indicated represents the price</span><br>
-							   						   		                        <span>actually charged from the consignee and that there is no additional consideration following directly or</span><br>
-							   						   		                        <span>indirectly over and above what has been declared herein.</span><br>
-							   						   		                    </td>
-							   						   		                  
-							   						   		                    <td  colspan="4">
-							   						   		                        <span class="signatoryFor"></span><br>
-							   						   		                        <span style="margin-top: 20px; display: inline-block;">(Authorised signature)</span><br>
-							   						   		                    </td>
-							   						   		                </tr>
-							   						   		            </tbody>
-							   						   		        </table>
-							   						   		        <div class="footer">
-							   						   		            <b>Regd Office:</b><span class="reg_add"></span>
-							   						   		           <p> (All disputes subject to Karnataka Jurisdiction)E&OE </p>
-							   						   		        </div>
-							   						   		    </div>
-							   						   		`;
-
+        <style>
+            @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+
+            * { box-sizing: border-box; }
+
+            .watermark {
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%) rotate(-45deg);
+                font-size: 120px;
+                font-weight: bold;
+                opacity: 0.15;
+                pointer-events: none;
+                z-index: 9999;
+                white-space: nowrap;
+                letter-spacing: 10px;
+            }
+            .watermark.cancelled { color: #ff0000; }
+            .watermark.verified  { color: #4CAF50; }
+
+            .page { position: relative; }
+
+            html, body {
+                margin: 0;
+                padding: 0;
+                font-family: "Times New Roman", Times, serif;
+                color: black !important;
+                background-color: #fff !important;
+                font-size: 10px;
+                line-height: 2;
+            }
+
+            .page {
+                width: 202mm;
+                height: 297mm;
+                overflow: visible;
+                page-break-after: avoid !important;
+                margin: 0;
+                padding: 0;
+            }
+            .page:last-child { page-break-after: avoid !important; }
+
+            .invoice-container {
+                width: 100%;
+                height: auto;
+                overflow: visible;
+                -webkit-font-smoothing: antialiased;
+                text-rendering: geometricPrecision;
+                page-break-inside: avoid;
+                margin: 0;
+                padding: 1mm;
+            }
+
+            table {
+                border-collapse: collapse !important;
+                table-layout: fixed;
+                page-break-inside: avoid;
+                width: 100%;
+                margin: 0;
+                padding: 0;
+            }
+
+            td, th {
+                border: none;
+                border-right: 0.5px solid #000;
+                border-bottom: 0.5px solid #000;
+                padding: 2px 4px;
+                vertical-align: top;
+                font-size: 10px;
+                line-height: 1.05;
+                word-wrap: break-word;
+            }
+
+            tr { page-break-inside: avoid; }
+            tr:first-child th { border-top: 0.5px solid #000; }
+            td:first-child, th:first-child { border-left: 0.5px solid #000; }
+
+            .company-details-table { border-top: 0.5px solid #000 !important; }
+
+            .header, .footer { text-align: center; margin: 0; padding: 0; }
+
+            .invoice-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 2mm;
+            }
+
+            .gst-text {
+                font-size: 15px;
+                font-weight: 500;
+                text-align: center;
+                margin-left: 300px !important;
+            }
+
+            .copy-label { font-size: 12px; font-weight: normal; }
+
+            td br, th br { display: block; margin: 0; line-height: 1; }
+
+            .company-details-table td { padding: 4px; font-size: 11px !important; }
+
+            .company-logo img { width: 60px; height: auto; display: block; margin-bottom: 2px; }
+
+            .product-row td:nth-child(n+4) { text-align: right !important; }
+
+            .product-row td, .empty-row td { height: 22px; }
+            .empty-row td { border-top: none !important; border-bottom: none !important; }
+            .last-product td { border-bottom: none !important; }
+
+            .product-table .desc-col {
+                line-height: 1.5 !important;
+                white-space: normal;
+                word-break: break-word;
+            }
+
+            .product-table .fright-row .fright-data { line-height: 1.6 !important; padding: 5px !important; }
+
+            .total-body .total-datatd  { line-height: 1.6 !important; padding: 5px !important; }
+            .total-body .total-datatds { line-height: 2.5 !important; text-align: right !important; }
+
+            .desc-col.descri { font-size: 7px !important; padding: 1px !important; }
+            .desc-col.tols   { text-align: right !important; }
+            .desc-col.prs    { text-align: right !important; }
+            .desc-col.weits  { text-align: right !important; }
+            .desc-col.qtys   { text-align: right !important; }
+
+            .product-table th, .product-table td { padding: 3px 5px; line-height: 1.2; }
+            .product-row td { border-bottom: none; }
+
+            .freight-vlaue { text-align: right !important; }
+            .fright-row    { border: 0.5px solid #000 !important; }
+
+            .tax-row .tax-name { line-height: 0.8 !important; text-align: right !important; padding: 5px !important; }
+            .tax-row .tax-per  { text-align: right !important; vertical-align: middle !important; }
+
+            .tax-row .gst-remarks-cell {
+                text-align: left !important;
+                vertical-align: top !important;
+                font-size: 8px !important;
+                line-height: 1.3 !important;
+                white-space: pre-line;
+                word-break: break-word;
+            }
+
+            .total-word .total-words-des {
+                line-height: 1.2 !important;
+                font-size: 8px !important;
+                padding: 0 0 5px 5px !important;
+            }
+            .total-words-des.ss { vertical-align: middle !important; }
+            .total-word .total-words-val { text-align: right !important; vertical-align: middle !important; }
+
+            .Bank_details { line-height: 1.8 !important; font-size: 8px !important; }
+
+            .last-data td {
+                line-height: 1.5 !important;
+                font-size: 9px !important;
+                padding-top: 6px !important;
+            }
+            .last-data td:last-child { text-align: center !important; vertical-align: middle !important; }
+            .last-data td:last-child span { display: block; text-align: center; }
+
+            .footer { padding-top: 6px !important; }
+            .footer p { font-size: 9px; line-height: 1.2; margin: 0; padding: 0; }
+
+            .invoice-line { display: flex; justify-content: space-between; width: 80%; }
+
+            .fixed-8px td { font-size: 8px !important; line-height: 1.1 !important; }
+
+            .terms { margin-top: 2mm; }
+
+            /* ── Address neat line-by-line display ── */
+            .fulladdress, .conaddress {
+                white-space: pre-line;
+                display: inline-block;
+                line-height: 1.5;
+            }
+
+            .header, .footer, .gst-text, .copy-label { text-align: center; }
+        </style>
+
+        <div class="invoice-container">
+            <div class="invoice-header">
+                ${cancel === 'true' ? `<div class="watermark cancelled">CANCELLED</div>` : ''}
+                <div class="gst-text">GST TAX INVOICE</div>
+                <div class="gst-text1 copy-label">Original For Recipient</div>
+            </div>
+
+            <table class="company-details-table">
+                <tr>
+                    <td colspan="6">
+                        <div class="company-logo">
+                            <img src="img/logo/download.png" alt="Company Logo" style="width:100px;">
+                        </div>
+                        <strong class="businessUnitName"></strong><br>
+                        <p style="width :70%" class="facotry_address"></p>
+                        <p>
+                        <span class="businessUnitlocation"></span><br>
+                        <span class="businessUnitDistrict"></span><br>
+                        <span class="businessUnitPin"></span><br>
+                        <b> State Code :</b> <span class="businessUnitStateName"> </span><br>
+                        <b> GSTIN :</b> <span class="gst_code"> </span>    <b style="margin-left: 20px;">PAN </b>: <span class="pan_code"></span><br>
+                        <b>  ICE No:</b> 0309033152   <b style="margin-left: 40px;">CIN No:</b> U28112MH2009PLC191045<br>
+                        <b>Email:</b> invoice@jssl.in   <b style="margin-left: 30px;"> Website:</b> www.jssl.in
+                        </p>
+                    </td>
+                    <td colspan="6">
+                        <br>
+                        <div class="invoice-line">
+                            <div style="font-size:12px;"><b>Invoice No:  </b> <span class="invoiceNumber"></span></div>
+                            <div><b>Date:</b> <span class="date"></span></div>
+                        </div>
+                        <br>
+                        <b>Contract No Reference No:</b> <span class="contrefno"></span><br>
+                        <b>Date &amp; Time of supply:</b> <span class="datetime"></span><br>
+                        <br>
+                        <b>Work/Purchase Order No:</b> <span class="workor"></span><br>
+                        <b>Date of Order:</b> <span class="dateor"></span><br>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="6" style="font-size:10px; line-height:1.3;">
+
+                        <b>Invoice To :<br></b>
+
+                        <b><span class="shipto11"></span></b><br>
+                        <span class="shipto11add2"></span><br>
+                        <span class="shipto11add3"></span>
+
+                        <!-- Address (NOT bold) -->
+                        <span class="fulladdress" style="white-space: pre-line;"></span><br><br>
+
+                        <b>Place of Supply : <span class="placeofsupply"></span></b><br><br>
+
+                        <b>
+                            Name of the State : <span class="statename"></span><br>
+                            State Code : <span class="stcode11"></span><br>
+                            GSTIN : <span class="ingst"></span><br>
+                            PAN : <span class="panin"></span><br>
+                        </b>
+
+                    </td>
+                    <td colspan="6" style="font-size:10px; line-height:1.3;">
+
+                        <b>Name &amp; Address of consignee:<br></b>
+
+                        <b><span class="conname"></span></b><br>
+                        <span class="conname1"></span><br>
+                        <span class="conname2"></span><br>
+
+                        <!-- Address -->
+                        <span class="conaddress" style="white-space: pre-line;"></span><br>
+                        <br>
+
+                        <b>
+                            Name of the State: <span class="state"></span><br>
+                            State Code: <span class="stateco"></span><br>
+                            GSTIN: <span class="congst"></span><br>
+                            PAN: <span class="pancon"></span><br>
+                        </b>
+
+                    </td>
+                </tr>
+                <tr class="fixed-8px">
+                    <td colspan="3" class="notif-cell"> <strong>Date of Notification</strong><br>
+                        <strong>Exempted note under:</strong><br>
+                        <strong>Tax is Payble on revese charge:(Yes/No):</strong><span class="taxpayre"></span><br>
+                    </td>
+                    <td colspan="3" style="font-size:7px;">  <strong>Export Details:</strong><br>
+                        <strong>ARE No:</strong><span class="areano"></span><br>
+                        <strong>LUT No:</strong><span class="lutno"></span><br>
+                        <strong>Container No:</strong><span class="contlo"></span><br>
+                        <strong>EPCG License No:</strong><span class="epoglo"></span><br>
+                    </td>
+                    <td colspan="3" style="font-size:7px;">  <b>Transporter:</b> <span class="trans"></span><br>
+                        <b>Vehicle No:</b><span class="vehino"></span><br>
+                        <b>LR/DOCKET No:</b><span class="lrdoc"></span><br>
+                        <b>Date:</b><span class="lrdate"></span><br>
+                    </td>
+                    <td colspan="3" style="font-size:7px;">   <b>Shipment Mode:</b> <span class="shipmo"></span><br>
+                        <b>Delivery Condition:</b> <span class="delcon"></span><br>
+                    </td>
+                </tr>
+            </table>
+
+            <table class="product-table">
+                <thead>
+                    <tr>
+                        <th class="desc-col" colspan="1" style="width: 5%;">Sr No.</th>
+                        <th class="desc-col" colspan="4">Product Description</th>
+                        <th class="desc-col" colspan="1" style="width: 10%;">Service/HSN Code</th>
+                        <th class="desc-col" colspan="1">UOM</th>
+                        <th class="desc-col" colspan="1">Qty/Nos</th>
+                        <th class="desc-col" colspan="2" style="text-align:center">Weight</th>
+                        <th class="desc-col" colspan="1" style="width: 10%;">Unit Price</th>
+                        <th class="desc-col" colspan="2">Value (INR)</th>
+                    </tr>
+                </thead>
+                <tbody id="product_table_data">
+                    ${tableRows}
+                </tbody>
+                <tbody>
+                    <tr class="fright-row">
+                        <td class="fright-data" colspan="11"><span>Freight</span><br></td>
+                        <td class="fright-data freight-vlaue" colspan="2"><span class="freight"></span><br></td>
+                    </tr>
+                </tbody>
+                <tbody class="total-body">
+                    <tr>
+                        <td colspan="7" class="total-datatd"><span>TOTAL</span><br></td>
+                        <td class="total-datatds"><span class="qtytotal"></span><br></td>
+                        <td colspan="2" class="total-datatds"><span class="wiegtotal"></span><br></td>
+                        <td></td>
+                        <td colspan="2" class="total-datatds"><span class="val11"></span><br></td>
+                    </tr>
+                </tbody>
+                <tbody class="tax-row">
+                    <tr>
+                        <td colspan="6" class="gst-remarks-cell"><span class="gstremarks"></span></td>
+                        <td colspan="4" style="text-align:right;">
+                            <span class="tax1name"></span><br>
+                            <span class="tax2name"></span><br>
+                            <span class="tax3name"></span><br>
+                        </td>
+                        <td style="text-align:right;">
+                            <span class="tax1per"></span><span> </span><br>
+                            <span class="tax2per"></span><span> </span><br>
+                            <span class="tax3per"></span><span> </span><br>
+                        </td>
+                        <td colspan="2" style="text-align:right;">
+                            <span class="tax1value"></span><br>
+                            <span class="tax2value"></span><br>
+                            <span class="tax3value"></span><br>
+                        </td>
+                    </tr>
+                </tbody>
+                <tbody class="total-word">
+                    <tr>
+                        <td colspan="8" style="vertical-align: middle !important;">
+                            <b>Note:</b><span>:Identification Marks &amp; serial No. of Goods:As per packing list attached</span><br>
+                            <span class="taxline1"><b class="tax1namewo"></b>: <b class="word1"></b><br></span>
+                            <span class="taxline2"><b class="tax2namewo"></b>: <b class="word2"></b><br></span>
+                            <span class="taxline3"><b class="tax3namewo"></b>: <b class="word3"></b><br></span>
+                            <br>
+                            <b>Gross total in words:</b> <b class="grandwork"></b>
+                        </td>
+                        <td colspan="3" style="vertical-align: middle !important;">
+                            <b>TOTAL INVOICE VALUE:</b><br>
+                        </td>
+                        <td colspan="2" style="text-align:right; vertical-align: middle !important;">
+                            <span class="grand"></span><br>
+                        </td>
+                    </tr>
+                </tbody>
+                <tbody>
+                    <tr>
+                        <td colspan="13" class="Bank_details">
+                            <span>BANK ACCOUNT DETAILS:</span><span>BANK ACCOUNT NAME:</span><b class="bankname"></b><br>
+                            <span>ACCOUNT NUMBER:</span><b class="acc"></b><span>,BANK NAME &amp; ADDRESS:</span><b class="bname"></b><b class="add"></b>
+                            <span>BRANCH CODE:</span><b class="code"></b>, <br><span>SWIFT CODE:</span><b class="scode"></b>,<span>IFSC CODE:</span><b class="ifsc"></b><br>
+                        </td>
+                    </tr>
+                </tbody>
+                <tbody>
+                    <tr class="last-data">
+                        <td colspan="9">
+                            <span>Certified that the particulars given above are the true and correct and the amount indicated represents the price</span><br>
+                            <span>actually charged from the consignee and that there is no additional consideration following directly or</span><br>
+                            <span>indirectly over and above what has been declared herein.</span><br>
+                        </td>
+                        <td colspan="4">
+                            <span class="signatoryFor"></span><br>
+                            <span style="margin-top: 20px; display: inline-block;">(Authorised signature)</span><br>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="footer">
+                <b>Regd Office:</b><span class="reg_add"></span>
+                <p> (All disputes subject to Karnataka Jurisdiction)E&amp;OE </p>
+            </div>
+        </div>
+    `;
+
+        // ─── Fill invoice data into DOM ───────────────────────────────────────
         function fillInvoice(container) {
+            // TAX
             container.querySelector(".tax1name").textContent = tax1_name;
             container.querySelector(".tax2name").textContent = tax2_name;
             container.querySelector(".tax3name").textContent = tax3_name;
-			
-			
-			
-			container.querySelector(".tax11name").textContent = tax1_name;
-			         container.querySelector(".tax12name").textContent = tax2_name;
-			         container.querySelector(".tax13name").textContent = tax3_name;
 
             container.querySelector(".tax1per").textContent = tax1_value;
             container.querySelector(".tax2per").textContent = tax2_value;
             container.querySelector(".tax3per").textContent = tax3_value;
-			
-
-			container.querySelector(".tax11per").textContent = tax1_value;
-			container.querySelector(".tax12per").textContent = tax2_value;
-			container.querySelector(".tax13per").textContent = tax3_value;
 
             container.querySelector(".tax1value").textContent = tax1_data;
             container.querySelector(".tax2value").textContent = tax2_data;
             container.querySelector(".tax3value").textContent = tax3_data;
-			
-			
-			
-			
-			container.querySelector(".tax1namewo").textContent = tax1_name;
-			container.querySelector(".tax2namewo").textContent = tax2_name;
-			container.querySelector(".tax3namewo").textContent = tax3_name;
 
-			container.querySelector(".word1").textContent = tax1_word;
-			container.querySelector(".word2").textContent = tax2_word;
-			container.querySelector(".word3").textContent = tax3_word;
-			container.querySelector(".grandwork").textContent = tax4_data;
-			
-			
-			container.querySelector(".grand").textContent = total_invoice_value;
+            container.querySelector(".gstremarks").textContent = gstremarks;
 
-            // ✅ DYNAMIC: business unit name & PAN (previously hardcoded "JSW Serverfiled
-            // Structures Limited" and "AACCJ1473D" directly in the HTML template) 
+            container.querySelector(".tax1namewo").textContent = tax1_name;
+            container.querySelector(".tax2namewo").textContent = tax2_name;
+            container.querySelector(".tax3namewo").textContent = tax3_name;
+
+            container.querySelector(".word1").textContent = tax1_word;
+            container.querySelector(".word2").textContent = tax2_word;
+            container.querySelector(".word3").textContent = tax3_word;
+            // Remove the "in words" lines for taxes that are not present on this invoice
+            if (!showTax1) container.querySelector(".taxline1").remove();
+            if (!showTax2) container.querySelector(".taxline2").remove();
+            if (!showTax3) container.querySelector(".taxline3").remove();
+
+            container.querySelector(".grandwork").textContent = tax4_data;
+
+            container.querySelector(".grand").textContent = total_invoice_value;
+
+            // BUSINESS UNIT
             container.querySelector(".businessUnitName").textContent = businessUnitName;
-			container.querySelector(".businessUnitlocation").textContent = businessUnitlocation;
-			container.querySelector(".businessUnitDistrict").textContent = businessUnitDistrict;
-			container.querySelector(".businessUnitPin").textContent = businessUnitPin;
-			container.querySelector(".businessUnitStateName").textContent = businessUnitStateName;
+            container.querySelector(".businessUnitlocation").textContent = businessUnitlocation || '';
+            container.querySelector(".businessUnitDistrict").textContent = businessUnitDistrict;
+            container.querySelector(".businessUnitPin").textContent = businessUnitPin;
+            container.querySelector(".businessUnitStateName").textContent = businessUnitStateName;
             container.querySelector(".pan_code").textContent = businessUnitPanNo;
-
-            // ✅ DYNAMIC: signatory line now also uses the business unit name instead of
-            // a fixed "For JSW SEVERFIELD STRUCTURES LTD." string
+            container.querySelector(".gst_code").textContent = businessUnitGstNo;
             container.querySelector(".signatoryFor").textContent = "For " + businessUnitName;
-
             container.querySelector(".reg_add").textContent = reg_addresss;
 
-            // ✅ DYNAMIC: GSTIN now comes from the business unit, not the factory —
-            // this is the fix for GSTIN showing the factory's GSTIN instead of the
-            // business unit's own GSTIN. State is shown via .businessUnitlocation
-            // below (flowing text), so there's no separate .state_code span anymore.
-            container.querySelector(".gst_code").textContent = businessUnitGstNo;
-
-            // ✅ DYNAMIC: use the address parsed out of business_unit_name; fall back to
-            // the factory master's address only if parsing found nothing (safety net).
             container.querySelector('.facotry_address').innerHTML =
                 formatAddress(businessUnitAddress || factory_Address);
+
+            // INVOICE HEADER
             container.querySelector('.datetime').textContent = formattedDateTime;
-            container.querySelector('.dateor').textContent = currentDate;
+            container.querySelector('.dateor').textContent = formatDMY(work_date);
             container.querySelector('.date').textContent = currentDate;
             container.querySelector('.invoiceNumber').textContent = invoiceno;
-            //container.querySelector('.shipto11').textContent = invoice_to_id_value; consignee_id_value
-			const fullText = invoice_to_id_value || "";
 
-					   // Normalize spaces
-					   const cleanText = fullText.replace(/\s+/g, " ").trim();
+            // =========================
+            // INVOICE TO DETAILS
+            // =========================
+            const invoiceLines = (invoice_to_id_value || '').split(/\r?\n/);
 
-					   // Split: COMPANY | PROJECT | ADDRESS
-					   const match = cleanText.match(/^(.*?)\s*(PROJECT\s*[:\-]\s*[^,]+)(.*)$/i);
+            container.querySelector('.shipto11').textContent     = invoiceLines[0] || '';
+            container.querySelector('.shipto11add2').textContent = invoiceLines[1] || '';
+            container.querySelector('.shipto11add3').textContent = invoiceLines[2] || '';
 
-					   if (match) {
-					       const company = match[1].trim();      // JSW STEEL LIMITED
-					       const project = match[2].trim();      // PROJECT: Utility Structure...
-					       const address = match[3].trim();      // FULL remaining address
+            // District + Pincode — resolved (master first, row fallback)
+            const districtAndPin = [resolvedInvoiceDistrict, resolvedInvoicePinNo]
+                .filter(x => x && x.toString().trim() !== "")
+                .join("-");
 
-					       container.querySelector('.shipto11').textContent = company;
-					       container.querySelector('.projectname').textContent = project;
-					       container.querySelector('.fulladdress').textContent = address;
+            // Explicit address lines if the API sends them; otherwise whatever
+            // remains of the master / row address after the first 3 lines.
+            let invoiceAddrParts = [row.addressLine1up, row.addressLine2up, row.addressLine3up]
+                .filter(x => x && x.toString().trim() !== "");
+            if (invoiceAddrParts.length === 0) {
+                invoiceAddrParts = invoiceLines.slice(3).filter(x => x && x.trim() !== "");
+            }
 
-					   } else {
-					       // fallback (if PROJECT not found)
-					       container.querySelector('.shipto11').textContent = fullText;
-					       container.querySelector('.projectname').textContent = "";
-					       container.querySelector('.fulladdress').textContent = "";
-					   }
-			container.querySelector('.placeofsupply').textContent = supplyplace || '';
-            container.querySelector('.taxpayre').textContent = tax_payable;
-            container.querySelector('.areano').textContent = area_no;
-            container.querySelector('.contlo').textContent = containter_no;
-            container.querySelector('.lutno').textContent = lot_no;
-            container.querySelector('.epoglo').textContent = epcgno;
-            container.querySelector('.trans').textContent = transport_name;
-            container.querySelector('.lrdoc').textContent = lr_docketno;
-            container.querySelector('.lrdate').textContent = date_val;
-            container.querySelector('.shipmo').textContent = shipment_mode_id_value;
-            container.querySelector('.delcon').textContent = delivery_condition_id_value;
-            //container.querySelector('.conadd').textContent = consignee_id_value;
-			const fullConsignee = consignee_id_value || "";
+            container.querySelector('.fulladdress').textContent =
+                [...invoiceAddrParts, districtAndPin]
+                    .filter(x => x && x.toString().trim() !== "")
+                    .join("\n");
 
-						// Normalize
-						const cleanConsignee = fullConsignee.replace(/\s+/g, " ").trim();
+            container.querySelector('.placeofsupply').textContent = supplyplace || '';
+            container.querySelector('.statename').textContent = resolvedInvoiceStateName || '';
+            container.querySelector('.stcode11').textContent  = resolvedInvoiceStateCode || '';
+            container.querySelector('.ingst').textContent     = resolvedInvoiceGstNo || '';
+            container.querySelector('.panin').textContent     = resolvedInvoicePanNo || '';
 
-						// Split using PROJECT
-						const matchCon = cleanConsignee.match(/(.*?)(PROJECT\s*[:\-]\s*.*)/i);
+            // =========================
+            // CONSIGNEE DETAILS
+            // =========================
+            const consigneeLines = (consignee_id_value || '').split(/\r?\n/);
 
-						if (matchCon) {
-						    container.querySelector('.conname').textContent = matchCon[1].trim();
-						    container.querySelector('.conproject').textContent = matchCon[2].trim();
+            container.querySelector('.conname').textContent  = consigneeLines[0] || '';
+            container.querySelector('.conname1').textContent = consigneeLines[1] || '';
+            container.querySelector('.conname2').textContent = consigneeLines[2] || '';
 
-						    // Extract address (remaining part after project)
-						    const remaining = cleanConsignee.replace(matchCon[0], "").trim();
-						    container.querySelector('.conaddress').textContent = remaining;
+            const consigneeDistrictAndPin = [resolvedConsigneeDistrict, resolvedConsigneePinNo]
+                .filter(x => x && x.toString().trim() !== "")
+                .join("-");
 
-						} else {
-						    container.querySelector('.conname').textContent = fullConsignee;
-						    container.querySelector('.conproject').textContent = "";
-						    container.querySelector('.conaddress').textContent = "";
-						}
-            container.querySelector('.workor').textContent = work_id_value;
-            container.querySelector('.vehino').textContent = vechile_no;
-            container.querySelector('.contrefno').textContent = con_code_with_lot_no;
-            container.querySelector('.statename').textContent = consigneeStateName;
-            container.querySelector('.state').textContent = invoiceStateName;
-            container.querySelector('.stateco').textContent = invoiceStateCode;
-            container.querySelector('.stcode11').textContent = consigneeStateCode;
-            container.querySelector('.congst').textContent = invoiceGstNo;
-            container.querySelector('.ingst').textContent = consigneeGstNo;
-            container.querySelector('.pancon').textContent = invoicePanNo;
-            container.querySelector('.panin').textContent =  consigneePanNo;
-            container.querySelector('.freight').textContent = freight;
-            /*   container.querySelector('.pitotal').textContent = total_pices;*/
-            container.querySelector('.qtytotal').textContent = total_qty;
+            let consigneeAddrParts = [row.conaddressLine1, row.conaddressLine2, row.conaddressLine3]
+                .filter(x => x && x.toString().trim() !== "");
+            if (consigneeAddrParts.length === 0) {
+                consigneeAddrParts = consigneeLines.slice(3).filter(x => x && x.trim() !== "");
+            }
+
+            container.querySelector('.conaddress').textContent =
+                [...consigneeAddrParts, consigneeDistrictAndPin]
+                    .filter(x => x && x.toString().trim() !== "")
+                    .join("\n");
+
+            container.querySelector('.state').textContent   = resolvedConsigneeStateName || '';
+            container.querySelector('.stateco').textContent = resolvedConsigneeStateCode || '';
+            container.querySelector('.congst').textContent  = resolvedConsigneeGstNo || '';
+            container.querySelector('.pancon').textContent  = resolvedConsigneePanNo || '';
+
+            // TRANSPORT DETAILS
+            container.querySelector('.taxpayre').textContent = tax_payable || '';
+            container.querySelector('.areano').textContent   = area_no || '';
+            container.querySelector('.contlo').textContent   = containter_no || '';
+            container.querySelector('.lutno').textContent    = lot_no || '';
+            container.querySelector('.epoglo').textContent   = epcgno || '';
+            container.querySelector('.trans').textContent    = transport_name || '';
+            container.querySelector('.lrdoc').textContent    = lr_docketno || '';
+            container.querySelector('.lrdate').textContent   = date_val || '';
+            container.querySelector('.shipmo').textContent   = shipment_mode_id_value || '';
+            container.querySelector('.delcon').textContent   = delivery_condition_id_value || '';
+            container.querySelector('.workor').textContent   = work_id_value || '';
+            container.querySelector('.vehino').textContent   = vechile_no || '';
+            container.querySelector('.contrefno').textContent = con_code_with_lot_no || '';
+
+            // TOTALS
+            container.querySelector('.freight').textContent   = freight;
+            container.querySelector('.qtytotal').textContent  = total_qty;
             container.querySelector('.wiegtotal').textContent = total_kgs;
-            container.querySelector('.val11').textContent = basic_value;
-           /* container.querySelector('.grandlast').textContent = Grand_Total_tax;*/
-          /*  container.querySelector('.grandlast12new').textContent = PBC_Final_total;*/
-            container.querySelector('.bankname').textContent = bankName;
-            container.querySelector('.acc').textContent = account_number;
-            container.querySelector('.bname').textContent = branch_address;
-            container.querySelector('.code').textContent = branch_code;
-            container.querySelector('.scode').textContent = swift_code;
-            container.querySelector('.ifsc').textContent = ifsc_code;
-          /*  container.querySelector('.taxbasic').textContent = Total_adv_tax_Taxable;*/
-           /* container.querySelector('.taxtotal').textContent = Tax_Final_total;*/
+            container.querySelector('.val11').textContent     = basic_value;
+
+            // BANK DETAILS
+            container.querySelector('.bankname').textContent = bankName || '';
+            container.querySelector('.acc').textContent      = account_number || '';
+            container.querySelector('.bname').textContent    = branch_address || '';
+            container.querySelector('.code').textContent     = branch_code || '';
+            container.querySelector('.scode').textContent    = swift_code || '';
+            container.querySelector('.ifsc').textContent     = ifsc_code || '';
         }
 
-        function autoFitInvoice(container) {
-            const invoice = container.querySelector(".invoice-container");
-            const maxHeight = 1000;
-            let fontSize = 9;
+        // ─── Print / PDF ──────────────────────────────────────────────────────
+        function downloadInvoicePDF(htmlContent, fillInvoice, hideLoader) {
+            const prange = [
+                "Original For Recipient",
+                "Duplicate For Transporter",
+                "Triplicate For Supplier"
+            ];
 
-            function applySize(size) {
-                invoice.style.fontSize = size + "px";
-                invoice.querySelectorAll("td, th").forEach(el => {
-                    el.style.fontSize = size + "px";
-                    el.style.padding = "1px 2px";
-                    el.style.lineHeight = "1.05";
-                });
+            const printWindow = window.open('', '_blank');
+            if (!printWindow) {
+                alert("Popup blocked! Please allow popups.");
+                hideLoader();
+                return;
             }
 
-            applySize(fontSize);
+            // @page margin 8mm => printable area 194mm x 281mm.
+            // Each copy is a FIXED 194mm x 280mm box, clipped, so it never spills to a second sheet.
+            let fullHTML = `
+                <html>
+                <head>
+                    <meta charset="utf-8">
+                    <title>Invoice PDF</title>
+                    <style>
+                        @page { size: A4; margin: 8mm; }
 
-            if (invoice.scrollHeight === 0) return;
+                        html, body {
+                            margin: 0;
+                            padding: 0;
+                            height: auto !important;
+                            font-family: Calibri, Arial, sans-serif;
+                        }
 
-            while (invoice.scrollHeight > maxHeight && fontSize > 6) {
-                fontSize--;
-                applySize(fontSize);
-            }
+                        body > .page {
+                            box-sizing: border-box;
+                            width: 194mm !important;
+                            height: 280mm !important;
+                            min-height: 0 !important;
+                            margin: 0 !important;
+                            padding: 0 !important;
+                            overflow: hidden !important;
+                            position: relative;
+                            page-break-after: always !important;
+                            break-after: page !important;
+                            page-break-inside: auto !important;
+                            break-inside: auto !important;
+                        }
+                        body > .page:last-child {
+                            page-break-after: auto !important;
+                            break-after: auto !important;
+                        }
 
-            console.log("Final font size:", fontSize);
-        }
+                        body > .page .invoice-container,
+                        body > .page table {
+                            page-break-inside: auto !important;
+                            break-inside: auto !important;
+                        }
+                    </style>
+                </head>
+                <body>
+            `;
 
-        function shrinkLongDescriptions(container) {
-            container.querySelectorAll(".desc-col").forEach(td => {
-                const textLength = td.textContent.length;
-                if (textLength > 200) {
-                    td.classList.add("desc-small");
-                    td.classList.add("desc-xsmall");
-                }
+            prange.forEach(label => {
+                const temp = document.createElement("div");
+                temp.classList.add("page");
+                temp.innerHTML = htmlContent;
+
+                const labelEl = temp.querySelector(".copy-label");
+                if (labelEl) labelEl.textContent = label;
+
+                fillInvoice(temp);
+                fullHTML += temp.outerHTML;
             });
+
+            fullHTML += `</body></html>`;
+
+            printWindow.document.open();
+            printWindow.document.write(fullHTML);
+            printWindow.document.close();
+
+            // Scale the invoice down (never up) so it fits inside its fixed page box.
+            function fitCopyToPage(page) {
+                const box = page.querySelector(".invoice-container");
+                if (!box) return;
+
+                const maxH = page.clientHeight - 2;
+                box.style.transform = "";
+                box.style.width = "100%";
+
+                let s = 1;
+                for (let i = 0; i < 5; i++) {
+                    const h = box.scrollHeight * s;
+                    if (h <= maxH) break;
+                    s = s * (maxH / h);
+                    box.style.transformOrigin = "top left";
+                    box.style.width = (100 / s) + "%";
+                    box.style.transform = "scale(" + s + ")";
+                }
+            }
+
+            printWindow.onload = () => {
+                setTimeout(() => {
+                    printWindow.document
+                        .querySelectorAll("body > .page")
+                        .forEach(fitCopyToPage);
+
+                    printWindow.focus();
+                    printWindow.print();
+                    printWindow.close();
+                    hideLoader();
+                }, 500);
+            };
         }
-		function downloadInvoicePDF(htmlContent, fillInvoice, hideLoader) {
-				    const prange = [
-				        "Original For Recipient",
-				        "Duplicate For Transporter",
-				        "Triplicate For Supplier"
-				    ];
 
-				    // Open new window
-				    const printWindow = window.open('', '_blank');
-
-				    if (!printWindow) {
-				        alert("Popup blocked! Please allow popups.");
-				        hideLoader();
-				        return;
-				    }
-
-				    // Build full HTML
-				    let fullHTML = `
-				        <html>
-				        <head>
-				            <title>Invoice PDF</title>
-				            <style>
-				                @page {
-				                    size: A4;
-				                    margin: 10mm;
-				                }
-
-				                body {
-				                    margin: 0;
-				                    padding: 0;
-				                    font-family: Calibri, Arial, sans-serif;
-				                }
-
-				                .page {
-				                    width: 100%;
-				                    max-width: 210mm;
-				                    margin: 0 auto;
-				                    page-break-after: always;
-				                }
-
-				                .page:last-child {
-				                    page-break-after: avoid;
-				                }
-
-				                @media print {
-				                    body {
-				                        margin: 0;
-				                    }
-
-				                    .page {
-				                        page-break-after: always;
-				                    }
-
-				                    .page:last-child {
-				                        page-break-after: avoid;
-				                    }
-				                }
-				            </style>
-				        </head>
-				        <body>
-				    `;
-
-				    // Create pages dynamically
-				    prange.forEach(label => {
-				        const temp = document.createElement("div");
-				        temp.classList.add("page");
-				        temp.innerHTML = htmlContent;
-
-				        // Set copy label
-				        const labelEl = temp.querySelector(".copy-label");
-				        if (labelEl) labelEl.textContent = label;
-
-				        // Fill dynamic data
-				        fillInvoice(temp);
-
-				        fullHTML += temp.outerHTML;
-				    });
-
-				    fullHTML += `
-				        </body>
-				        </html>
-				    `;
-
-				    // Write to new window
-				    printWindow.document.open();
-				    printWindow.document.write(fullHTML);
-				    printWindow.document.close();
-
-				    // Wait for rendering then print
-				    printWindow.onload = () => {
-				        setTimeout(() => {
-				            printWindow.focus();
-				            printWindow.print();
-				            printWindow.close();
-				            hideLoader();
-				        }, 500); // small delay ensures styles/fonts load
-				    };
-				}
-
-		       downloadInvoicePDF(htmlContent, fillInvoice, hideLoader);
+        downloadInvoicePDF(htmlContent, fillInvoice, hideLoader);
 
     } catch (error) {
-        // ✅ FIX: previously hideLoader() was commented out here, so if anything threw
-        // (e.g. the missing .businessUnitlocation/.businessUnitDistrict/.businessUnitPin
-        // elements before this fix) the loader would spin forever with no visible error —
-        // it looked like "print isn't opening" with nothing to go on.
         console.error('Error generating PDF:', error);
         alert('Something went wrong while preparing the print preview. Please check the browser console for details.');
-    } finally {
-        // ✅ FIX: hideLoader now always runs, whether printing succeeds or fails,
-        // so the UI never gets stuck on the loading state again.
         hideLoader();
     }
-
 }
-
 
 
 function openModalcancel(id, other_pn_id) {
