@@ -322,8 +322,26 @@ await	loadActions();
 
 	
 	
-	$("#submitVerifyButton").on("click", function () {
+	/*$("#submitVerifyButton").on("click", function () {
 	    $("#exampleModalCenterVerifyConfirm").modal("show");
+	});*/
+	
+	
+	$("#submitVerifyButton").on("click", function () {
+
+	    if (JSON.stringify(captureVerifySnapshot()) === JSON.stringify(originalVerifySnapshot)) {
+	    //    $("#modalMessage").text("No Feilds changes");
+			showPopup("No Feilds Changes.","RGPRequest.jsp");
+	       // $("#messageModal").modal("show");
+	        return;
+	    }
+
+	    $("#exampleModalCenterVerifyConfirm").modal("show");
+	});
+
+	// Keep the verify modal scrollable after closing the message modal on top of it
+	$("#messageModal").on("hidden.bs.modal", function () {
+	    if ($(".modal.show").length) $("body").addClass("modal-open");
 	});
 
     // ── Confirmed YES → submit verification (API to be wired later) ───
@@ -1677,7 +1695,30 @@ function loadFactoryLocations() {
 // ── Verify modal state ──────────────────────────────────────────────
 let verifyLineItemsData    = [];
 let vendorOptionsHtmlCache = "";
+let originalVerifySnapshot = null;
 let verifyHeaderVendorId   = null;   // header's vendor, used as default for unverified rows
+
+function captureVerifySnapshot() {
+    const hv = $("#tovendorverify").val();
+    const snap = {
+        headerVendor : (hv && hv !== "1") ? String(hv) : "",
+        items        : []
+    };
+
+    $("#verifyTableID tbody tr").each(function () {
+        const idx = $(this).attr("id").replace("verifyrow", "");
+        const p   = parseFloat($("#verify_price_" + idx).val());
+        const v   = $("#verify_vendor_" + idx).val();
+
+        snap.items.push({
+            itemRequestId : $(this).data("item-request-id") || null,
+            price         : isNaN(p) ? 0 : p,
+            verified      : $("#verify_check_" + idx).is(":checked"),
+            vendor        : (v && v !== "1") ? String(v) : ""
+        });
+    });
+    return snap;
+}
 
 function verifyRgp(requestId) {
 	  const allowed =allowedActions || [];
@@ -1830,7 +1871,7 @@ function verifyRgp(requestId) {
             });
 
             renderVerifyLineItems();
-
+			originalVerifySnapshot = captureVerifySnapshot();
             $("#exampleModalScrollableVerify").modal("show");
         },
         error: function (xhr) {
@@ -2114,7 +2155,7 @@ function showPopup(message, redirectUrl) {
 			$(this).remove();
 			window.location = redirectUrl;
 		});
-	}, 2000);
+	}, 400);
 }
 
 

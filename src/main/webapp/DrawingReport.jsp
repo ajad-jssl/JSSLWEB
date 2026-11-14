@@ -338,6 +338,9 @@ table.table-bordered th, table.table-bordered td {
 										Report</b></a> <a class="nav-item nav-link" id="financeTab"
 									href="javascript:void(0);" role="tab"
 									onclick="toggleReportTab('finance')"><b>Finance Report</b></a>
+									<a class="nav-item nav-link" id="PhasesummaryTab" href="javascript:void(0);" role="tab"><b>Phase Stage Summary Report</b></a>
+									<a class="nav-item nav-link" id="PhaseTab" href="javascript:void(0);" role="tab"><b>Phase Stage Detailed Report</b></a>
+
 							</div>
 						</div>
 					</div>
@@ -389,6 +392,102 @@ table.table-bordered th, table.table-bordered td {
 							</div>
 						</div>
 					</div>
+					
+					
+							<!-- Report section -->
+					<!-- Phase report filters -->
+<div id="phReportSection" style="display: none;">
+	<div class="container mt-3 border-box p-3" style="border: 1px solid #ddd; border-radius: 5px;">
+		<div class="form-row mt-3">
+
+			<div class="col-md-3 mb-3" id="phContractCol">
+				<label for="phContract"><b>Contract:</b></label>
+				<select class="form-control form-control-sm universal-select" id="phContract">
+					<option value="">Select Contract</option>
+				</select>
+			</div>
+
+			<div class="col-md-3 mb-3" id="phPartCol">
+				<label for="phPartMark"><b>Part Mark:</b></label>
+				<select class="form-control form-control-sm universal-select" id="phPartMark">
+					<option value="">Select part mark</option>
+				</select>
+			</div>
+
+			<div class="form-group col-md-2">
+				<label for="phFromDate"><b>Start Date:</b></label>
+				<input type="date" class="form-control form-control-sm" id="phFromDate">
+			</div>
+
+			<div class="form-group col-md-2">
+				<label for="phToDate"><b>End Date:</b></label>
+				<input type="date" class="form-control form-control-sm" id="phToDate">
+			</div>
+
+			<div class="col-md-2 mb-3 d-flex align-items-end">
+				<button type="button" class="btn btn-primary btn-sm w-100" id="phSearchBtn">Search</button>
+			</div>
+
+		</div>
+	</div>
+</div>
+
+<!-- Phase report result -->
+<div id="phResultBox" style="display: none;">
+	<div class="modal-body">
+		<div class="container container-report mt-4">
+			<h5 class="text-center report-header">DO Phase Detailed Report</h5>
+			<div class="form-row dynamic-row">
+				<div class="table-responsive">
+					<table class="table table-bordered table-sm" id="phReportTable">
+						<thead>
+							<tr>
+								<th>SL.NO</th>
+								<th>Contract</th>
+								<th>Part Mark </th>
+								<th>Phase</th>
+						        <th>Stage</th>
+						        <th>Created Name </th>
+						        <th>Transaction Date & Time</th>
+								<th>Remarks</th>
+							</tr>
+						</thead>
+						<tbody></tbody>
+					</table>
+				</div>
+			</div>
+			<button type="button" class="btn btn-success btn-sm my-3" onclick="exportPhaseReport()">Export to Excel</button>
+		</div>
+	</div>
+</div>
+
+<div id="phSummaryBox" style="display: none;">
+	<div class="modal-body">
+		<div class="container container-report mt-4">
+			<h5 class="text-center report-header">DO Phase Summary Report</h5>
+			<div class="form-row dynamic-row">
+				<div class="table-responsive">
+					<table class="table table-bordered table-sm" id="phsummaryTable">
+						<thead>
+							<tr>
+								<th>SL.NO</th>
+								<th>Contract</th>
+								<th>Part Mark </th>
+							    <th>Model Checking </th>
+							    <th>Back Drafting</th>
+							     <th>Final </th>
+								
+							</tr>
+						</thead>
+						<tbody></tbody>
+					</table>
+				</div>
+			</div>
+			<button type="button" class="btn btn-success btn-sm my-3" onclick="exportsummaryReport()">Export to Excel</button>
+		</div>
+	</div>
+</div>
+					
 
 					<!-- Detailed Report table -->
 					<div id="container1" style="display: none;">
@@ -474,6 +573,8 @@ table.table-bordered th, table.table-bordered td {
 
 	<script src="vendor/datatables/jquery.dataTables.min.js"></script>
 	<script src="vendor/datatables/dataTables.bootstrap4.min.js"></script>
+	
+	
 	<script src="js/config.js?v=<%=ver(application, "/js/config.js")%>"></script>
 
 <script
@@ -493,9 +594,10 @@ table.table-bordered th, table.table-bordered td {
 		src="externalLibrary/cdn.sheetjs.com/0.20.3/xlsx.full.min.js"></script>
 
 	<script src="js/DrawingReport.js?v=<%=ver(application, "/js/DrawingReport.js")%>"></script>
+	<script src="js/DOPhaseReport.js?v=<%=ver(application, "/js/DOPhaseReport.js")%>"></script>
 	<script src="js/username.js?v=<%=ver(application, "/js/username.js")%>"></script>
-	<script src="js/logout.js?v=<%=ver(application, "/js/logout.js")%>"></script>
-	<script src="js/Sessionfilter.js?v=<%=ver(application, "/js/Sessionfilter.js")%>"></script>
+	<script src="js/logout.js?v=<%=ver(application, "/js/username.js")%>"></script>
+	<script src="js/Sessionfilter.js?v=<%=ver(application, "/s/Sessionfilter.js")%>"></script>
 		<script
 		src="externalLibrary/cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 

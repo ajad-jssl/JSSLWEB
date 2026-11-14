@@ -29,9 +29,39 @@ async function loadActions() {
     }
 }
 
+function toggleSapCode(selectId, inputId, errorId) {
+    const isYes = $('#' + selectId).val() === '1';
+    const $input = $('#' + inputId);
 
+    if (isYes) {
+        $input.prop('readonly', false).focus();
+    } else {
+        $input.val('').prop('readonly', true);
+        $('#' + errorId).hide();
+    }
+}
+
+// Used when the edit modal loads, so the saved SAP code is not cleared
+function toggleSapCodeKeepValue() {
+    const isYes = $('#isMaintenanceup').val() === '1';
+    $('#sapCodeup').prop('readonly', !isYes);
+    $('#sapCodeErrorup').hide();
+}
+
+$(document).ready(function () {
+    $('#isMaintenance').on('change', function () {
+        toggleSapCode('isMaintenance', 'sapCode', 'sapCodeError');
+    });
+    $('#isMaintenanceup').on('change', function () {
+        toggleSapCode('isMaintenanceup', 'sapCodeup', 'sapCodeErrorup');
+    });
+});
 
 document.getElementById("modalScroll1").addEventListener("click", function () {
+	
+	$('#isMaintenance').val('0');
+	$('#sapCode').val('').prop('readonly', true);
+	$('#sapCodeError').hide();
     // show custom message instead of opening modal
 	 /* const allowed = window.allowedActions || [];*/
 	 const allowed = allowedActions || [];
@@ -136,6 +166,7 @@ function validateFields() {
 
      $('.error-message').hide();  // Clear previous errors
 
+	 
     if (!Itemno) {
         $('#itemError').show();
         isValid = false;
@@ -156,6 +187,10 @@ function validateFields() {
         $('#remarksError').show();
         isValid = false;
     }
+	if ($('#isMaintenance').val() === '1' && !$('#sapCode').val().trim()) {
+	    $('#sapCodeError').show();
+	    isValid = false;
+	}
 
     return isValid;
 }
@@ -168,6 +203,10 @@ function addevent() {
     var Itemdes1 = $('#description1').val().trim();
     var Itemdes2 = $('#description2').val().trim();
     var remarks = $('#remarks').val().trim();
+
+	
+	var isMaint = parseInt($('#isMaintenance').val(), 10);   // 1 or 0
+	var sapCode = $('#sapCode').val().trim();
 
     let currentDate = new Date();
     let currentDateTimeString = getIndianDateTimeFormat(currentDate);
@@ -187,7 +226,8 @@ function addevent() {
             }
 
             // Step 2: If not exists → proceed to insert
-            insertItem(Itemno, unitmesure, Itemdes1, Itemdes2, remarks, currentDateTimeString);
+            //insertItem(Itemno, unitmesure, Itemdes1, Itemdes2, remarks, currentDateTimeString);
+		insertItem(Itemno, unitmesure, Itemdes1, Itemdes2, remarks, currentDateTimeString, isMaint, sapCode);
         },
         error: function (xhr, status, error) {
             alert("Error checking item number: " + error);
@@ -196,7 +236,7 @@ function addevent() {
 }
 
 // Separate insert function
-function insertItem(Itemno, unitmesure, Itemdes1, Itemdes2, remarks, currentDateTimeString) {
+/*function insertItem(Itemno, unitmesure, Itemdes1, Itemdes2, remarks, currentDateTimeString) {
 
     var requestData = {
         "itemNo": Itemno,
@@ -206,7 +246,19 @@ function insertItem(Itemno, unitmesure, Itemdes1, Itemdes2, remarks, currentDate
         "itmRemark": remarks,
         "created_by": createdById,
         "created_date": currentDateTimeString
-    };
+    };*/
+	function insertItem(Itemno, unitmesure, Itemdes1, Itemdes2, remarks, currentDateTimeString, isMaint, sapCode) {
+	    var requestData = {
+	        "itemNo": Itemno,
+	        "um": unitmesure,
+	        "itmDescription1": Itemdes1,
+	        "itmDescription2": Itemdes2,
+	        "itmRemark": remarks,
+	        "isMaintenanceItem": isMaint,                       // 1 / 0
+	        "sapCode": isMaint === 1 ? sapCode : null,
+	        "created_by": createdById,
+	        "created_date": currentDateTimeString
+	    };
 
     $.ajax({
         url: new URL('/api/items', baseUrl1),
@@ -510,6 +562,11 @@ function fetchItemDetails(itemId) {
             document.getElementById('description1up').value = item.itmDescription1;
             document.getElementById('description2up').value = item.itmDescription2;
             document.getElementById('remarksup').value = item.itmRemark;
+			
+			const maintVal = (item.isMaintenanceItem === true || String(item.isMaintenanceItem) === '1') ? '1' : '0';
+			document.getElementById('isMaintenanceup').value = maintVal;
+			document.getElementById('sapCodeup').value = item.sapCode || '';
+			toggleSapCodeKeepValue();
 
             const unitSelect = document.getElementById('unitup');
             const rawUm = String(item.um ?? '').trim();
@@ -530,13 +587,23 @@ function fetchItemDetails(itemId) {
                 unitSelect.value = ''; // reset to "Select" explicitly
             }
 
-            oldValues = {
+           /* oldValues = {
                 itemNo: item.itemNo,
                 um: item.um,
                 itmDescription1: item.itmDescription1,
                 itmDescription2: item.itmDescription2,
                 itmRemark: item.itmRemark
-            };
+            };*/
+			
+			oldValues = {
+			    itemNo: item.itemNo,
+			    um: item.um,
+			    itmDescription1: item.itmDescription1,
+			    itmDescription2: item.itmDescription2,
+			    itmRemark: item.itmRemark,
+			    isMaintenanceItem: maintVal,          // string '1' or '0'
+			    sapCode: item.sapCode || ''
+			};
 
             selectedItemId = itemId;
 
@@ -576,6 +643,11 @@ function validateUpdateFields() {
         isValid = false;
     }
 
+	if ($('#isMaintenanceup').val() === '1' && !$('#sapCodeup').val().trim()) {
+	    $('#sapCodeErrorup').show();
+	    isValid = false;
+	}
+	
     return isValid;
 }
 
@@ -630,15 +702,21 @@ function add(itemId) {
     const description1 = document.getElementById('description1up').value.trim();
     const description2 = document.getElementById('description2up').value.trim();
     const remarks = document.getElementById('remarksup').value.trim();
+	
+	const isMaintStr = document.getElementById('isMaintenanceup').value;   // '1' or '0'
+	const isMaint = parseInt(isMaintStr, 10);
+	const sapCode = document.getElementById('sapCodeup').value.trim();
 
     // Check if all fields unchanged
-    if (
-        itemNo === oldItemNo &&
-        unit === oldUnit &&
-        description1 === oldDesc1 &&
-        description2 === oldDesc2 &&
-        remarks === oldRemarks
-    ) {
+	if (
+	    itemNo === oldItemNo &&
+	    unit === oldUnit &&
+	    description1 === oldDesc1 &&
+	    description2 === oldDesc2 &&
+	    remarks === oldRemarks &&
+	    isMaintStr === oldValues.isMaintenanceItem &&
+	    sapCode === oldValues.sapCode
+	) {
         const popup = $('<div class="popup">No fields changed!</div>').appendTo('body').fadeIn(400);
         setTimeout(() => {
             popup.fadeOut(400, () => {
@@ -653,15 +731,17 @@ function add(itemId) {
     const currentDateTimeString = getIndianDateTimeFormat(currentDate);
 
     // Updated item object
-    const updatedItem = {
-        itemNo: itemNo,
-        um: unit,
-        itmDescription1: description1,
-        itmDescription2: description2,
-        itmRemark: remarks,
-        modified_by: createdById,
-        modified_date: currentDateTimeString
-    };
+	const updatedItem = {
+	    itemNo: itemNo,
+	    um: unit,
+	    itmDescription1: description1,
+	    itmDescription2: description2,
+	    itmRemark: remarks,
+	    isMaintenanceItem: isMaint,                      // 1 / 0
+	    sapCode: isMaint === 1 ? sapCode : null,
+	    modified_by: createdById,
+	    modified_date: currentDateTimeString
+	};
 
     // 🔥 FIXED UPDATE API CALL
     fetch(`${baseUrl1}/api/items/${itemId}`, {

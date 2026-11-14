@@ -437,6 +437,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
                             <th>Driver Mobile No</th>
                             <th>Whom To Meet</th>
                             <th class="hide-vl">Weight</th>
+                             <th class="hide-vl">Qty</th>
                             <th class="hide-vl">Invoice No</th>
                             <th class="hide-vl">Invoice Date</th>
                             <th class="hide-vl">PO Number</th>
@@ -444,7 +445,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
                             <th class="hide-vl">DC No</th>
                             <th class="hide-vl">DC Date</th>
                             <th>In Remark</th>
-                            <th>Content Description</th>
+                            <th> Description</th>
                             <th>Factory</th>
                         </tr>
                     </thead>
@@ -519,11 +520,13 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
          <th>Vehicle In</th>
           <th>Vehicle out</th>
           <th>Duration </th>
-         <th>Transporter Name</th>
+         <th>Vendor Name</th>
          <th>Driver Name</th>
          <th>Driver Mobile No</th>
          <th>Whom To Meet</th>
+        
          <th>Weight</th>
+         <th>Qty</th>
          <th>Invoice No</th>
          <th>Invoice Date</th>
          <th>PO Number</th>
@@ -531,7 +534,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
          <th>DC No</th>
          <th>DC Date</th>
          <th>In Remark</th>
-         <th>Content Description</th>
+         <th> Description</th>
          <th>Factory</th>
         </tr>
       </thead>
@@ -564,7 +567,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
                             <th>Vehicle In</th>
                             <th>Vehicle Out</th>
                             <th>Duration </th>
-                            <th>Transporter Name</th>
+                            <th>Vendor Name</th>
                             <th>Driver Name</th>
                             <th>Driver Mobile No</th>
                             <th>Whom To Meet</th>
@@ -747,27 +750,45 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 </script>
    
 <script>
- function exportToExcelvecin() {
-  var table = document.getElementById("TableID");
-  var workbook = XLSX.utils.table_to_book(table, {sheet: "Vehicle In Report"});
-  XLSX.writeFile(workbook, 'Vehicle_In_Report.xlsx');
- }
-</script>
+function tableToExcel(tableId, sheetName, fileName) {
+  const table = document.getElementById(tableId);
 
-<script>
- function exportToExcelmatinward() {
-  var table = document.getElementById("Table_ID");
-  var workbook = XLSX.utils.table_to_book(table, {sheet: "Material Inward Report"});
-  XLSX.writeFile(workbook, 'Material_Inward_Report.xlsx');
- }
-</script>
+  // raw:true = keep every cell exactly as shown on screen (no guessing)
+  const wb = XLSX.utils.table_to_book(table, { sheet: sheetName, raw: true });
+  const ws = wb.Sheets[sheetName];
 
-<script>
- function exportToExcelvehload() {
-  var table = document.getElementById("Table1");
-  var workbook = XLSX.utils.table_to_book(table, {sheet: "Vehicle Loading Report"});
-  XLSX.writeFile(workbook, 'Vehicle_Loading_Report.xlsx');
- }
+  const reDT   = /^(\d{2})-(\d{2})-(\d{4}) (\d{2}):(\d{2}):(\d{2})$/;  // 12-11-2026 07:00:01
+  const reDate = /^(\d{4})-(\d{2})-(\d{2})$/;                          // 2026-11-12
+  const toSerial = (y, m, d, h = 0, mi = 0, s = 0) =>
+    Date.UTC(y, m - 1, d, h, mi, s) / 86400000 + 25569;                // Excel date number
+
+  Object.keys(ws).forEach(addr => {
+    if (addr[0] === '!') return;
+    const c = ws[addr];
+    if (c.t !== 's') return;
+    const v = String(c.v).trim();
+    let m;
+    if ((m = reDT.exec(v))) {
+      c.t = 'n'; c.v = toSerial(+m[3], +m[2], +m[1], +m[4], +m[5], +m[6]);
+      c.z = 'dd-mm-yyyy hh:mm:ss'; delete c.w;
+    } else if ((m = reDate.exec(v))) {
+      c.t = 'n'; c.v = toSerial(+m[1], +m[2], +m[3]);
+      c.z = 'dd-mm-yyyy'; delete c.w;
+    } else {
+      c.v = v;                                   // also trims the padded qty / Inv_no / Po_number
+    }
+  });
+
+  // wider columns so nothing shows as #####
+  const range = XLSX.utils.decode_range(ws['!ref']);
+  ws['!cols'] = Array.from({ length: range.e.c + 1 }, () => ({ wch: 22 }));
+
+  XLSX.writeFile(wb, fileName);
+}
+
+function exportToExcelvecin()     { tableToExcel("TableID",  "Vehicle In Report",      "Vehicle_In_Report.xlsx"); }
+function exportToExcelmatinward() { tableToExcel("Table_ID", "Material Inward Report", "Material_Inward_Report.xlsx"); }
+function exportToExcelvehload()   { tableToExcel("Table1",   "Vehicle Loading Report", "Vehicle_Loading_Report.xlsx"); }
 </script>
 <script>
 function exportToExcelvehloadDynamic() {

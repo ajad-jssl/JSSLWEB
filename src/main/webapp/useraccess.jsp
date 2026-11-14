@@ -13,6 +13,12 @@
     <link href="img/logo/download.png" rel="icon">
     <link href="vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
     <link href="vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css">
+    <link href="externalLibrary/cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link href="externalLibrary/cdn.jsdelivr.net/npm/@ttskch/select2-bootstrap4-theme@1.5.2/dist/select2-bootstrap4.min.css" rel="stylesheet" />
+
+
+
+
     <link href="css/ruang-admin.min.css" rel="stylesheet">
     <link rel="stylesheet" href="css/main.css">
   
@@ -87,6 +93,9 @@ font-size:15px; }
     background-color: #37499A !important;    /* keep active-tab color if it's also selected */
     color: #fff !important;
 }
+
+
+
     </style>
     
 </head>
@@ -136,9 +145,15 @@ font-size:15px; }
                     <!-- Dropdown for Users -->
                     <div class="form-group">
                         <label for="userDropdown">Select User</label>
-                        <select id="userDropdown" class="form-control" onchange="fetchUserPermissions()">
+                        <!-- <select id="userDropdown" class="form-control" onchange="fetchUserPermissions()">
                             <option value="">-- Select a user --</option>
-                        </select>
+                            
+                            
+                        </select> -->
+                        
+                        <select id="userDropdown" class="form-control">
+    <option value="">-- Select a user --</option>
+</select>
                     </div>
 
                     <!-- Tabs for Modules -->
@@ -176,6 +191,7 @@ font-size:15px; }
 
     <script src="js/username.js?v=<%=ver(application, "/js/username.js")%>"></script>
     <script src="js/logout.js?v=<%=ver(application, "/js/logout.js")%>"></script>
+    <script src="externalLibrary/cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script src="js/assignPermissions.js?v=<%=ver(application, "/js/assignPermissions.js")%>"></script>
      <script src="js/Sessionfilter.js?v=<%=ver(application, "/js/Sessionfilter.js")%>"></script>
    	  <script>

@@ -28,16 +28,44 @@
            allowedActions = [];
        }
    }
+   
+   
+   
+   /* ── DEPARTMENT / LOCATION DROPDOWN ─────────────────────────────────────── */
+   function loadDepartmentDropdown() {
+       var factoryId = parseInt(sessionStorage.getItem('selectedFactoryId') || '0');
+       if (!factoryId) return;
+
+       $.ajax({
+           url: new URL('/api/department/getAll', baseUrl).toString(),
+           type: 'GET',
+           data: { factoryId: factoryId },
+           xhrFields: { withCredentials: true },
+           success: function (response) {
+               var $dd = $('#deptSelect');
+               $dd.empty().append('<option value="">-- Select Location --</option>');
+               $.each(response, function (i, d) {
+                   $dd.append('<option value="' + d.DEPT_ID + '">' + d.DEPT_NAME + '</option>');
+               });
+               $dd.trigger('change.select2');
+           },
+           error: function () { console.error('Unable to load locations'); }
+       });
+   }
+   
+   
 /* selectedBroke is now a Set so user can pick multiple across tabs */
 var selectedBrokeSet = new Set();
 
 var ASSIGNOR_USER_ID = 1; // Replace with real assignor user id from your config/session
 
 $(document).ready(function () {
+	
     loadMachineDescriptionDropdown();
     loadMyTickets(1);
     loadNotifications();
     loadEmployeeDropdown();
+	
 	loadActions();
 	
 	$('#empCodeSelect').select2({
@@ -47,6 +75,16 @@ $(document).ready(function () {
 	      width: '100%',
 	      dropdownParent: $('#reportModal')   // critical: keeps dropdown working inside Bootstrap modal
 	  });
+	  
+	  loadDepartmentDropdown();
+
+	      $('#deptSelect').select2({
+	          theme: 'bootstrap',
+	          placeholder: '-- Select Location --',
+	          allowClear: true,
+	          width: '100%',
+	          dropdownParent: $('#reportModal')
+	      });
 	
 
     var username = sessionStorage.getItem('username') ||
@@ -181,15 +219,36 @@ function onCategoryChange() {
 }
 
 /* ── WHAT BROKE – multi-select across tabs ──────────────────────────────── */
+/*function selectBroke(el, val, tab) {
+    var $chip = $(el);
+
+    if ($chip.hasClass('sel-' + tab)) {
+         deselect 
+        $chip.removeClass('sel-elec sel-mech sel-hydr');
+        selectedBrokeSet.delete(val);
+    } else {
+         select – keep other tabs' selections intact 
+        $chip.addClass('sel-' + tab);
+        selectedBrokeSet.add(val);
+    }
+
+    updateBrokeSelectionSummary();
+}*/
+
+
+
 function selectBroke(el, val, tab) {
     var $chip = $(el);
 
     if ($chip.hasClass('sel-' + tab)) {
-        /* deselect */
+        /* clicking the selected chip again → deselect */
         $chip.removeClass('sel-elec sel-mech sel-hydr');
-        selectedBrokeSet.delete(val);
+        selectedBrokeSet.clear();
     } else {
-        /* select – keep other tabs' selections intact */
+        /* only ONE allowed → clear everything first */
+        $('.broke-chip').removeClass('sel-elec sel-mech sel-hydr');
+        selectedBrokeSet.clear();
+
         $chip.addClass('sel-' + tab);
         selectedBrokeSet.add(val);
     }
@@ -303,6 +362,11 @@ function submitReport() {
     var bkLocation = $('#bkLocationInput').val().trim(); // optional, may be ''
 
     var whatBroke = Array.from(selectedBrokeSet).join(', ');
+	
+	var deptId = $('#deptSelect').val();   // '' when not selected
+
+	// ── If location becomes MANDATORY, uncomment this block ──
+	// if (!deptId) { alert('Please select a location.'); return; }
 
     if (!empCode) { alert('Please select an employee.'); return; }
     if (!mobile){alert("please Select the Mobile Number..."); return;}
@@ -328,7 +392,8 @@ function submitReport() {
             empCode:        empCode,
             empName:        empName,
             mobileNo:       mobile,
-            bkLocation:     bkLocation   // sent even if empty; backend treats '' as null
+            bkLocation:     bkLocation,   // sent even if empty; backend treats '' as null
+	       bkDeptId:       deptId    
         },
         xhrFields: { withCredentials: true },
         success: function (response) {
@@ -781,4 +846,5 @@ function resetModal() {
     $('#brokeSelectionSummary').text('').hide();
     $('#successAlert').hide();
     resetSubmitButton();
+	$('#deptSelect').val('').trigger('change.select2');
 }

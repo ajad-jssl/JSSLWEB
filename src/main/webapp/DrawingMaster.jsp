@@ -96,7 +96,7 @@
         <!-- Page Content -->
         <div class="container-fluid" id="container-wrapper">
           <div class="d-sm-flex align-items-center justify-content-between mb-4">
-            <h1 class="h3 mb-0 text-gray-800">Do Masters</h1>
+            <h1 class="h3 mb-0 text-gray-800">DO Masters</h1>
             <ol class="breadcrumb">
               <li class="breadcrumb-item"><a href="DotimeSheetDashBoard.jsp">Home</a></li>
               <li class="breadcrumb-item active" aria-current="page">Master</li>
@@ -189,6 +189,42 @@
                 </div>
               </div>
               
+               <div class="card-container">
+                <div class="card h-100" onclick="openSection('DrawingStagesRadio');">
+                  <div class="card-body">
+                    <div class="row align-items-center">
+                      <div class="col mr-2">
+                        <i class="fas fa-clipboard-check fa-2x" style="color: #4ACCF7;"></i>
+                      </div>
+                      <div class="col-auto">
+                        <div class="text-xs font-weight-bold text-uppercase mb-1">Stages </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800 text-right"><span id="stagecount"></span></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+             <div class="card-container">
+  <div class="card h-100" onclick="openSection('DrawingSelectStageRadio');">
+    <div class="card-body">
+      <div class="row align-items-center">
+        <div class="col mr-2">
+          <i class="fas fa-clipboard-check fa-2x" style="color: #4ACCF7;"></i>
+        </div>
+        <div class="col-auto">
+          <div class="text-xs font-weight-bold text-uppercase mb-1">Type Selection-Stages</div>
+          <div class="h5 mb-0 font-weight-bold text-gray-800 text-right"><span id="typeStageCount"></span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+              
+              
+              
+              
+              
             </div>
           </div>
 
@@ -207,6 +243,8 @@
     <script src="vendor/jquery/jquery.min.js"></script>
       <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
       <script src="vendor/jquery-easing/jquery.easing.min.js"></script>
+
+  
   <script src="js/config.js?v=<%=ver(application, "/js/config.js")%>"></script>
 
 
@@ -215,6 +253,7 @@
   <script src="js/logout.js?v=<%=ver(application, "/js/logout.js")%>"></script>
   <script src="js/username.js?v=<%=ver(application, "/js/username.js")%>"></script>
 <script src="js/DrawingMaster.js?v=<%=ver(application, "/js/DrawingMaster.js")%>"></script>
+<script src="js/DrawingMasterRegister.js?v=<%=ver(application, "/js/DrawingMasterRegister.js")%>"></script>
     <script>
    function openSection(radioId) {
 	    localStorage.setItem("selectedAssetRadio", radioId);

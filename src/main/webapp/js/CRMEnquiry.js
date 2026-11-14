@@ -539,6 +539,14 @@ async function fetchEnquiries() {
                            style="cursor:pointer"
                            onclick="openSubquery(${item.id})"></i>
                     </td>
+				
+									  
+						  <td>
+					     <span style="cursor:pointer" onclick="openAttachments(${item.id})">
+							 <i class="fa fa-paperclip text-primary"></i>
+					  <span class="badge badge-secondary" hidden>${item.attachmentCount || 0}</span>
+						 </span>
+					</td>
                 </tr>
             `;
         });
@@ -1466,4 +1474,159 @@ async function loadEnquiryStages(selector, selectedId) {
     } catch (error) {
         console.error("Error fetching Current Stages:", error);
     }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+let currentAttachmentEnquiryId = null;
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
+
+async function openAttachments(enquiryId) {
+   /* if (!(allowedActions || []).includes("Attachment")) {
+        showMessage("You do not have permission to manage Attachments.", "warning");
+        return;
+    }*/
+    currentAttachmentEnquiryId = enquiryId;
+    try {
+        const r = await fetch(new URL(`/api/enquiry/${enquiryId}`, baseUrl1), { credentials: "include" });
+        if (!r.ok) throw new Error();
+        const item = await r.json();
+        $("#atEnqNo").text(item.enqNo || "");
+        $("#atProjectName").text(item.projectName || "");
+        $("#atClientName").text(item.clientName || "");
+
+        $("#newAttachmentRows").empty();
+        addAttachmentRow();                       // start with one empty row
+        await fetchAttachments(enquiryId);
+        $("#exampleModalAttachment").modal("show");
+    } catch (e) {
+        showMessage("Unable to load attachments", "error");
+    }
+}
+
+function addAttachmentRow() {
+    $("#newAttachmentRows").append(`
+      <div class="form-row align-items-center mb-2 attachment-row">
+        <div class="col-md-5"><input type="file" class="form-control form-control-sm enquiry-input att-file"></div>
+        <div class="col-md-5"><input type="text" class="form-control form-control-sm enquiry-input att-remarks" placeholder="Remarks"></div>
+        <div class="col-md-2"><i class="fa fa-times-circle text-danger remove-att-row" style="cursor:pointer" title="Remove"></i></div>
+      </div>`);
+}
+$("#addAttachmentRowBtn").on("click", addAttachmentRow);
+$(document).on("click", ".remove-att-row", function () {
+    if ($(".attachment-row").length > 1) $(this).closest(".attachment-row").remove();
+    else $(this).closest(".attachment-row").find("input").val("");
+});
+
+async function fetchAttachments(enquiryId) {
+    const r = await fetch(new URL(`/api/enquiry/${enquiryId}/attachments`, baseUrl1), { credentials: "include" });
+    if (!r.ok) return;
+    const list = await r.json();
+    let rows = list.length ? "" :
+        `<tr><td colspan="6" class="text-center text-muted">No attachments uploaded yet</td></tr>`;
+/*    list.forEach((a, i) => {
+        rows += `<tr>
+          <td>${i + 1}</td>
+          <td><i class="fas fa-paperclip"></i> ${a.fileName}</td>
+          <td>${a.remarks || "-"}</td>
+          <td>${a.createdByName || ""}</td>
+          <td>${formatDate(String(a.createdOn || "").substring(0, 10))}</td>
+          <td>
+            <i class="fa fa-eye text-primary mr-2" style="cursor:pointer" title="View" onclick="viewAttachment(${a.id})"></i>
+            <i class="fa fa-trash text-danger" style="cursor:pointer" title="Delete" onclick="deleteAttachment(${a.id})"></i>
+          </td></tr>`;
+    });*/
+	
+	
+	list.forEach((a, i) => {
+	    rows += `<tr>
+	      <td>${i + 1}</td>
+	      <td class="att-name" title="${a.fileName}"><i class="fas fa-paperclip"></i> ${a.fileName}</td>
+	      <td class="att-remarks" title="${a.remarks || ''}">${a.remarks || "-"}</td>
+	      <td>${a.createdByName || ""}</td>
+	      <td>${formatDate(String(a.createdOn || "").substring(0, 10))}</td>
+	      <td>
+	        <i class="fa fa-eye text-primary mr-2" style="cursor:pointer" title="View" onclick="viewAttachment(${a.id})"></i>
+	        <i class="fa fa-trash text-danger" style="cursor:pointer" title="Delete" onclick="deleteAttachment(${a.id})"></i>
+	      </td></tr>`;
+	});
+    $("#attachmentHistoryBody").html(rows);
+}
+
+$("#uploadAttachmentsBtn").on("click", async function () {
+    const fd = new FormData();
+    let count = 0, bad = null;
+
+ /*   $(".attachment-row").each(function () {
+        const f = $(this).find(".att-file")[0].files[0];
+        if (!f) return;
+        if (f.size > MAX_FILE_SIZE) { bad = f.name; return false; }
+        fd.append("files", f);
+        fd.append("remarks", $(this).find(".att-remarks").val().trim());
+        count++;
+    });
+
+    if (bad) return showMessage(`"${bad}" exceeds 1 MB`, "warning");
+    if (!count) return showMessage("Please choose at least one file", "warning");*/
+	
+	const seen = new Set();
+	let dup = null;
+
+	$(".attachment-row").each(function () {
+	    const f = $(this).find(".att-file")[0].files[0];
+	    if (!f) return;
+	    if (f.size > MAX_FILE_SIZE) { bad = f.name; return false; }
+
+	    const key = f.name.toLowerCase();
+	    if (seen.has(key)) { dup = f.name; return false; }
+	    seen.add(key);
+
+	    fd.append("files", f);
+	    fd.append("remarks", $(this).find(".att-remarks").val().trim());
+	    count++;
+	});
+
+	if (bad) return showMessage(`"${bad}" exceeds 1 MB`, "warning");
+	if (dup) return showMessage(`"${dup}" is selected more than once`, "warning");
+
+    try {
+        const url = new URL(`/api/enquiry/${currentAttachmentEnquiryId}/attachments`, baseUrl1);
+        url.searchParams.set("userId", getCurrentUserId());
+        const r = await fetch(url, { method: "POST", credentials: "include", body: fd });
+        if (!r.ok) throw new Error(await r.text());
+
+        $("#newAttachmentRows").empty(); addAttachmentRow();
+        await fetchAttachments(currentAttachmentEnquiryId);
+        fetchEnquiries();                         // refresh the count badge
+        showPopup("Attachments uploaded successfully", "");
+    } 		 catch (e) {
+		    showMessage(e.message || "Unable to upload attachments", "warning");
+		}
+});
+
+async function viewAttachment(attId) {
+    const r = await fetch(new URL(`/api/enquiry/attachment/${attId}/view`, baseUrl1), { credentials: "include" });
+    if (!r.ok) return showMessage("Unable to preview attachment", "error");
+    window.open(URL.createObjectURL(await r.blob()), "_blank");
+}
+
+function deleteAttachment(attId) {
+    showConfirm("Are you sure you want to delete this attachment?", async function () {
+        const url = new URL(`/api/enquiry/attachment/${attId}`, baseUrl1);
+        url.searchParams.set("userId", getCurrentUserId());
+        const r = await fetch(url, { method: "DELETE", credentials: "include" });
+        if (!r.ok) return showMessage("Unable to delete attachment", "warning");
+        await fetchAttachments(currentAttachmentEnquiryId);
+        fetchEnquiries();
+        showPopup("Attachment deleted successfully", "");
+    });
 }

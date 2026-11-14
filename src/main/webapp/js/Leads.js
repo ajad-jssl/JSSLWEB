@@ -30,6 +30,47 @@ async function loadActions() {
         console.error("Error:", error);
     }
 }
+
+(function () {
+ 
+	function labelTable(table) {
+		var heads = Array.prototype.map.call(
+			table.querySelectorAll('thead th'),
+			function (th) { return th.textContent.replace(/\s+/g, ' ').trim(); }
+		);
+ 
+		table.querySelectorAll('tbody tr').forEach(function (tr) {
+			Array.prototype.forEach.call(tr.children, function (td, i) {
+				if (td.tagName !== 'TD' || td.colSpan > 1) return;   // skip "No data" rows
+				var label = heads[i] || '';
+				if (td.getAttribute('data-label') !== label) {
+					td.setAttribute('data-label', label);
+				}
+			});
+		});
+	}
+ 
+	function watch(table) {
+		if (!table) return;
+		labelTable(table);
+ 
+		// only childList is observed, so setting attributes can't re-trigger it
+		new MutationObserver(function () {
+			labelTable(table);
+		}).observe(table, { childList: true, subtree: true });
+	}
+ 
+	function init() {
+		watch(document.getElementById('LeadTableID'));
+		watch(document.querySelector('#exampleModalActivity table'));
+	}
+ 
+	if (document.readyState === 'loading') {
+		document.addEventListener('DOMContentLoaded', init);
+	} else {
+		init();
+	}
+})();
 // ==============================
 // HELPERS
 // ==============================

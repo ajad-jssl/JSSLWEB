@@ -74,6 +74,39 @@ $(document).ready(function () {
 	    }
 	});
 	
+	// Stage Count
+
+	$.ajax({
+	    url: new URL("/api/drawing_stage/count", baseUrl).toString(),
+	    type: "GET",
+	    xhrFields: { withCredentials: true },
+
+	    success: function (data) {
+	        $("#stagecount").text(data);
+	    },
+	    error: function (err) {
+	        console.error("Stage Count Error", err);
+	    }
+	});
 	
-	
+	function loadTypeStageCount() {
+		$.ajax({
+			url: new URL("/api/selection_stage/getAll", baseUrl).toString(),
+			type: "GET",
+			xhrFields: { withCredentials: true },
+
+			success: function (data) {
+				// 204 No Content -> data is undefined
+				let typeIds = {};
+				$.each(data || [], function (i, r) { typeIds[r.typeId] = true; });
+				$("#typeStageCount").text(Object.keys(typeIds).length);
+			},
+			error: function (err) {
+				console.error("Type Selection Stage count error:", err);
+				$("#typeStageCount").text("0");
+			}
+		});
+	}
+
+	loadTypeStageCount();
 });

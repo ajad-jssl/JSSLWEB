@@ -1,6 +1,4 @@
-
-
-const MainPage =  window.location.pathname.split("/").pop()+'.jsp';
+const MainPage = window.location.pathname.split("/").pop() + '.jsp';
 const UserId = sessionStorage.getItem('username');
 
 let allowedActions = [];
@@ -11,7 +9,7 @@ async function loadActions() {
             `${baseUrl}/api/page/actions?userId=${encodeURIComponent(UserId)}&pageName=${encodeURIComponent(MainPage)}`,
             {
                 method: "GET",
-                credentials: "include", // 🔐 send cookies/session
+                credentials: "include", // send cookies/session
                 headers: {
                     "Content-Type": "application/json"
                 }
@@ -23,26 +21,123 @@ async function loadActions() {
         }
 
         allowedActions = await response.json();
-		
-		
 
     } catch (error) {
         console.error("Error:", error);
     }
 }
 
-
-
-
-
-
 let modulesData = [];
 
+/* ------------------------------------------------------------------
+   SELECT2 HELPERS
+------------------------------------------------------------------ */
+function initUserSelect2() {
+    $('#userDropdown').select2({
+        theme: 'bootstrap4',
+        placeholder: '-- Select a user --',
+        allowClear: true,
+        width: '100%'
+    });
+
+    // Select2 fires jQuery events, so bind with jQuery (not inline onchange)
+    $('#userDropdown').on('change', function () {
+        fetchUserPermissions();
+    });
+}
+
+// Refresh Select2 UI WITHOUT firing the fetchUserPermissions handler
+function refreshUserSelect2() {
+    $('#userDropdown').trigger('change.select2');
+}
+
+function setUserDropdownDisabled(state) {
+    $('#userDropdown').prop('disabled', state);
+    refreshUserSelect2();
+}
+
+/* ------------------------------------------------------------------
+   UNIVERSAL "SELECT ALL" CHECKBOX (LOCAL ENVIRONMENT ONLY)
+   - baseUrl1 comes from js/config.js
+   - Enabled only when the backend is localhost AND a user is selected
+   - In production (jims.jssl.in) it is rendered disabled and does nothing
+   NOTE: this is a UI-only guard. Also block bulk changes on the server
+   side if you need real protection in production.
+------------------------------------------------------------------ */
+const IS_LOCAL = /localhost|127\.0\.0\.1/.test(baseUrl1);
+
+function initSelectAllCheckbox() {
+    const saveBtn = document.getElementById("saveper");
+    if (!saveBtn || document.getElementById("selectAllPermissions")) return;
+
+    const wrapper = document.createElement("div");
+    wrapper.id = "selectAllWrapper";
+    wrapper.className = "mt-3 d-flex align-items-center";
+
+    const cb = document.createElement("input");
+    cb.type = "checkbox";
+    cb.id = "selectAllPermissions";
+    cb.disabled = true; // enabled later when a user is selected (local only)
+    cb.style.cursor = "pointer";
+
+    const label = document.createElement("label");
+    label.htmlFor = "selectAllPermissions";
+    label.className = "ml-2 mb-0";
+    label.style.fontWeight = "600";
+    label.style.cursor = "pointer";
+    label.textContent = "Select All (all modules)";
+
+    if (!IS_LOCAL) {
+        label.title = "Available only in the local environment";
+        label.style.cursor = "not-allowed";
+        cb.style.cursor = "not-allowed";
+    }
+
+    wrapper.appendChild(cb);
+    wrapper.appendChild(label);
+    saveBtn.parentNode.insertBefore(wrapper, saveBtn);
+
+    cb.addEventListener("change", function () {
+        if (!IS_LOCAL || !$('#userDropdown').val()) {
+            cb.checked = false;
+            return;
+        }
+        toggleAllPermissions(cb.checked);
+    });
+}
+
+// Check/uncheck every permission checkbox in ALL module tabs.
+// Fires the native change event so each checkbox's existing handler
+// expands/collapses its containers (actions, invoice tabs, sub-pages).
+function toggleAllPermissions(state) {
+    const all = document.querySelectorAll(
+        '#moduleTabContent input[type="checkbox"]:not([name^="tabParentActions_"])'
+    );
+
+    // DOM order = parents before children, so containers open before children are checked
+    all.forEach(el => {
+        if (el.checked !== state) {
+            el.checked = state;
+            el.dispatchEvent(new Event("change", { bubbles: true }));
+        }
+    });
+}
+
+// Reset the Select All box and set its enabled state
+function updateSelectAllState() {
+    const cb = document.getElementById("selectAllPermissions");
+    if (!cb) return;
+    cb.checked = false;
+    cb.disabled = !(IS_LOCAL && $('#userDropdown').val());
+}
+
 document.addEventListener("DOMContentLoaded", function() {
-	loadActions();
+    loadActions();
     const userDropdown = document.getElementById("userDropdown");
-    userDropdown.disabled = true;
-   
+
+    initUserSelect2();
+    initSelectAllCheckbox();
+    setUserDropdownDisabled(true);
 
     // Populate User Dropdown
     fetch(new URL('/api/users', baseUrl1), {
@@ -50,22 +145,22 @@ document.addEventListener("DOMContentLoaded", function() {
     })
         .then(response => response.json())
         .then(data => {
-			jimsUsersCache = data;
+            jimsUsersCache = data;
             data.forEach(user => {
                 const option = document.createElement("option");
                 option.value = user.user_id; // Match backend field
                 option.textContent = user.username;
                 userDropdown.appendChild(option);
             });
+            refreshUserSelect2();
         })
         .catch(error => {
             console.error("Error fetching users:", error);
             alert("Failed to load users: " + error.message);
-            userDropdown.disabled = false;
+            setUserDropdownDisabled(false);
         });
 
     // Fetch modules
-
     fetch(new URL('/api/modules/getAllAssign', baseUrl1), {
         credentials: "include"
     })
@@ -112,8 +207,6 @@ document.addEventListener("DOMContentLoaded", function() {
                                 // Remove SUBCON users
                                 loadJimsUsers();
                             }
-
-
                         });
                         tabItem.appendChild(tabLink);
                         tabList.appendChild(tabItem);
@@ -129,84 +222,75 @@ document.addEventListener("DOMContentLoaded", function() {
                         const pageContainer = document.createElement("div");
                         pageContainer.className = "page-checkboxes";
 
-						
                         pages.forEach(page => {
 
                             const div = document.createElement("div");
 
-                       
-							const checkbox = document.createElement("input");
-							checkbox.type = "checkbox";
-							checkbox.name = `pageIds_${module.moduleID}`;
-							checkbox.value = page.pageID;
-							checkbox.setAttribute("data-module-id", module.moduleID);
+                            const checkbox = document.createElement("input");
+                            checkbox.type = "checkbox";
+                            checkbox.name = `pageIds_${module.moduleID}`;
+                            checkbox.value = page.pageID;
+                            checkbox.setAttribute("data-module-id", module.moduleID);
 
-							const label = document.createElement("label");
-							label.textContent =page.displayName;
-							label.className = "form-check-label ml-2";
-							
-							const isInvoicePage = page.pageID === 2;
+                            const label = document.createElement("label");
+                            label.textContent = page.displayName;
+                            label.className = "form-check-label ml-2";
 
-						if (isInvoicePage) {
-							    label.style.color = "#000";   // special page (Invoice)
-							    label.style.fontWeight = "600";
-							} else {
-							    label.style.color = "blue";   // all other pages
-							} 
+                            const isInvoicePage = page.pageID === 2;
 
-							const pageActionContainer = document.createElement("div");
-							pageActionContainer.style.marginLeft = "20px";
-							pageActionContainer.style.marginTop = "4px";
-							pageActionContainer.style.display = "none";
-							pageActionContainer.style.flexWrap = "wrap";
-							pageActionContainer.style.gap = "6px";
-						
+                            if (isInvoicePage) {
+                                label.style.color = "#000";   // special page (Invoice)
+                                label.style.fontWeight = "600";
+                            } else {
+                                label.style.color = "blue";   // all other pages
+                            }
 
-							//  FIX: Skip pageID = 2 (Invoice page)
-							if (page.pageID !== 2) {
-								
-							    // Fetch actions
-							    fetch(new URL(`/api/page-actions?pageId=${page.pageID}`, baseUrl1), {
-							        credentials: "include"
-							    })
-							    .then(res => res.json())
-							    .then(actions => {
-							        actions.forEach(action => {
-							           createStyledAction(action.actionName, page, module, pageActionContainer);
-							        });
-							    });
+                            const pageActionContainer = document.createElement("div");
+                            pageActionContainer.style.marginLeft = "20px";
+                            pageActionContainer.style.marginTop = "4px";
+                            pageActionContainer.style.display = "none";
+                            pageActionContainer.style.flexWrap = "wrap";
+                            pageActionContainer.style.gap = "6px";
 
-							    // Toggle actions
-							    checkbox.addEventListener("change", function () {
-							        if (checkbox.checked) {
-							            pageActionContainer.style.display = "flex";
-							        } else {
-							            pageActionContainer.style.display = "none";
-							            pageActionContainer
-							                .querySelectorAll("input[type='checkbox']")
-							                .forEach(cb => cb.checked = false);
-							        }
-							    });
+                            // Skip pageID = 2 (Invoice page)
+                            if (page.pageID !== 2) {
 
-							    // Append
-							    div.appendChild(checkbox);
-							    div.appendChild(label);
-							    div.appendChild(pageActionContainer);
-							} else {
-							    // ✅ For pageID = 2 → only checkbox + label (NO actions)
-							    div.appendChild(checkbox);
-							    div.appendChild(label);
-							}
-                            // ✅ SHOW ACTIONS BESIDE "New Master" (ONLY for Invoice Module pageID=1)
-     
+                                // Fetch actions
+                                fetch(new URL(`/api/page-actions?pageId=${page.pageID}`, baseUrl1), {
+                                    credentials: "include"
+                                })
+                                    .then(res => res.json())
+                                    .then(actions => {
+                                        actions.forEach(action => {
+                                            createStyledAction(action.actionName, page, module, pageActionContainer);
+                                        });
+                                    });
+
+                                // Toggle actions
+                                checkbox.addEventListener("change", function () {
+                                    if (checkbox.checked) {
+                                        pageActionContainer.style.display = "flex";
+                                    } else {
+                                        pageActionContainer.style.display = "none";
+                                        pageActionContainer
+                                            .querySelectorAll("input[type='checkbox']")
+                                            .forEach(cb => cb.checked = false);
+                                    }
+                                });
+
+                                // Append
+                                div.appendChild(checkbox);
+                                div.appendChild(label);
+                                div.appendChild(pageActionContainer);
+                            } else {
+                                // For pageID = 2 -> only checkbox + label (NO actions)
+                                div.appendChild(checkbox);
+                                div.appendChild(label);
+                            }
 
                             pageContainer.appendChild(div);
 
-                            //  SPECIAL CASE → Invoice Module (PageID = 2)
-                            //  SPECIAL CASE → Invoice Module (PageID = 2)
-							
-							
-							
+                            // SPECIAL CASE -> Invoice Module (PageID = 2)
                             if (page.pageID === 2) {
 
                                 // Create container BELOW checkbox
@@ -218,15 +302,15 @@ document.addEventListener("DOMContentLoaded", function() {
                                 subContainer.style.flexDirection = "column";
                                 subContainer.style.gap = "6px";
 
-                                //  Fetch tabs dynamically from TabsMaster
+                                // Fetch tabs dynamically from TabsMaster
                                 fetch(new URL('/api/invoice-tabs', baseUrl1), { credentials: "include" })
                                     .then(res => res.json())
                                     .then(tabsData => {
 
                                         // Normalize keys to match API response exactly
                                         const cleanedTabs = tabsData.map(t => ({
-                                            tabID: t.TabID,    //  capital T, capital I, capital D
-                                            tabName: t.TabName   //  capital T, capital N
+                                            tabID: t.TabID,
+                                            tabName: t.TabName
                                         }));
 
                                         console.log("Cleaned tabs:", cleanedTabs);
@@ -259,7 +343,6 @@ document.addEventListener("DOMContentLoaded", function() {
                                             subCheckbox.setAttribute("data-tab-key", tab);
                                             subCheckbox.type = "checkbox";
                                             subCheckbox.name = `invoiceTabs_${module.moduleID}`;
-                                            /* subCheckbox.value = tab;*/
                                             subCheckbox.value = tabID;
 
                                             subCheckbox.setAttribute("data-module-id", module.moduleID);
@@ -286,7 +369,7 @@ document.addEventListener("DOMContentLoaded", function() {
                                             parentActionRow.style.fontSize = "11px";
                                             parentActionRow.style.display = "none";
 
-                                            // ✅ Opening bracket label
+                                            // Opening bracket label
                                             const openBracket = document.createElement("span");
                                             openBracket.textContent = "Actions: [";
                                             openBracket.style.color = "#555";
@@ -302,10 +385,10 @@ document.addEventListener("DOMContentLoaded", function() {
                                             pagesContainer.style.flexDirection = "column";
                                             pagesContainer.style.gap = "6px";
 
-                                            //  Build sub-pages using correct API key names
+                                            // Build sub-pages using correct API key names
                                             pages.forEach(pageRow => {
-                                                const pageName = pageRow.Page_Name.replace(/\.jsp$/, ''); //  Page_Name
-                                                const pageRowID = pageRow.page_ID;                         //  page_ID
+                                                const pageName = pageRow.Page_Name.replace(/\.jsp$/, '');
+                                                const pageRowID = pageRow.page_ID;
 
                                                 const subPageDiv = document.createElement("div");
                                                 subPageDiv.style.marginBottom = "4px";
@@ -336,13 +419,10 @@ document.addEventListener("DOMContentLoaded", function() {
                                                 actionContainer.style.flexWrap = "wrap";
                                                 actionContainer.style.gap = "4px";
                                                 actionContainer.style.padding = "4px 8px";
-                                                //actionContainer.style.backgroundColor = "red";
-                                                /*actionContainer.style.border = "1px dashed #adb5bd";*/
                                                 actionContainer.style.borderRadius = "4px";
                                                 actionContainer.setAttribute("data-action-container", "true");
 
-												
-                                                //  Page-level label header
+                                                // Page-level label header
                                                 const pageLevelLabel = document.createElement("span");
                                                 pageLevelLabel.textContent = "";
                                                 pageLevelLabel.style.fontSize = "7px";
@@ -354,17 +434,17 @@ document.addEventListener("DOMContentLoaded", function() {
                                                 pageLevelLabel.style.letterSpacing = "0.5px";
                                                 actionContainer.appendChild(pageLevelLabel);
 
-                                                // ✅ FETCH ACTIONS DYNAMICALLY BASED ON pageId (pageRowID)
+                                                // FETCH ACTIONS DYNAMICALLY BASED ON pageId (pageRowID)
                                                 fetch(new URL(`/api/tabpage-actions?pageId=${pageRowID}`, baseUrl1), {
                                                     credentials: "include"
                                                 })
                                                     .then(res => res.json())
                                                     .then(actionsData => {
                                                         console.log(`Actions for pageId ${pageRowID}:`, actionsData);
-                                                        
+
                                                         // Extract action names from the fetched data
                                                         const actions = actionsData.map(item => item.actionName);
-                                                        
+
                                                         // Create action checkboxes using the fetched actions
                                                         actions.forEach((action, idx) => {
                                                             const actionCheckbox = document.createElement("input");
@@ -372,9 +452,9 @@ document.addEventListener("DOMContentLoaded", function() {
                                                             actionCheckbox.name = `tabActions_${module.moduleID}`;
                                                             actionCheckbox.value = `${tab}|${pageName}|${action}`;
                                                             actionCheckbox.setAttribute("data-module-id", module.moduleID);
-                                                            actionCheckbox.setAttribute("data-tab-id", tabID);        // ✅ store tabID
-                                                            actionCheckbox.setAttribute("data-page-id", pageRowID);   // ✅ store tabPageID
-                                                            actionCheckbox.setAttribute("data-action", action);        // ✅ store action
+                                                            actionCheckbox.setAttribute("data-tab-id", tabID);
+                                                            actionCheckbox.setAttribute("data-page-id", pageRowID);
+                                                            actionCheckbox.setAttribute("data-action", action);
                                                             actionCheckbox.style.cursor = "pointer";
 
                                                             const actionLabel = document.createElement("label");
@@ -385,18 +465,18 @@ document.addEventListener("DOMContentLoaded", function() {
                                                             actionLabel.style.cursor = "pointer";
                                                             actionLabel.style.marginLeft = "2px";
 
-                                                            //  Each action as a small pill-like badge
+                                                            // Each action as a small row/badge
                                                             const wrapper = document.createElement("div");
 
-                                                            wrapper.style.display = "flex";              // ✅ column layout
+                                                            wrapper.style.display = "flex";
                                                             wrapper.style.alignItems = "center";
                                                             wrapper.style.gap = "6px";
                                                             wrapper.style.padding = "4px 8px";
                                                             wrapper.style.border = "1px solid #ced4da";
-                                                            wrapper.style.borderRadius = "6px";          // less pill, more clean row
+                                                            wrapper.style.borderRadius = "6px";
                                                             wrapper.style.fontSize = "12px";
-                                                            wrapper.style.marginBottom = "5px";          // ✅ vertical spacing
-                                                            wrapper.style.background = "#f8f9fa";        // optional clean bg
+                                                            wrapper.style.marginBottom = "5px";
+                                                            wrapper.style.background = "#f8f9fa";
 
                                                             wrapper.appendChild(actionCheckbox);
                                                             wrapper.appendChild(actionLabel);
@@ -408,8 +488,7 @@ document.addEventListener("DOMContentLoaded", function() {
                                                         console.error(`Error fetching actions for pageId ${pageRowID}:`, err);
                                                     });
 
-
-                                                // ✅ Sub-page checkbox → show/hide actions for that page only
+                                                // Sub-page checkbox -> show/hide actions for that page only
                                                 subPageCheckbox.addEventListener("change", function() {
                                                     if (subPageCheckbox.checked) {
                                                         actionContainer.style.display = "flex";
@@ -424,21 +503,20 @@ document.addEventListener("DOMContentLoaded", function() {
                                                 pagesContainer.appendChild(subPageDiv);
                                             });
 
-                                            //  Parent action checkboxes - ✅ FETCH FROM FIRST PAGE'S ACTIONS
-                                            // Get the first page to fetch actions for parent checkboxes
+                                            // Parent action checkboxes - FETCH FROM FIRST PAGE'S ACTIONS
                                             if (pages.length > 0) {
                                                 const firstPageId = pages[0].page_ID;
-                                                
+
                                                 fetch(new URL(`/api/tabpage-actions?pageId=${firstPageId}`, baseUrl1), {
                                                     credentials: "include"
                                                 })
                                                     .then(res => res.json())
                                                     .then(actionsData => {
                                                         console.log(`Parent actions for first page ${firstPageId}:`, actionsData);
-                                                        
+
                                                         const actions = actionsData.map(item => item.actionName);
-                                                        
-                                                        //  Parent action checkboxes
+
+                                                        // Parent action checkboxes
                                                         actions.forEach((action, idx) => {
                                                             const wrapper = document.createElement("span");
                                                             wrapper.style.display = "inline-flex";
@@ -469,7 +547,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
                                                                     const parts = childCb.value.split("|");
 
-                                                                    // ✅ Only action checkboxes (tab|page|action)
+                                                                    // Only action checkboxes (tab|page|action)
                                                                     if (parts.length === 3 && parts[2] === action) {
 
                                                                         // 1. Check/uncheck action checkbox
@@ -483,7 +561,7 @@ document.addEventListener("DOMContentLoaded", function() {
                                                                         );
 
                                                                         if (pageCheckbox) {
-                                                                            pageCheckbox.checked = isChecked; // 🔥 CHECK PAGE ALSO
+                                                                            pageCheckbox.checked = isChecked; // CHECK PAGE ALSO
                                                                         }
 
                                                                         if (isChecked) {
@@ -494,7 +572,7 @@ document.addEventListener("DOMContentLoaded", function() {
                                                                             // 4. Expand whole tab pages container
                                                                             pagesContainer.style.display = "flex";
                                                                         } else {
-                                                                            // Optional: collapse action container if unchecked
+                                                                            // Collapse action container if unchecked
                                                                             const actionCont = childCb.closest("div[data-action-container='true']");
                                                                             if (actionCont) actionCont.style.display = "none";
                                                                         }
@@ -504,7 +582,7 @@ document.addEventListener("DOMContentLoaded", function() {
                                                             wrapper.appendChild(parentCb);
                                                             wrapper.appendChild(parentLbl);
 
-                                                            //  Add pipe separator between actions (not after last)
+                                                            // Add pipe separator between actions (not after last)
                                                             if (idx < actions.length - 1) {
                                                                 const pipe = document.createElement("span");
                                                                 pipe.textContent = "|";
@@ -522,7 +600,7 @@ document.addEventListener("DOMContentLoaded", function() {
                                                     });
                                             }
 
-                                            //  Closing bracket
+                                            // Closing bracket
                                             const closeBracket = document.createElement("span");
                                             closeBracket.textContent = "]";
                                             closeBracket.style.color = "#555";
@@ -534,20 +612,17 @@ document.addEventListener("DOMContentLoaded", function() {
                                             subDiv.appendChild(parentActionRow);
                                             subDiv.appendChild(pagesContainer);
 
-                                            //  Toggle pages when tab checkbox clicked
-                                            //  Toggle pages when tab checkbox clicked
-
-                                            //  CORRECT ONE — Tab checkbox → show pages AND auto-check + expand all sub-pages
+                                            // Tab checkbox -> show pages list; reset everything when unchecked
                                             subCheckbox.addEventListener("change", function() {
                                                 if (subCheckbox.checked) {
 
-                                                    //  Just show the pages list — don't check or expand anything
+                                                    // Just show the pages list - don't check or expand anything
                                                     pagesContainer.style.display = "flex";
 
                                                 } else {
                                                     pagesContainer.style.display = "none";
 
-                                                    //  Reset everything when tab unchecked
+                                                    // Reset everything when tab unchecked
                                                     pagesContainer.querySelectorAll("input[type='checkbox']").forEach(cb => cb.checked = false);
                                                     pagesContainer.querySelectorAll("div[data-action-container='true']").forEach(ac => {
                                                         ac.style.display = "none";
@@ -559,7 +634,7 @@ document.addEventListener("DOMContentLoaded", function() {
                                             subContainer.appendChild(subDiv);
                                         });
 
-                                        //  Toggle subContainer when Invoice page checkbox clicked
+                                        // Toggle subContainer when Invoice page checkbox clicked
                                         checkbox.addEventListener("change", function() {
                                             if (checkbox.checked) {
                                                 subContainer.style.display = "flex";
@@ -572,7 +647,7 @@ document.addEventListener("DOMContentLoaded", function() {
                                     })
                                     .catch(err => console.error("Error loading invoice tabs from DB:", err));
 
-                                //  Add subContainer BELOW the invoice page checkbox
+                                // Add subContainer BELOW the invoice page checkbox
                                 pageContainer.appendChild(subContainer);
                             }
                         });
@@ -581,18 +656,12 @@ document.addEventListener("DOMContentLoaded", function() {
                         pageContainer.style.display = "flex";
                         pageContainer.style.flexDirection = "column";
                         pageContainer.style.gap = "6px";
-                        // Add action checkboxes
-                       /* const actions = module.moduleID === invoiceModuleId ? ["Insert", "Edit", "Print", "Verify", "Release", "view", "Cancel"] : ["Insert", "Edit", "Cancel", "Verify", "status", "Delete", "Unlock/Lock"];
-                        const actionContainer = document.createElement("div");
-                        actionContainer.className = "action-checkboxes";
-                        actionContainer.innerHTML = "<h6>Module Actions</h6>";*/
-                       
 
                         tabPane.appendChild(pageContainer);
-                       /* tabPane.appendChild(actionContainer);*/
                         tabContent.appendChild(tabPane);
                     });
-                    userDropdown.disabled = false;
+
+                    setUserDropdownDisabled(false);
                     if (userDropdown.value) {
                         fetchUserPermissions();
                     }
@@ -600,13 +669,13 @@ document.addEventListener("DOMContentLoaded", function() {
                 .catch(error => {
                     console.error("Error fetching pages:", error);
                     alert("Failed to load pages: " + error.message);
-                    userDropdown.disabled = false;
+                    setUserDropdownDisabled(false);
                 });
         })
         .catch(error => {
             console.error("Error fetching modules:", error);
             alert("Failed to load modules: " + error.message);
-            userDropdown.disabled = false;
+            setUserDropdownDisabled(false);
         });
 
     // Handle form submission
@@ -616,23 +685,24 @@ document.addEventListener("DOMContentLoaded", function() {
         const selectedUserId = document.getElementById("selectedUserId");
         selectedUserId.value = userDropdown.value;
         const allowed = allowedActions || [];
-		console.log("allwed are ",allowed);
-        
-  if (!allowed.includes("Insert")) {
-                  alert(" You do not have permission to Insert.");
-                  return;
-                }
+        console.log("allwed are ", allowed);
+
+        if (!allowed.includes("Insert")) {
+            alert(" You do not have permission to Insert.");
+            return;
+        }
         savepermission();
     });
 });
+
 let oldPagePermissions = [];
-//let oldActionPermissions = [];
 let oldTabPermissions = [];
 let oldPageActionPermissions = [];
 let selectedPageActionPermissions = [];
 
 function fetchUserPermissions() {
     const userId = document.getElementById("userDropdown").value;
+    updateSelectAllState(); // enable only in local when a user is selected
     if (!userId) {
         document.querySelectorAll(".tick").forEach(tick => {
             tick.style.display = "none";
@@ -640,12 +710,12 @@ function fetchUserPermissions() {
         document.querySelectorAll("#moduleTabContent input[type='checkbox']").forEach(cb => {
             cb.checked = false;
         });
-        // ✅ NEW: clear module highlights when no user selected
+        // clear module highlights when no user selected
         clearModuleHighlights();
         return;
     }
 
-    // ✅ NEW: clear old highlights before loading new user's data
+    // clear old highlights before loading new user's data
     clearModuleHighlights();
 
     // Log available checkboxes
@@ -669,8 +739,6 @@ function fetchUserPermissions() {
             })
     );
 
-
-
     const tabPromises = moduleIds.map(moduleId =>
         fetch(new URL(`/api/user-tab-permissions?userId=${userId}&moduleId=${moduleId}&pageId=2`, baseUrl1), {
             credentials: "include"
@@ -682,6 +750,7 @@ function fetchUserPermissions() {
                 return { moduleId, tabs: [] };
             })
     );
+
     const tabPageActionPromise = fetch(
         new URL(`/api/user-tab-page-actions?userId=${userId}`, baseUrl1),
         { credentials: "include" }
@@ -690,36 +759,35 @@ function fetchUserPermissions() {
         .then(data => {
             oldTabPageActions = data;
             console.log("Tab Page Actions:", data);
-            return data; // ✅🔥 VERY IMPORTANT
+            return data;
         })
         .catch(err => {
             console.error("Error fetching tab page actions:", err);
             oldTabPageActions = [];
-            return []; // ✅ ALSO IMPORTANT
+            return [];
         });
-		const pageActionPromise = fetch(
-		    new URL(`/api/user-page-actions?userId=${userId}`, baseUrl1),
-		    { credentials: "include" }
-		)
-		.then(res => res.json())
-		.then(data => {
-		    oldPageActionPermissions = data;
-		    console.log("Old Page Actions:", data);
-		    return data;
-		})
-		.catch(err => {
-		    console.error("Error fetching page actions:", err);
-		    oldPageActionPermissions = [];
-		    return [];
-		});
 
-    Promise.all([Promise.all(permissionPromises), Promise.all(tabPromises), tabPageActionPromise,pageActionPromise])
-        .then(([pagePermissions, tabPermissions, tabPageActions,pageActions]) => {
+    const pageActionPromise = fetch(
+        new URL(`/api/user-page-actions?userId=${userId}`, baseUrl1),
+        { credentials: "include" }
+    )
+        .then(res => res.json())
+        .then(data => {
+            oldPageActionPermissions = data;
+            console.log("Old Page Actions:", data);
+            return data;
+        })
+        .catch(err => {
+            console.error("Error fetching page actions:", err);
+            oldPageActionPermissions = [];
+            return [];
+        });
+
+    Promise.all([Promise.all(permissionPromises), Promise.all(tabPromises), tabPageActionPromise, pageActionPromise])
+        .then(([pagePermissions, tabPermissions, tabPageActions, pageActions]) => {
             oldPagePermissions = [];
-         
             oldTabPermissions = [];
             console.log("Page Permissions:", pagePermissions);
-           // console.log("Action Permissions:", actionPermissions);
 
             // Reset all checkboxes and ticks
             document.querySelectorAll("#moduleTabContent input[type='checkbox']").forEach(cb => {
@@ -730,72 +798,68 @@ function fetchUserPermissions() {
             });
 
             // Check page permissions
-			pagePermissions.forEach(({ moduleId, pageIds }) => {
-			    pageIds.forEach(pageId => {
+            pagePermissions.forEach(({ moduleId, pageIds }) => {
+                pageIds.forEach(pageId => {
 
-			        oldPagePermissions.push({
-			            moduleId: moduleId,
-			            pageId: pageId
-			        });
+                    oldPagePermissions.push({
+                        moduleId: moduleId,
+                        pageId: pageId
+                    });
 
-			        // ✅ NEW
-			        highlightModuleTab(moduleId);
+                    highlightModuleTab(moduleId);
 
-			        const checkbox = document.querySelector(
-			            `input[name="pageIds_${moduleId}"][value="${pageId}"]`
-			        );
+                    const checkbox = document.querySelector(
+                        `input[name="pageIds_${moduleId}"][value="${pageId}"]`
+                    );
 
                     if (checkbox) {
-						checkbox.checked = true;
+                        checkbox.checked = true;
 
-						// ✅ Show action container automatically
-						// except Invoice page (pageId = 2)
-						if (pageId != 2) {
+                        // Show action container automatically, except Invoice page (pageId = 2)
+                        if (pageId != 2) {
 
-						    const parentDiv = checkbox.closest("div");
+                            const parentDiv = checkbox.closest("div");
 
-						    if (parentDiv) {
+                            if (parentDiv) {
 
-						        // find action container
-						        const actionContainer = parentDiv.querySelector("div");
+                                // find action container
+                                const actionContainer = parentDiv.querySelector("div");
 
-						        if (actionContainer) {
-						            actionContainer.style.display = "flex";
-						        }
-						    }
-						}
+                                if (actionContainer) {
+                                    actionContainer.style.display = "flex";
+                                }
+                            }
+                        }
 
-
-                        // ✅ IMPORTANT: If Invoice Page (pageId = 2)
+                        // If Invoice Page (pageId = 2)
                         if (pageId == 2) {
                             const tabPane = document.getElementById(`module-${moduleId}`);
 
                             const container = tabPane.querySelector(".invoice-tabs-container");
 
                             if (container) {
-                                container.style.display = "flex"; // 🔥 FORCE EXPAND
+                                container.style.display = "flex"; // FORCE EXPAND
                             }
                         }
                     }
                 });
             });
 
-
             console.log("Tab Permissions:", tabPermissions);
-			tabPermissions.forEach(({ moduleId, tabs }) => {
-			    tabs.forEach(tabId => {
+            tabPermissions.forEach(({ moduleId, tabs }) => {
+                tabs.forEach(tabId => {
 
-			        const pageId = 2;
+                    const pageId = 2;
 
-			        oldTabPermissions.push({
-			            moduleId: moduleId,
-			            pageId: pageId,
-			            tabId: tabId
-			        });
+                    oldTabPermissions.push({
+                        moduleId: moduleId,
+                        pageId: pageId,
+                        tabId: tabId
+                    });
 
-			        // ✅ NEW
-			        highlightModuleTab(moduleId);
-                    // ✅ Check the tab checkbox
+                    highlightModuleTab(moduleId);
+
+                    // Check the tab checkbox
                     const checkbox = document.querySelector(
                         `input[name="invoiceTabs_${moduleId}"][value="${tabId}"]`
                     );
@@ -803,22 +867,22 @@ function fetchUserPermissions() {
                     if (checkbox) {
                         checkbox.checked = true;
 
-                        // ✅ 1. Expand invoice-tabs-container
+                        // 1. Expand invoice-tabs-container
                         const mainContainer = checkbox.closest(".invoice-tabs-container");
                         if (mainContainer) mainContainer.style.display = "flex";
 
-                        // ✅ 2. Ensure Invoice page checkbox is checked
+                        // 2. Ensure Invoice page checkbox is checked
                         const parentPageCheckbox = document.querySelector(
                             `input[name="pageIds_${moduleId}"][value="2"]`
                         );
                         if (parentPageCheckbox) parentPageCheckbox.checked = true;
 
-                        // ✅ 3. Only expand pagesContainer — do NOT auto-check sub-pages or actions
+                        // 3. Only expand pagesContainer - do NOT auto-check sub-pages or actions
                         const subDiv = checkbox.closest(".form-check");
                         if (subDiv) {
                             const pagesContainer = subDiv.querySelector("div[style*='flex-direction: column']");
                             if (pagesContainer) {
-                                pagesContainer.style.display = "flex"; // just show, nothing else
+                                pagesContainer.style.display = "flex";
                             }
                         }
                     }
@@ -826,33 +890,12 @@ function fetchUserPermissions() {
             });
 
             console.log("OLD PAGE PERMISSIONS:", oldPagePermissions);
-            // Check action permissions
-/*            actionPermissions.forEach(({ moduleId, actions }) => {
-                actions.forEach(action => {
-                    oldActionPermissions.push({
-                        moduleId: moduleId,
-                        action: action
-                    });
-                    const checkbox = document.querySelector(`input[name="actionPermissions_${moduleId}"][value="${action}"]`);
-			
-                    if (checkbox) {
-                        checkbox.checked = true;
-                        const tick = document.getElementById(`tick_action_${moduleId}_${action}`);
-                        if (tick) tick.style.display = "inline";
-                        else console.warn(`Tick element for action ${action} in module ${moduleId} not found`);
-                    } else {
-                        console.warn(`Checkbox for action ${action} in module ${moduleId} not found`);
-                    }
-                });
-            });*/
-
 
             (tabPageActions || []).forEach(item => {
-				
-				highlightModuleTab(item.moduleId);
 
+                highlightModuleTab(item.moduleId);
 
-                // ✅ ACTION checkbox
+                // ACTION checkbox
                 const cb = document.querySelector(
                     `input[name^="tabActions_"][data-tab-id="${item.tabId}"][data-page-id="${item.tabPageId}"][data-action="${item.action}"]`
                 );
@@ -860,12 +903,12 @@ function fetchUserPermissions() {
                 if (cb) {
                     cb.checked = true;
 
-                    // ✅ ACTION CONTAINER
+                    // ACTION CONTAINER
                     const actionCont = cb.closest("div[data-action-container='true']");
                     if (actionCont) actionCont.style.display = "flex";
                 }
 
-                // ✅ SUB PAGE checkbox (🔥 FIXED)
+                // SUB PAGE checkbox
                 const subPageCb = document.querySelector(
                     `input[name^="tabSubPages_"][data-tab-id="${item.tabId}"][data-page-id="${item.tabPageId}"]`
                 );
@@ -878,7 +921,7 @@ function fetchUserPermissions() {
                     if (actionCont) actionCont.style.display = "flex";
                 }
 
-                // ✅ TAB checkbox
+                // TAB checkbox
                 const tabCheckbox = document.querySelector(
                     `input[name^="invoiceTabs_"][data-tab-id="${item.tabId}"]`
                 );
@@ -890,7 +933,7 @@ function fetchUserPermissions() {
                     if (tabContainer) tabContainer.style.display = "flex";
                 }
 
-                // ✅ PAGE checkbox (Invoice page = 2)
+                // PAGE checkbox (Invoice page = 2)
                 const pageCheckbox = document.querySelector(
                     `input[name^="pageIds_"][value="2"]`
                 );
@@ -898,30 +941,30 @@ function fetchUserPermissions() {
                 if (pageCheckbox) pageCheckbox.checked = true;
 
             });
-			(pageActions || []).forEach(item => {
 
-			    const cb = document.querySelector(
-			        `input[name^="pageActions_"][data-page-id="${item.pageId}"][data-action="${item.action}"]`
-			    );
+            (pageActions || []).forEach(item => {
 
-			    if (cb) {
-			        cb.checked = true;
-					
-					highlightModuleTab(item.moduleId);
+                const cb = document.querySelector(
+                    `input[name^="pageActions_"][data-page-id="${item.pageId}"][data-action="${item.action}"]`
+                );
 
+                if (cb) {
+                    cb.checked = true;
 
-			        // show container
-			        const container = cb.closest("div").parentElement;
-			        if (container) container.style.display = "flex";
+                    highlightModuleTab(item.moduleId);
 
-			        // also check page checkbox
-			        const pageCheckbox = document.querySelector(
-			            `input[name="pageIds_${item.moduleId}"][value="${item.pageId}"]`
-			        );
+                    // show container
+                    const container = cb.closest("div").parentElement;
+                    if (container) container.style.display = "flex";
 
-			        if (pageCheckbox) pageCheckbox.checked = true;
-			    }
-			});
+                    // also check page checkbox
+                    const pageCheckbox = document.querySelector(
+                        `input[name="pageIds_${item.moduleId}"][value="${item.pageId}"]`
+                    );
+
+                    if (pageCheckbox) pageCheckbox.checked = true;
+                }
+            });
 
         })
         .catch(error => {
@@ -929,7 +972,6 @@ function fetchUserPermissions() {
             alert("Failed to fetch permissions: " + error.message);
         });
 }
-
 
 function clearModuleHighlights() {
     document.querySelectorAll("#moduleTabs .nav-link").forEach(tabLink => {
@@ -946,26 +988,28 @@ function highlightModuleTab(moduleId) {
 
 let oldTabPageActions = [];
 const selectedTabPageActions = [];
+
 function savepermission() {
     const selectedUserId = document.getElementById("userDropdown").value;
-   
-	const saveBtn = document.getElementById("saveper");
-	  saveBtn.disabled = true;
-	  saveBtn.textContent = "Saving...";
+
+    // FIX: clear accumulated selections so repeated saves don't duplicate entries
+    selectedTabPageActions.length = 0;
+    selectedPageActionPermissions.length = 0;
+
+    const saveBtn = document.getElementById("saveper");
+    saveBtn.disabled = true;
+    saveBtn.textContent = "Saving...";
 
     let createdby = sessionStorage.getItem('id');
 
     if (!selectedUserId) {
-		
-	
         alert("Please select a user.");
-		saveBtn.disabled = false;
-						       saveBtn.textContent = "Save Permissions";
+        saveBtn.disabled = false;
+        saveBtn.textContent = "Save Permissions";
         return;
     }
 
     const selectedPermissions = [];
-   
     const selectedTabPermissions = [];
     const affectedModuleIds = new Set();
 
@@ -976,7 +1020,7 @@ function savepermission() {
         affectedModuleIds.add(moduleId);
 
         const pageCheckboxes = tab.querySelectorAll(`input[name="pageIds_${moduleId}"]:checked`);
-  
+
         pageCheckboxes.forEach(cb => {
             selectedPermissions.push({
                 moduleId: moduleId,
@@ -986,20 +1030,18 @@ function savepermission() {
             });
         });
 
-
-
         const tabCheckboxes = tab.querySelectorAll(`input[name^="invoiceTabs_"]:checked`);
 
-     
         tabCheckboxes.forEach(cb => {
             selectedTabPermissions.push({
                 moduleId: moduleId,
                 pageId: 2,
-                tabId: cb.getAttribute("data-tab-id"), // ✅ USE THIS
+                tabId: cb.getAttribute("data-tab-id"),
                 userId: selectedUserId,
                 createdBy: createdby
             });
         });
+
         const tabActionCheckboxes = tab.querySelectorAll(`input[name="tabActions_${moduleId}"]:checked`);
 
         tabActionCheckboxes.forEach(cb => {
@@ -1012,21 +1054,20 @@ function savepermission() {
                 createdBy: createdby
             });
         });
-		const pageActionCheckboxes = tab.querySelectorAll(
-		    `input[name="pageActions_${moduleId}"]:checked`
-		);
-		pageActionCheckboxes.forEach(cb => {
-		    selectedPageActionPermissions.push({
-		        moduleId: moduleId,
-		        pageId: parseInt(cb.getAttribute("data-page-id")),
-		        action: cb.getAttribute("data-action"),
-		        userId: selectedUserId,
-		        createdBy: createdby
-		    });
-		});
+
+        const pageActionCheckboxes = tab.querySelectorAll(
+            `input[name="pageActions_${moduleId}"]:checked`
+        );
+        pageActionCheckboxes.forEach(cb => {
+            selectedPageActionPermissions.push({
+                moduleId: moduleId,
+                pageId: parseInt(cb.getAttribute("data-page-id")),
+                action: cb.getAttribute("data-action"),
+                userId: selectedUserId,
+                createdBy: createdby
+            });
+        });
     });
-
-
 
     const addedPermissions = selectedPermissions.filter(newPerm =>
         !oldPagePermissions.some(oldPerm =>
@@ -1042,12 +1083,8 @@ function savepermission() {
         )
     );
 
-
     console.log("the Removed permisnoss", removedPermissions);
     console.log("the selcted  permisnoss", addedPermissions);
-
-
-
 
     const addedTabs = selectedTabPermissions.filter(newTab =>
         !oldTabPermissions.some(oldTab =>
@@ -1067,6 +1104,7 @@ function savepermission() {
 
     console.log("the added tap", addedTabs);
     console.log("the removede  tap", removedTabs);
+
     const addedTabPageActions = selectedTabPageActions.filter(newAct =>
         !oldTabPageActions.some(oldAct =>
             oldAct.tabId === newAct.tabId &&
@@ -1085,46 +1123,38 @@ function savepermission() {
 
     console.log("Added tab page actions:", addedTabPageActions);
     console.log("Removed tab page actions:", removedTabPageActions);
-	
-	
-	
-	const addedPageActions = selectedPageActionPermissions.filter(newAct =>
-	    !oldPageActionPermissions.some(oldAct =>
-	        oldAct.pageId === newAct.pageId &&
-	        oldAct.action === newAct.action
-	    )
-	);
 
-	const removedPageActions = oldPageActionPermissions.filter(oldAct =>
-	    !selectedPageActionPermissions.some(newAct =>
-	        newAct.pageId === oldAct.pageId &&
-	        newAct.action === oldAct.action
-	    )
-	);
+    const addedPageActions = selectedPageActionPermissions.filter(newAct =>
+        !oldPageActionPermissions.some(oldAct =>
+            oldAct.pageId === newAct.pageId &&
+            oldAct.action === newAct.action
+        )
+    );
 
-	console.log("Added Page Actions:", addedPageActions);
-	console.log("Removed Page Actions:", removedPageActions);
+    const removedPageActions = oldPageActionPermissions.filter(oldAct =>
+        !selectedPageActionPermissions.some(newAct =>
+            newAct.pageId === oldAct.pageId &&
+            newAct.action === oldAct.action
+        )
+    );
+
+    console.log("Added Page Actions:", addedPageActions);
+    console.log("Removed Page Actions:", removedPageActions);
 
     const promises = [];
 
-
     const isPageChanged = addedPermissions.length || removedPermissions.length;
-  //  const isActionChanged = addedActions.length || removedActions.length;
     const isTabChanged = addedTabs.length || removedTabs.length;
-
-
     const isTabPageActionChanged = addedTabPageActions.length || removedTabPageActions.length;
-	const isPageActionChanged = addedPageActions.length || removedPageActions.length;
+    const isPageActionChanged = addedPageActions.length || removedPageActions.length;
 
-    // ✅ Add to the no-change check
-	if (!isPageChanged && !isTabChanged && !isTabPageActionChanged && !isPageActionChanged) {
-		
-		
-	    showPopup("No Fields Changes", "useraccess.jsp");
-	    return;
-	}
+    // No-change check
+    if (!isPageChanged && !isTabChanged && !isTabPageActionChanged && !isPageActionChanged) {
+        showPopup("No Fields Changes", "useraccess.jsp");
+        return;
+    }
 
-    // ✅ Save tab page actions
+    // Save tab page actions
     if (isTabPageActionChanged) {
         promises.push(
             fetch(new URL('/api/save-tab-page-actions', baseUrl1), {
@@ -1140,7 +1170,6 @@ function savepermission() {
             })
         );
     }
-
 
     if (isPageChanged) {
         promises.push(
@@ -1173,22 +1202,22 @@ function savepermission() {
             })
         );
     }
-	if (isPageActionChanged) {
-	    promises.push(
-	        fetch(new URL('/api/save-page-actions', baseUrl1), {
-	            method: 'POST',
-	            credentials: "include",
-	            headers: { 'Content-Type': 'application/json' },
-	            body: JSON.stringify({
-	                newActions: addedPageActions,
-	                oldActions: removedPageActions,
-	                userId: selectedUserId,
-	                createdBy: createdby
-	            })
-	        })
-	    );
-	}
 
+    if (isPageActionChanged) {
+        promises.push(
+            fetch(new URL('/api/save-page-actions', baseUrl1), {
+                method: 'POST',
+                credentials: "include",
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    newActions: addedPageActions,
+                    oldActions: removedPageActions,
+                    userId: selectedUserId,
+                    createdBy: createdby
+                })
+            })
+        );
+    }
 
     Promise.all(promises)
         .then(responses => {
@@ -1198,19 +1227,13 @@ function savepermission() {
             if (allSuccess) {
                 $("#loadingSpinner").hide();
 
+                // FIX: showPopup already handles fade-out + redirect
+                // (removed the old setTimeout block that referenced an undefined `popup`)
                 showPopup("Permission is saved Successfully", "useraccess.jsp");
 
-                setTimeout(() => {
-                    popup.fadeOut(400, function() {
-                        $(this).remove();
-                        // optional redirect
-                        // window.location = 'useraccess.jsp';
-                    });
-                }, 800);
-
             } else {
-				saveBtn.disabled = false;
-				       saveBtn.textContent = "Save Permissions";
+                saveBtn.disabled = false;
+                saveBtn.textContent = "Save Permissions";
 
                 Promise.all(
                     responses.map(res => res.ok ? null : res.json())
@@ -1220,8 +1243,8 @@ function savepermission() {
                         errors.find(e => e)?.message || "Failed to save permissions.";
 
                     const popup = $(`<div class="popup" style="background-color:#f8d7da;color:#842029;">
-						                    Error: ${errorMessage}
-						                </div>`).appendTo('body').hide().fadeIn(400);
+                                        Error: ${errorMessage}
+                                    </div>`).appendTo('body').hide().fadeIn(400);
 
                     setTimeout(() => {
                         popup.fadeOut(400, function() {
@@ -1233,8 +1256,8 @@ function savepermission() {
         })
         .catch(error => {
             console.error("Request failed:", error);
-			saveBtn.disabled = false;
-			       saveBtn.textContent = "Save Permissions";
+            saveBtn.disabled = false;
+            saveBtn.textContent = "Save Permissions";
 
             const popup = $('<div class="popup" style="background-color:#f8d7da;color:#842029;">An error occurred while saving permissions.</div>')
                 .appendTo('body').hide().fadeIn(400);
@@ -1244,42 +1267,6 @@ function savepermission() {
                     $(this).remove();
                 });
             }, 2000);
-        });
-
-}
-
-
-function loadSubconUsersIntoSameDropdown() {
-    const userDropdown = document.getElementById("userDropdown");
-    userDropdown.disabled = true;
-
-    fetch(new URL('/api/subcontractor/subconusers', baseUrl1), {
-        credentials: "include"
-    })
-        .then(res => res.json())
-        .then(subconUsers => {
-
-            // Existing users already loaded → collect IDs
-            const existingIds = new Set(
-                Array.from(userDropdown.options).map(o => o.value)
-            );
-
-            // Append only new SUBCON users
-            subconUsers.forEach(user => {
-                if (!existingIds.has(String(user.user_id))) {
-                    const option = document.createElement("option");
-                    option.value = user.user_name;
-                    option.textContent = user.user_name || user.username;
-                    option.dataset.subcon = "true";
-                    userDropdown.appendChild(option);
-                }
-            });
-
-            userDropdown.disabled = false;
-        })
-        .catch(err => {
-            console.error("Error loading SUBCON users", err);
-            userDropdown.disabled = false;
         });
 }
 
@@ -1291,7 +1278,9 @@ function removeSubconUsersFromDropdown() {
             option.remove();
         }
     });
+    refreshUserSelect2();
 }
+
 function createStyledAction(actionName, page, module, container) {
     const wrapper = document.createElement("div");
 
@@ -1328,68 +1317,63 @@ function createStyledAction(actionName, page, module, container) {
 let jimsUsersCache = [];
 let subconUsersCache = [];
 
+// (The older duplicate definition of this function was removed; this cached version is the one used.)
 function loadSubconUsersIntoSameDropdown() {
 
-    const userDropdown = document.getElementById("userDropdown");
-	clearAllPermissionsUI();
+    clearAllPermissionsUI();
 
-    // already loaded → use cache
+    // already loaded -> use cache
     if (subconUsersCache.length > 0) {
         renderUsers(subconUsersCache, true);
         return;
     }
 
-    userDropdown.disabled = true;
+    setUserDropdownDisabled(true);
 
     fetch(new URL('/api/subcontractor/subconusers', baseUrl1), {
         credentials: "include"
     })
-    .then(res => res.json())
-    .then(subconUsers => {
+        .then(res => res.json())
+        .then(subconUsers => {
 
-        subconUsersCache = subconUsers;
+            subconUsersCache = subconUsers;
 
-        renderUsers(subconUsers, true);
+            renderUsers(subconUsers, true);
 
-        userDropdown.disabled = false;
-    })
-    .catch(err => {
-        console.error("Error loading SUBCON users", err);
-        userDropdown.disabled = false;
-    });
+            setUserDropdownDisabled(false);
+        })
+        .catch(err => {
+            console.error("Error loading SUBCON users", err);
+            setUserDropdownDisabled(false);
+        });
 }
 
 function loadJimsUsers() {
 
-    const userDropdown = document.getElementById("userDropdown");
-	
-	//clearAllPermissionsUI();
-	//clearuserdrop();
-
-    // already loaded → use cache
+    // already loaded -> use cache
     if (jimsUsersCache.length > 0) {
         renderUsers(jimsUsersCache, false);
         return;
     }
 
-    userDropdown.disabled = true;
+    setUserDropdownDisabled(true);
 
     fetch(new URL('/api/users', baseUrl1), {
         credentials: "include"
     })
-    .then(response => response.json())
-    .then(data => {
+        .then(response => response.json())
+        .then(data => {
 
-        jimsUsersCache = data;
+            jimsUsersCache = data;
 
-        renderUsers(data, false);
+            renderUsers(data, false);
 
-        userDropdown.disabled = false;
-    })
-    .catch(error => {
-        console.error("Error fetching users:", error);
-        userDropdown.disabled = false;
-    });
+            setUserDropdownDisabled(false);
+        })
+        .catch(error => {
+            console.error("Error fetching users:", error);
+            setUserDropdownDisabled(false);
+        });
 }
 
 function renderUsers(users, isSubcon) {
@@ -1398,7 +1382,7 @@ function renderUsers(users, isSubcon) {
 
     const selectedValue = userDropdown.value;
 
-    userDropdown.innerHTML = `<option value="">Select</option>`;
+    userDropdown.innerHTML = `<option value="">-- Select a user --</option>`;
 
     users.forEach(user => {
 
@@ -1422,8 +1406,10 @@ function renderUsers(users, isSubcon) {
     if ([...userDropdown.options].some(o => o.value === selectedValue)) {
         userDropdown.value = selectedValue;
     }
-}
 
+    // refresh Select2 UI (does NOT fire the fetchUserPermissions handler)
+    refreshUserSelect2();
+}
 
 function clearAllPermissionsUI() {
 
@@ -1432,8 +1418,8 @@ function clearAllPermissionsUI() {
         .forEach(cb => {
             cb.checked = false;
         });
-		
-		clearModuleHighlights();
+
+    clearModuleHighlights();
 
     // hide all action containers
     document.querySelectorAll("div[data-action-container='true']")
@@ -1458,6 +1444,10 @@ function clearAllPermissionsUI() {
             container.style.display = "none";
         });
 
+    // reset the user dropdown (Select2) so a stale user isn't left selected
+    $('#userDropdown').val('').trigger('change.select2');
+    updateSelectAllState();
+
     // clear old arrays also
     oldPagePermissions = [];
     oldTabPermissions = [];
@@ -1467,8 +1457,8 @@ function clearAllPermissionsUI() {
     selectedPageActionPermissions.length = 0;
 }
 
-function clearuserdrop(){
-	$("#userDropdown").val("");
+function clearuserdrop() {
+    $("#userDropdown").val("").trigger("change.select2");
 }
 
 function showPopup(message, redirectUrl) {

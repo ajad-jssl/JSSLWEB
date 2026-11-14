@@ -304,6 +304,23 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 								</label>
 							</div>
 							&nbsp;&nbsp;
+							
+							<div class="form-check">
+								<input class="form-check-input" type="radio"
+									id="DrawingStagesRadio" name="drawingMaster"> <label
+									class="form-check-label" for="DrawingStagesRadio">Stages
+								</label>
+							</div>
+							&nbsp;&nbsp;
+							
+							<div class="form-check">
+								<input class="form-check-input" type="radio"
+									id="DrawingSelectStageRadio" name="drawingMaster"> <label
+									class="form-check-label" for="DrawingSelectStageRadio">Type Selection-Stages
+								</label>
+							</div>
+							&nbsp;&nbsp;
+							
 						</div>
 					</div>
 
@@ -721,14 +738,8 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 						</div>
 					</div>
 
-
-
-
-
-
-
-
-
+					
+					
 					<div class="modal fade" id="exampleModalScrollablestypeUp"
 						tabindex="-1" role="dialog"
 						aria-labelledby="exampleModalScrollableTitle" aria-hidden="true">
@@ -1513,6 +1524,376 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 							</div>
 						</div>
 					</div>
+					
+<!-- ===================== DRAWING STAGES (JSP section) ===================== -->
+<div class="row mb-3" id="modalstageTable">
+	<div class="table-responsive p-3">
+		<!-- Create Button -->
+		<div
+			class="card-header py-3 d-flex flex-row align-items-center justify-content-between"
+			style="background-color: #f8f9fc;">
+			<button class="btn btn-success btn-sm" id="stageCreateBtn"
+				data-toggle="modal" data-target="#exampleModalScrollableStage">
+				<i class="fas fa-plus"></i> Create
+			</button>
+		</div>
+
+		<div class="table-responsive p-3">
+			<table class="table table-striped table-bordered table-sm"
+				id="modalstageTableID" width="100%">
+				<thead>
+					<tr>
+						<th>Sl. No.</th>
+						<th>Stages</th>
+						<th>Actions</th>
+					</tr>
+				</thead>
+				<tbody id="modalStagesBody">
+				</tbody>
+			</table>
+		</div>
+	</div>
+</div>
+
+
+<!-- CREATE MODAL -->
+<div class="modal fade" id="exampleModalScrollableStage" tabindex="-1"
+	role="dialog" aria-labelledby="stageCreateTitle" aria-hidden="true">
+	<div class="modal-dialog modal-dialog-scrollable"
+		style="max-width: 500px;" role="document">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h5 class="modal-title" id="stageCreateTitle">
+					<b>Create Stages</b>
+				</h5>
+				<button type="button" class="close white-button"
+					data-dismiss="modal" aria-label="Close">
+					<span aria-hidden="true">&times;</span>
+				</button>
+			</div>
+			<div class="modal-body">
+				<form id="stageForm">
+					<div class="form-row">
+						<div class="col-md-6">
+							<label for="stage" class="form-label"><b>Enter Stage :</b></label>
+							<input type="text" class="form-control form-control-sm"
+								id="stage" placeholder="enter stage" maxlength="50">
+							<div id="stageError" class="error-message" style="display: none;">Stage
+								is required</div>
+						</div>
+					</div>
+				</form>
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-sm btn-danger"
+					data-dismiss="modal">Close</button>
+				<button type="button" class="btn btn-sm btn-success"
+					id="createstage">Create</button>
+			</div>
+		</div>
+	</div>
+</div>
+
+
+<!-- CREATE CONFIRMATION -->
+<div class="modal fade" id="confimationstagemodal" tabindex="-1"
+	role="dialog" aria-hidden="true">
+	<div class="modal-dialog modal-dialog-centered" role="document">
+		<div class="modal-content"
+			style="width: 54%; right: -22%; border-width: thick; border-color: #eaecf4;">
+			<div class="modal-header1"></div>
+			<div class="modal-body">
+				<b>Are you sure you want to Create?</b>
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-secondary btn-sm"
+					data-dismiss="modal">NO</button>
+				<button type="button" class="btn btn-info btn-sm" id="confirmstage">YES</button>
+			</div>
+		</div>
+	</div>
+</div>
+
+
+<!-- DUPLICATE -->
+<div class="modal fade" id="duplicateStageModal" tabindex="-1"
+	role="dialog" aria-hidden="true">
+	<div class="modal-dialog modal-dialog-centered" role="document">
+		<div class="modal-content"
+			style="width: 70%; right: -22%; border-width: thick; border-color: #eaecf4;">
+			<div class="modal-header1"></div>
+			<div class="modal-body text-center">
+				<b id="duplicateStageMessage">Stage already exists.</b>
+			</div>
+			<div class="modal-footer d-flex justify-content-center">
+				<button type="button" class="btn btn-secondary btn-sm"
+					data-dismiss="modal">OK</button>
+			</div>
+		</div>
+	</div>
+</div>
+
+
+<!-- UPDATE MODAL -->
+<div class="modal fade" id="exampleModalScrollableStageUp" tabindex="-1"
+	role="dialog" aria-labelledby="stageUpdateTitle" aria-hidden="true">
+	<div class="modal-dialog modal-dialog-scrollable"
+		style="max-width: 500px;" role="document">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h5 class="modal-title" id="stageUpdateTitle">
+					<b>Update Stage</b>
+				</h5>
+				<button type="button" class="close white-button"
+					data-dismiss="modal" aria-label="Close">
+					<span aria-hidden="true">&times;</span>
+				</button>
+			</div>
+			<div class="modal-body">
+				<form id="stageFormUp">
+					<div class="form-row">
+						<div class="col-md-6">
+							<label for="stageUp" class="form-label"><b>Enter Stage :</b></label>
+							<input type="text" class="form-control form-control-sm"
+								id="stageUp" placeholder="enter stage" maxlength="50">
+							<div id="stageUpError" class="error-message"
+								style="display: none;">Stage is required</div>
+						</div>
+					</div>
+				</form>
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-sm btn-danger"
+					data-dismiss="modal">Close</button>
+				<button type="button" class="btn btn-sm btn-success"
+					id="createstageUp">Update</button>
+			</div>
+		</div>
+	</div>
+</div>
+
+
+<!-- UPDATE CONFIRMATION -->
+<div class="modal fade" id="confimationupdatestagemodal" tabindex="-1"
+	role="dialog" aria-hidden="true">
+	<div class="modal-dialog modal-dialog-centered" role="document">
+		<div class="modal-content"
+			style="width: 54%; right: -22%; border-width: thick; border-color: #eaecf4;">
+			<div class="modal-header1"></div>
+			<div class="modal-body">
+				<b>Are you sure you want to Update?</b>
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-secondary btn-sm"
+					data-dismiss="modal">NO</button>
+				<button type="button" class="btn btn-info btn-sm"
+					id="confirmstageUp">YES</button>
+			</div>
+		</div>
+	</div>
+</div>
+
+
+	<div class="row mb-3" id="typeStageSection" style="display: none;">
+	<div class="table-responsive p-3">
+		<!-- Header and Create Button -->
+		<div
+			class="card-header py-3 d-flex flex-row align-items-center justify-content-between"
+			style="background-color: #f8f9fc;">
+			<button class="btn btn-success btn-sm" data-toggle="modal"
+				id="btnCreateTypeStage">
+				<i class="fas fa-plus"></i> Create
+			</button>
+		</div>
+
+		<div class="table-responsive p-3">
+			<table class="table table-striped table-bordered table-sm"
+				id="typeStageTable" width="100%">
+				<thead>
+					<tr>
+						<th>Sl. No.</th>
+						<th>Type Selection</th>
+						<th>Stage</th>
+						<th>Actions</th>
+					</tr>
+				</thead>
+				<tbody>
+				</tbody>
+			</table>
+		</div>
+	</div>
+</div>
+
+<!-- Create Type Selection for Stages -->
+<div class="modal fade" id="typeStageCreateModal"
+	tabindex="-1" role="dialog"
+	aria-labelledby="typeStageCreateModalLabel" aria-hidden="true">
+	<div class="modal-dialog modal-dialog-scrollable"
+		style="max-width: 500px;" role="document">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h5 class="modal-title" id="typeStageCreateModalLabel">
+					<b>Assign Type Selection For Stage</b>
+				</h5>
+				<button type="button" class="close white-button"
+					data-dismiss="modal" aria-label="Close">
+					<span aria-hidden="true">&times;</span>
+				</button>
+			</div>
+			<div class="modal-body">
+				<form id="typeStageCreateForm">
+					<div class="form-row">
+
+						<div class="col-md-6">
+							<label for="typeStageCreateType" class="form-label">
+								<b>Select Type :</b>
+							</label>
+							<select class="form-control form-control-sm"
+								id="typeStageCreateType">
+								<option value="">Select the Type</option>
+							</select>
+							<div id="typeStageCreateTypeError" class="error-message"
+								style="display: none;">Select Type is required</div>
+						</div>
+
+						<div class="col-md-6">
+	<label class="form-label"><b>Select Stage :</b></label>
+	<div id="typeStageCreateStageList"
+		style="max-height: 150px; overflow-y: auto; border: 1px solid #d1d3e2; border-radius: .2rem; padding: 6px 10px;">
+	</div>
+	<div id="typeStageCreateStageError" class="error-message"
+		style="display: none;">Select at least one Stage</div>
+</div>
+					</div>
+				</form>
+			</div>
+
+			<div class="modal-footer">
+				<button type="button" class="btn btn-sm btn-danger"
+					data-dismiss="modal">Close</button>
+				<button type="button" class="btn btn-sm btn-success"
+					id="btnSaveTypeStage">Create</button>
+			</div>
+		</div>
+	</div>
+</div>
+
+<!-- Create confirmation -->
+<div class="modal fade" id="typeStageCreateConfirmModal" tabindex="-1"
+	role="dialog" aria-labelledby="typeStageCreateConfirmLabel"
+	aria-hidden="true">
+	<div class="modal-dialog modal-dialog-centered" role="document">
+		<div class="modal-content"
+			style="width: 54%; right: -22%; border-width: thick; border-color: #eaecf4;">
+			<div class="modal-header1"></div>
+			<div class="modal-body" id="typeStageCreateConfirmLabel">
+				<b>Are you sure you want to Create?</b>
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-secondary btn-sm"
+					data-dismiss="modal">NO</button>
+				<button type="button" class="btn btn-info btn-sm"
+					id="btnConfirmTypeStageCreate">YES</button>
+			</div>
+		</div>
+	</div>
+</div>
+
+<!-- Duplicate warning -->
+<div class="modal fade" id="typeStageDuplicateModal" tabindex="-1"
+	role="dialog" aria-labelledby="typeStageDuplicateMessage"
+	aria-hidden="true">
+	<div class="modal-dialog modal-dialog-centered" role="document">
+		<div class="modal-content"
+			style="width: 70%; right: -22%; border-width: thick; border-color: #eaecf4;">
+			<div class="modal-header1"></div>
+			<div class="modal-body text-center">
+				<b id="typeStageDuplicateMessage">This Type-Selection for Stage already exists.</b>
+			</div>
+			<div class="modal-footer d-flex justify-content-center">
+				<button type="button" class="btn btn-secondary btn-sm"
+					data-dismiss="modal">OK</button>
+			</div>
+		</div>
+	</div>
+</div>
+
+<!-- Update Type Selection for Stage -->
+<div class="modal fade" id="typeStageUpdateModal"
+	tabindex="-1" role="dialog"
+	aria-labelledby="typeStageUpdateModalLabel" aria-hidden="true">
+	<div class="modal-dialog modal-dialog-scrollable"
+		style="max-width: 500px;" role="document">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h5 class="modal-title" id="typeStageUpdateModalLabel">
+					<b>Update Assigned Type Selection for Stage</b>
+				</h5>
+				<button type="button" class="close white-button"
+					data-dismiss="modal" aria-label="Close">
+					<span aria-hidden="true">&times;</span>
+				</button>
+			</div>
+			<div class="modal-body">
+				<form id="typeStageUpdateForm">
+					<div class="form-row">
+
+						<div class="col-md-6">
+							<label for="typeStageUpdateType" class="form-label">
+								<b>Select Type :</b>
+							</label>
+							<select class="form-control form-control-sm"
+								id="typeStageUpdateType">
+								<option value="">Select the Type</option>
+							</select>
+							<div id="typeStageUpdateTypeError" class="error-message"
+								style="display: none;">Select Type is required</div>
+						</div>
+
+						<div class="col-md-6">
+	<label class="form-label"><b>Select Stage :</b></label>
+	<div id="typeStageUpdateStageList"
+		style="max-height: 150px; overflow-y: auto; border: 1px solid #d1d3e2; border-radius: .2rem; padding: 6px 10px;">
+	</div>
+	<div id="typeStageUpdateStageError" class="error-message"
+		style="display: none;">Stage is required</div>
+</div>
+
+					</div>
+				</form>
+			</div>
+
+			<div class="modal-footer">
+				<button type="button" class="btn btn-sm btn-danger"
+					data-dismiss="modal">Close</button>
+				<button type="button" class="btn btn-sm btn-success"
+					id="btnUpdateTypeStage">Update</button>
+			</div>
+		</div>
+	</div>
+</div>
+
+<!-- Update confirmation -->
+<div class="modal fade" id="typeStageUpdateConfirmModal"
+	tabindex="-1" role="dialog"
+	aria-labelledby="typeStageUpdateConfirmLabel" aria-hidden="true">
+	<div class="modal-dialog modal-dialog-centered" role="document">
+		<div class="modal-content"
+			style="width: 54%; right: -22%; border-width: thick; border-color: #eaecf4;">
+			<div class="modal-header1"></div>
+			<div class="modal-body" id="typeStageUpdateConfirmLabel">
+				<b>Are you sure you want to Update?</b>
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-secondary btn-sm"
+					data-dismiss="modal">NO</button>
+				<button type="button" class="btn btn-info btn-sm"
+					id="btnConfirmTypeStageUpdate">YES</button>
+			</div>
+		</div>
+	</div>
+</div>
+					
 
 
 
@@ -1532,7 +1913,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 		<script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
 		<script src="vendor/jquery-easing/jquery.easing.min.js"></script>
 	
-		<!--  -->
+		
 		<script src="vendor/datatables/jquery.dataTables.min.js"></script>
 		<script src="vendor/datatables/dataTables.bootstrap4.min.js"></script>
 		<script src="js/config.js?v=<%=ver(application, "/js/config.js")%>"></script>
@@ -1572,52 +1953,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 
 
 
-		<!-- 		<script>
-			document.addEventListener("DOMContentLoaded",
-					function() {
-
-						const shiftRadio = document
-								.getElementById("ShiftTyperadio");
-						const typeRadio = document
-								.getElementById("TypeSelectionRadio");
-						const activityRadio = document
-								.getElementById("ActivityRadio");
-
-						const shiftTable = document
-								.getElementById("shiftTable");
-						const typeTable = document
-								.getElementById("TypeSelectionTableOuter");
-						const activityTable = document
-								.getElementById("ActivityTable");
-
-						function hideAllTables() {
-							shiftTable.style.display = "none";
-							typeTable.style.display = "none";
-							activityTable.style.display = "none";
-						}
-
-						function toggleTables() {
-							hideAllTables();
-
-							if (shiftRadio.checked) {
-								shiftTable.style.display = "block";
-								// fetchShiftData(); 
-							} else if (typeRadio.checked) {
-								typeTable.style.display = "block";
-								// fetchTypeSelection(); 
-							} else if (activityRadio.checked) {
-								activityTable.style.display = "block";
-								// fetchActivityData();
-							}
-						}
-
-						shiftRadio.addEventListener("change", toggleTables);
-						typeRadio.addEventListener("change", toggleTables);
-						activityRadio.addEventListener("change", toggleTables);
-
-						toggleTables();
-					});
-		</script> -->
+		
 
 
 
@@ -1644,6 +1980,9 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 								.getElementById("modalassignradio");
 						const reasonradio = document
 								.getElementById("ReasonSelectionRadio");
+						const stageradio = document.getElementById("DrawingStagesRadio");
+						
+						const selectradio = document.getElementById("DrawingSelectStageRadio");
 
 						const shiftTable = document
 								.getElementById("shiftTable");
@@ -1655,6 +1994,10 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 								.getElementById("modalAssignTable");
 						const reasonTable = document
 								.getElementById("ReasonSelectionTableOuter");
+						const stageTable = document.getElementById("modalstageTable");
+						
+						const selectionstage = document.getElementById("typeStageSection");
+						
 
 						function hideAllTables() {
 							shiftTable.style.display = "none";
@@ -1662,6 +2005,8 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 							activityTable.style.display = "none";
 							modalAssignTable.style.display = "none";
 							reasonTable.style.display = "none";
+							stageTable.style.display = "none";
+							selectionstage.style.display = "none";
 						}
 
 						function toggleTables() {
@@ -1681,7 +2026,12 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 								// fetchModalAssignData();
 							} else if (reasonradio.checked) {
 								reasonTable.style.display = "block";
+							} else if (stageradio.checked) {
+								stageTable.style.display = "block";
+							} else if (selectradio.checked) {
+								selectionstage.style.display = "block";
 							}
+							
 						}
 
 						shiftRadio.addEventListener("change", toggleTables);
@@ -1690,11 +2040,24 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 						modalAssignRadio.addEventListener("change",
 								toggleTables);
 						reasonradio.addEventListener("change", toggleTables);
+						stageradio.addEventListener("change",toggleTables);
+						selectradio.addEventListener("change",toggleTables);
 
 						// Initial state
 						toggleTables();
 					});
 		</script>
+		
+		<script>
+		
+		document.getElementById("btnCreateTypeStage").addEventListener("click", function () {
+		$('#typeStageCreateModal').modal('show');
+		
+		})
+		</script>	
+		
+		
+	
 </body>
 
 </html>

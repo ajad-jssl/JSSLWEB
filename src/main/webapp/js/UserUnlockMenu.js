@@ -9,7 +9,7 @@ async function loadActions() {
             `${baseUrl}/api/page/actions?userId=${encodeURIComponent(UserId)}&pageName=${encodeURIComponent(MainPage)}`,
             {
                 method: "GET",
-                credentials: "include", // 🔐 send cookies/session
+                credentials: "include", // send cookies/session
                 headers: {
                     "Content-Type": "application/json"
                 }
@@ -21,15 +21,31 @@ async function loadActions() {
         }
 
         allowedActions = await response.json();
-		
-		
 
     } catch (error) {
         console.error("Error:", error);
     }
 }
+
 $(document).ready(function () {
 	loadActions();
+
+    // =============================
+    // SELECT2 -> G2 UNLOCK USER DROPDOWN ONLY
+    // =============================
+    $('#g2UnlockUser').select2({
+        theme: 'bootstrap4',
+        placeholder: '-- Select User --',
+        allowClear: true,
+        width: '100%'
+    });
+
+    // hide validation message once a user is chosen
+    $('#g2UnlockUser').on('change', function () {
+        if ($(this).val()) {
+            $("#g2UnlockError").hide();
+        }
+    });
 
     // Initially hide tabs
     $('#userTab').hide();
@@ -50,23 +66,21 @@ $(document).ready(function () {
 			$("#g2UserTab").hide();
 			$("#g2UserTabContent").hide();
             $('#inactive-tab').tab('show'); // DEFAULT TAB = INACTIVE
-        } 
-		
-		
+        }
+
+
 		else if(userType ==='G2'){
-			
-			loadG2InactiveUsers() 
+
+			loadG2InactiveUsers()
 			loadG2LockedUsers();
 			$("#g2UserTab").show();
 		    $("#g2UserTabContent").show();
-			
+
 			$('#userTab').hide();
 			$('#userTabContent').hide();
 
-			
-		
 		}
-		
+
 		else {
             $('#userTab').hide();
             $('#userTabContent').hide();
@@ -108,42 +122,6 @@ $(document).ready(function () {
             alert("Error inactivating user");
         }
     });
-
-    // =============================
-    //  Activated  USER SUBMIT
-    // =============================
-  /*  $("#unlocksubmit").click(async function () {
-
-        let selected_id = $("#unlockUser").val().trim();
-        let reason = $("#unlockReason").val().trim();
-
-        if (!selected_id) {
-            $("#unlockError").show();
-            return;
-        }
-
-        $("#unlockError").hide();
-
-        try {
-            const response = await fetch(`http://localhost:8004/api/inactive/activated/${selected_id}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ unlock_remarks: reason }),
-                credentials: 'include'
-            });
-
-            if (!response.ok) throw new Error("Failed to unlock user");
-
-            showPopup("The User is Successfully Activated", "UserUnlockMenu.jsp");
-            $("#unlockReason").val('');
-
-        } catch (error) {
-            console.error(error);
-            alert("Error unlocking user");
-        }
-    });*/
 
 });
 
@@ -202,7 +180,7 @@ async function loadLockedUsers() {
 }
 
    //===========================//
-   // 🔵 UNLOCK USER SUBMIT     //
+   //  UNLOCK USER SUBMIT       //
    // =========================//
 
 
@@ -223,7 +201,7 @@ $("#unlocksubmit").click(async function () {
 	const ModifiedBy =sessionStorage.getItem("id");
 	let currentDate = new Date();
 let currentDateTimeString = getIndianDateTimeFormat(currentDate);
-	
+
 
     try {
         const response = await fetch(`${baseUrl}/api/inactive/unlock/${selected_id}`, {
@@ -260,14 +238,16 @@ async function loadG2InactiveUsers() {
         const users = await response.json();
 
         const dropdown = document.getElementById("g2InactiveUser");
+        // (the G2 inactive tab is commented out in the JSP, so guard against a missing element)
+        if (!dropdown) return;
         dropdown.innerHTML = `<option value="">-- Select User --</option>`;
 
         users.forEach(user => {
             let cleanName = user.userName.trim();    // remove extra spaces
-           
+
             dropdown.innerHTML += `
                 <option value="${user.userId}">
-                    ${cleanName} 
+                    ${cleanName}
                 </option>
             `;
         });
@@ -277,6 +257,9 @@ async function loadG2InactiveUsers() {
     }
 }
 
+// =============================
+// FETCH G2 LOCKED USERS (Select2 dropdown)
+// =============================
 async function loadG2LockedUsers() {
     const apiUrl = `${baseUrl}/api/inactive/mis/is_loced`;
 
@@ -288,14 +271,14 @@ async function loadG2LockedUsers() {
         dropdown.innerHTML = `<option value="">-- Select User --</option>`;
 
         users.forEach(user => {
-            let cleanUserName = user.userName.trim();
-
-            dropdown.innerHTML += `
-                <option value="${user.userId}">
-                    ${cleanUserName}
-                </option>
-            `;
+            let option = document.createElement("option");
+            option.value = user.userId;
+            option.textContent = user.userName.trim(); // remove extra spaces
+            dropdown.appendChild(option);
         });
+
+        // refresh Select2 UI after the options were rebuilt
+        $('#g2UnlockUser').val('').trigger('change');
 
     } catch (error) {
         console.error("Error loading G2 locked users:", error);
@@ -309,7 +292,7 @@ async function loadG2LockedUsers() {
 $("#g2InactiveSubmit").click(async function (){
 let g2inactiveuser =$("#g2InactiveUser").val().trim();
 let getinactivereason = $("#g2InactiveReason").val().trim();
-	
+
 if (!g2inactiveuser) {
        $("#g2InactiveError").show();
        return;
@@ -344,34 +327,36 @@ $("#g2UnlockSubmit").click(async function(){
 	  alert(" You do not have permission to Unlock/Lock.");
 	  return;
 	}
-	let g2unlockid = $("#g2UnlockUser").val().trim();
+	// val() can be null with Select2 when cleared, so guard before trim()
+	let g2unlockid = ($("#g2UnlockUser").val() || "").trim();
 	let g2unlockreason = $("#g2UnlockReason").val().trim();
-	
+	let releasedby =sessionStorage.getItem("id");
+
 	if(!g2unlockid){
 		$("#g2UnlockError").show();
 		return;
 	}
-	
+
 	try {
 	    const response = await fetch(`${baseUrl}/api/inactive/mis/unlock/${g2unlockid}`, {
 	        method: 'PUT',
 	        headers: {
 	            'Content-Type': 'application/json'
 	        },
-	        body: JSON.stringify({ remarks: g2unlockreason }),
+	        body: JSON.stringify({ remarks: g2unlockreason ,releasedby :releasedby}),
 	        credentials: 'include'
 	    });
 
 	    if (!response.ok) throw new Error("Failed to unlock user");
 
-	    showPopup("The User is Successfully Activated", "UserUnlockMenu.jsp");
+	    showPopup("The User is Successfully Unlocked", "UserUnlockMenu.jsp");
 	    $("#g2UnlockReason").val('');
 
 	} catch (error) {
 	    console.error(error);
 	    alert("Error unlocking user");
 	}
-	
+
 })
 
 

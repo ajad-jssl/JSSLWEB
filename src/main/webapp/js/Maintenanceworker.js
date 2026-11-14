@@ -953,7 +953,7 @@ function openFixedModal(assignId, ticketId, reportedBy, assignedBy, logId) {
     $('#selectedItemsTable').hide();
     $('#selectedItemsBody').empty();
     $('#itemsCheckList').html('<div style="text-align:center;color:#aaa;font-size:12px;padding:10px;"><i class="fas fa-spinner fa-spin"></i> Loading items...</div>');
-
+	resetFixTypes();
     loadMachineItems(ticketId);
 
     $('#fixedModal').modal('show');
@@ -1083,6 +1083,58 @@ function rebuildQuantityTable() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
+// FIXED MODAL – work type chips (multi-select across tabs)
+// ═══════════════════════════════════════════════════════════════════════════
+var FIX_TAB_LABELS = { elec: 'Electrical', mech: 'Mechanical', hydr: 'Hydraulics' };
+var fixSel = { elec: [], mech: [], hydr: [] };
+
+function selectFixType(el, val, tab) {
+    var $chip = $(el);
+    var idx = fixSel[tab].indexOf(val);
+
+    if (idx > -1) {                     // already selected → deselect
+        fixSel[tab].splice(idx, 1);
+        $chip.removeClass('sel-' + tab);
+    } else {                            // select (other tabs stay selected)
+        fixSel[tab].push(val);
+        $chip.addClass('sel-' + tab);
+    }
+    updateFixSummary();
+}
+
+function switchFixTab(t) {
+    ['elec', 'mech', 'hydr'].forEach(function (x) {
+        $('#fxtab-' + x).removeClass('active-elec active-mech active-hydr');
+        $('#fxpanel-' + x).removeClass('active');
+    });
+    $('#fxtab-' + t).addClass('active-' + t);
+    $('#fxpanel-' + t).addClass('active');
+}
+
+/* "Electrical: Motor, Panel / Wiring | Mechanical: Belt / Chain" – '' if nothing selected */
+function buildFixTypeText() {
+    var parts = [];
+    ['elec', 'mech', 'hydr'].forEach(function (t) {
+        if (fixSel[t].length) parts.push(FIX_TAB_LABELS[t] + ': ' + fixSel[t].join(', '));
+    });
+    return parts.join(' | ');
+}
+
+function updateFixSummary() {
+    var txt = buildFixTypeText();
+    if (txt) { $('#fxSummary').text('Selected: ' + txt).show(); }
+    else     { $('#fxSummary').text('').hide(); }
+}
+
+function resetFixTypes() {
+    fixSel = { elec: [], mech: [], hydr: [] };
+    $('.fx-chip').removeClass('sel-elec sel-mech sel-hydr');
+    $('#fxSummary').text('').hide();
+    switchFixTab('elec');
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════════
 // SUBMIT MARK FIXED
 // ═══════════════════════════════════════════════════════════════════════════
 function submitMarkFixed() {
@@ -1125,6 +1177,11 @@ function submitMarkFixed() {
         if (!partsValid) return;
     }
 
+	
+	// Prepend the selected work types to the text (backend stores it as-is)
+	var typeText = buildFixTypeText();
+	var whatFixedToSave = typeText ? '[' + typeText + '] ' + whatFixed : whatFixed;
+	
     $.ajax({
         url:  new URL('/api/ticket/markFixed', baseUrl).toString(),
         type: 'POST',
@@ -1135,7 +1192,8 @@ function submitMarkFixed() {
             ticketId:     ctx.ticketId,
             factoryId:    factoryId,
             workerId:     workerId,
-            whatFixed:    whatFixed,
+          
+			whatFixed:    whatFixedToSave,
             remarks:      remarks,
             assignedBy:   ctx.assignedBy,
             partsReplaced: partsReplaced ? 1 : 0,

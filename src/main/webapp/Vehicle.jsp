@@ -29,7 +29,7 @@
        <link href="css/main.css?v=1.0" rel="stylesheet">
        <link href="css/masterpage.css?v=1.0" rel="stylesheet">
 
-  <script src="externalLibrary/code.jquery.com/jquery-3.6.0.min.js"></script>
+  
    <script src="externalLibrary/cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
    <script>
     const user_id = sessionStorage.getItem('user_id');

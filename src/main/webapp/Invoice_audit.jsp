@@ -416,8 +416,10 @@ table.table-bordered th, table.table-bordered td {
 						<!-- ROW 2 (7 Tabs) -->
 						<div class="nav nav-tabs" id="mainTabsRow2" role="tablist">
 							<a class="nav-item nav-link" data-bs-toggle="tab" id="workOrder">Work
-								Order</a> <a class="nav-item nav-link" data-bs-toggle="tab"
-								id="createGst">Create GST</a> <a class="nav-item nav-link"
+								Order</a> 
+								<a class="nav-item nav-link" data-bs-toggle="tab" hidden=hidden
+								id="createGst">Create GST</a> 
+								<a class="nav-item nav-link"
 								data-bs-toggle="tab" id="invoiceDescription">Invoice
 								Description</a> <a class="nav-item nav-link" data-bs-toggle="tab"
 								id="qsPackingNotes">QS Packing Notes</a> <a

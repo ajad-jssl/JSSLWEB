@@ -686,8 +686,3 @@ window.initSalesCrmDashboard = function () {
   });
 };
 
-$(document).ready(function () {
-  $('#sidebarToggleTop').click(function () {
-    $('#accordionSidebar').toggleClass('toggled');
-  });
-});

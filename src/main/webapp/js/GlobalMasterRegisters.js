@@ -3036,8 +3036,8 @@ let pendingStatusChange = null;
 function confirmStatusChange(type, id, checkboxEl) {
 
 	const allowed = allowedActions || [];
-	if (!allowed.includes("Edit")) {
-		alert(" You do not have permission to edit.");
+	if (!allowed.includes("Status")) {
+		alert(" You do not have permission to Updated Status.");
 		checkboxEl.checked = !checkboxEl.checked; // revert toggle
 		return;
 	}
@@ -3069,7 +3069,7 @@ $("#statusYesBtn").click(function () {
 	const modifiedBy = sessionStorage.getItem("id");
 
 	// Map each table type to its own status update endpoint
-	const endpointMap = {
+/*	const endpointMap = {
 		module:        `/api/modules/updateStatus/${id}?status=${newStatus}&modifiedBy=${modifiedBy}`,
 		page:          `/api/modules/updatePageStatus/${id}?status=${newStatus}&modifiedBy=${modifiedBy}`,
 		pageAction:    `/api/modules/updatePageActionStatus/${id}?status=${newStatus}&modifiedBy=${modifiedBy}`,
@@ -3077,6 +3077,17 @@ $("#statusYesBtn").click(function () {
 		invoiceTab:    `/api/modules/updateTabStatus/${id}?status=${newStatus}&modifiedBy=${modifiedBy}`,
 		tabPage:       `/api/modules/updateTabPageStatus/${id}?status=${newStatus}&modifiedBy=${modifiedBy}`,
 		tabPageAction: `/api/modules/updateTabPageActionStatus/${id}?status=${newStatus}&modifiedBy=${modifiedBy}`
+	};*/
+	
+	const endpointMap = {
+		module:        `/api/modules/updateStatus/${id}?status=${newStatus}&modifiedBy=${modifiedBy}`,
+		page:          `/api/modules/updatePageStatus/${id}?status=${newStatus}&modifiedBy=${modifiedBy}`,
+		pageAction:    `/api/modules/updatePageActionStatus/${id}?status=${newStatus}&modifiedBy=${modifiedBy}`,
+		department:    `/api/modules/updateDeptStatus/${id}?status=${newStatus}&modifiedBy=${modifiedBy}`,
+		invoiceTab:    `/api/modules/updateTabStatus/${id}?status=${newStatus}&modifiedBy=${modifiedBy}`,
+		tabPage:       `/api/modules/updateTabPageStatus/${id}?status=${newStatus}&modifiedBy=${modifiedBy}`,
+		tabPageAction: `/api/modules/updateTabPageActionStatus/${id}?status=${newStatus}&modifiedBy=${modifiedBy}`,
+		action:        `/api/modules/updateActionStatus/${id}?status=${newStatus}&modifiedBy=${modifiedBy}`   // added
 	};
 
 	$.ajax({
@@ -3098,3 +3109,287 @@ $("#statusYesBtn").click(function () {
 
 	pendingStatusChange = null;
 });
+
+
+// ================= FETCH ACTIONS =================
+function fetchActionMaster() {
+
+	$.ajax({
+		url: new URL("/api/modules/getAllActionsTable", baseUrl).toString(),
+		type: "GET",
+		xhrFields: { withCredentials: true },
+
+		success: function(data) {
+
+			// destroy first, then rebuild rows
+			if ($.fn.DataTable.isDataTable('#ActionMastertableID')) {
+				$('#ActionMastertableID').DataTable().destroy();
+			}
+
+			let tbody = $("#ActionMasterTableBody");
+			tbody.empty();
+
+			if (!data || data.length === 0) {
+				tbody.append(`
+					<tr>
+						<td colspan="4" class="text-center text-muted">No records found</td>
+					</tr>
+				`);
+				return;
+			}
+
+			$.each(data, function(index, item) {
+
+				let isActive = item.status == 1;
+
+				tbody.append(`
+					<tr>
+						<td>${index + 1}</td>
+						<td>${item.actionName}</td>
+						<td class="text-center">
+							<input type="checkbox" class="status-checkbox"
+								${isActive ? 'checked' : ''}
+								onchange="confirmStatusChange('action', ${item.actionID}, this)">
+						</td>
+						<td>
+							<i class="fa fa-pen ${isActive ? 'text-muted disabled-icon' : 'text-primary cursor-pointer'}"
+							   title="${isActive ? 'Disable action to edit' : 'Edit'}"
+							   ${isActive ? '' : `onclick="editActionMaster(${item.actionID})"`}
+							   style="${isActive ? 'pointer-events: none; opacity: 0.5;' : ''}"></i>
+						</td>
+					</tr>
+				`);
+			});
+
+			$('#ActionMastertableID').DataTable({
+				dom: '<"d-flex justify-content-between mb-2"Bf>rtip',
+				buttons: [{
+					extend: 'excelHtml5',
+					text: 'Export to Excel',
+					className: 'btn btn-primary btn-sm',
+					filename: 'Action_Master_Report',
+					title: 'Action Master Report',
+					exportOptions: { columns: [0, 1] }
+				}],
+				paging: true,
+				pageLength: 10,
+				info: true,
+				searching: true,
+				ordering: true
+			});
+		},
+
+		error: function(xhr, status, error) {
+			console.error("Fetch Action Error:", error);
+			alert("Failed to load Actions");
+		}
+	});
+}
+
+
+// ================= OPEN CREATE MODAL =================
+$("#modalActionMaster").click(function() {
+
+	const allowed = allowedActions || [];
+
+	if (!allowed.includes("Insert")) {
+		alert(" You do not have permission to Insert");
+		return;
+	}
+
+	$("#actionName").val("");
+	$("#actionNameError").hide();
+	$("#createActionModal").modal("show");
+});
+
+
+// ================= CREATE VALIDATION =================
+$("#createAction").click(function() {
+
+	let actionName = $("#actionName").val().trim();
+
+	if (!actionName) {
+		$("#actionNameError").show();
+		return;
+	}
+
+	$("#actionNameError").hide();
+	$("#confirmActionCreateModal").modal("show");
+});
+
+
+// ================= CREATE CONFIRM =================
+$("#confirmAction").click(function() {
+
+	$("#confirmActionCreateModal").modal("hide");
+	handleActionCreation();
+});
+
+
+// ================= CHECK DUPLICATE =================
+function handleActionCreation() {
+
+	let actionName = $("#actionName").val().trim();
+
+	$.ajax({
+		url: new URL(
+			`/api/modules/check/action?actionName=${encodeURIComponent(actionName)}`,
+			baseUrl
+		).toString(),
+		type: "GET",
+		xhrFields: { withCredentials: true },
+
+		success: function(response) {
+
+			if (response.exists === true) {
+				$("#duplicateActionMessage").text("Action already exists.");
+				$("#duplicateActionModal").modal("show");
+			} else {
+				insertActionMaster(actionName);
+			}
+		},
+
+		error: function(xhr, status, error) {
+			console.error("Action check API Error:", error);
+			alert("An error occurred while checking Action");
+		}
+	});
+}
+
+
+// ================= INSERT ACTION =================
+function insertActionMaster(actionName) {
+
+	let requestData = {
+		actionName: actionName,
+		createdBy: sessionStorage.getItem('id')
+	};
+
+	$.ajax({
+		url: new URL("/api/modules/insertAction", baseUrl).toString(),
+		type: "POST",
+		contentType: "application/json",
+		data: JSON.stringify(requestData),
+		xhrFields: { withCredentials: true },
+
+		success: function(res) {
+
+			if (res.status === "duplicate") {
+				$("#duplicateActionMessage").text(res.message || "Action already exists.");
+				$("#duplicateActionModal").modal("show");
+			} else {
+				showPopup("Action created successfully", "GlobalMasterRegisters.jsp");
+			}
+		},
+
+		error: function(xhr, status, error) {
+			console.error("Insert Action Error:", error);
+			alert("Failed to insert Action");
+		}
+	});
+}
+
+
+// ================= EDIT ACTION =================
+let originalActionName = "";
+let selectedActionId = null;
+
+function editActionMaster(actionId) {
+
+	const allowed = allowedActions || [];
+
+	if (!allowed.includes("Edit")) {
+		alert(" You do not have permission to edit.");
+		return;
+	}
+
+	selectedActionId = actionId;
+
+	$.ajax({
+		url: new URL("/api/modules/getActionById/" + actionId, baseUrl).toString(),
+		type: "GET",
+		xhrFields: { withCredentials: true },
+
+		success: function(response) {
+
+			if (response.status === "error") {
+				alert(response.message || "Action not found");
+				return;
+			}
+
+			$("#actionUp").val(response.actionName);
+			$("#actionUpError").hide();
+			originalActionName = response.actionName;
+
+			$("#updateActionModal").modal("show");
+		},
+
+		error: function(xhr, status, error) {
+			console.error("Fetch Action Error:", error);
+			alert("Failed to load Action data");
+		}
+	});
+}
+
+
+// ================= UPDATE VALIDATION =================
+$("#createActionUp").click(function() {
+
+	let actionName = $("#actionUp").val().trim();
+
+	if (actionName === "") {
+		$("#actionUpError").show();
+		return;
+	}
+
+	$("#actionUpError").hide();
+	$("#confirmActionUpdateModal").modal("show");
+});
+
+
+// ================= UPDATE CONFIRM =================
+$("#confirmActionUp").click(function() {
+
+	let newActionName = $("#actionUp").val().trim();
+
+	$("#confirmActionUpdateModal").modal("hide");
+
+	if (newActionName === originalActionName) {
+		showPopup("No Fields Changed", "GlobalMasterRegisters.jsp");
+		return;
+	}
+
+	updateActionMaster(newActionName);
+});
+
+
+// ================= UPDATE ACTION =================
+function updateActionMaster(actionName) {
+
+	let requestData = {
+		actionName: actionName,
+		modifiedBy: sessionStorage.getItem("id")
+	};
+
+	$.ajax({
+		url: new URL(`/api/modules/updateAction/${selectedActionId}`, baseUrl).toString(),
+		type: "PUT",
+		contentType: "application/json",
+		xhrFields: { withCredentials: true },
+		data: JSON.stringify(requestData),
+
+		success: function(res) {
+
+			if (res.status === "duplicate") {
+				$("#duplicateActionMessage").text(res.message || "Action already exists.");
+				$("#duplicateActionModal").modal("show");
+			} else {
+				showPopup("Action updated successfully", "GlobalMasterRegisters.jsp");
+			}
+		},
+
+		error: function() {
+			alert("Failed to update Action");
+		}
+	});
+}

@@ -414,12 +414,21 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 									onkeydown="return allowOnlyPositive(event)">
 
 
-								<div class="form-group col-md-3">
+							<!-- 	<div class="form-group col-md-3">
 									<label><b>Available Balance:</b></label> <input type="text"
 										class="form-control form-control-sm" id="taxvaluedesc_update"
 										autocomplete="off" readonly>
 
-								</div>
+								</div> -->
+								
+								
+								<div class="form-group col-md-3">
+    <label><b>Available Balance:</b></label>
+    <input type="text" class="form-control form-control-sm" id="taxvaluedesc_update"
+           autocomplete="off" readonly onkeydown="return allowOnlyPositive(event)">
+    <div id="avlBalErrorUpdate" class="error-message"></div>
+</div>
+								
 								<div class="form-group col-md-3">
 									<label><b>Taxable Amount:</b></label> <input type="text"
 										class="form-control form-control-sm" id="taxname_update"

@@ -75,8 +75,29 @@ $(document).ready(async function () {
 	    /*$("#ngpbreturndatee").attr("min", today).val(today);
 	    $("#ngpbreturndateup").attr("min", today).val(today);*/
 	
-	$("#ngpbSubmitVerifyButton").on("click", function () {
+/*	$("#ngpbSubmitVerifyButton").on("click", function () {
 	    $("#ngpbVerifyConfirm").modal("show");
+	});*/
+	
+	
+	$("#ngpbSubmitVerifyButton").on("click", function () {
+
+	    if (JSON.stringify(ngpbCaptureVerifySnapshot()) === JSON.stringify(ngpbOriginalVerifySnapshot)) {
+			
+			
+			showPopup("No Fields Changes","NRGPRequest.jsp")
+			
+	      /*  $("#modalMessage").text("No fields changed. Nothing to verify.");
+	        $("#messageModal").modal("show");*/
+	        return;
+	    }
+
+	    $("#ngpbVerifyConfirm").modal("show");
+	});
+
+	// Keep the verify modal scrollable after the message modal closes on top of it
+	$("#messageModal").on("hidden.bs.modal", function () {
+	    if ($(".modal.show").length) $("body").addClass("modal-open");
 	});
 
 	$("#ngpbConfirmVerifyYes").on("click", function () {
@@ -656,7 +677,31 @@ function loadNgpbEmployees() {
 // ── Verify modal state (NGPB) ──────────────────────────────────────
 let ngpbVerifyLineItemsData    = [];
 let ngpbVendorOptionsHtmlCache = "";
+let ngpbOriginalVerifySnapshot = null;
 let ngpbVerifyHeaderVendorId   = null;
+
+
+function ngpbCaptureVerifySnapshot() {
+    const hv = $("#ngpbtovendorverify").val();
+    const snap = {
+        headerVendor : (hv && hv !== "1") ? String(hv) : "",
+        items        : []
+    };
+
+    $("#ngpbVerifyTableID tbody tr").each(function () {
+        const idx = $(this).attr("id").replace("ngpbverifyrow", "");
+        const p   = parseFloat($("#ngpbverify_price_" + idx).val());
+        const v   = $("#ngpbverify_vendor_" + idx).val();
+
+        snap.items.push({
+            itemRequestId : $(this).data("item-request-id") || null,
+            price         : isNaN(p) ? 0 : p,
+            verified      : $("#ngpbverify_check_" + idx).is(":checked"),
+            vendor        : (v && v !== "1") ? String(v) : ""
+        });
+    });
+    return snap;
+}
 
 function ngpbVerifyRgp(requestId) {
 	  const allowed =allowedActions || [];
@@ -769,6 +814,8 @@ function ngpbVerifyRgp(requestId) {
             });
 
             ngpbRenderVerifyLineItems();
+			
+			ngpbOriginalVerifySnapshot = ngpbCaptureVerifySnapshot(); 
 
             $("#ngpbVerifyModal").modal("show");
         },

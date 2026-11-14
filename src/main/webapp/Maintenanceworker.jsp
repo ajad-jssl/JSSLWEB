@@ -688,6 +688,44 @@ body.has-active-timer #content-wrapper {
 	color: #37499A;
 	font-weight: 700;
 }
+
+
+
+
+/* ── Fixed modal: work-type chips ── */
+.fx-tab-bar { display:flex; border-bottom:2px solid #e3e6f0; margin-bottom:10px; }
+.fx-tab { padding:8px 16px; font-size:12px; font-weight:500; cursor:pointer; border:none;
+          background:transparent; border-bottom:3px solid transparent; margin-bottom:-2px;
+          color:#888; transition:all .15s; }
+.fx-tab.active-elec { color:#185FA5; border-bottom-color:#185FA5; font-weight:600; }
+.fx-tab.active-mech { color:#3B6D11; border-bottom-color:#3B6D11; font-weight:600; }
+.fx-tab.active-hydr { color:#854F0B; border-bottom-color:#854F0B; font-weight:600; }
+.fx-dot { width:8px; height:8px; border-radius:50%; display:inline-block; margin-right:5px; }
+.fx-dot-elec { background:#378ADD; } .fx-dot-mech { background:#639922; } .fx-dot-hydr { background:#EF9F27; }
+
+.fx-panel { display:none; }
+.fx-panel.active { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:4px; }
+
+.fx-chip { border:1px solid #dee2e6; border-radius:8px; padding:10px 6px; text-align:center;
+           cursor:pointer; background:#fafbfd; font-size:11px; font-weight:600; color:#555;
+           transition:all .15s; user-select:none; }
+.fx-chip i { display:block; font-size:18px; margin-bottom:5px; color:#888; }
+.fx-chip:hover { background:#f0f3fa; border-color:#b0bae8; }
+.fx-chip.sel-elec { background:#E6F1FB; border:2px solid #185FA5; color:#0C447C; }
+.fx-chip.sel-elec i { color:#185FA5; }
+.fx-chip.sel-mech { background:#EAF3DE; border:2px solid #3B6D11; color:#27500A; }
+.fx-chip.sel-mech i { color:#3B6D11; }
+.fx-chip.sel-hydr { background:#FAEEDA; border:2px solid #854F0B; color:#633806; }
+.fx-chip.sel-hydr i { color:#EF9F27; }
+
+.fx-summary { font-size:11px; color:#37499A; background:#f0f3fa; border:1px solid #d1d5e8;
+              border-radius:6px; padding:6px 10px; margin-top:6px; display:none; }
+
+@media (max-width:576px) {
+  .fx-panel.active { grid-template-columns:repeat(2,1fr); }
+  .fx-tab-bar { overflow-x:auto; flex-wrap:nowrap; }
+  .fx-tab { white-space:nowrap; flex-shrink:0; padding:8px 12px; }
+}
 </style>
 </head>
 <body>
@@ -798,7 +836,9 @@ body.has-active-timer #content-wrapper {
 	<!-- ════════════════ MARK FIXED MODAL ════════════════ -->
 	<div class="modal fade" id="fixedModal" tabindex="-1" role="dialog"
 		aria-hidden="true" data-backdrop="static">
-		<div class="modal-dialog modal-dialog-centered" role="document">
+		<!-- <div class="modal-dialog modal-dialog-centered" role="document"> -->
+		
+		<div class="modal-dialog modal-dialog-centered modal-lg" role="document">
 			<div class="modal-content">
 				<div class="modal-header-custom">
 					<div class="modal-title-text">
@@ -810,6 +850,61 @@ body.has-active-timer #content-wrapper {
 				</div>
 				<div class="modal-body">
 					<div class="form-section-title">Work Completion Details</div>
+					<!-- ── Type of work (multi-select across tabs) ── -->
+<div class="form-section-title">
+	Type of Work Done
+	<span style="font-size:10px;color:#888;font-weight:400;text-transform:none;letter-spacing:0;">
+		&nbsp;(You can select multiple items across tabs)
+	</span>
+</div>
+
+<div class="fx-tab-bar">
+	<button type="button" class="fx-tab active-elec" id="fxtab-elec" onclick="switchFixTab('elec')">
+		<span class="fx-dot fx-dot-elec"></span>Electrical</button>
+	<button type="button" class="fx-tab" id="fxtab-mech" onclick="switchFixTab('mech')">
+		<span class="fx-dot fx-dot-mech"></span>Mechanical</button>
+	<button type="button" class="fx-tab" id="fxtab-hydr" onclick="switchFixTab('hydr')">
+		<span class="fx-dot fx-dot-hydr"></span>Hydraulics</button>
+</div>
+
+<!-- Electrical -->
+<div class="fx-panel active" id="fxpanel-elec">
+	<div class="fx-chip" onclick="selectFixType(this,'Panel / Wiring','elec')"><i class="fas fa-project-diagram"></i>Panel / Wiring</div>
+	<div class="fx-chip" onclick="selectFixType(this,'Motor','elec')"><i class="fas fa-bolt"></i>Motor</div>
+	<div class="fx-chip" onclick="selectFixType(this,'Sensor / Switch','elec')"><i class="fas fa-wave-square"></i>Sensor / Switch</div>
+	<div class="fx-chip" onclick="selectFixType(this,'Power Supply','elec')"><i class="fas fa-plug"></i>Power Supply</div>
+	<div class="fx-chip" onclick="selectFixType(this,'Control / PLC','elec')"><i class="fas fa-microchip"></i>Control / PLC</div>
+	<div class="fx-chip" onclick="selectFixType(this,'Light / Display','elec')"><i class="fas fa-lightbulb"></i>Light / Display</div>
+	<div class="fx-chip" onclick="selectFixType(this,'Other (Elec)','elec')"><i class="fas fa-ellipsis-h"></i>Other</div>
+</div>
+
+<!-- Mechanical -->
+<div class="fx-panel" id="fxpanel-mech">
+	<div class="fx-chip" onclick="selectFixType(this,'Belt / Chain','mech')"><i class="fas fa-link"></i>Belt / Chain</div>
+	<div class="fx-chip" onclick="selectFixType(this,'Gear / Bearing','mech')"><i class="fas fa-cog"></i>Gear / Bearing</div>
+	<div class="fx-chip" onclick="selectFixType(this,'Cylinder','mech')"><i class="fas fa-compress-arrows-alt"></i>Cylinder</div>
+	<div class="fx-chip" onclick="selectFixType(this,'Tool / Spindle','mech')"><i class="fas fa-tools"></i>Tool / Spindle</div>
+	<div class="fx-chip" onclick="selectFixType(this,'Coupling / Shaft','mech')"><i class="fas fa-circle-notch"></i>Coupling / Shaft</div>
+	<div class="fx-chip" onclick="selectFixType(this,'Frame / Structure','mech')"><i class="fas fa-drafting-compass"></i>Frame / Structure</div>
+	<div class="fx-chip" onclick="selectFixType(this,'Lubrication','mech')"><i class="fas fa-oil-can"></i>Lubrication</div>
+	<div class="fx-chip" onclick="selectFixType(this,'Other (Mech)','mech')"><i class="fas fa-ellipsis-h"></i>Other</div>
+</div>
+
+<!-- Hydraulics -->
+<div class="fx-panel" id="fxpanel-hydr">
+	<div class="fx-chip" onclick="selectFixType(this,'Pump','hydr')"><i class="fas fa-tint"></i>Pump</div>
+	<div class="fx-chip" onclick="selectFixType(this,'Valve','hydr')"><i class="fas fa-sliders-h"></i>Valve</div>
+	<div class="fx-chip" onclick="selectFixType(this,'Hose / Pipe','hydr')"><i class="fas fa-water"></i>Hose / Pipe</div>
+	<div class="fx-chip" onclick="selectFixType(this,'Coolant System','hydr')"><i class="fas fa-thermometer-half"></i>Coolant System</div>
+	<div class="fx-chip" onclick="selectFixType(this,'Hyd. Cylinder','hydr')"><i class="fas fa-expand-arrows-alt"></i>Hyd. Cylinder</div>
+	<div class="fx-chip" onclick="selectFixType(this,'Seal / Gasket','hydr')"><i class="fas fa-ring"></i>Seal / Gasket</div>
+	<div class="fx-chip" onclick="selectFixType(this,'Accumulator','hydr')"><i class="fas fa-battery-half"></i>Accumulator</div>
+	<div class="fx-chip" onclick="selectFixType(this,'Other (Hydr)','hydr')"><i class="fas fa-ellipsis-h"></i>Other</div>
+</div>
+
+<div class="fx-summary" id="fxSummary"></div>
+
+<div class="mb-3"></div>
 					<div class="form-group mb-3">
 						<label class="form-label-sm">What did you fix? <span
 							style="color: #dc3545;">*</span></label>

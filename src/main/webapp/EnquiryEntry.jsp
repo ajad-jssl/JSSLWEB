@@ -20,7 +20,7 @@ response.setDateHeader("Expires", 0);
 <!-- Bootstrap -->
 <link href="vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet"
 	type="text/css">
-	<link
+<link
 	href="externalLibrary/cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.5.0/font/bootstrap-icons.min.css"
 	rel="stylesheet">
 
@@ -35,7 +35,7 @@ response.setDateHeader("Expires", 0);
 <link rel="stylesheet" href="css/main.css">
 
 
-	<link rel="stylesheet"
+<link rel="stylesheet"
 	href="externalLibrary/cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css" />
 <style>
 .error-message {
@@ -276,6 +276,8 @@ keyframes dots { 0% {
 
 
 
+
+
 %
 {
 content
@@ -301,7 +303,11 @@ content
 
 
 
+
+
 :
+
+
 
 
 
@@ -349,6 +355,8 @@ content
 
 
 
+
+
 %
 {
 content
@@ -374,7 +382,11 @@ content
 
 
 
+
+
 :
+
+
 
 
 
@@ -422,6 +434,8 @@ content
 
 
 
+
+
 %
 {
 content
@@ -447,7 +461,11 @@ content
 
 
 
+
+
 :
+
+
 
 
 
@@ -636,6 +654,24 @@ textarea.enquiry-input {
 	margin-top: 4px;
 	line-height: 1.3;
 }
+
+/* ===== Attachment table - compact ===== */
+#attachmentTable {
+	font-size: 12px;
+	table-layout: fixed;
+	width: 100%;
+	margin-bottom: 0;
+}
+#attachmentTable th, #attachmentTable td {
+	padding: 4px 6px;
+	vertical-align: middle;
+	white-space: nowrap;
+}
+#attachmentTable td.att-name, #attachmentTable td.att-remarks {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	max-width: 0;           /* needed so ellipsis works with table-layout: fixed */
+}
 </style>
 </head>
 
@@ -722,6 +758,7 @@ textarea.enquiry-input {
 											<th>Current Stage</th>
 											<th>Edit</th>
 											<th>Follow-up</th>
+											<th>Attachments</th>
 										</tr>
 									</thead>
 									<tbody id="enquiryTableBody">
@@ -802,16 +839,17 @@ textarea.enquiry-input {
 									<!-- Area / Qty -->
 									<div class="form-group col-md-4 enquiry-field">
 										<label><i class="fas fa-ruler-combined enquiry-icon"></i>
-											Area / Qty(MT) <span class="text-danger">*</span> </label> <input type="text" id="areaQty"
+											Area / Qty(MT) <span class="text-danger">*</span> </label> <input
+											type="text" id="areaQty"
 											class="form-control form-control-sm enquiry-input"
 											placeholder="Enter Area / Qty">
 									</div>
 
 									<!-- Suggested Bid Value -->
 									<div class="form-group col-md-4 enquiry-field">
-										<label>  <i class="fas fa-rupee-sign enquiry-icon"></i>
-											Suggested Bid Value (Cr) <span class="text-danger">*</span> </label> <input type="text"
-											id="suggestedBidValue"
+										<label> <i class="fas fa-rupee-sign enquiry-icon"></i>
+											Suggested Bid Value (Cr) <span class="text-danger">*</span>
+										</label> <input type="text" id="suggestedBidValue"
 											class="form-control form-control-sm enquiry-input"
 											placeholder="Enter Suggested Bid Value">
 									</div>
@@ -819,7 +857,8 @@ textarea.enquiry-input {
 									<!-- Segment -->
 									<div class="form-group col-md-4 enquiry-field">
 										<label><i class="fas fa-layer-group enquiry-icon"></i>
-											Segment <span class="text-danger">*</span> </label> <select id="segment"
+											Segment <span class="text-danger">*</span> </label> <select
+											id="segment"
 											class="form-control form-control-sm enquiry-input">
 										</select>
 									</div>
@@ -827,7 +866,8 @@ textarea.enquiry-input {
 									<!-- Design Basis -->
 									<div class="form-group col-md-4 enquiry-field">
 										<label><i class="fas fa-drafting-compass enquiry-icon"></i>
-											Design Basis <span class="text-danger">*</span></label> <select id="designBasis"
+											Design Basis <span class="text-danger">*</span></label> <select
+											id="designBasis"
 											class="form-control form-control-sm enquiry-input">
 											<option value="">Select Design Basis</option>
 											<option value="1">Design and Build Basis</option>
@@ -842,7 +882,7 @@ textarea.enquiry-input {
 											class="form-control form-control-sm enquiry-input enquiry-readonly"
 											disabled></select>
 									</div>
-								
+
 
 									<div class="form-group col-md-4 enquiry-field">
 										<label><i class="fas fa-calendar-check enquiry-icon"></i>
@@ -854,7 +894,8 @@ textarea.enquiry-input {
 									<!-- Painting Requirement -->
 									<div class="form-group col-md-4 enquiry-field">
 										<label><i class="fas fa-paint-roller enquiry-icon"></i>
-											Painting Requirement <span class="text-danger">*</span> </label> <select id="paintingRequirement"
+											Painting Requirement <span class="text-danger">*</span> </label> <select
+											id="paintingRequirement"
 											class="form-control form-control-sm enquiry-input">
 											<option value="">Select Painting Requirement</option>
 											<option value="1">Primer Only</option>
@@ -867,7 +908,8 @@ textarea.enquiry-input {
 									<!-- Type of Enquiry -->
 									<div class="form-group col-md-4 enquiry-field">
 										<label><i class="fas fa-file-alt enquiry-icon"></i>
-											Type of Enquiry <span class="text-danger">*</span> </label> <select id="enquiryType"
+											Type of Enquiry <span class="text-danger">*</span> </label> <select
+											id="enquiryType"
 											class="form-control form-control-sm enquiry-input">
 											<option value="">Select Type</option>
 											<option value="1">Budgetary</option>
@@ -879,7 +921,8 @@ textarea.enquiry-input {
 									<div class="form-group col-md-4 enquiry-field">
 										<label><i
 											class="fas fa-fire-extinguisher enquiry-icon"></i> Fire
-											Proofing Required <span class="text-danger">*</span> </label> <select id="fireProofing"
+											Proofing Required <span class="text-danger">*</span> </label> <select
+											id="fireProofing"
 											class="form-control form-control-sm enquiry-input">
 											<option value="">Select</option>
 											<option value="1">Yes</option>
@@ -935,14 +978,14 @@ textarea.enquiry-input {
 									</div>
 
 									<!-- Attachments -->
-									<div class="form-group col-md-12 enquiry-field">
+									<div class="form-group col-md-12 enquiry-field" hidden>
 										<label><i class="fas fa-paperclip enquiry-icon"></i>
 											Attachments</label> <input type="file" id="attachments"
 											class="form-control form-control-sm enquiry-input" multiple>
 									</div>
 
 									<!-- Attachment Remarks -->
-									<div class="form-group col-md-12 enquiry-field">
+									<div class="form-group col-md-12 enquiry-field" hidden>
 										<label><i class="fas fa-comment-dots enquiry-icon"></i>
 											Attachment Remarks</label>
 										<textarea id="attachmentRemarks" rows="3"
@@ -1017,22 +1060,24 @@ textarea.enquiry-input {
 									<!-- Area Qty -->
 									<div class="form-group col-md-4 enquiry-field">
 										<label><i class="fas fa-ruler-combined enquiry-icon"></i>
-											Area / Qty(MT)  <span class="text-danger">*</span> </label> <input type="text" id="areaQty1"
+											Area / Qty(MT) <span class="text-danger">*</span> </label> <input
+											type="text" id="areaQty1"
 											class="form-control form-control-sm enquiry-input">
 									</div>
 
 									<!-- Suggested Bid Value -->
 									<div class="form-group col-md-4 enquiry-field">
 										<label><i class="fas fa-rupee-sign enquiry-icon"></i>
-											Suggested Bid Value (Cr) <span class="text-danger">*</span> </label> <input type="text"
-											id="suggestedBidValue1"
+											Suggested Bid Value (Cr) <span class="text-danger">*</span> </label>
+										<input type="text" id="suggestedBidValue1"
 											class="form-control form-control-sm enquiry-input">
 									</div>
 
 									<!-- Segment -->
 									<div class="form-group col-md-4 enquiry-field">
 										<label><i class="fas fa-layer-group enquiry-icon"></i>
-											Segment <span class="text-danger">*</span> </label> <select id="segment1"
+											Segment <span class="text-danger">*</span> </label> <select
+											id="segment1"
 											class="form-control form-control-sm enquiry-input">
 										</select>
 									</div>
@@ -1040,7 +1085,8 @@ textarea.enquiry-input {
 									<!-- Design Basis -->
 									<div class="form-group col-md-4 enquiry-field">
 										<label><i class="fas fa-drafting-compass enquiry-icon"></i>
-											Design Basis <span class="text-danger">*</span> </label> <select id="designBasis1"
+											Design Basis <span class="text-danger">*</span> </label> <select
+											id="designBasis1"
 											class="form-control form-control-sm enquiry-input">
 											<option value="">Select Design Basis</option>
 											<option value="1">Design and Build Basis</option>
@@ -1064,7 +1110,8 @@ textarea.enquiry-input {
 									<!-- Painting Requirement -->
 									<div class="form-group col-md-4 enquiry-field">
 										<label><i class="fas fa-paint-roller enquiry-icon"></i>
-											Painting Requirement  <span class="text-danger">*</span> </label> <select id="paintingRequirement1"
+											Painting Requirement <span class="text-danger">*</span> </label> <select
+											id="paintingRequirement1"
 											class="form-control form-control-sm enquiry-input">
 											<option value="">Select Painting Requirement</option>
 											<option value="1">Primer Only</option>
@@ -1077,7 +1124,8 @@ textarea.enquiry-input {
 									<!-- Type of Enquiry -->
 									<div class="form-group col-md-4 enquiry-field">
 										<label><i class="fas fa-file-alt enquiry-icon"></i>
-											Type of Enquiry <span class="text-danger">*</span> </label> <select id="enquiryType1"
+											Type of Enquiry <span class="text-danger">*</span> </label> <select
+											id="enquiryType1"
 											class="form-control form-control-sm enquiry-input">
 											<option value="">Select Type</option>
 											<option value="1">Budgetary</option>
@@ -1089,7 +1137,8 @@ textarea.enquiry-input {
 									<div class="form-group col-md-4 enquiry-field">
 										<label><i
 											class="fas fa-fire-extinguisher enquiry-icon"></i> Fire
-											Proofing Required <span class="text-danger">*</span> </label> <select id="fireProofing1"
+											Proofing Required <span class="text-danger">*</span> </label> <select
+											id="fireProofing1"
 											class="form-control form-control-sm enquiry-input">
 											<option value="">Select</option>
 											<option value="1">Yes</option>
@@ -1151,7 +1200,7 @@ textarea.enquiry-input {
 
 
 
-									<div class="form-group col-md-12 enquiry-field">
+									<div class="form-group col-md-12 enquiry-field" hidden>
 
 										<label> <i class="fas fa-paperclip enquiry-icon"></i>
 											Attachment
@@ -1163,7 +1212,7 @@ textarea.enquiry-input {
 									</div>
 
 									<!-- Attachment Remarks -->
-									<div class="form-group col-md-12 enquiry-field">
+									<div class="form-group col-md-12 enquiry-field" hidden>
 										<label><i class="fas fa-comment-dots enquiry-icon"></i>
 											Attachment Remarks</label>
 										<textarea id="attachmentRemarks1" rows="3"
@@ -1453,44 +1502,148 @@ textarea.enquiry-input {
 				</div>
 
 
+				<div class="modal fade" id="exampleModalAttachment" tabindex="-1"
+					role="dialog" aria-hidden="true">
+					<div
+						class="modal-dialog modal-dialog-scrollable modal-dialog-centered"
+						style="max-width: 800px;" role="document">
+						<div class="modal-content enquiry-modal-content">
+							<div class="modal-header enquiry-modal-header">
+								<h5 class="modal-title text-white">
+									<b>Enquiry Attachments</b>
+								</h5>
+								<button type="button" class="close text-white"
+									data-dismiss="modal">
+									<span>&times;</span>
+								</button>
+							</div>
+
+							<div class="modal-body enquiry-modal-body">
+								<div class="p-2 mb-3"
+									style="background: #eef0fa; border-radius: 8px; border-left: 4px solid #37499A;">
+									<div class="row">
+										<div class="col-md-3">
+											<small class="text-muted">Enq No</small><br>
+											<b id="atEnqNo">-</b>
+										</div>
+										<div class="col-md-5">
+											<small class="text-muted">Project</small><br>
+											<b id="atProjectName">-</b>
+										</div>
+										<div class="col-md-4">
+											<small class="text-muted">Client</small><br>
+											<b id="atClientName">-</b>
+										</div>
+									</div>
+								</div>
+
+								<h6>
+									<b>Add New Attachments</b>
+								</h6>
+								<div id="newAttachmentRows"></div>
+								<button type="button"
+									class="btn btn-sm enquiry-btn-primary mt-1"
+									id="addAttachmentRowBtn">
+									<i class="fas fa-plus"></i> Add More
+								</button>
+
+								<hr>
+								<h6>
+									<b>Uploaded Attachments</b>
+								</h6>
+								<!-- <div class="table-responsive">
+									<table class="table table-sm table-bordered">
+										<thead>
+											<tr>
+												<th>Sl</th>
+												<th>File Name</th>
+												<th>Remarks</th>
+												<th>Uploaded By</th>
+												<th>Date</th>
+												<th>Actions</th>
+											</tr>
+										</thead>
+										<tbody id="attachmentHistoryBody"></tbody>
+									</table>
+								</div> -->
+								
+								<div class="table-responsive">
+  <table class="table table-sm table-bordered" id="attachmentTable">
+    <colgroup>
+      <col style="width:6%">    <!-- Sl -->
+      <col style="width:30%">   <!-- File Name -->
+      <col style="width:22%">   <!-- Remarks -->
+      <col style="width:14%">   <!-- Uploaded By -->
+      <col style="width:16%">   <!-- Date -->
+      <col style="width:12%">   <!-- Actions -->
+    </colgroup>
+    <thead>
+      <tr>
+        <th>Sl</th>
+        <th>File Name</th>
+        <th>Remarks</th>
+        <th>Uploaded By</th>
+        <th>Date</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="attachmentHistoryBody"></tbody>
+  </table>
+</div>
+							</div>
+
+							<div class="modal-footer enquiry-modal-footer">
+								<button type="button" class="btn btn-sm enquiry-btn-secondary"
+									data-dismiss="modal">Close</button>
+								<button type="button" class="btn btn-sm enquiry-btn-primary"
+									id="uploadAttachmentsBtn">Upload</button>
+							</div>
+						</div>
+					</div>
+				</div>
+
 
 				<!-- JS FILES -->
 				<script src="vendor/jquery/jquery.min.js"></script>
 				<script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
 				<script src="vendor/jquery-easing/jquery.easing.min.js"></script>
-			
-			
-			
+
+
+
 				<script src="vendor/datatables/jquery.dataTables.min.js"></script>
 				<script src="vendor/datatables/dataTables.bootstrap4.min.js"></script>
 				<script src="js/config.js?v=<%=ver(application, "/js/config.js")%>"></script>
-				
+
 				<script
-			src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
-		<script
-			src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-		<script
-			src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
-		<script
-			src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
-		<script
-			src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
-		<script
-			src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
-				
-				
-			
-			<!-- 	<script
+					src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
+				<script
+					src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+				<script
+					src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
+				<script
+					src="externalLibrary/cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
+				<script
+					src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
+				<script
+					src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
+
+
+
+				<!-- 	<script
 					src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script> -->
-					
-					
-					
-					
-				
+
+
+
+
+
 				<script src="js/logout.js?v=<%=ver(application, "/js/logout.js")%>"></script>
-				<script src="js/username.js?v=<%=ver(application, "/js/username.js")%>"></script>
-				<script src="js/Sessionfilter.js?v=<%=ver(application, "/js/Sessionfilter.js")%>"></script>
-				<script src="js/CRMEnquiry.js?v=<%=ver(application, "/js/CRMEnquiry.js")%>"></script>
-				<script src="js/createdby.js?v=<%=ver(application, "/js/createdby.js")%>"></script>
+				<script
+					src="js/username.js?v=<%=ver(application, "/js/username.js")%>"></script>
+				<script
+					src="js/Sessionfilter.js?v=<%=ver(application, "/js/Sessionfilter.js")%>"></script>
+				<script
+					src="js/CRMEnquiry.js?v=<%=ver(application, "/js/CRMEnquiry.js")%>"></script>
+				<script
+					src="js/createdby.js?v=<%=ver(application, "/js/createdby.js")%>"></script>
 </body>
 </html>

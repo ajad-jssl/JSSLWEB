@@ -14,6 +14,9 @@ long ts = System.currentTimeMillis();
 	type="text/css">
 <link href="vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet"
 	type="text/css">
+	
+	  <link href="externalLibrary/cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link href="externalLibrary/cdn.jsdelivr.net/npm/@ttskch/select2-bootstrap4-theme@1.5.2/dist/select2-bootstrap4.min.css" rel="stylesheet" />
 	  <link href="css/masterpage.css" rel="stylesheet">
 <link href="css/ruang-admin.min.css" rel="stylesheet">
 <link rel="stylesheet" href="css/main.css">
@@ -305,6 +308,7 @@ long ts = System.currentTimeMillis();
 		<script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
    	    <script src="js/config.js?v=<%=ver(application, "/js/config.js")%>"></script>
 		<script src="js/logout.js?v=<%=ver(application, "/js/logout.js")%>"></script>
+		 <script src="externalLibrary/cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 		<script src="js/UserUnlockMenu.js?v=<%=ver(application, "/js/UserUnlockMenu.js")%>"></script>
 		<script src="js/username.js?v=<%=ver(application, "/js/username.js")%>"></script>
 		 <script src="js/factoryid.js?v=<%=ver(application, "/js/factoryid.js")%>"></script>
@@ -323,6 +327,6 @@ long ts = System.currentTimeMillis();
   window.actionElementMap = {
   };
 </script>
-  <script src="js/permissions.js"></script>
+  <script src="js/permissions.js?v=<%=ver(application, "/js/permissions.js")%>"></script>
 </body>
 </html>

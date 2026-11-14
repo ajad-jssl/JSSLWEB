@@ -21,10 +21,11 @@ long ts = System.currentTimeMillis();
 <link href="vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
 <link href="css/ruang-admin.min.css" rel="stylesheet">
 <link rel="stylesheet" href="css/main.css">
-<link
-	href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
-	rel="stylesheet">
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+
+
+
+
 <script src="vendor/chart.js/Chart.min.js"></script>
 <script>
     var user_id = sessionStorage.getItem('user_id');
@@ -71,6 +72,7 @@ long ts = System.currentTimeMillis();
 body {
 	background: var(--bg);
 	font-family: 'Plus Jakarta Sans', 'Segoe UI', sans-serif;
+	
 	color: var(--text);
 	overflow: hidden;
 }
@@ -1394,81 +1396,7 @@ to {
 }
 </style>
 </head>
-<script src="js/config.js"></script>
-<script>
-(function () {
-  var userId = sessionStorage.getItem('user_id');
-  var username = sessionStorage.getItem('username');
-  var moduleName = 'Sales CRM';
-  var pageName = 'SaleDashBoard.jsp';
-  var currentPage = window.location.pathname.split("/").pop()+'.jsp';
 
-  if (!userId) {
-    window.location.href = 'newlogin.jsp';
-    return;
-  }
-
-  var permUrl = new URL('/api/user-permissions-module-details', baseUrl);
-  permUrl.searchParams.append('userId', userId);
-  permUrl.searchParams.append('moduleName', moduleName);
-
-  var permCheck = fetch(permUrl, { credentials: 'include' })
-    .then(function (res) { return res.json(); })
-    .then(function (data) {
-      if (!Array.isArray(data) || data.length === 0) return false;
-      return data.some(function (item) {
-        return (item.pageUrl || '').trim().toLowerCase() === currentPage.toLowerCase();
-      });
-    })
-    .catch(function (err) {
-      console.error('Permission check failed:', err);
-      return false;
-    });
-
-  var actionsUrl = baseUrl + '/api/page/actions?userId=' + encodeURIComponent(username) +
-                    '&pageName=' + encodeURIComponent(pageName);
-
-  var actionCheck = fetch(actionsUrl, { method: 'GET', credentials: 'include', headers: { 'Content-Type': 'application/json' } })
-    .then(function (res) {
-      if (!res.ok) throw new Error('Failed to fetch actions');
-      return res.json();
-    })
-    .then(function (allowedActions) {
-      if (!Array.isArray(allowedActions)) return false;
-      return allowedActions.some(function (action) {
-        return String(action).trim().toLowerCase() === 'view';
-      });
-    })
-    .catch(function (err) {
-      console.error('Action check failed:', err);
-      return false;
-    });
-
-  Promise.all([permCheck, actionCheck]).then(function (results) {
-    var hasPagePermission = results[0];
-    var hasViewAction = results[1];
-
-    if (hasPagePermission && hasViewAction) {
-      grantAccess();
-    } else {
-      denyAccess();
-    }
-  });
-
-  function grantAccess() {
-    var canvas = document.querySelector('.dash-canvas');
-    if (canvas) canvas.style.display = 'flex';
-
-    if (typeof window.initSalesCrmDashboard === 'function') {
-      window.initSalesCrmDashboard();
-    }
-  }
-
-  function denyAccess() {
-    // .dash-canvas stays display:none (its default CSS) â nothing else happens
-  }
-})();
-</script>
 <body id="page-top">
 	<div id="wrapper">
 		<%@ include file="SaleSidebar.jsp"%>
@@ -1833,14 +1761,90 @@ to {
 	</div>
 	<a class="scroll-to-top rounded" href="#page-top"><i
 		class="fas fa-angle-up"></i></a>
+		
+		<script src="js/config.js?v=<%=ver(application, "/js/config.js")%>"></script>
+<script>
+(function () {
+  var userId = sessionStorage.getItem('user_id');
+  var username = sessionStorage.getItem('username');
+  var moduleName = 'Sales CRM';
+  var pageName = 'SaleDashBoard.jsp';
+  var currentPage = window.location.pathname.split("/").pop()+'.jsp';
+
+  if (!userId) {
+    window.location.href = 'newlogin.jsp';
+    return;
+  }
+
+  var permUrl = new URL('/api/user-permissions-module-details', baseUrl);
+  permUrl.searchParams.append('userId', userId);
+  permUrl.searchParams.append('moduleName', moduleName);
+
+  var permCheck = fetch(permUrl, { credentials: 'include' })
+    .then(function (res) { return res.json(); })
+    .then(function (data) {
+      if (!Array.isArray(data) || data.length === 0) return false;
+      return data.some(function (item) {
+        return (item.pageUrl || '').trim().toLowerCase() === currentPage.toLowerCase();
+      });
+    })
+    .catch(function (err) {
+      console.error('Permission check failed:', err);
+      return false;
+    });
+
+  var actionsUrl = baseUrl + '/api/page/actions?userId=' + encodeURIComponent(username) +
+                    '&pageName=' + encodeURIComponent(pageName);
+
+  var actionCheck = fetch(actionsUrl, { method: 'GET', credentials: 'include', headers: { 'Content-Type': 'application/json' } })
+    .then(function (res) {
+      if (!res.ok) throw new Error('Failed to fetch actions');
+      return res.json();
+    })
+    .then(function (allowedActions) {
+      if (!Array.isArray(allowedActions)) return false;
+      return allowedActions.some(function (action) {
+        return String(action).trim().toLowerCase() === 'view';
+      });
+    })
+    .catch(function (err) {
+      console.error('Action check failed:', err);
+      return false;
+    });
+
+  Promise.all([permCheck, actionCheck]).then(function (results) {
+    var hasPagePermission = results[0];
+    var hasViewAction = results[1];
+
+    if (hasPagePermission && hasViewAction) {
+      grantAccess();
+    } else {
+      denyAccess();
+    }
+  });
+
+  function grantAccess() {
+    var canvas = document.querySelector('.dash-canvas');
+    if (canvas) canvas.style.display = 'flex';
+
+    if (typeof window.initSalesCrmDashboard === 'function') {
+      window.initSalesCrmDashboard();
+    }
+  }
+
+  function denyAccess() {
+    // .dash-canvas stays display:none (its default CSS) â nothing else happens
+  }
+})();
+</script>
 
 	<script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
 	<script src="vendor/jquery-easing/jquery.easing.min.js"></script>
-	<script src="js/ruang-admin.min.js"></script>
-	<script src="js/username.js"></script>
-	<script src="js/logout.js"></script>
-	<script src="js/Sessionfilter.js"></script>
-	<script src="js/salesCrmDashboard.js?v=<%=ts%>"></script>
+
+	<script src="js/username.js?v=<%=ver(application, "/js/username.js")%>"></script>
+	<script src="js/logout.js?v=<%=ver(application, "/js/logout.js")%>"></script>
+	<script src="js/Sessionfilter.js?v=<%=ver(application, "/js/Sessionfilter.js")%>"></script>
+	<script src="js/salesCrmDashboard.js?v=<%=ver(application, "/js/salesCrmDashboard.js")%>"></script>
 
 </body>
 </html>

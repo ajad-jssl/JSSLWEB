@@ -6,7 +6,6 @@
 
 document.addEventListener("DOMContentLoaded", async function () {
     await loadActions();
-
     
 });
 
@@ -113,6 +112,8 @@ $(document).ready(function() {
 	/*fetchShiftType();*/
 	fetchTypeSelection();
 	fetchReason();
+	fetchStage();
+	fetchTypeStage();
 	loadLocations();
 
 	populateTypeSelectionDropdown()
@@ -2468,6 +2469,757 @@ function fetchReason() {
 
 
 
+/* From here Drawing Stage Master Will Begin */
+// clear the create modal every time it opens
+$("#exampleModalScrollableStage").on("shown.bs.modal", function() {
+	$("#stage").val("").focus();
+	$("#stageError").hide();
+});
+
+$("#createstage").click(function() {
+
+	let stageName = $("#stage").val().trim();
+
+	if (!stageName) {
+		$("#stageError").show();
+		return;
+	} else {
+		$("#stageError").hide();
+	}
+
+	$("#confimationstagemodal").modal("show");
+});
+
+$("#confirmstage").click(function() {
+	$("#confimationstagemodal").modal("hide");
+	handleStageCreation();
+});
+
+
+function handleStageCreation() {
+
+	let stageName = $("#stage").val().trim();
+
+	$.ajax({
+		url: new URL(
+			`/api/drawing_stage/check/stage?stageName=${encodeURIComponent(stageName)}`,
+			baseUrl
+		).toString(),
+		type: "GET",
+		xhrFields: { withCredentials: true },
+
+		success: function(response) {
+			if (response.exists === true) {
+				$("#duplicateStageMessage").text("Stage already exists.");
+				$("#duplicateStageModal").modal("show");
+			} else {
+				insertStage(stageName);
+			}
+		},
+
+		error: function() {
+			alert("Error while checking Stage");
+		}
+	});
+}
+
+function insertStage(stageName) {
+
+	let requestData = {
+		stageName: stageName,
+		createdBy: sessionStorage.getItem("id"),
+		createdDate: getIndianDateTimeFormat(new Date())
+	};
+
+	$.ajax({
+		url: new URL("/api/drawing_stage", baseUrl).toString(),
+		type: "POST",
+		contentType: "application/json",
+		data: JSON.stringify(requestData),
+		xhrFields: { withCredentials: true },
+
+		success: function() {
+			// so the page reopens on the Drawing Stages radio after reload
+			localStorage.setItem("selectedAssetRadio", "DrawingStagesRadio");
+			showPopup("Stage created successfully", "DrawingMasterRegister.jsp");
+		},
+
+		error: function(xhr) {
+			if (xhr.status === 409) {
+				$("#duplicateStageMessage").text(xhr.responseText || "Stage already exists.");
+				$("#duplicateStageModal").modal("show");
+			} else {
+				alert(xhr.responseText || "Failed to insert Stage");
+			}
+		}
+	});
+}
+
+
+let originalStageName = "";
+let selectedStageId = null;
+
+function editStage(stageId) {
+
+	const allowed = allowedActions || [];
+
+	if (!allowed.includes("Edit")) {
+		alert(" You do not have permission to Edit.");
+		return;
+	}
+
+	selectedStageId = stageId;
+
+	$.ajax({
+		url: new URL(`/api/drawing_stage/get/${stageId}`, baseUrl).toString(),
+		type: "GET",
+		xhrFields: { withCredentials: true },
+
+		success: function(response) {
+			$("#stageUp").val(response.stageName);
+			originalStageName = response.stageName;
+
+			$("#exampleModalScrollableStageUp").modal("show");
+		},
+
+		error: function() {
+			alert("Failed to load Stage");
+		}
+	});
+}
+
+$("#exampleModalScrollableStageUp").on("shown.bs.modal", function() {
+	$("#stageUpError").hide();
+});
+
+$("#createstageUp").click(function() {
+
+	let stageUp = $("#stageUp").val().trim();
+
+	if (!stageUp) {
+		$("#stageUpError").show();
+		return;
+	} else {
+		$("#stageUpError").hide();
+	}
+
+	$("#confimationupdatestagemodal").modal("show");
+});
+
+$("#confirmstageUp").click(function() {
+
+	let newStageName = $("#stageUp").val().trim();
+
+	$("#confimationupdatestagemodal").modal("hide");
+
+	if (newStageName === originalStageName) {
+		localStorage.setItem("selectedAssetRadio", "DrawingStagesRadio");
+		showPopup("No Fields Changed", "DrawingMasterRegister.jsp");
+		return;
+	}
+
+	checkDuplicateStageForUpdate(newStageName);
+});
+
+function checkDuplicateStageForUpdate(stageName) {
+
+	$.ajax({
+		url: new URL(
+			`/api/drawing_stage/check/stage?stageName=${encodeURIComponent(stageName)}`,
+			baseUrl
+		).toString(),
+		type: "GET",
+		xhrFields: { withCredentials: true },
+
+		success: function(response) {
+			if (response.exists) {
+				$("#duplicateStageMessage").text("Stage already exists.");
+				$("#duplicateStageModal").modal("show");
+			} else {
+				updateStage(stageName);
+			}
+		},
+
+		error: function() {
+			alert("Error while checking duplicate Stage");
+		}
+	});
+}
+
+function updateStage(stageName) {
+
+	let requestData = {
+		stageName: stageName,
+		modifiedBy: sessionStorage.getItem("id"),
+		modifiedDate: getIndianDateTimeFormat(new Date())
+	};
+
+	$.ajax({
+		url: new URL(`/api/drawing_stage/modified/${selectedStageId}`, baseUrl).toString(),
+		type: "PUT",
+		contentType: "application/json",
+		data: JSON.stringify(requestData),
+		xhrFields: { withCredentials: true },
+
+		success: function() {
+			localStorage.setItem("selectedAssetRadio", "DrawingStagesRadio");
+			showPopup("Stage updated successfully", "DrawingMasterRegister.jsp");
+		},
+
+		error: function(xhr) {
+			if (xhr.status === 409) {
+				$("#duplicateStageMessage").text(xhr.responseText || "Stage already exists.");
+				$("#duplicateStageModal").modal("show");
+			} else {
+				alert(xhr.responseText || "Failed to update Stage");
+			}
+		}
+	});
+}
+
+function escapeStageHtml(text) {
+	return $("<div>").text(text == null ? "" : text).html();
+}
+
+function fetchStage() {
+
+	$.ajax({
+		url: new URL("/api/drawing_stage/getAll", baseUrl).toString(),
+		type: "GET",
+		xhrFields: { withCredentials: true },
+
+		success: function(data) {
+
+			if ($.fn.DataTable.isDataTable('#modalstageTableID')) {
+				$('#modalstageTableID').DataTable().destroy();
+			}
+
+			let tbody = $("#modalStagesBody");
+			tbody.empty();
+
+			// 204 No Content -> data is undefined
+			if (!data || data.length === 0) {
+				tbody.append(`
+					<tr>
+						<td colspan="3" class="text-center text-muted">
+							No records found
+						</td>
+					</tr>
+				`);
+				return;
+			}
+
+			$.each(data, function(index, item) {
+
+				tbody.append(`
+					<tr>
+						<td>${index + 1}</td>
+						<td>${escapeStageHtml(item.stageName)}</td>
+						<td class="text-center">
+							<i class="fa fa-pen text-muted cursor-pointer"
+							   title="Edit"
+							   onclick="editStage(${item.stageId})"></i>
+						</td>
+					</tr>
+				`);
+			});
+
+			$('#modalstageTableID').DataTable({
+				dom: '<"d-flex justify-content-between mb-2"Bf>rtip',
+				buttons: [
+					{
+						extend: 'excelHtml5',
+						text: 'Export to Excel',
+						className: 'btn btn-primary btn-sm',
+						filename: 'Drawing_Stage_Report',
+						title: 'Drawing Stage Report'
+					}
+				],
+				paging: true,
+				pageLength: 10,
+				info: true,
+				searching: true,
+				ordering: true
+			});
+		},
+
+		error: function(xhr, status, error) {
+			console.error("Fetch Stage Error:", error);
+			alert("Failed to load Stage data");
+		}
+	});
+}
+
+//Type Selection Stage Type Starts form here
+
+let typeStageTypeMap = {};
+let typeStageStageMap = {};
+let typeStageStageList = [];
+let typeStageRecords = [];                       // all rows from /api/selection_stage/getAll
+const TYPE_STAGE_ALLOWED_TYPES = [1, 2, 3];      // only Modular, Editor, Checker
+const TYPE_STAGE_RADIO = "TypeSelectionStageRadio"; // <-- put your radio id here
+
+function escapeTypeStageHtml(text) {
+	return $("<div>").text(text == null ? "" : text).html();
+}
+
+function fillTypeStageSelect(selector, items, valueKey, textKey) {
+	let select = $(selector);
+	select.empty().append('<option value="">-- Select --</option>');
+	$.each(items, function(i, item) {
+		select.append($("<option>").val(item[valueKey]).text(item[textKey]));
+	});
+}
+
+// ---------- checkbox helpers ----------
+// lockAssigned = true  -> assigned stages ticked + disabled (create modal)
+// lockAssigned = false -> assigned stages ticked but editable (update modal)
+function renderTypeStageChecks(container, cls, assignedIds, lockAssigned = true) {
+
+	let box = $(container).empty();
+
+	if (!typeStageStageList.length) {
+		box.append('<span class="text-muted">No stages available</span>');
+		return;
+	}
+
+	$.each(typeStageStageList, function(i, s) {
+		let assigned = assignedIds.includes(s.stageId);
+		let locked = assigned && lockAssigned;
+		box.append(`
+			<div class="form-check">
+				<input class="form-check-input ${cls}" type="checkbox"
+					id="${cls}_${s.stageId}" value="${s.stageId}"
+					${assigned ? "checked" : ""} ${locked ? "disabled" : ""}>
+				<label class="form-check-label" for="${cls}_${s.stageId}">
+					${escapeTypeStageHtml(s.stageName)}
+					${locked ? '<small class="text-muted">(assigned)</small>' : ""}
+				</label>
+			</div>
+		`);
+	});
+}
+
+// only the newly ticked ones (disabled = already saved)
+function getSelectedTypeStageIds(cls) {
+	return $("." + cls + ":checked:not(:disabled)").map(function() {
+		return parseInt($(this).val());
+	}).get();
+}
+
+// every ticked box (update modal, nothing is disabled there)
+function getAllCheckedTypeStageIds(cls) {
+	return $("." + cls + ":checked").map(function() {
+		return parseInt($(this).val());
+	}).get();
+}
+
+function getAssignedStageIds(typeId) {
+	return typeStageRecords
+		.filter(function(r) { return r.typeId === typeId; })
+		.map(function(r) { return r.stageId; });
+}
+
+// ---------- lookups (Type dropdown + Stage checkboxes) ----------
+function loadTypeStageLookups() {
+
+	let typeReq = $.ajax({
+		url: new URL("/api/type_selection/getAll", baseUrl).toString(),
+		type: "GET",
+		xhrFields: { withCredentials: true }
+	});
+
+	let stageReq = $.ajax({
+		url: new URL("/api/drawing_stage/getAll", baseUrl).toString(),
+		type: "GET",
+		xhrFields: { withCredentials: true }
+	});
+
+	return $.when(typeReq, stageReq).done(function(typeRes, stageRes) {
+
+		let types = typeRes[0] || [];
+		let stages = stageRes[0] || [];
+
+		typeStageTypeMap = {};
+		$.each(types, function(i, t) { typeStageTypeMap[t.typeId] = t.typeName; });
+
+		typeStageStageMap = {};
+		$.each(stages, function(i, s) { typeStageStageMap[s.stageId] = s.stageName; });
+		typeStageStageList = stages;
+
+		// dropdown shows only typeId 1, 2, 3
+		let allowedTypes = types.filter(function(t) {
+			return TYPE_STAGE_ALLOWED_TYPES.includes(t.typeId);
+		});
+
+		fillTypeStageSelect("#typeStageCreateType", allowedTypes, "typeId", "typeName");
+		fillTypeStageSelect("#typeStageUpdateType", allowedTypes, "typeId", "typeName");
+
+		renderTypeStageChecks("#typeStageCreateStageList", "typeStageCreateChk", []);
+		renderTypeStageChecks("#typeStageUpdateStageList", "typeStageUpdateChk", []);
+
+	}).fail(function() {
+		alert("Failed to load Type / Stage data");
+	});
+}
+
+// ---------- create ----------
+$("#btnCreateTypeStage").click(function() {
+	$("#typeStageCreateModal").modal("show");
+});
+
+// clear the create modal every time it opens
+$("#typeStageCreateModal").on("shown.bs.modal", function() {
+	$("#typeStageCreateType").val("").focus();
+	renderTypeStageChecks("#typeStageCreateStageList", "typeStageCreateChk", []);
+	$("#typeStageCreateTypeError").hide();
+	$("#typeStageCreateStageError").hide();
+});
+
+// when a type is picked, stages it already has are shown ticked + disabled
+$("#typeStageCreateType").on("change", function() {
+	let typeId = parseInt($(this).val());
+	let assigned = isNaN(typeId) ? [] : getAssignedStageIds(typeId);
+	renderTypeStageChecks("#typeStageCreateStageList", "typeStageCreateChk", assigned);
+});
+
+$("#btnSaveTypeStage").click(function() {
+
+	let typeId = $("#typeStageCreateType").val();
+	let stageIds = getSelectedTypeStageIds("typeStageCreateChk");
+	let valid = true;
+
+	if (!typeId) {
+		$("#typeStageCreateTypeError").show();
+		valid = false;
+	} else {
+		$("#typeStageCreateTypeError").hide();
+	}
+
+	if (stageIds.length === 0) {
+		$("#typeStageCreateStageError").show();
+		valid = false;
+	} else {
+		$("#typeStageCreateStageError").hide();
+	}
+
+	if (!valid) return;
+
+	$("#typeStageCreateConfirmModal").modal("show");
+});
+
+$("#btnConfirmTypeStageCreate").click(function() {
+
+	$("#typeStageCreateConfirmModal").modal("hide");
+
+	let typeId = parseInt($("#typeStageCreateType").val());
+	let stageIds = getSelectedTypeStageIds("typeStageCreateChk");
+
+	insertTypeStages(typeId, stageIds, "Type Selection for Stage created successfully");
+});
+
+// one POST per ticked stage (backend still stores one record per type + stage)
+function insertTypeStages(typeId, stageIds, successMessage) {
+
+	let createdBy = sessionStorage.getItem("id");
+	let createdDate = getIndianDateTimeFormat(new Date());
+
+	let requests = stageIds.map(function(stageId) {
+		return $.ajax({
+			url: new URL("/api/selection_stage", baseUrl).toString(),
+			type: "POST",
+			contentType: "application/json",
+			data: JSON.stringify({
+				typeId: typeId,
+				stageId: stageId,
+				createdBy: createdBy,
+				createdDate: createdDate
+			}),
+			xhrFields: { withCredentials: true }
+		});
+	});
+
+	$.when.apply($, requests)
+		.done(function() {
+			// so the page reopens on this radio after reload
+			localStorage.setItem("selectedAssetRadio", TYPE_STAGE_RADIO);
+			showPopup(successMessage, "DrawingMasterRegister.jsp");
+		})
+		.fail(function(xhr) {
+			if (xhr.status === 409) {
+				$("#typeStageDuplicateMessage").text("This Type-Selection for Stage already exists.");
+				$("#typeStageDuplicateModal").modal("show");
+			} else {
+				alert(xhr.responseText || "Failed to save Type Selection for Stage");
+			}
+		});
+}
+
+// ---------- update (add / remove stages for a type) ----------
+let selectedTypeStageTypeId = null;
+let originalTypeStageIds = [];
+
+// ---------- locking helpers ----------
+
+// stageIds already used in phase entries
+function fetchUsedStageIds(contractId) {
+	return $.ajax({
+		url: "http://localhost:8004/api/contracts/getPhaseEntries?contractId=" + contractId,
+		type: "GET"
+	}).then(function (entries) {
+		return new Set((entries || []).map(e => Number(e.stageId)));
+	});
+}
+
+// master rows: [{selectionStageId, typeId, stageId, ...}]
+function fetchSelectionStageMaster() {
+	return $.ajax({
+		url: "http://localhost:8004/api/selection_stage/getAll",
+		type: "GET"
+	});
+}
+
+// Returns { lockedStageIds:Set, lockedTypeIds:Set }
+async function computeLocks(contractId) {
+	const [usedStageIds, master] = await Promise.all([
+		fetchUsedStageIds(contractId),
+		fetchSelectionStageMaster()
+	]);
+
+	const lockedStageIds = new Set();
+	const lockedTypeIds = new Set();
+
+	(master || []).forEach(m => {
+		if (usedStageIds.has(Number(m.stageId))) {
+			lockedStageIds.add(Number(m.stageId));
+			lockedTypeIds.add(Number(m.typeId));   // type assigned to a locked stage is locked too
+		}
+	});
+
+	return { lockedStageIds, lockedTypeIds };
+}
+
+// ---------- edit ----------
+
+async function editTypeStage(typeId) {
+
+	const allowed = allowedActions || [];
+	if (!allowed.includes("Edit")) {
+		alert(" You do not have permission to Edit.");
+		return;
+	}
+
+	selectedTypeStageTypeId = typeId;
+	originalTypeStageIds = getAssignedStageIds(typeId);
+
+	$("#typeStageUpdateType").val(String(typeId)).prop("disabled", true);
+	renderTypeStageChecks("#typeStageUpdateStageList", "typeStageUpdateChk", originalTypeStageIds, false);
+
+	try {
+		// contractId: use whatever your page holds (e.g. selected contract)
+		const contractId = $("#contractSelect").val() || 80;
+		const { lockedStageIds, lockedTypeIds } = await computeLocks(contractId);
+
+		// lock stage checkboxes that are used in entries
+		$("#typeStageUpdateStageList input[type='checkbox']").each(function () {
+			const stageId = Number($(this).val());
+			if (lockedStageIds.has(stageId) && originalTypeStageIds.map(Number).includes(stageId)) {
+				$(this).prop("checked", true)      // stays assigned
+				       .prop("disabled", true)     // cannot be unticked
+				       .attr("title", "Locked: already used in phase entries")
+				       .closest("label, div").addClass("text-muted");
+			} else {
+				$(this).prop("disabled", false);   // free to edit
+			}
+		});
+
+		// lock the type itself if it has any locked stage
+		const typeLocked = lockedTypeIds.has(Number(typeId));
+		$("#typeStageUpdateType").prop("disabled", true);          // already fixed in edit
+		$("#typeStageUpdateModal").data("typeLocked", typeLocked);
+		$("#typeStageTypeLockMsg").toggle(typeLocked);             // optional <small id="typeStageTypeLockMsg">
+	} catch (err) {
+		console.error("Lock check failed", err);
+	}
+
+	$("#typeStageUpdateModal").modal("show");
+}
+
+// ---------- delete guard (lock the type in the master) ----------
+
+async function deleteTypeStage(typeId) {
+	const contractId = $("#contractSelect").val() || 80;
+	const { lockedTypeIds } = await computeLocks(contractId);
+
+	if (lockedTypeIds.has(Number(typeId))) {
+		alert("This type is locked because one of its stages is used in phase entries.");
+		return;
+	}
+	// ...your existing delete logic
+}
+
+$("#typeStageUpdateModal").on("shown.bs.modal", function() {
+	$("#typeStageUpdateTypeError").hide();
+	$("#typeStageUpdateStageError").hide();
+});
+
+$("#btnUpdateTypeStage").click(function() {
+	$("#typeStageUpdateConfirmModal").modal("show");
+});
+
+$("#btnConfirmTypeStageUpdate").click(function() {
+
+	$("#typeStageUpdateConfirmModal").modal("hide");
+
+	let current = getAllCheckedTypeStageIds("typeStageUpdateChk");
+	let toAdd = current.filter(function(id) { return !originalTypeStageIds.includes(id); });
+	let toRemove = originalTypeStageIds.filter(function(id) { return !current.includes(id); });
+
+	if (toAdd.length === 0 && toRemove.length === 0) {
+		localStorage.setItem("selectedAssetRadio", TYPE_STAGE_RADIO);
+		showPopup("No Fields Changed", "DrawingMasterRegister.jsp");
+		return;
+	}
+
+	if (current.length === 0) {
+		alert("A type must have at least one stage.");
+		return;
+	}
+
+	syncTypeStages(selectedTypeStageTypeId, toAdd, toRemove);
+});
+
+function syncTypeStages(typeId, toAdd, toRemove) {
+
+	let userId = sessionStorage.getItem("id");
+	let now = getIndianDateTimeFormat(new Date());
+	let requests = [];
+
+	toAdd.forEach(function(stageId) {
+		requests.push($.ajax({
+			url: new URL("/api/selection_stage", baseUrl).toString(),
+			type: "POST",
+			contentType: "application/json",
+			data: JSON.stringify({ typeId: typeId, stageId: stageId, createdBy: userId, createdDate: now }),
+			xhrFields: { withCredentials: true }
+		}));
+	});
+
+	toRemove.forEach(function(stageId) {
+		requests.push($.ajax({
+			url: new URL(`/api/selection_stage/delete?typeId=${typeId}&stageId=${stageId}`, baseUrl).toString(),
+			type: "DELETE",
+			xhrFields: { withCredentials: true }
+		}));
+	});
+
+	$.when.apply($, requests)
+		.done(function() {
+			localStorage.setItem("selectedAssetRadio", TYPE_STAGE_RADIO);
+			showPopup("Type Selection for Stage updated successfully", "DrawingMasterRegister.jsp");
+		})
+		.fail(function(xhr) {
+			alert(xhr.responseText || "Failed to update Type Selection for Stage");
+		});
+}
+// ---------- table (one row per type, stages joined) ----------
+function fetchTypeStage() {
+
+	loadTypeStageLookups().done(function() {
+
+		$.ajax({
+			url: new URL("/api/selection_stage/getAll", baseUrl).toString(),
+			type: "GET",
+			xhrFields: { withCredentials: true },
+
+			success: function(data) {
+
+				typeStageRecords = data || [];
+
+				if ($.fn.DataTable.isDataTable('#typeStageTable')) {
+					$('#typeStageTable').DataTable().destroy();
+				}
+
+				let tbody = $("#typeStageTable tbody");
+				tbody.empty();
+
+				// 204 No Content -> data is undefined
+				if (typeStageRecords.length === 0) {
+					tbody.append(`
+						<tr>
+							<td colspan="4" class="text-center text-muted">
+								No records found
+							</td>
+						</tr>
+					`);
+					return;
+				}
+
+				// group stages by type, keeping first-seen type order
+				let groups = {};
+				let typeOrder = [];
+				$.each(typeStageRecords, function(i, item) {
+					if (!groups[item.typeId]) {
+						groups[item.typeId] = [];
+						typeOrder.push(item.typeId);
+					}
+					groups[item.typeId].push(item.stageId);
+				});
+
+				$.each(typeOrder, function(index, typeId) {
+
+					let stageNames = groups[typeId]
+						.sort(function(a, b) { return a - b; })
+						.map(function(id) { return typeStageStageMap[id]; })
+						.join(", ");
+
+					tbody.append(`
+						<tr>
+							<td>${index + 1}</td>
+							<td>${escapeTypeStageHtml(typeStageTypeMap[typeId])}</td>
+							<td>${escapeTypeStageHtml(stageNames)}</td>
+							<td class="text-center">
+								<i class="fa fa-pen text-muted cursor-pointer"
+								   title="Edit"
+								   onclick="editTypeStage(${typeId})"></i>
+							</td>
+						</tr>
+					`);
+				});
+
+				$('#typeStageTable').DataTable({
+					dom: '<"d-flex justify-content-between mb-2"Bf>rtip',
+					buttons: [
+						{
+							extend: 'excelHtml5',
+							text: 'Export to Excel',
+							className: 'btn btn-primary btn-sm',
+							filename: 'Drawing_Type_Selection_Stage_Report',
+							title: 'Drawing Type Selection Stage Report',
+							exportOptions: { columns: [0, 1, 2] }
+						}
+					],
+					paging: true,
+					pageLength: 10,
+					info: true,
+					searching: true,
+					ordering: true
+				});
+			},
+
+			error: function(xhr, status, error) {
+				console.error("Fetch Type Selection Stage Error:", error);
+				alert("Failed to load Type Selection for Stage data");
+			}
+		});
+	});
+}
+
+
+
+
+
+
 
 function getIndianDateTimeFormat(date) {
 	const options = {
@@ -2477,7 +3229,6 @@ function getIndianDateTimeFormat(date) {
 	const istDate = new Date(date.toLocaleString('en-US', options));
 	return `${istDate.getFullYear()}-${(istDate.getMonth() + 1).toString().padStart(2, '0')}-${istDate.getDate().toString().padStart(2, '0')}T${istDate.getHours().toString().padStart(2, '0')}:${istDate.getMinutes().toString().padStart(2, '0')}:${istDate.getSeconds().toString().padStart(2, '0')}`;
 }
-
 function showPopup(message, redirectUrl) {
 	var popup = $('<div class="popup">' + message + '</div>').appendTo('body').hide().fadeIn(400);
 	setTimeout(function() {

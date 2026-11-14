@@ -152,7 +152,7 @@ async function fetchVehicleDetails(vehicle_id) {
                 document.getElementById("lblcompanyname").innerText = details.Company_name || '';
                 document.getElementById("dl").innerText = details.dl || '';
                 document.getElementById("cn").innerText = details.dmbno || '';
-                document.getElementById("lblDateTime").innerText = details.vdate || '';
+                document.getElementById("lblDateTime").innerText = formatDateTime(details.vdate) || '';
                 document.getElementById("vehNo").innerText = details.vecno || '';
                 document.getElementById("rem").innerText = details.inremarks || '';
 				const userInfo = userMap1[String(details.wtm)];
@@ -183,6 +183,17 @@ async function fetchVehicleDetails(vehicle_id) {
             console.error('Error fetching vehicle details:', error);
         });
 }
+
+
+function formatDateTime(dateTime) {
+    if (!dateTime) return "";
+
+    const [date, time] = dateTime.split(" ");
+    const [year, month, day] = date.split("-");
+
+    return `${day}-${month}-${year} ${time}`;
+}
+
 
 function setVehiclePhoto(details) {
     const photoEl = document.getElementById("vehiclePhoto");
@@ -369,6 +380,7 @@ function fetchReport() {
 						}</td>
 
                         <td class="hide-vl">${row.weight || ""}</td>
+						<td class = "hide-vl">${row.qty || ""}</td>
                         <td class="hide-vl">${row.Inv_no || ""}</td>
                         <td class="hide-vl">${row.Inv_date || ""}</td>
                         <td class="hide-vl">${row.Po_number || ""}</td>
@@ -377,7 +389,7 @@ function fetchReport() {
                         <td class="hide-vl">${row.DC_date || ""}</td>
 
                         <td>${row.inremarks || ""}</td>
-                        <td>${row.content_desc || ""}</td>
+                        <td>${row.Descp || ""}</td>
                         <td>${row.factory_name || ""}</td>
                     </tr>`;
             });
@@ -545,6 +557,7 @@ function fetchvehiclematerialReport() {
 						}</td>
                         
                         <td>${row.weight ?? ""}</td>
+						<td>${row.qty ?? ""}</td>
                         <td>${row.Inv_no ?? ""}</td>
                         <td>${row.Inv_date ?? ""}</td>
                         <td>${row.Po_number ?? ""}</td>
@@ -552,7 +565,7 @@ function fetchvehiclematerialReport() {
                         <td>${row.DC_no ?? ""}</td>
                         <td>${row.DC_date ?? ""}</td>
                         <td>${row.inremarks ?? ""}</td>
-                        <td>${row.content_desc ?? ""}</td>
+                        <td>${row.Descp ?? ""}</td>
                         <td>${row.factory_name ?? ""}</td>
                     `;
                 }

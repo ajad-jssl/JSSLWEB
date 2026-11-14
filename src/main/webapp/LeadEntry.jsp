@@ -617,6 +617,421 @@ select.enquiry-input {
 #exampleModalActivity .table td:last-child {
 	white-space: nowrap;
 }
+
+/* =====================================================================
+   LEAD ENTRY PAGE - MOBILE
+   Add this as a NEW <style> block right before </head>
+   (a new block, so it can't be affected by the broken CSS in your big style block).
+
+   Everything in the media query below only applies under 768px,
+   so laptop / desktop is unchanged.
+   Needs lead-entry-mobile.js so the table cards show column names.
+   ===================================================================== */
+
+html, body {
+	max-width: 100%;
+	overflow-x: hidden;                 /* no sideways page scroll on phones */
+}
+
+@media screen and ( max-width : 767.98px) {
+
+	/* ---------- Page layout ---------- */
+	#content {
+		min-width: 0;
+	}
+	.topbar {
+		padding: 0 .75rem;
+	}
+
+	/* the title / breadcrumb sit outside any container, so they touch the screen edge */
+	#content>.d-sm-flex {
+		padding: 0 12px;
+	}
+	#content>.d-sm-flex .h3 {
+		font-size: 1.25rem;
+	}
+	#content>.d-sm-flex .breadcrumb {
+		width: 100%;
+		flex-wrap: wrap;
+		font-size: 13px;
+		padding: .5rem .75rem;
+		margin: .5rem 0 0;
+	}
+
+	/* the .row's negative margins push the page wider than the screen */
+	#content>.row.mb-3 {
+		margin-left: 0;
+		margin-right: 0;
+	}
+	#content>.row.mb-3>[class*="col-"] {
+		padding-left: 12px;
+		padding-right: 12px;
+	}
+
+	/* box around the Create button */
+	.card.mb-4>div[style*="box-shadow"] {
+		padding: 8px !important;
+	}
+	.card-header {
+		padding: .6rem .75rem !important;
+	}
+	#modalScroll1 {
+		width: 100%;
+		min-height: 42px;
+		font-size: 14px;
+	}
+	.table-responsive.p-3 {
+		padding: .5rem !important;
+		-webkit-overflow-scrolling: touch;
+	}
+
+	/* ---------- Tables -> cards (Lead list + Follow-up history) ---------- */
+	#LeadTableID, #LeadTableID tbody, #LeadTableID tr, #LeadTableID td,
+		#exampleModalActivity .table.table-sm,
+		#exampleModalActivity .table.table-sm tbody,
+		#exampleModalActivity .table.table-sm tr,
+		#exampleModalActivity .table.table-sm td {
+		display: block;
+		width: 100%;
+	}
+
+	/* column headings become labels inside each card */
+	#LeadTableID thead, #exampleModalActivity .table.table-sm thead {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		overflow: hidden;
+		clip: rect(0, 0, 0, 0);
+		white-space: nowrap;
+	}
+
+	#LeadTableID tbody tr, #exampleModalActivity .table.table-sm tbody tr {
+		background: #fff;
+		border: 1px solid #e3e6f0;
+		border-radius: 10px;
+		margin-bottom: .75rem;
+		overflow: hidden;
+		box-shadow: 0 2px 6px rgba(0, 0, 0, .06);
+	}
+
+	#LeadTableID tbody td, #exampleModalActivity .table.table-sm tbody td {
+		display: flex;
+		align-items: flex-start;
+		justify-content: space-between;
+		gap: .75rem;
+		padding: .55rem .85rem;
+		border: 0;
+		border-bottom: 1px solid #f0f1f6;
+		font-size: 14px;
+		text-align: right;
+		white-space: normal;               /* long values wrap */
+		word-break: break-word;
+	}
+	#LeadTableID tbody td:last-child, #exampleModalActivity .table.table-sm tbody td:last-child
+		{
+		border-bottom: 0;
+	}
+	#LeadTableID tbody td::before, #exampleModalActivity .table.table-sm tbody td::before
+		{
+		content: attr(data-label);
+		flex: 0 0 40%;
+		max-width: 40%;
+		text-align: left;
+		font-weight: 600;
+		color: #37499A;
+	}
+
+	/* first cell (Sl. No. / Date) = card header */
+	#LeadTableID tbody td:first-child, #exampleModalActivity .table.table-sm tbody td:first-child
+		{
+		background: #f8f9fc;
+	}
+
+	/* Edit / Follow-up / Action cells: buttons stay together and tappable */
+	#LeadTableID tbody td[data-label="Edit"], #LeadTableID tbody td[data-label="Follow-up"],
+		#exampleModalActivity .table.table-sm tbody td[data-label="Action"] {
+		align-items: center;
+		flex-wrap: wrap;
+	}
+	#LeadTableID tbody td .btn, #exampleModalActivity .table.table-sm tbody td .btn
+		{
+		min-height: 34px;
+	}
+
+	/* long text under its label */
+	#exampleModalActivity .table.table-sm tbody td[data-label="Comments"] {
+		flex-direction: column;
+		text-align: left;
+		gap: .15rem;
+	}
+	#exampleModalActivity .table.table-sm tbody td[data-label="Comments"]::before
+		{
+		flex: none;
+		max-width: 100%;
+	}
+
+	/* DataTables "No data available" row: no label, centered */
+	#LeadTableID tbody td[colspan], #LeadTableID tbody td.dataTables_empty,
+		#exampleModalActivity .table.table-sm tbody td[colspan] {
+		display: block;
+		text-align: center;
+	}
+	#LeadTableID tbody td[colspan]::before, #LeadTableID tbody td.dataTables_empty::before,
+		#exampleModalActivity .table.table-sm tbody td[colspan]::before {
+		content: none;
+	}
+
+	/* cards don't need sideways scrolling */
+	.table-responsive, .dataTables_wrapper .row>[class*="col-"] {
+		overflow-x: visible;
+	}
+
+	/* ---------- DataTables controls (search / length / paging / buttons) ---------- */
+	.dataTables_wrapper .row {
+		margin-left: 0;
+		margin-right: 0;
+	}
+	.dataTables_wrapper .row>[class*="col-"] {
+		padding-left: 0;
+		padding-right: 0;
+	}
+	.dataTables_wrapper .dataTables_length, .dataTables_wrapper .dataTables_filter,
+		.dataTables_wrapper .dataTables_info, .dataTables_wrapper .dataTables_paginate
+		{
+		text-align: center !important;
+		float: none;
+		margin: .4rem 0;
+	}
+	.dataTables_wrapper .dataTables_filter input {
+		width: 100%;
+		max-width: 220px;
+		margin-left: 0;
+	}
+	.dataTables_wrapper .pagination {
+		justify-content: center;
+		flex-wrap: wrap;
+	}
+	div.dt-buttons {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: center;
+		gap: 6px;
+		float: none;
+		margin-bottom: .5rem;
+	}
+
+	/* ---------- Modals (Create / Update / Follow-up / Message) ---------- */
+	.modal-dialog[style*="max-width"] {
+		max-width: calc(100% - 1rem) !important;   /* beats the inline 900px / 750px */
+		margin: .5rem auto;
+	}
+	.enquiry-modal-header {
+		padding: 16px 18px;
+	}
+	.enquiry-modal-header .modal-title {
+		font-size: 16px;
+	}
+	.enquiry-subtitle {
+		font-size: 11.5px;
+	}
+	.enquiry-modal-body {
+		padding: 18px;
+	}
+	.enquiry-modal-footer {
+		padding: 12px 16px;
+	}
+	.enquiry-modal-footer .btn {
+		flex: 1;
+		font-size: 14px;
+		padding: 8px 10px;
+	}
+
+	/* 16px stops iPhone auto-zoom on focus; date/month pickers get a proper height */
+	.enquiry-input {
+		font-size: 16px;
+		padding: 8px 10px;
+	}
+	input[type="date"].enquiry-input, input[type="month"].enquiry-input {
+		-webkit-appearance: none;
+		appearance: none;
+		min-height: 38px;
+	}
+
+	/* Lead No / Client / Project summary box in the Follow-up modal */
+	#exampleModalActivity .p-2.mb-3 [class*="col-"] {
+		margin-bottom: .5rem;
+	}
+
+	/* ---------- Loader + popup ---------- */
+	.loader-card {
+		min-width: 0;
+		padding: 20px 24px;
+	}
+	.spinner {
+		width: 120px;
+		height: 120px;
+		border-width: 8px;
+	}
+	.popup {
+		left: 50%;
+		right: auto;
+		transform: translateX(-50%);
+		max-width: 90vw;
+		text-align: center;
+	}
+}
+
+/* =====================================================================
+   OPTIONAL BUG FIX (all screen sizes): the @keyframes in your big <style>
+   block were broken by auto-formatting ("@" and "keyframes" on separate lines,
+   "25 %" etc.), so the browser ignores them and the loader spinner never spins.
+   These are the correct versions. Delete this block if you don't want it.
+   ===================================================================== */
+@keyframes spin {
+	to { transform: rotate(360deg); }
+}
+@keyframes fadeIn {
+	from { opacity: 0; }
+	to   { opacity: 1; }
+}
+@keyframes dots {
+	0%   { content: ""; }
+	25%  { content: "."; }
+	50%  { content: ".."; }
+	75%  { content: "..."; }
+}
+@media screen and ( max-width : 767.98px) {
+ 
+	/* Visible screen height. 100vh is TOO TALL on phones (it ignores the browser address bar
+	   and bottom toolbar), which is why the footer buttons used to fall off-screen.
+	   100dvh = the real visible height; 100vh is only a fallback for very old browsers. */
+	:root {
+		--modal-h: calc(100vh - 1rem);
+	}
+	@supports (height: 100dvh) {
+		:root {
+			--modal-h: calc(100dvh - 1rem);
+		}
+	}
+ 
+	/* ---------- Dialog size: always inside the screen ---------- */
+	.modal {
+		overscroll-behavior: contain;      /* scrolling the form doesn't scroll the page behind */
+	}
+	.modal-dialog {
+		margin: .5rem auto;
+		width: calc(100% - 1rem);
+		max-width: calc(100% - 1rem) !important;   /* beats inline max-width:900px / 750px / 500px */
+	}
+	/* small "Are you sure?" / message dialogs don't need to stretch on bigger phones */
+	.modal-dialog-centered:not(.modal-dialog-scrollable):not(.modal-lg) {
+		max-width: min(420px, calc(100% - 1rem)) !important;
+	}
+ 
+	/* centered dialogs: centre inside the VISIBLE height */
+	.modal-dialog-centered {
+		min-height: var(--modal-h);
+	}
+	.modal-dialog-scrollable, .modal-dialog-centered.modal-dialog-scrollable {
+		height: auto;
+		max-height: var(--modal-h);
+	}
+ 
+	/* ---------- Header + footer stay visible, only the body scrolls ---------- */
+	.modal-content {
+		max-height: var(--modal-h) !important;
+		overflow: hidden;
+		/* BS4 already makes .modal-content a flex column; this keeps it that way */
+		display: flex;
+		flex-direction: column;
+	}
+	.modal-header, .modal-footer {
+		flex: 0 0 auto;
+	}
+	.modal-body {
+		flex: 1 1 auto;
+		min-height: 0;                     /* required so the body can shrink and scroll */
+		overflow-y: auto;
+		-webkit-overflow-scrolling: touch;
+		padding: 16px;
+	}
+ 
+	.modal-header {
+		height: auto !important;           /* cancels the fixed height:45px */
+		min-height: 45px;
+		align-items: center;
+		padding: .75rem 1rem;
+	}
+	.modal-title {
+		line-height: 1.3 !important;
+		word-break: break-word;
+	}
+ 
+	.modal-footer {
+		flex-wrap: wrap;
+		gap: .5rem;
+		padding: .75rem 1rem;
+		padding-bottom: calc(.75rem + env(safe-area-inset-bottom, 0px));
+	}
+	.modal-footer>.btn, .modal-footer>button {
+		flex: 1 1 0;                       /* Close / Create buttons share the width, easy to tap */
+		min-width: 0;
+		margin: 0;
+		min-height: 40px;
+	}
+ 
+	/* ---------- Form fields never wider than the dialog ---------- */
+	.modal .form-control, .modal select, .modal textarea, .modal input:not([type="checkbox"]):not([type="radio"])
+		{
+		max-width: 100%;
+		font-size: 16px;                   /* stops iPhone auto-zoom when a field is tapped */
+	}
+	.modal select.form-control, .modal select {
+		text-overflow: ellipsis;           /* long option text doesn't stretch the dialog */
+	}
+	.modal input[type="date"], .modal input[type="month"], .modal input[type="time"],
+		.modal input[type="datetime-local"] {
+		-webkit-appearance: none;
+		appearance: none;
+		width: 100%;
+		min-width: 0;                      /* iPhone date inputs overflow without this */
+		min-height: 38px;
+	}
+	.modal label {
+		max-width: 100%;
+		word-break: break-word;
+	}
+ 
+	/* old pages: confirm popups had inline  width:54%; right:-22%  which pushed them off-screen */
+	.modal-content[style*="right"] {
+		width: 100% !important;
+		right: 0 !important;
+	}
+ 
+	/* custom dropdowns inside modals (fixed 300px wide before) */
+	.modal [id$="DropdownMenu"], .modal [id$="DropdownMenuUp"] {
+		width: 100% !important;
+		max-width: 100%;
+	}
+	.modal .select2-container {
+		width: 100% !important;
+	}
+}
+ 
+/* Short screens (phone turned sideways): tighter header/footer so the form has room */
+@media screen and ( max-width : 991.98px) and (max-height: 480px) {
+	.modal-header {
+		min-height: 0;
+		padding: .4rem 1rem;
+	}
+	.modal-footer {
+		padding-top: .4rem;
+		padding-bottom: .4rem;
+	}
+	.modal-body {
+		padding: 10px 16px;
+	}
+}
 </style>
 </head>
 

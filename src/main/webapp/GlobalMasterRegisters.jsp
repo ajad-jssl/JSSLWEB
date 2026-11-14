@@ -317,6 +317,15 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 									Page Actions </label>
 							</div>
 
+							&nbsp;&nbsp; &nbsp;&nbsp;
+
+							<div class="form-check">
+								<input class="form-check-input " type="radio"
+									id="ActionMasterRadio" name="drawingMaster"> <label
+									class="form-check-label" for="ActionMasterRadio">
+									Action Master</label>
+							</div>
+
 
 
 						</div>
@@ -351,7 +360,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 											<th>Modules</th>
 											<th>Status</th>
 											<th>Actions</th>
-												
+
 										</tr>
 									</thead>
 
@@ -366,23 +375,26 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 					</div>
 
 
-<!-- Generic Status Change Confirmation Modal -->
-<div class="modal fade" id="statusConfirmModal" tabindex="-1" role="dialog"
-	aria-labelledby="statusConfirmTitle" aria-hidden="true">
-	<div class="modal-dialog modal-dialog-centered" role="document">
-		<div class="modal-content"
-			style="width: 54%; right: -22%; border-width: thick; border-color: #eaecf4;">
-			<div class="modal-header1"></div>
-			<div class="modal-body">
-				<b>Are you sure you want to change the status?</b>
-			</div>
-			<div class="modal-footer">
-				<button type="button" class="btn btn-secondary btn-sm" id="statusNoBtn">NO</button>
-				<button type="button" class="btn btn-info btn-sm" id="statusYesBtn">YES</button>
-			</div>
-		</div>
-	</div>
-</div>
+					<!-- Generic Status Change Confirmation Modal -->
+					<div class="modal fade" id="statusConfirmModal" tabindex="-1"
+						role="dialog" aria-labelledby="statusConfirmTitle"
+						aria-hidden="true">
+						<div class="modal-dialog modal-dialog-centered" role="document">
+							<div class="modal-content"
+								style="width: 54%; right: -22%; border-width: thick; border-color: #eaecf4;">
+								<div class="modal-header1"></div>
+								<div class="modal-body">
+									<b>Are you sure you want to change the status?</b>
+								</div>
+								<div class="modal-footer">
+									<button type="button" class="btn btn-secondary btn-sm"
+										id="statusNoBtn">NO</button>
+									<button type="button" class="btn btn-info btn-sm"
+										id="statusYesBtn">YES</button>
+								</div>
+							</div>
+						</div>
+					</div>
 
 
 					<!-- This the Type Selection Creat Modal -->
@@ -1727,6 +1739,133 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 							</div>
 						</div>
 					</div>
+					
+					
+					<div class="row mb-3" id="ActionMasterTableOuter" style="display: none;">
+	<div class="table-responsive p-3">
+		<div class="card-header py-3 d-flex flex-row align-items-center justify-content-between"
+			style="background-color: #f8f9fc;">
+			<button class="btn btn-success btn-sm" id="modalActionMaster">
+				<i class="fas fa-plus"></i> Create
+			</button>
+		</div>
+
+		<div class="table-responsive p-3">
+			<table class="table table-striped table-bordered table-sm"
+				id="ActionMastertableID" width="100%">
+				<thead>
+					<tr>
+						<th>Sl. No.</th>
+						<th>Action</th>
+						<th>Status</th>
+						<th>Actions</th>
+					</tr>
+				</thead>
+				<tbody id="ActionMasterTableBody"></tbody>
+			</table>
+		</div>
+	</div>
+</div>
+					
+					
+		<!-- Create Action Modal -->
+<div class="modal fade" id="createActionModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable" style="max-width: 500px;" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><b>Create Action</b></h5>
+        <button type="button" class="close white-button" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form id="actionCreateForm" onsubmit="return false;">
+          <div class="form-row">
+            <div class="col-md-6">
+              <label for="actionName" class="form-label"><b>Enter Action :</b></label>
+              <input type="text" class="form-control form-control-sm" id="actionName" placeholder="Action">
+              <div id="actionNameError" class="error-message" style="display: none;">Action is required</div>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-sm btn-danger" data-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-sm btn-success" id="createAction">Create</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Create Confirmation -->
+<div class="modal fade" id="confirmActionCreateModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content" style="width: 54%; right: -22%; border-width: thick; border-color: #eaecf4;">
+      <div class="modal-header1"></div>
+      <div class="modal-body"><b>Are you sure you want to Create?</b></div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">NO</button>
+        <button type="button" class="btn btn-info btn-sm" id="confirmAction">YES</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Duplicate Action -->
+<div class="modal fade" id="duplicateActionModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content" style="width: 70%; right: -22%; border-width: thick; border-color: #eaecf4;">
+      <div class="modal-header1"></div>
+      <div class="modal-body text-center"><b id="duplicateActionMessage">Action already exists.</b></div>
+      <div class="modal-footer d-flex justify-content-center">
+        <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">OK</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Update Action Modal -->
+<div class="modal fade" id="updateActionModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable" style="max-width: 500px;" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><b>Update Action</b></h5>
+        <button type="button" class="close white-button" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form id="actionUpdateForm" onsubmit="return false;">
+          <div class="form-row">
+            <div class="col-md-6">
+              <label for="actionUp" class="form-label"><b>Enter Action :</b></label>
+              <input type="text" class="form-control form-control-sm" id="actionUp" placeholder="Action">
+              <div id="actionUpError" class="error-message" style="display: none;">Action is required</div>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-sm btn-danger" data-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-sm btn-success" id="createActionUp">Update</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Update Confirmation -->
+<div class="modal fade" id="confirmActionUpdateModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content" style="width: 54%; right: -22%; border-width: thick; border-color: #eaecf4;">
+      <div class="modal-header1"></div>
+      <div class="modal-body"><b>Are you sure you want to Update?</b></div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">NO</button>
+        <button type="button" class="btn btn-info btn-sm" id="confirmActionUp">YES</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 
 				</div>
@@ -1757,13 +1896,19 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 			src="externalLibrary/cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
 		<!--   <script src="js/AmsMasterRegister.js"></script> -->
 		<script src="js/logout.js?v=<%=ver(application, "/js/logout.js")%>"></script>
-		<script src="js/username.js?v=<%=ver(application, "/js/username.js")%>"></script>
-		<script src="js/factoryid.js?v=<%=ver(application, "/js/factoryid.js")%>"></script>
-		<script src="js/modifiedby.js?v=<%=ver(application, "/js/modifiedby.js")%>"></script>
-		<script src="js/createdby.js?v=<%=ver(application, "/js/createdby.js")%>"></script>
-		<script src="js/Sessionfilter.js?v=<%=ver(application, "/js/Sessionfilter.js")%>"></script>
+		<script
+			src="js/username.js?v=<%=ver(application, "/js/username.js")%>"></script>
+		<script
+			src="js/factoryid.js?v=<%=ver(application, "/js/factoryid.js")%>"></script>
+		<script
+			src="js/modifiedby.js?v=<%=ver(application, "/js/modifiedby.js")%>"></script>
+		<script
+			src="js/createdby.js?v=<%=ver(application, "/js/createdby.js")%>"></script>
+		<script
+			src="js/Sessionfilter.js?v=<%=ver(application, "/js/Sessionfilter.js")%>"></script>
 
-		<script src="js/GlobalMasterRegisters.js?v=<%=ver(application, "/js/GlobalMasterRegisters.js")%>"></script>
+		<script
+			src="js/GlobalMasterRegisters.js?v=<%=ver(application, "/js/GlobalMasterRegisters.js")%>"></script>
 		<script src="js/Factory.js?v=<%=ver(application, "/js/Factory.js")%>"></script>
 		<script>
 			document.addEventListener("DOMContentLoaded",
@@ -1777,6 +1922,8 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 								.getElementById("pageActionradio");
 						const DeptActionradio = document
 								.getElementById("departmentradio");
+						
+						const actionMasterRadio = document.getElementById("ActionMasterRadio");
 
 						function hideAllTables() {
 							$("#TypeSelectionTableOuter").hide();
@@ -1786,6 +1933,7 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 							$("#InvoiceTabOuterSelection").hide();
 							$("#TabPageOuterSelection").hide(); // added
 							$("#TabPageActionOuterSelection").hide();
+							$("#ActionMasterTableOuter").hide();
 
 						}
 
@@ -1832,6 +1980,11 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 								fetchAllTabPageActions();
 								loadTabPagesAndActionsForDropdown();
 							}
+							
+							if (actionMasterRadio.checked) {
+								$("#ActionMasterTableOuter").show();
+								fetchActionMaster();
+							}
 
 						}
 
@@ -1848,6 +2001,8 @@ div.dt-buttons>.dt-button:first-child, div.dt-buttons>div.dt-button-split .dt-bu
 						tabPageRadio.addEventListener("change", toggleTables); // added
 						tabPageActionRadio.addEventListener("change",
 								toggleTables); // added
+								
+								actionMasterRadio.addEventListener("change", toggleTables);
 
 						// Initial load
 						toggleTables();

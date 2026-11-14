@@ -1137,12 +1137,32 @@ button.close {
 						</div>
 					</div>
 
-					<div class="row">
+					<!-- <div class="row">
 						<div class="col-md-6 form-group mb-3">
 							<label class="form-label-sm">Breakdown Location</label> <input
 								type="text" class="form-control form-control-sm"
 								id="bkLocationInput" maxlength="200"
 								placeholder="e.g. Shop Floor 2, Line 3 (optional)" /> <small
+								class="text-muted" style="font-size: 11px;">Optional —
+								leave blank if not applicable.</small>
+						</div>
+					</div> -->
+
+					<div class="row">
+						<div class="col-md-6 form-group mb-3">
+							<label class="form-label-sm">Select Location <!-- If location becomes mandatory, uncomment the next line -->
+								<!-- <span class="req">*</span> -->
+							</label> <select class="form-control form-control-sm" id="deptSelect">
+								<option value="">-- Select Location --</option>
+							</select> <small class="text-muted" style="font-size: 11px;">Optional
+								— choose the department / area.</small>
+						</div>
+
+						<div class="col-md-6 form-group mb-3">
+							<label class="form-label-sm">Breakdown Location</label> <input
+								type="text" class="form-control form-control-sm"
+								id="bkLocationInput" maxlength="200"
+								placeholder="e.g. Line 3, Bay 2 (optional)" /> <small
 								class="text-muted" style="font-size: 11px;">Optional —
 								leave blank if not applicable.</small>
 						</div>
@@ -1159,55 +1179,33 @@ button.close {
 					<div class="broke-tab-bar">
 						<button class="broke-tab active-elec" id="tab-elec"
 							onclick="switchBrokeTab('elec')">
-							<span class="tab-dot dot-elec"></span>Electrical
+							<span class="tab-dot dot-elec"></span>Machine Status &nbsp;(Select one option)
 						</button>
-						<button class="broke-tab" id="tab-mech"
-							onclick="switchBrokeTab('mech')">
-							<span class="tab-dot dot-mech"></span>Mechanical
-						</button>
-						<button class="broke-tab" id="tab-hydr"
-							onclick="switchBrokeTab('hydr')">
-							<span class="tab-dot dot-hydr"></span>Hydraulics
-						</button>
+						
+					
 					</div>
 
 					<!-- Electrical -->
-					<div class="broke-panel active" id="panel-elec">
-						<div class="broke-chip"
-							onclick="selectBroke(this,'Panel / Wiring','elec')">
-							<i class="fas fa-bolt"></i>Panel / Wiring
-						</div>
-						<div class="broke-chip"
-							onclick="selectBroke(this,'Sensor','elec')">
-							<i class="fas fa-satellite-dish"></i>Sensor
-						</div>
-						<div class="broke-chip" onclick="selectBroke(this,'Motor','elec')">
-							<i class="fas fa-wind"></i>Motor
-						</div>
-						<div class="broke-chip"
-							onclick="selectBroke(this,'PLC / Control','elec')">
-							<i class="fas fa-microchip"></i>PLC / Control
-						</div>
-						<div class="broke-chip"
-							onclick="selectBroke(this,'VFD / Drive','elec')">
-							<i class="fas fa-sliders-h"></i>VFD / Drive
-						</div>
-						<div class="broke-chip"
-							onclick="selectBroke(this,'Breaker / Fuse','elec')">
-							<i class="fas fa-plug"></i>Breaker / Fuse
-						</div>
-						<div class="broke-chip"
-							onclick="selectBroke(this,'Wiring Fault','elec')">
-							<i class="fas fa-project-diagram"></i>Wiring Fault
-						</div>
-						<div class="broke-chip"
-							onclick="selectBroke(this,'Other (Elec)','elec')">
-							<i class="fas fa-ellipsis-h"></i>Other
-						</div>
-					</div>
+			<div class="broke-panel active" id="panel-elec">
+	<div class="broke-chip" onclick="selectBroke(this,'Operational','elec')">
+		<i class="fas fa-check-circle"></i>Operational
+	</div>
+	<div class="broke-chip" onclick="selectBroke(this,'BreakDown','elec')">
+		<i class="fas fa-exclamation-triangle"></i>BreakDown
+	</div>
+	<div class="broke-chip" onclick="selectBroke(this,'Property Damage','elec')">
+		<i class="fas fa-house-damage"></i>Property Damage
+	</div>
+	<div class="broke-chip" onclick="selectBroke(this,'Planned ShutDown','elec')">
+		<i class="fas fa-power-off"></i>Planned ShutDown
+	</div>
+	<div class="broke-chip" onclick="selectBroke(this,'Other','elec')">
+		<i class="fas fa-ellipsis-h"></i>Other
+	</div>
+</div>
 
 					<!-- Mechanical -->
-					<div class="broke-panel" id="panel-mech">
+					<!-- <div class="broke-panel" id="panel-mech">
 						<div class="broke-chip"
 							onclick="selectBroke(this,'Belt / Chain','mech')">
 							<i class="fas fa-link"></i>Belt / Chain
@@ -1241,9 +1239,9 @@ button.close {
 							<i class="fas fa-ellipsis-h"></i>Other
 						</div>
 					</div>
-
+ -->
 					<!-- Hydraulics -->
-					<div class="broke-panel" id="panel-hydr">
+					<!-- <div class="broke-panel" id="panel-hydr">
 						<div class="broke-chip" onclick="selectBroke(this,'Pump','hydr')">
 							<i class="fas fa-tint"></i>Pump
 						</div>
@@ -1274,7 +1272,7 @@ button.close {
 							onclick="selectBroke(this,'Other (Hydr)','hydr')">
 							<i class="fas fa-ellipsis-h"></i>Other
 						</div>
-					</div>
+					</div> -->
 
 					<!-- Live selection summary -->
 					<div class="broke-summary" id="brokeSelectionSummary"></div>

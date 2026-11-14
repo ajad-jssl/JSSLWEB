@@ -467,7 +467,25 @@ async function editRecord(pn_id) {
             originaldateSelect: data.txn_date,
             originaldescription: data.description
         }
-        await checkTaxTypeUpdate();
+		window.transactionUsed = json.transactionUsed === true;
+		window.maxAvlBal = parseFloat(data.avl_bal) || 0;
+		originalData.originalavl = parseFloat(data.avl_bal) || 0;
+
+		const avlField = document.getElementById("taxvaluedesc_update");
+		const taxField = document.getElementById("taxname_update");
+		const nonTaxField = document.getElementById("taxvalue_update");
+		document.getElementById("avlBalErrorUpdate").style.display = "none";
+
+		if (window.transactionUsed) {
+		    // Only available balance is editable, prefilled with the current value
+		    avlField.readOnly = false;
+		    avlField.value = data.avl_bal;
+		    taxField.readOnly = true;
+		    nonTaxField.readOnly = true;
+		} else {
+		    avlField.readOnly = true;
+		    await checkTaxTypeUpdate();
+		}
         // Save pn_id globally for update
         window.selectedPnId = pn_id;
         window.selectedSlno = data.slno;
@@ -489,6 +507,25 @@ function openConfirmModal() {
     var selected_date = document.getElementById('dateselectUp').value.trim();
     var description = document.getElementById('taxvaluedescUp').value.trim();
     var showError = false; // Initialize showError variable
+	
+	
+	
+	if (window.transactionUsed) {
+	    const avlVal = parseFloat(document.getElementById('taxvaluedesc_update').value);
+	    const err = document.getElementById('avlBalErrorUpdate');
+	    if (isNaN(avlVal) || avlVal < 0) {
+	        err.innerText = "Please enter a valid Available Balance.";
+	        err.style.display = "inline-block";
+	        showError = true;
+	    } else if (avlVal > window.maxAvlBal) {
+	        err.innerText = "Cannot exceed current available balance (" + window.maxAvlBal + ").";
+	        err.style.display = "inline-block";
+	        showError = true;
+	    } else {
+	        err.innerText = "";
+	        err.style.display = "none";
+	    }
+	}
 
     // Username Validation
     if (tax_amount === '') {
@@ -574,7 +611,8 @@ function hasChanges() {
         utr: document.getElementById("utrreferenceUp_no").value.trim(),
         proforma: document.getElementById("proformarefUp_no").value.trim(),
         date: document.getElementById("dateselectUp").value.trim(),
-        description: document.getElementById("taxvaluedescUp").value.trim()
+        description: document.getElementById("taxvaluedescUp").value.trim(),
+		avl: parseFloat(document.getElementById("taxvaluedesc_update").value) || 0
     };
 
     return !(
@@ -583,7 +621,8 @@ function hasChanges() {
         current.utr == (originalData.originalutrref || "") &&
         current.proforma == (originalData.originalproformarref || "") &&
         current.date == (originalData.originaldateSelect || "") &&
-        current.description == (originalData.originaldescription || "")
+        current.description == (originalData.originaldescription || "") 
+		 && current.avl == (originalData.originalavl ?? current.avl)
     );
 }
 
@@ -922,11 +961,20 @@ function applyTaxSplitUpdate() {
 
     syncOpeningBalanceUpdate();
 }
-function syncOpeningBalanceUpdate() {
+/*function syncOpeningBalanceUpdate() {
 
     const taxable = parseFloat(document.getElementById("taxname_update").value) || 0;
     const nonTaxable = parseFloat(document.getElementById("taxvalue_update").value) || 0;
 
+    document.getElementById("taxvaluedesc_update").value = taxable + nonTaxable;
+}
+*/
+
+
+function syncOpeningBalanceUpdate() {
+    if (window.transactionUsed) return;   // <-- add
+    const taxable = parseFloat(document.getElementById("taxname_update").value) || 0;
+    const nonTaxable = parseFloat(document.getElementById("taxvalue_update").value) || 0;
     document.getElementById("taxvaluedesc_update").value = taxable + nonTaxable;
 }
 

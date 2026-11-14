@@ -65,6 +65,18 @@ async function populateDispatchModes() {
     });
 }
 
+
+// top of file, with the other globals
+let selectedGpNo = '';
+
+// helper: a mail failure must never block the user's flow
+function triggerInvoiceMail(gpNo) {
+    return fetch(
+        new URL('/api/returnable/invoice-mail?gpNo=' + encodeURIComponent(gpNo), baseUrl1),
+        { method: 'POST', credentials: 'include' }
+    ).catch(e => console.error('invoice mail error:', e));
+}
+
 const selectedFactoryId = sessionStorage.getItem('selectedFactoryId');
 const factory_Id        = selectedFactoryId;
 //const createdById       = sessionStorage.getItem('userId') || sessionStorage.getItem('createdById') || UserId;
@@ -659,10 +671,12 @@ function validateclienFields() {
     else if (sentType === '1' && !tovendor)   { $('#tovendorError').show();  isValid = false; }
     else if (sentType === '2' && !employee)   { $('#employeeError').show();  isValid = false; }
     if (!fordispatch) { $('#fordispatchError').show();  isValid = false; }
+	if (!$('#invoiceRequired').val()) { $('#invoiceRequiredError').show(); isValid = false; }
     return isValid;
 }
 
 function clientaddevent() {
+	const invoiceRequired = $('#invoiceRequired').val() === '1';
     if (!validateclienFields()) return;
 
     const rows = document.querySelectorAll('#TableID tbody tr');
@@ -698,7 +712,8 @@ function clientaddevent() {
 			vehicleNo:        $('#vehicleno').val(),        
             // ── NEW fields ──
             request_Id:       $("#regpr").val() || null,
-			itemRequestIds: itemrequest_id
+			itemRequestIds: itemrequest_id,
+			invoiceRequired: invoiceRequired
         };
 
         $.ajax({
@@ -726,7 +741,7 @@ function clientaddevent() {
                         url: new URL('/api/returnableitems', baseUrl1),
                         type: 'POST', xhrFields: { withCredentials: true },
                         contentType: 'application/json', data: JSON.stringify(itemData), dataType: 'json',
-                        success: function () { if (++done === rows.length) showPopup('Inserted Successfully!', 'Returnable.jsp'); },
+                        success:async function () { if (++done === rows.length) if (invoiceRequired) await triggerInvoiceMail(gpNo);   showPopup('Inserted Successfully!', 'Returnable.jsp'); },
                         error: function () { alert('Error inserting line items.'); }
                     });
                 });
@@ -757,9 +772,11 @@ function validatengpFields() {
 	if (!vehicleno)    { $('#ngpvehiclenoError').show();     isValid = false; }
     if (!requestdby)  { $('#requested1Error').show();       isValid = false; }
     if (!sentType)    { $('#selectvendornonError').show();  isValid = false; }
+	if (!$('#invoiceRequirednon').val()) { $('#invoiceRequirednonError').show(); isValid = false; }
     else if (sentType === '1' && !tovendor)   { $('#vendorError').show();       isValid = false; }
     else if (sentType === '2' && !employee)   { $('#employeenonError').show();  isValid = false; }
     if (!fordispatch) { $('#fordispatch1Error').show();     isValid = false; }
+	if (!$('#invoiceRequirednon').val()) { $('#invoiceRequirednonError').show(); isValid = false; }
     return isValid;
 }
 
@@ -769,6 +786,9 @@ function validatengpFields() {
 
 
 function addngpevent() {
+	
+	const invoiceRequired = $('#invoiceRequirednon').val() === '1';
+	
     // Validate rows exist (same guard as before)
     const rows = document.querySelectorAll('#TableIDnon tbody tr');
     if (rows.length === 0) { alert('Please add at least one line item.'); return; }
@@ -799,6 +819,7 @@ function addngpevent() {
 			vehicleNo:     $('#ngpvehicleno').val(),  
 			itemRequestIds: itemrnreqeust_id , 
             request_Id:   $("#regprnon").val() || null,
+			invoiceRequired: invoiceRequired
 			
 			
 			
@@ -829,7 +850,7 @@ function addngpevent() {
                         url: new URL('/api/returnableitems', baseUrl1),
                         type: 'POST', xhrFields: { withCredentials: true },
                         contentType: 'application/json', data: JSON.stringify(itemData), dataType: 'json',
-                        success: function () { if (++done === rows.length) showPopup('Inserted Successfully!', 'NonReturnable.jsp'); },
+                        success: async function () { if (++done === rows.length)   if (invoiceRequired) await triggerInvoiceMail(NgpNo); showPopup('Inserted Successfully!', 'NonReturnable.jsp'); },
                         error: function () { alert('Error inserting line items.'); }
                     });
                 });
@@ -952,7 +973,8 @@ async function fetchReturnables() {
             const disabled = item.cancelstatus == 1 || item.security == 1;
             const editIcon = disabled
                 ? `<td><i class="fa fa-pen" style="color:grey;pointer-events:none;" title="Edit disabled"></i></td>`
-                : `<td><i class="fa fa-pen" style="color:blue;cursor:pointer;" onclick="editReturnable(${item.gpid},'${item.gp_no}')"></i></td>`;
+               /* : `<td><i class="fa fa-pen" style="color:blue;cursor:pointer;" onclick="editReturnable(${item.gpid}'${item.gp_no}')"></i></td>`;*/
+				: `<td><i class="fa fa-pen" style="color:blue;cursor:pointer;" onclick="editReturnable(${item.gpid},'${item.gp_no}')"></i></td>`;
             const cancelIcon = disabled
                 ? `<td><i class="fa fa-times" style="color:grey;pointer-events:none;" title="Cancel disabled"></i></td>`
                 : `<td><i class="fa fa-times" style="color:green;cursor:pointer;" onclick="cancelReturnable(${item.gpid},'${item.gp_no}')"></i></td>`;
@@ -1321,7 +1343,7 @@ async function editReturnable(gpid, gp_no) {
 
         console.log('DEBUG rgpData:', rgpData);
 
-        originalReturnableData = {
+       /* originalReturnableData = {
             requestedby: String(gpData.requestedby || '').trim(),
             dept: String(gpData.dept || '').trim(),
             sentToClient: String(gpData.sentToClient || '').trim(),
@@ -1333,7 +1355,31 @@ async function editReturnable(gpid, gp_no) {
             note: String(gpData.note || '').trim(),
             remarks: String(gpData.remarks || '').trim(),
             encl: String(gpData.encl || '').trim()
-        };
+        };*/
+		
+		
+		originalReturnableData = {
+		    requestedby    : String(gpData.requestedby || '').trim(),
+		    dept           : String(gpData.dept || '').trim(),
+		    sentToClient   : String(gpData.sentToClient || '').trim(),
+		    sentToemployee : String(gpData.sentToemployee || '').trim(),
+		    sent_type      : String(gpData.sent_type || '').trim(),
+		    sentThrough    : String(gpData.sentThrough || '').trim(),
+		    transportName  : String(gpData.transportName || '').trim(),
+		    vehicleNo      : String(gpData.vehicleNo || '').trim(),
+		    returnDate     : String(gpData.returnDate || '').trim(),
+		    contract       : String(gpData.project || '').trim(),
+		    note           : String(gpData.note || '').trim(),
+		    remarks        : String(gpData.remarks || '').trim(),
+		    encl           : String(gpData.encl || '').trim(),
+		    invoiceRequired: gpData.invoiceRequired === true ? '1' : '0'
+		};
+		
+		originalReturnableData.invoiceRequired = gpData.invoiceRequired === true ? '1' : '0';
+		originalReturnableData.sentToemployee  = String(gpData.sentToemployee || '').trim();   // see note 3 below
+		originalReturnableData.sent_type       = String(gpData.sent_type || '').trim();
+		selectedGpNo = gp_no;
+		$('#invoiceRequiredup').val(originalReturnableData.invoiceRequired);
 
         const clientMap = {};
         clients.forEach(c => { clientMap[String(c.cid).trim()] = `${c.client_number}-${c.name}`; });
@@ -1346,7 +1392,8 @@ async function editReturnable(gpid, gp_no) {
         $('#requested1upId').val(gpData.requestedby);
 
         $('#departmentup').val(getDepartmentName(gpData.dept));
-        $('#dispatchup').val(getShipmentModeName(gpData.sentThrough));
+       // $('#dispatchup').val(getShipmentModeName(gpData.sentThrough));
+		$('#dispatchup').val(String(gpData.sentThrough || '').trim());
         $('#returndateup').val(gpData.returnDate);
         $('#contractnoup').val(gpData.project);
 		$('#transportnameup').val(gpData.transportName || '');
@@ -1411,7 +1458,7 @@ async function editReturnable(gpid, gp_no) {
 
         const tbody = $('#updateTableID tbody');
         tbody.empty();
-        itemsData.forEach((item, i) => {
+    /*    itemsData.forEach((item, i) => {
             const n    = i + 1;
             const cur  = itemListMap[item.item];
             const unit = unitsMap[item.UM] || item.UM || '';
@@ -1427,12 +1474,36 @@ async function editReturnable(gpid, gp_no) {
                     <td><input type="text" class="form-control form-control-sm" onkeydown="return allowOnlyPositive(event)" id="price${n}" value="${item.itmPrice || ''}"></td>
                     <td><input type="text" class="form-control form-control-sm" id="remarks${n}" value="${item.itmRemarks || ''}" readonly></td>
                 </tr>`);
-        });
+        });*/
+		
+		itemsData.forEach((item, i) => {
+		    const n     = i + 1;
+		    const cur   = itemListMap[item.item];
+		    const unit  = unitsMap[item.UM] || item.UM || '';
+		    const gpdid = item.gpdid ?? item.gpdId ?? '';
+		    tbody.append(`
+		        <tr data-gpdid="${gpdid}">
+		            <td>${n}</td>
+		            <td><select class="form-control form-control-sm" id="itemno${n}" disabled>
+		                <option selected>${cur ? cur.itemNo : item.item}</option></select></td>
+		            <td><input type="text" class="form-control form-control-sm" id="unit${n}" value="${unit}" readonly></td>
+		            <td><input type="text" class="form-control form-control-sm" id="description1${n}" value="${item.itmDescription1 || ''}" readonly></td>
+		            <td><input type="text" class="form-control form-control-sm" id="description2${n}" value="${item.itmDescription2 || ''}" readonly></td>
+		            <td><input type="text" class="form-control form-control-sm js-qty" id="quantity${n}" value="${item.qty || ''}" readonly></td>
+		            <td><input type="text" class="form-control form-control-sm js-price" onkeydown="return allowOnlyPositive(event)" id="price${n}" value="${item.itmPrice || ''}"></td>
+		            <td><input type="text" class="form-control form-control-sm js-remarks" id="remarks${n}" value="${item.itmRemarks || ''}" readonly></td>
+		        </tr>`);
+		});
 
-        $('#requested1up, #departmentup, #selectvendorup, #tovendorup, #employeeup, ' +
+    /*    $('#requested1up, #departmentup, #selectvendorup, #tovendorup, #employeeup, ' +
           '#dispatchup, #returndateup, #contractnoup, #fordispatchup, #remarks5up, ' +
           '#empaddressup, #employeeaddressup').prop('readonly', true).prop('disabled', true);
-        $('#Enclosure3up').prop('readonly', false).prop('disabled', false);
+        $('#Enclosure3up').prop('readonly', false).prop('disabled', false);*/
+		
+		$('#requested1up, #departmentup, #selectvendorup, #tovendorup, #employeeup, ' +
+		  '#returndateup, #contractnoup, #fordispatchup, #remarks5up, ' +
+		  '#empaddressup, #employeeaddressup').prop('readonly', true).prop('disabled', true);
+		$('#Enclosure3up').prop('readonly', false).prop('disabled', false);
 
         $('#exampleModalScrollable12').modal('show');
 
@@ -1450,6 +1521,9 @@ function validateUpdateFields() {
     if (!$('#returndateup').val()) { $('#returndateErrorup').show();    isValid = false; }
     if (!$('#selectvendorup').val()){ $('#selectvenempErrorup').show(); isValid = false; }
     if (!$('#fordispatchup').val()){ $('#fordispatchupErrorup').show(); isValid = false; }
+	if (!$('#invoiceRequiredup').val()) { $('#invoiceRequiredupError').show(); isValid = false; }
+	if (!$('#transportnameup').val()) { $('#transportnameErrorup').show(); isValid = false; }
+	if (!$('#vehiclenoup').val())     { $('#vehiclenoErrorup').show();     isValid = false; }
     return isValid;
 }
 
@@ -1508,6 +1582,7 @@ function updateaddevent(gpid) {
 
     const currentData = {
         requestedby: String(selectedRequestedBy || '').trim(),
+		invoiceRequired: String($('#invoiceRequiredup').val() || '').trim(),
         dept: String(requestedByDeptId || '').trim(),
         sentToClient: String(sentToClientVal || '').trim(),
         sentToemployee: String(sentToEmployeeVal || '').trim(),
@@ -1517,8 +1592,13 @@ function updateaddevent(gpid) {
         contract: String($('#contractnoup').val() || '').trim(),
         note: String($('#fordispatchup').val() || '').trim(),
         remarks: String($('#remarks5up').val() || '').trim(),
-        encl: String($('#Enclosure3up').val() || '').trim()
+        encl: String($('#Enclosure3up').val() || '').trim(),
+		transportName : String($('#transportnameup').val() || '').trim(),
+		vehicleNo     : String($('#vehiclenoup').val() || '').trim(),
     };
+	
+	const sendInvoiceMail = currentData.invoiceRequired === '1'
+	                     && originalReturnableData.invoiceRequired !== '1';   // only No -> Yes
 
     const headerChanged = Object.keys(currentData).some(k =>
         String(originalReturnableData[k] || '').trim() !== currentData[k]
@@ -1532,10 +1612,10 @@ function updateaddevent(gpid) {
         method: 'PUT',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...currentData, updatedBy: createdById, updatedDate: now })
+        body: JSON.stringify({ ...currentData,invoiceRequired: currentData.invoiceRequired === '1',updatedBy: createdById, updatedDate: now })
     })
     .then(r => { if (!r.ok) throw new Error('Header update failed'); return r.json(); })
-    .then(async () => {
+/*    .then(async () => {
         if (returnrowsToUpdate.length > 0) {
             await Promise.all(
                 returnrowsToUpdate.map(item =>
@@ -1547,6 +1627,7 @@ function updateaddevent(gpid) {
                             itmPrice: item.price,
                             qty: item.qty,
                             itmRemarks: item.remarks,
+							
                             modified_by: createdById,
                             modified_date: now
                         })
@@ -1554,19 +1635,45 @@ function updateaddevent(gpid) {
                 )
             );
         }
-    })
-    .then(() => {
+    })*/
+	
+	.then(async () => {
+	    if (returnrowsToUpdate.length > 0) {
+	        const results = await Promise.all(
+	            returnrowsToUpdate.map(item =>
+	                fetch(new URL(`/api/returnableitems/${item.gpdid}`, baseUrl1), {
+	                    method: 'POST', credentials: 'include',
+	                    headers: { 'Content-Type': 'application/json' },
+	                    body: JSON.stringify({ itmPrice: item.price, qty: item.qty, itmRemarks: item.remarks,
+	                                           modified_by: createdById, modified_date: now })
+	                })
+	            )
+	        );
+	        if (results.some(r => !r.ok)) throw new Error('Item update failed');
+	    }
+	})
+	
+	
+	
+  /*  .then(() => {
         showPopup('Updated successfully!', 'Returnable.jsp');
         $('#container1Update').modal('hide');
         fetchReturnables();
-    })
+    })*/
+	
+	.then(async () => {
+	    if (sendInvoiceMail) await triggerInvoiceMail(selectedGpNo);   // after price updates are saved
+	    showPopup('Updated successfully!', 'Returnable.jsp');
+	    $('#container1Update').modal('hide');
+	    fetchReturnables();
+	})
     .catch(error => {
         console.error(error);
         alert('Update failed');
     });
 }
 // Row change tracking
-$('#updateTableID').on('change', 'input', function () {
+/*$('#updateTableID').on('change', 'input', function () {
     const row    = $(this).closest('tr');
     const n      = row.index() + 1;
     const gpdid  = row.find(`#gpdid${n}`).val();
@@ -1580,6 +1687,28 @@ $('#updateTableID').on('change', 'input', function () {
     if (idx !== -1) returnrowsToUpdate[idx] = updated;
     else returnrowsToUpdate.push(updated);
 });
+*/
+
+
+
+
+
+$('#updateTableID').on('change', 'input', function () {
+    const $tr   = $(this).closest('tr');
+    const gpdid = $tr.data('gpdid');
+    if (!gpdid) return;                       // row has no id -> nothing to update
+
+    const updated = {
+        gpdid,
+        price   : $tr.find('.js-price').val()   || '',
+        qty     : $tr.find('.js-qty').val()     || '',
+        remarks : $tr.find('.js-remarks').val() || ''
+    };
+    const idx = returnrowsToUpdate.findIndex(r => r.gpdid === gpdid);
+    if (idx !== -1) returnrowsToUpdate[idx] = updated;
+    else returnrowsToUpdate.push(updated);
+});
+
 
 // ============================================================
 // NON-RETURNABLE TABLE
@@ -1769,8 +1898,11 @@ async function CancelNoReturnable(gpid, gp_no) {
         $('#requestedby1').val(reqName || '');
         $('#department5').val(getDepartmentName(gpData.dept));
         $('#despatch').val(getShipmentModeName(gpData.sentThrough) || '');
-        $('#ngptransportnamecl').val(getShipmentModeName(gpData.transportName));
-        $('#ngpvehiclenocl').val(getShipmentModeName(gpData.vehicleNo));
+       /* $('#ngptransportnamecl').val(getShipmentModeName(gpData.transportName));
+        $('#ngpvehiclenocl').val(getShipmentModeName(gpData.vehicleNo));*/
+		
+		$('#ngptransportnamecl').val(gpData.transportName || '');
+		$('#ngpvehiclenocl').val(gpData.vehicleNo || '');
 
         // ── Sent To Vendor/Employee — mirrors cancelReturnable's isVendorGp logic ──
         let sentToDisplay = '';
@@ -1863,7 +1995,7 @@ async function editNoReturnable(gpid, gp_no) {
             fetch(new URL('/api/clients', baseUrl1), { credentials: 'include' }).then(r => r.json())
         ]);
 
-        originalNonReturnableData = {
+    /*    originalNonReturnableData = {
             requestedby:  String(gpData.requestedby || '').trim(),
             dept:         String(gpData.dept || '').trim(),
             sentToClient: String(gpData.sentToClient || '').trim(),
@@ -1875,7 +2007,28 @@ async function editNoReturnable(gpid, gp_no) {
             note:         String(gpData.note || '').trim(),
             remarks:      String(gpData.remarks || '').trim(),
             encl:         String(gpData.encl || '').trim()
-        };
+        };*/
+		
+		
+		originalNonReturnableData = {
+		    requestedby    : String(gpData.requestedby || '').trim(),
+		    dept           : String(gpData.dept || '').trim(),
+		    sentToClient   : String(gpData.sentToClient || '').trim(),
+		    sentToemployee : String(gpData.sentToemployee || '').trim(),
+		    sent_type      : String(gpData.sent_type || '').trim(),
+		    sentThrough    : String(gpData.sentThrough || '').trim(),
+		    transportName  : String(gpData.transportName || '').trim(),   // was gpData.ngptransportname
+		    vehicleNo      : String(gpData.vehicleNo || '').trim(),       // was gpData.ngpvehicleno
+		    contract       : String(gpData.project || '').trim(),
+		    note           : String(gpData.note || '').trim(),
+		    remarks        : String(gpData.remarks || '').trim(),
+		    encl           : String(gpData.encl || '').trim(),
+		    invoiceRequired: gpData.invoiceRequired === true ? '1' : '0'
+		};
+		
+		originalNonReturnableData.invoiceRequired = gpData.invoiceRequired === true ? '1' : '0';
+		selectedGpNo = gp_no;
+		$('#invoiceRequiredupnon').val(originalNonReturnableData.invoiceRequired);
 
         const clientMap = {};
         clients.forEach(c => { clientMap[String(c.cid).trim()] = `${c.client_number}-${c.name}`; });
@@ -1884,10 +2037,13 @@ async function editNoReturnable(gpid, gp_no) {
         $('#requested1up').val(requestedByName);
         $('#requested1upIdnon').val(gpData.requestedby);
         $('#department6up').val(getDepartmentName(gpData.dept));
-        $('#despatchmodeup').val(getShipmentModeName(gpData.sentThrough));
+       /* $('#despatchmodeup').val(getShipmentModeName(gpData.sentThrough));
 		$('#ngptransportnameup').val(getShipmentModeName(gpData.transportName));
-		$('#ngpvehiclenoup').val(getShipmentModeName(gpData.vehicleNo));
+		$('#ngpvehiclenoup').val(getShipmentModeName(gpData.vehicleNo));*/
 
+		$('#despatchmodeup').val(String(gpData.sentThrough || '').trim());   // was getShipmentModeName(...)
+		$('#ngptransportnameup').val(gpData.transportName || '');            // was getShipmentModeName(gpData.transportName)
+		$('#ngpvehiclenoup').val(gpData.vehicleNo || '');                    // was getShipmentModeName(gpData.vehicleNo)
         // ── Contract: show NAME, not raw id ──
         $('#contract6up').val(gpData.project);                       // keep raw id for submit logic if needed elsewhere
         $('#contract6upDisplay').val(getContractName(gpData.project)); // ← FIXED: display name
@@ -1954,7 +2110,7 @@ async function editNoReturnable(gpid, gp_no) {
             console.warn('editNoReturnable: no item rows returned for gp_no=', gp_no);
         }
 
-        itemsData.forEach((item, i) => {
+      /*  itemsData.forEach((item, i) => {
             const n    = i + 1;
             const cur  = itemListMap[String(item.item).trim()];   // ← FIXED key lookup (trim + string match)
             const rawUm = item.UM ?? item.um ?? '';
@@ -1973,11 +2129,39 @@ async function editNoReturnable(gpid, gp_no) {
                     <td><input type="text" class="form-control form-control-sm" id="remarks${n}" value="${item.itmRemarks || ''}" readonly></td>
                 </tr>`);
         });
+		*/
+		
+		itemsData.forEach((item, i) => {
+		    const n     = i + 1;
+		    const cur   = itemListMap[String(item.item).trim()];
+		    const rawUm = item.UM ?? item.um ?? '';
+		    const unit  = unitsMap[String(rawUm).trim().toUpperCase()] || unitsMap[String(rawUm).trim()] || rawUm || '';
+		    const gpdid = item.gpdid ?? item.gpdId ?? '';
 
-        $('#requested1up, #department6up, #despatchmodeup, #tovendorup, #employeeupnon, ' +
+		    tbody.append(`
+		        <tr data-gpdid="${gpdid}">
+		            <td>${n}</td>
+		            <td><select class="form-control form-control-sm" id="itemno${n}" disabled>
+		                <option selected>${cur ? cur.itemNo : (item.ItemNo || item.item)}</option></select></td>
+		            <td><input type="text" class="form-control form-control-sm" id="unit${n}" value="${unit}" readonly></td>
+		            <td><input type="text" class="form-control form-control-sm" id="description1${n}" value="${item.itmDescription1 || ''}" readonly></td>
+		            <td><input type="text" class="form-control form-control-sm" id="description2${n}" value="${item.itmDescription2 || ''}" readonly></td>
+		            <td><input type="text" class="form-control form-control-sm js-qty" id="quantity${n}" value="${item.qty || ''}" readonly></td>
+		            <td><input type="text" class="form-control form-control-sm js-price" onkeydown="return allowOnlyPositive(event)" id="price${n}" value="${item.itmPrice || ''}"></td>
+		            <td><input type="text" class="form-control form-control-sm js-remarks" id="remarks${n}" value="${item.itmRemarks || ''}" readonly></td>
+		        </tr>`);
+		});
+
+   /*     $('#requested1up, #department6up, #despatchmodeup, #tovendorup, #employeeupnon, ' +
           '#contract6upDisplay, #fordispatch1up, #remarks6up, ' +
           '#empaddressupnon, #employeeaddressupnon').prop('readonly', true).prop('disabled', true);
-        $('#enclosure5up').prop('readonly', false).prop('disabled', false);
+        $('#enclosure5up').prop('readonly', false).prop('disabled', false);*/
+		
+		
+		$('#requested1up, #department6up, #tovendorup, #employeeupnon, ' +
+		  '#contract6upDisplay, #fordispatch1up, #remarks6up, ' +
+		  '#empaddressupnon, #employeeaddressupnon').prop('readonly', true).prop('disabled', true);
+		$('#enclosure5up').prop('readonly', false).prop('disabled', false);
 
         $('#exampleModalScrollable15').modal('show');
 
@@ -1995,7 +2179,15 @@ function validatengpUpdateFields() {
     if (!$('#despatchmodeup').val())   { $('#despatchmodeuperror').show();   isValid = false; }
     if (!$('#selectvendorupnon').val()){ $('#selectvendorupnonError').show(); isValid = false; }
     if (!$('#fordispatch1up').val())   { $('#fordispatch1uperror').show();   isValid = false; }
-
+	if (!$('#ngptransportnameup').val()) { $('#ngptransportnameuperror').show(); isValid = false; }
+	if (!$('#ngpvehiclenoup').val())     { $('#ngpvehiclenouperror').show();     isValid = false; }
+	if (!$('#invoiceRequiredupnon').val()) { $('#invoiceRequiredupnonError').show(); isValid = false; }
+	
+/*	if (!$('#ngptransportnameup').val()) { $('#ngptransportnameErrorup').show(); isValid = false; }
+	if (!$('#ngpvehiclenoup').val())     { $('#vehiclenoErrorup').show();         isValid = false; }*/
+	
+	if (!$('#ngptransportnameup').val()) { $('#ngptransportnameErrorup').show(); isValid = false; }
+	if (!$('#ngpvehiclenoup').val())     { $('#vehiclenoErrorup').show();         isValid = false; }
     return isValid;
 }
 
@@ -2062,9 +2254,14 @@ function updatenonaddevent(gpid) {
         remarks: String($('#remarks6up').val() || '').trim(),
         encl: String($('#enclosure5up').val() || '').trim(),
         updatedBy: createdById,
-        updatedDate: now
+        updatedDate: now,
+		invoiceRequired: String($('#invoiceRequiredupnon').val() || '').trim(),
+		transportName : String($('#ngptransportnameup').val() || '').trim(),
+		vehicleNo     : String($('#ngpvehiclenoup').val() || '').trim()
     };
 
+	const sendInvoiceMail = updatedData.invoiceRequired === '1'
+	                     && originalNonReturnableData.invoiceRequired !== '1';
     const isChanged = Object.keys(originalNonReturnableData).some(k =>
         String(originalNonReturnableData[k] || '') !== String(updatedData[k] || '')
     );
@@ -2074,14 +2271,21 @@ function updatenonaddevent(gpid) {
         return;
     }
 
-    fetch(new URL(`/api/returnable/${gpid}`, baseUrl1), {
+  /*  fetch(new URL(`/api/returnable/${gpid}`, baseUrl1), {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify(updatedData)
+        body: JSON.stringify(...updatedData, invoiceRequired: updatedData.invoiceRequired === '1' )
     })
+	*/
+	fetch(new URL(`/api/returnable/${gpid}`, baseUrl1), {
+	    method: 'PUT',
+	    headers: { 'Content-Type': 'application/json' },
+	    credentials: 'include',
+	    body: JSON.stringify({ ...updatedData, invoiceRequired: updatedData.invoiceRequired === '1' })
+	})
     .then(r => { if (!r.ok) throw new Error('Header update failed'); return r.json(); })
-    .then(async () => {
+/*    .then(async () => {
         if (rowsToUpdate.length > 0) {
             await Promise.all(
                 rowsToUpdate.map(item =>
@@ -2100,19 +2304,43 @@ function updatenonaddevent(gpid) {
                 )
             );
         }
-    })
-    .then(() => {
+    })*/
+	
+	
+	// Returnable: replace the first .then(async () => { ... })
+	.then(async () => {
+	    if (returnrowsToUpdate.length > 0) {
+	        const results = await Promise.all(
+	            returnrowsToUpdate.map(item =>
+	                fetch(new URL(`/api/returnableitems/${item.gpdid}`, baseUrl1), {
+	                    method: 'POST', credentials: 'include',
+	                    headers: { 'Content-Type': 'application/json' },
+	                    body: JSON.stringify({ itmPrice: item.price, qty: item.qty, itmRemarks: item.remarks,
+	                                           modified_by: createdById, modified_date: now })
+	                })
+	            )
+	        );
+	        if (results.some(r => !r.ok)) throw new Error('Item update failed');
+	    }
+	})
+/*    .then(() => {
         showPopup('Updated successfully!', 'NonReturnable.jsp');
         $('#container1Update').modal('hide');
         fetchNgpReturnables();
-    })
+    })*/
+	.then(async () => {
+	    if (sendInvoiceMail) await triggerInvoiceMail(selectedGpNo);
+	    showPopup('Updated successfully!', 'NonReturnable.jsp');
+	    $('#container1Update').modal('hide');
+	    fetchNgpReturnables();
+	})
     .catch(e => {
         console.error(e);
         alert('Failed to update returnable.');
     });
 }
 
-$('#TableID1non').on('change', 'input', function () {
+/*$('#TableID1non').on('change', 'input', function () {
     const row   = $(this).closest('tr');
     const n     = row.index() + 1;
     const gpdid = row.find(`#gpdid${n}`).val();
@@ -2121,6 +2349,24 @@ $('#TableID1non').on('change', 'input', function () {
         price:   row.find(`#price${n}`).val()    || '',
         qty:     row.find(`#quantity${n}`).val() || '',
         remarks: row.find(`#remarks${n}`).val()  || ''
+    };
+    const idx = rowsToUpdate.findIndex(r => r.gpdid === gpdid);
+    if (idx !== -1) rowsToUpdate[idx] = updated;
+    else rowsToUpdate.push(updated);
+});*/
+
+
+
+$('#TableID1non').on('change', 'input', function () {
+    const $tr   = $(this).closest('tr');
+    const gpdid = $tr.data('gpdid');
+    if (!gpdid) return;
+
+    const updated = {
+        gpdid,
+        price   : $tr.find('.js-price').val()   || '',
+        qty     : $tr.find('.js-qty').val()     || '',
+        remarks : $tr.find('.js-remarks').val() || ''
     };
     const idx = rowsToUpdate.findIndex(r => r.gpdid === gpdid);
     if (idx !== -1) rowsToUpdate[idx] = updated;
@@ -2416,6 +2662,7 @@ async function populateReturnableFromRgp(requestId) {
 }
 
 function resetReturnableFields() {
+	$('#invoiceRequired').val('');
     $('#requested1, #selectvendor, #employee, #returndatee, #contractno, #remarks5')
         .prop('disabled', false).val('');
 

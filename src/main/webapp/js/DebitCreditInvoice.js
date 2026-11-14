@@ -1,3 +1,4 @@
+//modified code by anusha on 07/11/2026
 let allowed = null;
 
 
@@ -1077,6 +1078,97 @@ async function fetchhsn1(targetId = "officehsn", currentValueText = null) {
         console.error("Error fetching hsn codes:", error);
     }
 }
+
+let taxMasterList = [];
+
+async function fetchTaxMasterList() {
+    try {
+        const url = new URL("/jssl/taxmasters/list", baseUrl);
+        const response = await fetch(url, { method: "GET", credentials: "include" });
+        if (!response.ok) throw new Error("Failed to fetch tax master list.");
+        const json = await response.json();
+        taxMasterList = (json.status === "yes" && Array.isArray(json.Data)) ? json.Data : [];
+    } catch (e) { console.error(e); taxMasterList = []; }
+}
+
+// prefix "" = add modal, "edit_" = edit modal
+function recalcTaxes(prefix, basic, grandId) {
+    let totalTax = 0;
+    [1, 2, 3].forEach(n => {
+        const sel = document.getElementById(prefix + "tax_id_" + n);
+        const per = document.getElementById(prefix + "tax_per_" + n);
+        const val = document.getElementById(prefix + "tax_value_" + n);
+        if (!sel || !per || !val) return;
+        const amt = sel.value !== "" ? Math.round((basic * (parseFloat(per.value) || 0)) / 100) : 0;
+        val.value = amt.toFixed(2);
+        totalTax += amt;
+    });
+    const g = document.getElementById(grandId);
+    if (g) g.value = (basic + totalTax).toFixed(2);
+}
+
+function renderTaxRows(containerSel, prefix, selectedIds, getBasic, grandId) {
+    const container = $(containerSel);
+    container.empty();
+
+    [1, 2, 3].forEach((n, i) => {
+        const selId = (selectedIds[i] != null && selectedIds[i] !== "" && Number(selectedIds[i]) > 0)
+            ? String(selectedIds[i]) : "";
+
+        let options = `<option value="">Select Tax</option>` +
+            taxMasterList.map(t =>
+                `<option value="${t.tax_id}" ${String(t.tax_id) === selId ? "selected" : ""}>${t.tax_name} - ${t.tax_per}%</option>`
+            ).join("");
+        if (selId && !taxMasterList.some(t => String(t.tax_id) === selId)) {
+            options += `<option value="${selId}" selected>Existing Tax</option>`;
+        }
+        const found = taxMasterList.find(t => String(t.tax_id) === selId);
+        const per = found ? parseFloat(found.tax_per || 0).toFixed(2) : "0.00";
+
+        container.append(`
+            <div class="form-row align-items-center w-100 mb-2">
+                <div class="form-group col-md-4 col-sm-12">
+                    <div class="d-flex align-items-center">
+                        <label class="mb-0 mr-2" style="min-width:105px;"><b>Tax Name</b></label>
+                        <select class="form-control" id="${prefix}tax_id_${n}" data-prev="${selId}">${options}</select>
+                    </div>
+                    <small class="text-danger" id="${prefix}tax_err_${n}" style="display:none;">This tax is already selected.</small>
+                </div>
+                <div class="form-group col-md-4 col-sm-12">
+                    <div class="d-flex align-items-center">
+                        <label class="mb-0 mr-2" style="min-width:130px;"><b>Tax Percentage</b></label>
+                        <input type="text" class="form-control" id="${prefix}tax_per_${n}" value="${per}" disabled>
+                    </div>
+                </div>
+                <div class="form-group col-md-4 col-sm-12">
+                    <div class="d-flex align-items-center">
+                        <label class="mb-0 mr-2" style="min-width:95px;"><b>Tax Value</b></label>
+                        <input type="text" class="form-control text-right" id="${prefix}tax_value_${n}" value="0.00" disabled>
+                    </div>
+                </div>
+            </div>`);
+    });
+
+    [1, 2, 3].forEach(n => {
+        document.getElementById(prefix + "tax_id_" + n).addEventListener("change", function () {
+            const err = document.getElementById(prefix + "tax_err_" + n);
+            const chosen = this.value;
+            const dup = [1, 2, 3].some(m => {
+                const o = document.getElementById(prefix + "tax_id_" + m);
+                return o && o !== this && chosen !== "" && o.value === chosen;
+            });
+            if (dup) { err.style.display = "block"; this.value = this.dataset.prev || ""; return; }
+            err.style.display = "none";
+            this.dataset.prev = chosen;
+            const t = taxMasterList.find(x => String(x.tax_id) === String(chosen));
+            document.getElementById(prefix + "tax_per_" + n).value = t ? parseFloat(t.tax_per || 0).toFixed(2) : "0.00";
+            recalcTaxes(prefix, getBasic(), grandId);
+        });
+    });
+
+    recalcTaxes(prefix, getBasic(), grandId);
+}
+
 // Fetch the QsPacking data using contractor_id and load_id
 async function fetchQsPackingData(contractId, loadId) {
     if (contractId != "Scrap") {
@@ -1330,7 +1422,7 @@ async function fetchQsPackingData(contractId, loadId) {
                 console.warn("No QsPacking data found.");
             }
             // Now, handle tax data and append it to .dynamic-row1
-            if (json.tax && json.tax.length > 0) {
+      /*      if (json.tax && json.tax.length > 0) {
                 const taxContainer = document.querySelector(".dynamic-row1"); // Find the container for dynamic tax rows
                 taxContainer.innerHTML = ""; // Clear any existing rows
 
@@ -1361,10 +1453,20 @@ async function fetchQsPackingData(contractId, loadId) {
                 });
             } else {
                 console.warn("No tax data found.");
-            }
-        } catch (error) {
-            console.error("Error fetching QsPacking data:", error);
-        }
+            }*/
+			// Now, handle tax data and append it to .dynamic-row1
+				   if (!taxMasterList || taxMasterList.length === 0) await fetchTaxMasterList();
+
+				   const packRows = Array.isArray(json.QsPacking_Data) ? json.QsPacking_Data : [];
+				   const rowsTotal = packRows.reduce((s, r) => s + (parseFloat(r.total) || 0), 0);
+				   const frt = packRows.length ? (parseFloat(packRows[0].freight) || 0) : 0;
+				   const addBasic = rowsTotal + frt;
+
+				   const existingTaxIds = (Array.isArray(json.tax) ? json.tax : []).map(t => t.tax_id);
+				   renderTaxRows(".dynamic-row1", "", existingTaxIds, () => addBasic, "ingrandv");
+			    } catch (error) {
+			        console.error("Error fetching QsPacking data:", error);
+        } 
     }
     else {
         try {
@@ -2815,49 +2917,55 @@ function addevent() {
             xhrFields: {
                 withCredentials: true
             },
-            data: jQuery.param({
-                invoice_type_id: "1",
-                con_id: contid,
-                contract_id: contid,   // <-- ADD THIS: same value, matches controller's contract_id param
-                note_type: notetype,
-                created_by: createdById,
-                load_id: load_id,
-                grand_total: ingrandv.value,
-                product_desc: prodes.value,
-                remarks: remark.value,
-                contract_name: contname,
-                date_of_notification: date.value,
-                date_val: date1.value,
-                bg_type: bg.value,
-                date_of_issue: dissue.value,
-                reference_no: ref.value,
-                lc_number: lc.value,
-                supply_place: sup.value,
-                s_t_exempted: exe.value,
-                lr_docketno: dock.value,
-                bg_no: bgno.value,
-                date_of_expiry: dateexp.value,
-                date_of_ref: dateref.value,
-                lc_issue_date: lcdate.value,
-                factory_id: selectedFactoryId,
+			data: jQuery.param({
+						    invoice_type_id: "1",
+						    con_id: contid,
+						    contract_id: contid,   // <-- ADD THIS: same value, matches controller's contract_id param
+						    note_type: notetype,
+						    created_by: createdById,
+						    load_id: load_id,
+						    grand_total: ingrandv.value,
+						    product_desc: prodes.value,
+						    remarks: remark.value,
+						    contract_name: contname,
+						    date_of_notification: date.value,
+						    date_val: date1.value,
+						    bg_type: bg.value,
+						    date_of_issue: dissue.value,
+						    reference_no: ref.value,
+						    lc_number: lc.value,
+						    supply_place: sup.value,
+						    s_t_exempted: exe.value,
+						    lr_docketno: dock.value,
+						    bg_no: bgno.value,
+						    date_of_expiry: dateexp.value,
+						    date_of_ref: dateref.value,
+						    lc_issue_date: lcdate.value,
+						    factory_id: selectedFactoryId,
 
-                // ---- Contract Details modal fields ----
-                business_unit_id: document.getElementById("inbusunit").value,
-                invoice_type_calculation: document.getElementById("intypecal").value,
-                invoice_to_id: document.getElementById("ininto").value,
-                product_desc_id: document.getElementById("prodesc").value,
-                shipment_mode_id: document.getElementById("shipmode").value,
-                work_id: document.getElementById("work").value,
-                export: document.getElementById("expt").value,
-                tax_ex_inc: document.getElementById("taxres").value,
-                percentage_value: document.getElementById("percen").value,
-                consignee_id: document.getElementById("billing").value,
-                bank_details_id: document.getElementById("bank").value,
-                delivery_condition_id: document.getElementById("delivery").value,
-                regd_office_id: document.getElementById("office").value,
-                s_code: document.getElementById("officeservice").value,
-                h_code: document.getElementById("officehsn").value
-            }),
+						    // ---- Contract Details modal fields ----
+						    business_unit_id: document.getElementById("inbusunit").value,
+						    invoice_type_calculation: document.getElementById("intypecal").value,
+						    invoice_to_id: document.getElementById("ininto").value,
+						    product_desc_id: document.getElementById("prodesc").value,
+						    shipment_mode_id: document.getElementById("shipmode").value,
+						    work_id: document.getElementById("work").value,
+						    export: document.getElementById("expt").value,
+						    tax_ex_inc: document.getElementById("taxres").value,
+						    percentage_value: document.getElementById("percen").value,
+						    consignee_id: document.getElementById("billing").value,
+						    bank_details_id: document.getElementById("bank").value,
+						    delivery_condition_id: document.getElementById("delivery").value,
+						    regd_office_id: document.getElementById("office").value,
+							s_code: document.getElementById("officeservice").value,
+							h_code: document.getElementById("officehsn").value,
+							tax_id_1: document.getElementById("tax_id_1")?.value || "",
+							tax_value_1: document.getElementById("tax_value_1")?.value || "0.00",
+							tax_id_2: document.getElementById("tax_id_2")?.value || "",
+							tax_value_2: document.getElementById("tax_value_2")?.value || "0.00",
+							tax_id_3: document.getElementById("tax_id_3")?.value || "",
+							tax_value_3: document.getElementById("tax_value_3")?.value || "0.00",
+						}),
             success: function(data) {
                 var result = data.message;
 
@@ -4993,56 +5101,63 @@ function addeventudate() {
         alert("Same tax cannot be selected more than once.");
         return;
     }
+	const taxParams = {};
+		if (document.getElementById("edit_tax_id_1")) {
+		    taxParams.tax_edit = "1";
+		    [1, 2, 3].forEach(n => {
+		        taxParams["tax_id_" + n] = document.getElementById("edit_tax_id_" + n).value;
+		        taxParams["tax_value_" + n] = document.getElementById("edit_tax_value_" + n).value || "0.00";
+		    });
+		}
     var intype = document.getElementById('intypeeditup').value.trim();
     if (conId != "Scrap") {
         $.ajax({
             url: new URL('/jssl/invoicedbtcrd/updatenew', baseUrl1),
             type: 'POST',
             dataType: 'json',
-            xhrFields: {
-                withCredentials: true
-            },
-            data: jQuery.param({
-                modified_by: createdById,
-                product_desc: prodesv11up.value,
-                remarks: remarkvup.value,
-                date_of_notification: datevup.value,
-                date_val: date1vup.value,
-                pn_id: pnverifywwup.value,
-                bg_type: bgvaerifyup.value,
-                date_of_issue: dissuevup.value,
-                reference_no: refvup.value,
-                lc_number: lcvup.value,
-                supply_place: supvup.value,
-                s_t_exempted: exevup.value,
-                lr_docketno: dockvup.value,
-                bg_no: bgnovup.value,
-                date_of_expiry: dateexpvup.value,
-                date_of_ref: daterefvup.value,
-                lc_issue_date: lcdatevup.value,
-                id: vidverifyup.value,
-                invoice_type_id: intype,
-                reference_no: refvup.value,
+			xhrFields: {
+						    withCredentials: true
+						},
+						data: jQuery.param(Object.assign({
+						    modified_by: createdById,
+						    product_desc: prodesv11up.value,
+						    remarks: remarkvup.value,
+						    date_of_notification: datevup.value,
+						    date_val: date1vup.value,
+						    pn_id: pnverifywwup.value,
+						    bg_type: bgvaerifyup.value,
+						    date_of_issue: dissuevup.value,
+						    reference_no: refvup.value,
+						    lc_number: lcvup.value,
+						    supply_place: supvup.value,
+						    s_t_exempted: exevup.value,
+						    lr_docketno: dockvup.value,
+						    bg_no: bgnovup.value,
+						    date_of_expiry: dateexpvup.value,
+						    date_of_ref: daterefvup.value,
+						    lc_issue_date: lcdatevup.value,
+						    id: vidverifyup.value,
+						    inc_type: intype,   // backend param is inc_type, not invoice_type_id
 
-                // ---- Contract Details modal fields ----
-                con_slno: document.getElementById("vconslnoupdate").value,
-                factory_id: selectedFactoryId,
-                business_unit_id: document.getElementById("bunitvup").value,
-                invoice_type_calculation: document.getElementById("intypevup").value,
-                invoice_to_id: document.getElementById("intovup").value,
-                product_desc_id: document.getElementById("prodesvup").value,
-                shipment_mode_id: document.getElementById("shipmodevup").value,
-                work_id: document.getElementById("workordervup").value,
-                export: document.getElementById("exptvup").value,
-                tax_ex_inc: document.getElementById("taxresvup").value,
-                percentage_value: document.getElementById("percenvup").value,
-                consignee_id: document.getElementById("nandconvup").value,   // ✅ FIXED
-                bank_details_id: document.getElementById("banknamevup").value,
-                delivery_condition_id: document.getElementById("deliveryconvup").value,
-                regd_office_id: document.getElementById("officevvup").value,
-                s_code: document.getElementById("newscode").value,
-                h_code: document.getElementById("newhcode").value,
-            }),
+						    // ---- Contract Details modal fields ----
+						    con_slno: document.getElementById("vconslnoupdate").value,
+						    factory_id: selectedFactoryId,
+						    business_unit_id: document.getElementById("bunitvup").value,
+						    invoice_type_calculation: document.getElementById("intypevup").value,
+						    invoice_to_id: document.getElementById("intovup").value,
+						    product_desc_id: document.getElementById("prodesvup").value,
+						    shipment_mode_id: document.getElementById("shipmodevup").value,
+						    work_id: document.getElementById("workordervup").value,
+						    export: document.getElementById("exptvup").value,
+						    tax_ex_inc: document.getElementById("taxresvup").value,
+						    percentage_value: document.getElementById("percenvup").value,
+						    consignee_id: document.getElementById("nandconvup").value,
+						    bank_details_id: document.getElementById("banknamevup").value,
+						    delivery_condition_id: document.getElementById("deliveryconvup").value,
+						    regd_office_id: document.getElementById("officevvup").value,
+						    s_code: document.getElementById("newscode").value,
+						    h_code: document.getElementById("newhcode").value
+						}, taxParams)),
             success: function(data) {
                 var result = data.message;
 
